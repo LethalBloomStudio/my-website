@@ -1001,7 +1001,7 @@ function MessagesPageInner() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
                 {messages.length === 0 ? (
                   <p className="text-sm text-neutral-300">No messages yet.</p>
                 ) : (
