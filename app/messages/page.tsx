@@ -286,6 +286,21 @@ function MessagesPageInner() {
     sidebarLoadedRef.current = true;
   }
 
+  async function markAsRead(senderId: string) {
+    const receiverId = myIdRef.current;
+    if (!receiverId) return;
+    await supabase
+      .from("direct_messages")
+      .update({ status: "read" })
+      .eq("sender_id", senderId)
+      .eq("receiver_id", receiverId)
+      .eq("status", "sent");
+    // Clear unread badge in sidebar
+    setFriends((prev) =>
+      prev.map((f) => f.userId === senderId ? { ...f, unreadCount: 0 } : f)
+    );
+  }
+
   async function loadChat(targetId: string, currentExcluded: string[]) {
     if (currentExcluded.includes(targetId)) {
       setTargetIsYouth(true);
@@ -306,6 +321,7 @@ function MessagesPageInner() {
     const json = (await threadRes.json()) as { messages?: Msg[]; error?: string };
     if (!threadRes.ok) { setMsg(json.error ?? "Failed to load messages."); return; }
     setMessages(json.messages ?? []);
+    void markAsRead(targetId);
   }
 
   // Initial load: auth + sidebar + first chat
@@ -375,7 +391,10 @@ function MessagesPageInner() {
           (m.sender_id === myId && m.receiver_id === withUser)
         ) {
           setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
-          if (m.sender_id === withUser) setOtherTyping(false);
+          if (m.sender_id === withUser) {
+            setOtherTyping(false);
+            void markAsRead(withUser);
+          }
         }
       })
       .on("broadcast", { event: "typing" }, () => {
