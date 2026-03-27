@@ -11,8 +11,11 @@ export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!sig || !webhookSecret) {
-    return NextResponse.json({ error: "Missing signature or webhook secret." }, { status: 400 });
+  if (!sig) {
+    return NextResponse.json({ error: "Missing stripe-signature header." }, { status: 400 });
+  }
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "Missing STRIPE_WEBHOOK_SECRET env var." }, { status: 400 });
   }
 
   let event: Stripe.Event;
