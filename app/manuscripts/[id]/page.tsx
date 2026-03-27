@@ -86,6 +86,7 @@ function PageInner() {
   const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
   const [editFeedbackDraft, setEditFeedbackDraft] = useState("");
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(feedbackParam);
+  const [selectedOwnerFeedbackId, setSelectedOwnerFeedbackId] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState(false);
   const [myRequestStatus, setMyRequestStatus] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
@@ -1382,19 +1383,58 @@ function PageInner() {
                   ownerFeedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
                   !f.resolved && !f.author_response
                 );
+                const selectedOwnerFeedback = selectedOwnerFeedbackId ? ownerAllFeedback.find((f) => f.id === selectedOwnerFeedbackId) ?? null : null;
                 return ownerFiltered.length === 0 ? (
                 <p className="text-sm text-neutral-500 italic">No {ownerFeedbackFilter !== "all" ? ownerFeedbackFilter : ""} feedback received yet.</p>
               ) : (
-                <div className="max-h-[560px] overflow-y-auto pr-1 space-y-4">
-                  {ownerFiltered.map((f) => {
+                <div className="flex gap-4 items-start">
+                  {/* Compact list */}
+                  <div className={`${selectedOwnerFeedback ? "w-2/5 shrink-0" : "w-full"} max-h-[560px] overflow-y-auto pr-1 space-y-2`}>
+                    {ownerFiltered.map((f) => {
+                      const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
+                      const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
+                      const isSelected = selectedOwnerFeedbackId === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setSelectedOwnerFeedbackId(isSelected ? null : f.id)}
+                          className={`w-full text-left rounded-lg border p-3 transition ${
+                            isSelected
+                              ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.18)]"
+                              : f.resolved
+                              ? "border-neutral-700/50 opacity-60 hover:opacity-80 hover:bg-[rgba(120,120,120,0.06)]"
+                              : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] hover:bg-[rgba(120,120,120,0.13)] hover:border-[rgba(120,120,120,0.5)]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">{names[f.reader_id] || "Reader"}</p>
+                            <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
+                              {chapterLabel && <span className="rounded bg-neutral-800 px-1.5 py-0.5">{chapterLabel}</span>}
+                              <span>{new Date(f.created_at).toLocaleDateString()}</span>
+                              {f.resolved && <span className="text-neutral-600">resolved</span>}
+                            </div>
+                          </div>
+                          {f.selection_excerpt && (
+                            <p className="text-[11px] italic text-neutral-500 line-clamp-1">&ldquo;{f.selection_excerpt}&rdquo;</p>
+                          )}
+                          <p className="mt-0.5 text-xs text-neutral-300 line-clamp-2">{f.comment_text}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Detail panel */}
+                  {selectedOwnerFeedback && (() => {
+                    const f = selectedOwnerFeedback;
+                    const feedbackReplies = replies.filter((r) => r.feedback_id === f.id);
                     const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                     const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
-                    const feedbackReplies = replies.filter((r) => r.feedback_id === f.id);
                     return (
-                      <div key={f.id} className={`rounded-lg border p-3 ${f.resolved ? "border-neutral-700/50 opacity-60" : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)]"}`}>
-                        <div className="flex flex-wrap items-center justify-between gap-1">
+                      <div className="flex-1 min-w-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.1)] p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">{names[f.reader_id] || "Reader"}</p>
+                            <p className="text-xs font-semibold text-[rgba(210,210,210,0.9)]">{names[f.reader_id] || "Reader"}</p>
                             {isParentView && f.reader_id !== manuscript?.owner_id && (
                               <button
                                 onClick={() => setParentReportModal({ userId: f.reader_id, name: names[f.reader_id] || "this user" })}
@@ -1404,35 +1444,56 @@ function PageInner() {
                               </button>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                          <div className="flex items-center gap-2">
                             {chapterLabel && (
                               <button
                                 type="button"
                                 onClick={() => setChapterId(f.chapter_id)}
-                                className="rounded-lg bg-neutral-800 px-1.5 py-0.5 hover:bg-neutral-700 transition"
+                                className="rounded-lg bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-400 hover:bg-neutral-700 transition"
                               >
                                 {chapterLabel}
                               </button>
                             )}
-                            <span>{new Date(f.created_at).toLocaleDateString()}</span>
-                            {f.resolved && <span className="text-neutral-600">resolved</span>}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOwnerFeedbackId(null)}
+                              className="text-neutral-500 hover:text-white transition text-sm"
+                            >
+                              ✕
+                            </button>
                           </div>
                         </div>
                         {f.selection_excerpt && (
-                          <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
+                          <blockquote className="border-l-2 border-[rgba(120,120,120,0.5)] pl-3 text-xs italic text-neutral-400">
                             &ldquo;{f.selection_excerpt}&rdquo;
                           </blockquote>
                         )}
-                        <p className="mt-1.5 text-sm leading-relaxed text-neutral-200">{f.comment_text}</p>
-                        {f.author_response && (
-                          <p className={`mt-1 text-[11px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
+                        <p className="text-sm leading-relaxed text-neutral-200">{f.comment_text}</p>
+                        {f.author_response ? (
+                          <p className={`text-[11px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
                             {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
                           </p>
+                        ) : isOwner && !f.resolved && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => void resolveFeedback(f.id, "agree")}
+                              className="flex-1 rounded-lg border border-emerald-700/50 bg-emerald-950/30 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-950/50 transition"
+                            >
+                              ✓ Agree
+                            </button>
+                            <button
+                              onClick={() => void resolveFeedback(f.id, "disagree")}
+                              className="flex-1 rounded-lg border border-rose-700/50 bg-rose-950/30 px-3 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-950/50 transition"
+                            >
+                              ✗ Disagree
+                            </button>
+                          </div>
                         )}
                         {feedbackReplies.length > 0 && (
-                          <div className="mt-2 space-y-1">
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] uppercase tracking-wide text-neutral-500">Replies</p>
                             {feedbackReplies.map((r) => (
-                              <div key={r.id} className={`rounded-lg px-2 py-1.5 text-[11px] ${r.replier_id === manuscript?.owner_id ? "bg-[rgba(120,120,120,0.1)]" : "bg-[rgba(255,255,255,0.04)]"}`}>
+                              <div key={r.id} className={`rounded-lg px-2.5 py-2 text-[11px] ${r.replier_id === manuscript?.owner_id ? "bg-[rgba(120,120,120,0.12)]" : "bg-[rgba(255,255,255,0.04)]"}`}>
                                 <span className="font-semibold text-[rgba(210,210,210,0.7)] mr-1">{names[r.replier_id] || "User"}:</span>
                                 <span className="text-neutral-300">{r.body}</span>
                               </div>
@@ -1441,7 +1502,7 @@ function PageInner() {
                         )}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               );
               })()}
