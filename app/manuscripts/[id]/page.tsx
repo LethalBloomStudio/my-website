@@ -1745,16 +1745,36 @@ function PageInner() {
                     <div className="relative z-[1] space-y-4">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
-                        return manuscriptParagraphs.map((para, idx) => (
-                          <p
-                            key={idx}
-                            id={`para-${idx}`}
-                            className="whitespace-pre-line [text-indent:1.5rem]"
-                            style={{ letterSpacing: "0.01em" }}
-                          >
-                            {renderWithMarkers(para, markerFeedback, selectedFeedbackId)}
-                          </p>
-                        ));
+                        return manuscriptParagraphs.map((para, idx) => {
+                          const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && para.includes(f.selection_excerpt));
+                          return (
+                            <div key={idx} id={`para-${idx}`} className="relative">
+                              {paraFeedbacks.length > 0 && (
+                                <div className="absolute -left-5 top-1.5 flex flex-col gap-1">
+                                  {paraFeedbacks.map((f) => (
+                                    <button
+                                      key={f.id}
+                                      id={`text-marker-${f.id}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedFeedbackId(selectedFeedbackId === f.id ? null : f.id);
+                                      }}
+                                      className={`h-4 w-1.5 rounded-full transition-colors ${selectedFeedbackId === f.id ? "bg-amber-400" : "bg-amber-400/40 hover:bg-amber-400/70"}`}
+                                      title="View feedback"
+                                      aria-label="View feedback"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              <p
+                                className="whitespace-pre-line [text-indent:1.5rem]"
+                                style={{ letterSpacing: "0.01em" }}
+                              >
+                                {para}
+                              </p>
+                            </div>
+                          );
+                        });
                       })()}
                     </div>
                   )}
