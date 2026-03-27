@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
-import { stripe, COIN_PACKAGES } from "@/lib/stripe";
+import { getStripe, COIN_PACKAGES } from "@/lib/stripe";
 import type { CoinPackageId } from "@/lib/stripe";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const recipientId = body.gift_to ?? userId;
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "payment",
     customer_email: userEmail ?? undefined,
     line_items: [

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
-import { stripe, COIN_PACKAGES, SUBSCRIPTION_PLANS } from "@/lib/stripe";
+import { getStripe, COIN_PACKAGES, SUBSCRIPTION_PLANS } from "@/lib/stripe";
 import type { CoinPackageId, SubscriptionPlanId } from "@/lib/stripe";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     const recipientId = body.gift_to ?? userId;
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       customer_email: userEmail ?? undefined,
       line_items: [
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     let customerId = (acct as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? null;
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: userEmail ?? undefined,
         metadata: { user_id: userId },
       });
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       await supabaseAdmin().from("accounts").update({ stripe_customer_id: customerId }).eq("user_id", userId);
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [

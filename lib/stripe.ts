@@ -1,8 +1,17 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-02-25.clover",
-});
+// Lazy singleton — not instantiated at module evaluation time so the build
+// never fails when STRIPE_SECRET_KEY is only available at runtime (e.g. Vercel).
+let _stripe: Stripe | null = null;
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2026-02-25.clover",
+    });
+  }
+  return _stripe;
+}
 
 // Coin packages — must match WalletTabs PACKAGES
 export const COIN_PACKAGES = {

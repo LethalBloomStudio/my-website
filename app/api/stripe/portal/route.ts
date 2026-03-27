@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -25,7 +25,7 @@ export async function POST() {
     if (!customerId) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
-        const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+        const customers = await getStripe().customers.list({ email: user.email, limit: 1 });
         if (customers.data.length > 0) {
           customerId = customers.data[0].id;
           await supabaseAdmin().from("accounts").update({ stripe_customer_id: customerId }).eq("user_id", userId);
@@ -37,7 +37,7 @@ export async function POST() {
       return NextResponse.json({ error: "No billing account found. Please subscribe first." }, { status: 404 });
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer: customerId,
       return_url: `${SITE_URL}/subscription`,
     });
