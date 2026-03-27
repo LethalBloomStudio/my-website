@@ -491,8 +491,8 @@ function PageInner() {
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`}>
           {isActive
-            ? <mark className="rounded bg-[rgba(255,200,60,0.35)] px-0.5 text-[#e9e6ff] not-italic">{excerpt}</mark>
-            : <mark className="rounded bg-[rgba(255,200,60,0.15)] border-b border-dashed border-[rgba(255,180,40,0.7)] not-italic text-inherit">{excerpt}</mark>}
+            ? <span className="rounded bg-[rgba(255,200,60,0.22)] border-b-2 border-[rgba(255,180,40,0.9)]">{excerpt}</span>
+            : <span className="border-b border-dotted border-[rgba(255,180,40,0.65)]">{excerpt}</span>}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1660,9 +1660,9 @@ function PageInner() {
             </section>
           )}
           {activeChapter && (
-            <div className="flex gap-4 items-stretch">
+            <div className="flex gap-4" style={{ height: "calc(100vh - 6rem)" }}>
               {/* Chapter text box */}
-              <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+              <section ref={chapterSectionRef} className="min-w-0 flex-1 overflow-y-auto rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {activeChapter.chapter_order}</p>
@@ -1763,10 +1763,10 @@ function PageInner() {
 
               {/* Feedback column — same size as chapter box, cards align with their text */}
               {canRead && (
-                <div className="w-72 shrink-0">
+                <div className="w-72 shrink-0 flex flex-col">
                 <div
                   ref={asideRef}
-                  className="sticky top-20 max-h-[calc(100vh-5.5rem)] rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
+                  className="flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
                 >
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && (
