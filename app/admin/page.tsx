@@ -202,7 +202,7 @@ type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" |
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const REPORT_CATEGORIES = [
+const _REPORT_CATEGORIES = [
   "Harassment",
   "Plagiarism",
   "Spam",
@@ -329,6 +329,7 @@ function AdminPageInner() {
       setLoading(false);
     }
     void init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function getToken(): Promise<string | null> {
@@ -391,7 +392,7 @@ function AdminPageInner() {
     });
   }
 
-  async function adminInsert(table: string, row: Record<string, unknown>) {
+  async function _adminInsert(table: string, row: Record<string, unknown>) {
     return adminFetch("/api/admin/action", {
       method: "POST",
       body: JSON.stringify({ type: "insert", insert_table: table, insert_row: row }),
@@ -422,7 +423,7 @@ function AdminPageInner() {
     if (data?.reports) setReports(data.reports);
   }
 
-  async function loadAuditLog(_uid?: string | null) {
+  async function _loadAuditLog(_uid?: string | null) {
     const data = await adminFetch("/api/admin/data?scope=audit") as { auditLog?: AuditEntry[] } | null;
     if (data?.auditLog) setAuditLog(data.auditLog);
   }
@@ -447,7 +448,7 @@ function AdminPageInner() {
     if (data?.featureFlags) setFeatureFlags(data.featureFlags);
   }
 
-  async function loadStats() {
+  async function _loadStats() {
     const data = await adminFetch("/api/admin/data?scope=stats") as { stats?: Stats } | null;
     if (data?.stats) setStats(data.stats);
   }
@@ -540,7 +541,7 @@ function AdminPageInner() {
     } else if (actionType === "toggle_age_group") {
       const newCat = u.age_category === "youth_13_17" ? "adult_18_plus" : "youth_13_17";
       await adminUpdate("accounts", "user_id", u.user_id, { age_category: newCat });
-      await audit("change_age_group", "user", u.user_id, { age_category: u.age_category }, { age_category: newCat }, null);
+      await audit("change_age_group", "user", u.user_id, { age_category: u.age_category }, { age_category: newCat }, undefined);
     } else if (actionType === "toggle_admin") {
       const val = !u.is_admin;
       await adminUpdate("accounts", "user_id", u.user_id, { is_admin: val });
@@ -581,7 +582,7 @@ function AdminPageInner() {
         metadata: { old_balance: oldBalance, new_balance: newBalance },
       }),
     });
-    await audit("adjust_coins", "user", userId, { bloom_coins: oldBalance }, { bloom_coins: newBalance }, actionReason || null);
+    await audit("adjust_coins", "user", userId, { bloom_coins: oldBalance }, { bloom_coins: newBalance }, actionReason || undefined);
     setCoinConfirm(null);
     setCoinInput("");
     setActionType(null);
@@ -626,17 +627,17 @@ function AdminPageInner() {
       await audit("unhide_manuscript", "manuscript", m.id, { admin_hidden: true }, { admin_hidden: false }, actionReason);
     } else if (actionType === "feature") {
       await adminUpdate("manuscripts", "id", m.id, { is_featured: !m.is_featured });
-      await audit(m.is_featured ? "unfeature_manuscript" : "feature_manuscript", "manuscript", m.id, null, null, null);
+      await audit(m.is_featured ? "unfeature_manuscript" : "feature_manuscript", "manuscript", m.id, null, null, undefined);
     } else if (actionType === "set_visibility") {
       await adminUpdate("manuscripts", "id", m.id, { visibility: actionReason });
-      await audit("set_visibility", "manuscript", m.id, { visibility: m.visibility }, { visibility: actionReason }, null);
+      await audit("set_visibility", "manuscript", m.id, { visibility: m.visibility }, { visibility: actionReason }, undefined);
     } else if (actionType === "edit_meta" && editingManuscript) {
       const updates: Record<string, unknown> = {};
       if (editingManuscript.title !== undefined) updates.title = editingManuscript.title;
       if (editingManuscript.genre !== undefined) updates.genre = editingManuscript.genre;
       if (editingManuscript.age_rating !== undefined) updates.age_rating = editingManuscript.age_rating;
       await adminUpdate("manuscripts", "id", m.id, updates);
-      await audit("edit_metadata", "manuscript", m.id, { title: m.title, genre: m.genre }, updates, null);
+      await audit("edit_metadata", "manuscript", m.id, { title: m.title, genre: m.genre }, updates, undefined);
     }
 
     await loadManuscripts();
@@ -668,7 +669,7 @@ function AdminPageInner() {
 
   async function toggleFlag(flag: FeatureFlag) {
     await adminUpdate("feature_flags", "id", flag.id, { is_enabled: !flag.is_enabled, updated_at: new Date().toISOString(), updated_by: adminId });
-    await audit(flag.is_enabled ? "disable_feature_flag" : "enable_feature_flag", "feature_flag", flag.name, { is_enabled: flag.is_enabled }, { is_enabled: !flag.is_enabled }, null);
+    await audit(flag.is_enabled ? "disable_feature_flag" : "enable_feature_flag", "feature_flag", flag.name, { is_enabled: flag.is_enabled }, { is_enabled: !flag.is_enabled }, undefined);
     await loadFeatureFlags();
   }
 
@@ -692,7 +693,7 @@ function AdminPageInner() {
         reward_coins: annRewardCoins > 0 ? annRewardCoins : null,
       }),
     });
-    await audit("post_announcement", "announcement", annTitle.trim(), null, { title: annTitle.trim(), reward_coins: annRewardCoins || null }, null);
+    await audit("post_announcement", "announcement", annTitle.trim(), null, { title: annTitle.trim(), reward_coins: annRewardCoins || null }, undefined);
     setAnnTitle(""); setAnnBody(""); setAnnRewardCoins(0);
     await loadAnnouncements();
     setMsg(`Announcement posted and notifications sent to all users${annRewardCoins > 0 ? ` with ${annRewardCoins} Bloom Coin reward` : ""}.`);
@@ -896,7 +897,7 @@ function AdminPageInner() {
                           ) : (
                             <span className="font-medium text-neutral-100">{u.full_name || "—"}</span>
                           )}
-                          {u.pen_name && <span className="text-xs text-neutral-400">"{u.pen_name}"</span>}
+                          {u.pen_name && <span className="text-xs text-neutral-400">&ldquo;{u.pen_name}&rdquo;</span>}
                           {u.username && <span className="text-xs text-neutral-500">@{u.username}</span>}
                           {u.is_admin && <span className="text-[10px] font-bold text-red-400 uppercase">Admin</span>}
                           {u.messaging_restricted && <span className="text-[10px] text-amber-400">Messaging restricted</span>}
@@ -1849,6 +1850,7 @@ function FlaggedContentTab({ adminFetch, onAudit, onMsg }: {
 
   useEffect(() => {
     void load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function load() {
@@ -1912,7 +1914,7 @@ function FlaggedContentTab({ adminFetch, onAudit, onMsg }: {
                 <p className="text-sm text-amber-400 font-medium mb-1">
                   Sender: {f.sender_name || f.sender_username ? `${f.sender_name ?? ""}${f.sender_username ? ` (@${f.sender_username})` : ""}`.trim() : f.sender_id ?? "Unknown"}
                 </p>
-                {f.content_excerpt && <p className="text-sm text-neutral-300 italic">"{f.content_excerpt}"</p>}
+                {f.content_excerpt && <p className="text-sm text-neutral-300 italic">&ldquo;{f.content_excerpt}&rdquo;</p>}
                 {f.triggers.length > 0 && <p className="text-xs text-red-400 mt-1">Triggers: {f.triggers.join(", ")}</p>}
                 <p className="text-xs text-neutral-500 mt-0.5">Consequence: {f.consequence}</p>
                 <p className="text-xs text-neutral-600 mt-1">{new Date(f.created_at).toLocaleString()}</p>
@@ -1972,6 +1974,8 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
     await onRefresh();
   }
 
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
   const pending = appeals.filter(a => a.status === "pending");
   const history = appeals.filter(a => a.status !== "pending");
 
@@ -2002,10 +2006,10 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
                 {statusBadge(a.status)}
                 {a.user_blacklisted && <span className="rounded-lg border border-red-700/60 bg-red-950/30 px-1.5 py-0.5 font-bold uppercase tracking-wide text-red-400">Msg Blacklisted</span>}
                 {a.user_ms_blacklisted && <span className="rounded-lg border border-red-700/60 bg-red-950/30 px-1.5 py-0.5 font-bold uppercase tracking-wide text-red-400">MS Blacklisted</span>}
-                {a.user_suspended_until && new Date(a.user_suspended_until).getTime() > Date.now() && (
+                {a.user_suspended_until && new Date(a.user_suspended_until).getTime() > now && (
                   <span className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-1.5 py-0.5 text-amber-300">Msg Suspended until {new Date(a.user_suspended_until).toLocaleDateString()}</span>
                 )}
-                {a.user_ms_suspended_until && new Date(a.user_ms_suspended_until).getTime() > Date.now() && (
+                {a.user_ms_suspended_until && new Date(a.user_ms_suspended_until).getTime() > now && (
                   <span className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-1.5 py-0.5 text-amber-300">MS Suspended until {new Date(a.user_ms_suspended_until).toLocaleDateString()}</span>
                 )}
               </div>

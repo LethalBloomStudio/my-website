@@ -221,7 +221,7 @@ function NewManuscriptInner() {
       return;
     }
 
-    setMsg(moderation.shouldReview ? "Posted and flagged for owner review." : "Posted.");
+    setMsg("Posted.");
   }
 
   function toggleCategory(category: string) {

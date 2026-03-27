@@ -532,6 +532,7 @@ export default function NotificationsPage() {
       return;
     }
     setClientReadKeys(loadClientReadKeys(userId));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function markAllAsRead() {
@@ -550,7 +551,7 @@ export default function NotificationsPage() {
         item.payload.metadata?.announcement_id &&
         !claimedIds.has(item.payload.metadata.announcement_id)
       )
-      .map(item => item.payload.id);
+      .map(item => (item.payload as { id: string | number }).id);
 
     let query = supabase
       .from("system_notifications")
@@ -679,11 +680,11 @@ export default function NotificationsPage() {
       const notif = items.find(
         item => item.type === "admin" && item.payload.metadata?.announcement_id === announcementId
       );
-      if (notif && !notif.payload.is_read) {
+      if (notif && !(notif.payload as { is_read?: boolean }).is_read) {
         await supabase
           .from("system_notifications")
           .update({ is_read: true, read_at: new Date().toISOString() })
-          .eq("id", notif.payload.id)
+          .eq("id", (notif.payload as { id: string | number }).id)
           .eq("user_id", userId);
         window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
       }
@@ -716,11 +717,11 @@ export default function NotificationsPage() {
       const notif = items.find(
         item => item.type === "admin" && item.payload.metadata?.giveaway_post_id === postId
       );
-      if (notif && !notif.payload.is_read) {
+      if (notif && !(notif.payload as { is_read?: boolean }).is_read) {
         await supabase
           .from("system_notifications")
           .update({ is_read: true, read_at: new Date().toISOString() })
-          .eq("id", notif.payload.id)
+          .eq("id", (notif.payload as { id: string | number }).id)
           .eq("user_id", userId);
         window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
       }

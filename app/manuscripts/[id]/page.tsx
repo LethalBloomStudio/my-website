@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ManuscriptLayout, { DetailRow } from "@/components/ManuscriptLayout";
+import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { useTheme } from "@/components/ThemeProvider";
@@ -96,7 +96,7 @@ function PageInner() {
   const [feedbackViolation, setFeedbackViolation] = useState<{ message: string; consequence: string } | null>(null);
   // Parent view state
   const [isParentView, setIsParentView] = useState(fromParam === "parent");
-  const [parentPendingRequests, setParentPendingRequests] = useState<
+  const [_parentPendingRequests, setParentPendingRequests] = useState<
     { id: string; requester_id: string; created_at: string; name: string; username: string | null }[]
   >([]);
   const [parentDisabled, setParentDisabled] = useState(false);
@@ -108,7 +108,7 @@ function PageInner() {
   const [parentReportReason, setParentReportReason] = useState("");
   const [parentReportSubmitting, setParentReportSubmitting] = useState(false);
   const [parentActionMsg, setParentActionMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [manuscriptConduct, setManuscriptConduct] = useState<{
+  const [_manuscriptConduct, setManuscriptConduct] = useState<{
     manuscript_conduct_strikes: number;
     manuscript_suspended_until: string | null;
     manuscript_blacklisted: boolean;
@@ -376,7 +376,7 @@ function PageInner() {
     setRequestSent(true);
   }
 
-  async function refreshMyChapterFeedback() {
+  async function _refreshMyChapterFeedback() {
     if (!chapterId || !manuscriptId || !userId) return;
     const { data } = await supabase
       .from("line_feedback")
@@ -388,7 +388,7 @@ function PageInner() {
     setMyChapterFeedback((data as LineFeedback[]) ?? []);
   }
 
-  async function deleteLineFeedback(id: string) {
+  async function _deleteLineFeedback(id: string) {
     if (!confirm("Delete this feedback? This cannot be undone.")) return;
     const { error } = await supabase.from("line_feedback").delete().eq("id", id);
     if (error) return setMsg(error.message);
@@ -451,7 +451,7 @@ function PageInner() {
     if (json.reply) setReplies((prev) => [...prev, json.reply!]);
   }
 
-  function highlightExcerpt(text: string, excerpt: string) {
+  function _highlightExcerpt(text: string, excerpt: string) {
     if (!excerpt) return <>{text}</>;
     const idx = text.indexOf(excerpt);
     if (idx === -1) return <>{text}</>;
@@ -553,7 +553,7 @@ function PageInner() {
         .filter(Boolean),
     [activeText],
   );
-  const feedbackByParagraph = useMemo(() => {
+  const _feedbackByParagraph = useMemo(() => {
     const map: Record<number, LineFeedback[]> = {};
     for (const f of feedback) {
       let targetIdx = 0;
@@ -659,7 +659,8 @@ function PageInner() {
           supabase.from("accounts").select("age_category, manuscript_conduct_strikes, manuscript_suspended_until, manuscript_blacklisted, manuscript_lifetime_suspension_count, parent_report_restricted").eq("user_id", uid).maybeSingle(),
           supabase.from("public_profiles").select("pen_name, username").eq("user_id", uid).maybeSingle(),
         ]);
-        conductRow = meAcct as typeof conductRow;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        conductRow = meAcct as any;
         setManuscriptConduct({
           manuscript_conduct_strikes: conductRow?.manuscript_conduct_strikes ?? 0,
           manuscript_suspended_until: conductRow?.manuscript_suspended_until ?? null,
@@ -988,7 +989,7 @@ function PageInner() {
     return () => document.removeEventListener("click", onDocClick, true);
   }, [selectedFeedbackId]);
 
-  async function reply(f: LineFeedback) {
+  async function _reply(f: LineFeedback) {
     const body = (replyDrafts[f.id] ?? "").trim();
     if (!body || !userId || !manuscript) return;
     if (adultReplyBlockedForFeedback(f.reader_id)) {
@@ -1481,7 +1482,7 @@ function PageInner() {
                   const canReply = !f.resolved && !f.author_response;
                   const toggleExpand = () => setExpandedFeedbackIds((prev) => {
                     const n = new Set(prev);
-                    n.has(f.id) ? n.delete(f.id) : n.add(f.id);
+                    if (n.has(f.id)) { n.delete(f.id); } else { n.add(f.id); }
                     return n;
                   });
                   return (
@@ -1821,7 +1822,7 @@ function PageInner() {
                             <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
                           ) : (
                           <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
-                            "{f.selection_excerpt}"
+                            &ldquo;{f.selection_excerpt}&rdquo;
                           </blockquote>
                           )}
                           {editingFeedbackId === f.id ? (

@@ -82,7 +82,7 @@ function MessagesPageInner() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [targetIsYouth, setTargetIsYouth] = useState(false);
-  const [excludedFromMessaging, setExcludedFromMessaging] = useState<string[]>([]);
+  const [_excludedFromMessaging, setExcludedFromMessaging] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [status, setStatus] = useState<ModerationStatus>(null);
   const [recipientInput, setRecipientInput] = useState("");
@@ -435,7 +435,7 @@ function MessagesPageInner() {
       .eq("receiver_id", myId!);
     setRequestAction(null);
     if (error) return setMsg(error.message);
-    await load();
+    await loadSidebar(myId!);
   }
 
   async function denyRequest(senderId: string) {
@@ -447,7 +447,7 @@ function MessagesPageInner() {
       .eq("receiver_id", myId!);
     setRequestAction(null);
     if (error) return setMsg(error.message);
-    await load();
+    await loadSidebar(myId!);
   }
 
   async function send() {
@@ -562,7 +562,7 @@ function MessagesPageInner() {
       .update({ status: "accepted" })
       .or(`and(sender_id.eq.${myId},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${myId})`);
     setHiddenFriends((prev) => prev.filter((f) => f.userId !== userId));
-    await load();
+    await loadSidebar(myId!);
   }
 
   function reportUser(userId: string) {

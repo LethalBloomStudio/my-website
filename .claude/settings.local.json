@@ -59,7 +59,8 @@
       "Bash(node -e \"const p = require\\(''c:/Users/lcnl2/lethal-bloom-studio/node_modules/@supabase/supabase-js/package.json''\\); console.log\\(p.version\\)\")",
       "Bash(grep -E \"^pg$|postgres\")",
       "Bash(find c:Userslcnl2lethal-bloom-studioapp -type f -name *nav* -o -name *Nav* -o -name *header* -o -name *Header*)",
-      "Bash(grep -n \"manuscript.*conduct\\\\|Conduct\\\\|strikes\" /c/Users/lcnl2/lethal-bloom-studio/app/manuscripts/[id]/page.tsx)"
+      "Bash(grep -n \"manuscript.*conduct\\\\|Conduct\\\\|strikes\" /c/Users/lcnl2/lethal-bloom-studio/app/manuscripts/[id]/page.tsx)",
+      "Bash(npx eslint:*)"
     ]
   }
 }
