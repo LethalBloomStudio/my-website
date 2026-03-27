@@ -9,6 +9,7 @@ import AuthGatedNav from "@/components/AuthGatedNav";
 import MessagesNavButton from "@/components/MessagesNavButton";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
+import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
   title: "Your Site",
@@ -40,7 +41,7 @@ export default function RootLayout({
                 <Image src="/brand/logo.svg" alt="Logo" width={40} height={40} className="logo" />
               </Link>
 
-              <nav className="tabs">
+              <nav className="tabs desktopNav">
                 <HomeNavButton />
                 {tabs.map((t) => (
                   <Link key={t.href} href={t.href} className="tab">
@@ -51,10 +52,13 @@ export default function RootLayout({
             </div>
 
             <div className="navRight">
-              <AuthGatedNav />
-              <MessagesNavButton />
+              <div className="desktopNav" style={{ display: "contents" }}>
+                <AuthGatedNav />
+                <MessagesNavButton />
+              </div>
               <ThemeToggle />
               <AuthButton />
+              <MobileNav />
             </div>
           </div>
         </header>
