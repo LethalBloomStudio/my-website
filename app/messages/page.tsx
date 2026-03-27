@@ -990,7 +990,7 @@ function MessagesPageInner() {
               )}
             </section>
           ) : (
-            <section className="flex h-[600px] flex-col overflow-hidden rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
+            <section className="flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <p className="flex-1 text-sm text-neutral-300">Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span></p>
                 <button
@@ -1001,7 +1001,7 @@ function MessagesPageInner() {
                 </button>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
+              <div className="h-[420px] overflow-y-auto space-y-3 pr-1">
                 {messages.length === 0 ? (
                   <p className="text-sm text-neutral-300">No messages yet.</p>
                 ) : (
