@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: "https://tlgjkouoriekakueizir.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_9BVlb_gRuJh2fNOcw8yMZw_oNYl-THK",
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "",
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? "https://lethalbloomstudio.com",
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "https://lethalbloomstudio.com",
   },
   images: {
     remotePatterns: [
