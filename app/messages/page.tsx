@@ -117,7 +117,7 @@ function MessagesPageInner() {
   const [otherTyping, setOtherTyping] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const EMOJIS = [
     "😀","😂","😍","🥰","😎","😢","😡","🤔","😴","🤯",
@@ -487,6 +487,7 @@ function MessagesPageInner() {
       return;
     }
     setText("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     if (json.message) {
       setMessages((prev) => (prev.some((p) => p.id === json.message!.id) ? prev : [...prev, json.message!]));
     }
@@ -1006,11 +1007,14 @@ function MessagesPageInner() {
               </div>
 
               <div className="mt-4 shrink-0 flex gap-2 relative">
-                <input
+                <textarea
                   ref={inputRef}
                   value={text}
+                  rows={1}
                   onChange={(e) => {
                     setText(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = `${e.target.scrollHeight}px`;
                     if (channelRef.current) {
                       const now = Date.now();
                       if (now - lastTypingRef.current > 2000) {
@@ -1019,10 +1023,17 @@ function MessagesPageInner() {
                       }
                     }
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void send()}
-                  placeholder="Type a message..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (inputRef.current) inputRef.current.style.height = "auto";
+                      void send();
+                    }
+                  }}
+                  placeholder="Type a message... (Shift+Enter for new line)"
                   disabled={youthLocked}
-                  className="h-11 flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3"
+                  className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-hidden min-h-[44px] max-h-48"
+                  style={{ lineHeight: "1.5" }}
                 />
                 <div ref={emojiPickerRef} className="relative">
                   <button
