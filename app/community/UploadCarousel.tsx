@@ -35,6 +35,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   const isHoveredRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const offsetRef = useRef(0);
+  const [shouldLoop, setShouldLoop] = useState(false);
 
   // Initial fetch via API route (uses admin client to bypass RLS on accounts table)
   useEffect(() => {
@@ -90,9 +91,17 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
     return () => { void supabase.removeChannel(channel); };
   }, [supabase, audience]);
 
+  // Determine whether to loop (only when items fill the container)
+  useEffect(() => {
+    if (!outerRef.current || items.length === 0) return;
+    const containerWidth = outerRef.current.offsetWidth;
+    const trackWidth = items.length * 66; // ~62px item + 4px gap
+    setShouldLoop(trackWidth > containerWidth);
+  }, [items]);
+
   // Continuous transform-based scroll
   useEffect(() => {
-    if (loading || !trackRef.current) return;
+    if (loading || !shouldLoop || !trackRef.current) return;
 
     let last: number | null = null;
 
@@ -114,7 +123,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [loading]);
+  }, [loading, shouldLoop]);
 
   if (loading) {
     return (
@@ -136,7 +145,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
         className="flex gap-2 py-3 px-3 will-change-transform"
         style={{ width: "max-content" }}
       >
-        {[0, 1].map((copyIdx) => (
+        {(shouldLoop ? [0, 1] : [0]).map((copyIdx) => (
           <Fragment key={copyIdx}>
             {items.map((item) => (
               <Link
