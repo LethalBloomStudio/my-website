@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,6 +14,11 @@ import MobileNav from "@/components/MobileNav";
 export const metadata: Metadata = {
   title: "Your Site",
   description: "Your description",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 const tabs = [
