@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
@@ -52,8 +53,37 @@ export default function MobileNav() {
   }, [supabase]);
 
   const showAuthNav = signedIn && !isDeactivated && !isLocked;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   function close() { setOpen(false); }
+
+  const drawer = open && mounted ? createPortal(
+    <nav className="mobileDrawer">
+      <Link href="/" className="mobileNavLink" onClick={close}>Home</Link>
+      <Link href="/pricing" className="mobileNavLink" onClick={close}>Pricing</Link>
+      <Link href="/help" className="mobileNavLink" onClick={close}>Help</Link>
+
+      {showAuthNav && (
+        <>
+          <div className="mobileNavDivider" />
+          <Link href="/discover" className="mobileNavLink" onClick={close}>Discover</Link>
+          <Link href="/beta-readers" className="mobileNavLink" onClick={close}>Beta Readers</Link>
+          <Link href="/manuscripts" className="mobileNavLink" onClick={close}>Manuscripts</Link>
+          <Link href="/wallet" className="mobileNavLink" onClick={close}>Wallet</Link>
+          <Link href="/messages" className="mobileNavLink" onClick={close}>Messages</Link>
+          <Link href="/notifications" className="mobileNavLink" onClick={close}>Notifications</Link>
+          {(isYouth || isAdmin) && (
+            <Link href="/youth-community" className="mobileNavLink" onClick={close}>Youth Community</Link>
+          )}
+          {isAdult && (
+            <Link href="/community" className="mobileNavLink" onClick={close}>Community</Link>
+          )}
+        </>
+      )}
+    </nav>,
+    document.body
+  ) : null;
 
   return (
     <div className="mobileNavWrap">
@@ -67,32 +97,7 @@ export default function MobileNav() {
         <span className={`hamburgerBar${open ? " open" : ""}`} />
         <span className={`hamburgerBar${open ? " open" : ""}`} />
       </button>
-
-      {open && (
-        <nav className="mobileDrawer">
-          <Link href="/" className="mobileNavLink" onClick={close}>Home</Link>
-          <Link href="/pricing" className="mobileNavLink" onClick={close}>Pricing</Link>
-          <Link href="/help" className="mobileNavLink" onClick={close}>Help</Link>
-
-          {showAuthNav && (
-            <>
-              <div className="mobileNavDivider" />
-              <Link href="/discover" className="mobileNavLink" onClick={close}>Discover</Link>
-              <Link href="/beta-readers" className="mobileNavLink" onClick={close}>Beta Readers</Link>
-              <Link href="/manuscripts" className="mobileNavLink" onClick={close}>Manuscripts</Link>
-              <Link href="/wallet" className="mobileNavLink" onClick={close}>Wallet</Link>
-              <Link href="/messages" className="mobileNavLink" onClick={close}>Messages</Link>
-              <Link href="/notifications" className="mobileNavLink" onClick={close}>Notifications</Link>
-              {(isYouth || isAdmin) && (
-                <Link href="/youth-community" className="mobileNavLink" onClick={close}>Youth Community</Link>
-              )}
-              {isAdult && (
-                <Link href="/community" className="mobileNavLink" onClick={close}>Community</Link>
-              )}
-            </>
-          )}
-        </nav>
-      )}
+      {drawer}
     </div>
   );
 }
