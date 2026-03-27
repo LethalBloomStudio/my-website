@@ -1,0 +1,2 @@
+ALTER TABLE public.public_profiles
+  ADD COLUMN IF NOT EXISTS highlighted_manuscript_id text;

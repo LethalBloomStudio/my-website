@@ -1,0 +1,1014 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --brand: #787878;
+  --brand-strong: #606060;
+  --brand-soft: rgba(120, 120, 120, 0.14);
+  --brand-border: rgba(120, 120, 120, 0.45);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+
+input,
+textarea {
+  border: 1px solid var(--brand-border);
+  background: rgba(120, 120, 120, 0.1);
+  color: #e8e8e8;
+}
+
+select {
+  border: 1px solid var(--brand-border);
+  background: #111111;
+  color: #e8e8e8;
+}
+
+select option,
+select optgroup {
+  background: #111111;
+  color: #e8e8e8;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 200, 200, 0.6);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(120, 120, 120, 1);
+  box-shadow: 0 0 0 3px rgba(120, 120, 120, 0.25);
+}
+
+button {
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: var(--brand);
+  color: #ffffff;
+}
+
+button:hover {
+  background: var(--brand-strong);
+}
+
+/* ── Workspace button — black outline, white fill, black text on all themes ── */
+.workspace-btn {
+  border: 1px solid #000000 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  text-decoration: none;
+}
+.workspace-btn:hover {
+  background: #f0f0f0 !important;
+}
+
+/* ---------- Navbar Layout ---------- */
+.navWrap {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.14);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  overflow-x: clip;
+}
+
+.navInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: nowrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+/* Keep your logo BIG */
+.logo {
+  height: 200px;
+  width: auto;
+  display: block;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* ---------- Button Tabs ---------- */
+.tab {
+  text-decoration: none;
+  color: #111111;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: var(--brand);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+/* Make <button class="tab"> behave like your <a class="tab"> */
+button.tab {
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--brand-strong);
+  border-color: rgba(120, 120, 120, 1);
+  color: #111111;
+}
+
+.tabActive {
+  background: rgba(120, 120, 120, 0.12);
+  border-color: rgba(120, 120, 120, 0.55);
+  color: #111111;
+}
+
+.tabCta {
+  background: var(--brand);
+  border-color: rgba(120, 120, 120, 0.9);
+  color: #111111;
+}
+
+.tabCta:hover {
+  background: var(--brand-strong);
+  border-color: rgba(120, 120, 120, 1);
+  color: #111111;
+}
+
+.iconTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  min-width: 48px;
+  padding: 0 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: var(--brand);
+  color: #111111;
+  text-decoration: none;
+  line-height: 1;
+  transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
+  position: relative;
+}
+
+.iconGlyph {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0);
+}
+
+/* Inline SVG icons inside iconTab buttons */
+.iconTab svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.iconTab:hover {
+  background: var(--brand-strong);
+  border-color: rgba(120, 120, 120, 1);
+}
+
+.iconTab:active {
+  transform: scale(0.97);
+}
+
+.iconTab[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  border: 1px solid rgba(120, 120, 120, 0.75);
+  background: #111111;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.iconTab[data-tip]:hover::after {
+  opacity: 1;
+}
+
+.notifBadge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #000000;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+[data-theme="day"] .notifBadge {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.msgUnreadBadge {
+  color: #ffffff !important;
+}
+
+[data-theme="day"] .msgUnreadBadge {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* ---------- Dropdown Visibility Fix (GLOBAL) ---------- */
+/* This fixes: dropdown options invisible unless hovered */
+select {
+  background-color: var(--brand);
+  color: #ffffff;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+select:focus {
+  outline: none;
+  border-color: rgba(120, 120, 120, 1);
+  box-shadow: 0 0 0 3px rgba(120, 120, 120, 0.25);
+}
+
+select option,
+select optgroup {
+  background-color: #787878;
+  color: #ffffff;
+}
+
+.msdWrap {
+  position: relative;
+}
+
+.msdTrigger {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: rgba(120, 120, 120, 0.14);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.msdTrigger:hover {
+  background: rgba(120, 120, 120, 0.24);
+}
+
+.msdValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msdChevron {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.msdMenu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  border: 1px solid rgba(120, 120, 120, 0.85);
+  background: #111111;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  max-height: 240px;
+  overflow: auto;
+}
+
+.msdItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  color: #ffe9e9;
+  font-size: 14px;
+}
+
+/* ---------- Pricing cards ---------- */
+.pricing-card {
+  transition: border-color 120ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.pricing-card:hover {
+  border-color: rgba(120, 120, 120, 0.85) !important;
+  box-shadow:
+    0 0 0 2px rgba(120, 120, 120, 0.35),
+    0 14px 38px rgba(120, 120, 120, 0.18);
+  transform: translateY(-2px);
+}
+
+.selectable-btn {
+  transition: border-color 120ms ease, box-shadow 150ms ease, transform 120ms ease, background 150ms ease;
+}
+
+.selectable-btn:hover,
+.selectable-btn:focus-visible {
+  border-color: rgba(120, 120, 120, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(120, 120, 120, 0.28);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* ---------- Chapter Editor (contenteditable) ---------- */
+.chapter-editor {
+  outline: none;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* Manuscript typography */
+  font-family: Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif;
+  font-size: 1.0625rem;        /* ~17px — comfortable reading size */
+  line-height: 1.65;
+  color: #e8e8e8;
+  width: 100%;
+}
+
+.chapter-editor p {
+  margin: 0;                   /* no gap — manuscript uses indent, not blank lines */
+  text-indent: 2.5em;
+  white-space: pre-wrap;       /* preserve Shift+Enter soft breaks */
+}
+
+/* No indent: first paragraph, post-scene-break paragraph, scene break itself */
+.chapter-editor p:first-child,
+.chapter-editor p[data-no-indent] {
+  text-indent: 0;
+}
+
+/* Scene break — centered, one blank line above and below */
+.chapter-editor p[data-scene-break] {
+  text-align: center;
+  text-indent: 0;
+  margin: 1.25em 0;
+  color: rgba(255, 160, 160, 0.55);
+  letter-spacing: 0.3em;
+}
+
+/* Placeholder when editor is completely empty */
+.chapter-editor:empty::before,
+.chapter-editor p[data-empty-placeholder]::before {
+  content: attr(data-placeholder);
+  color: rgba(115, 115, 115, 0.55);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DAY SHIFT THEME OVERRIDES
+   Applied when <html data-theme="day"> is set by ThemeToggle.
+   Accent: dark navy (#2f3545). Backgrounds: soft white/blue-gray. Text: near-black.
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="day"] {
+  --background: #d5d9e2;
+  --foreground: #101420;
+  --brand: #2f3545;
+  --brand-strong: #232938;
+  --brand-soft: rgba(47, 53, 69, 0.10);
+  --brand-border: rgba(47, 53, 69, 0.55);
+}
+
+[data-theme="day"] body {
+  background-color: #d5d9e2;
+  color: #101420;
+}
+
+/* ── Buttons & tabs → soft grey, darker than page bg, dark text ── */
+[data-theme="day"] button,
+[data-theme="day"] .tab,
+[data-theme="day"] .iconTab {
+  background: #cdd4e0 !important;
+  border-color: rgba(47, 53, 69, 0.28) !important;
+  color: #101420 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="day"] button:hover,
+[data-theme="day"] .tab:hover,
+[data-theme="day"] .iconTab:hover {
+  background: #b8c1d0 !important;
+  border-color: rgba(47, 53, 69, 0.45) !important;
+  color: #101420 !important;
+}
+
+/* ── White link-style buttons — match <a> appearance on both themes ── */
+button.btn-link-white {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+button.btn-link-white:hover {
+  background: #f5f5f5 !important;
+}
+
+/* ── Danger / success action buttons — base (dark/night mode) ── */
+button.btn-danger {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+button.btn-danger:hover {
+  background: #b91c1c !important;
+  border-color: #991b1b !important;
+  color: #ffffff !important;
+}
+button.btn-success {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+}
+button.btn-success:hover {
+  background: #15803d !important;
+  border-color: #166534 !important;
+  color: #ffffff !important;
+}
+
+/* ── Danger / success action buttons — override broad day-mode button reset ── */
+[data-theme="day"] button.btn-danger,
+[data-theme="day"] button.btn-danger:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+[data-theme="day"] button.btn-success,
+[data-theme="day"] button.btn-success:hover {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+}
+
+/* ── Friends panel button — white with black outline on all themes ── */
+[data-theme="day"] button.friends-panel-btn,
+[data-theme="day"] button.friends-panel-btn:hover {
+  background: #ffffff !important;
+  border-color: #000000 !important;
+  color: #000000 !important;
+}
+
+/* ── Chapter sidebar buttons — day shift ── */
+[data-theme="day"] .chapter-btn {
+  background: #ffffff !important;
+  border-color: #2f3545 !important;
+  color: #101420 !important;
+}
+
+[data-theme="day"] .chapter-btn span:not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]),
+[data-theme="day"] .chapter-btn p {
+  color: #101420 !important;
+}
+
+[data-theme="day"] .chapter-btn:hover {
+  background: #f0f3fa !important;
+  border-color: #2f3545 !important;
+  color: #0a0d16 !important;
+}
+
+[data-theme="day"] .chapter-btn.active-chapter {
+  background: #cdd4e0 !important;
+  border-color: rgba(47, 53, 69, 0.35) !important;
+  color: #101420 !important;
+}
+
+[data-theme="day"] .chapter-btn.active-chapter:hover {
+  background: #b8c1d0 !important;
+  border-color: rgba(47, 53, 69, 0.5) !important;
+}
+
+[data-theme="day"] .badge-violet {
+  background: rgba(109, 40, 217, 0.15) !important;
+  color: #4c1d95 !important;
+}
+
+[data-theme="day"] .tabActive {
+  background: #cdd4e0 !important;
+  border-color: rgba(47, 53, 69, 0.35) !important;
+  color: #101420 !important;
+}
+
+/* ── Select → light, crisp ── */
+[data-theme="day"] select {
+  background-color: #ffffff !important;
+  border-color: rgba(47, 53, 69, 0.22) !important;
+  color: #101420 !important;
+}
+
+[data-theme="day"] select option,
+[data-theme="day"] select optgroup {
+  background-color: #ffffff;
+  color: #101420;
+}
+
+/* ── Inputs & textareas ── */
+[data-theme="day"] input,
+[data-theme="day"] textarea {
+  background: #ffffff !important;
+  color: #101420 !important;
+  border-color: rgba(47, 53, 69, 0.22) !important;
+}
+
+[data-theme="day"] input:focus,
+[data-theme="day"] textarea:focus,
+[data-theme="day"] select:focus {
+  border-color: rgba(47, 53, 69, 0.55);
+  box-shadow: 0 0 0 3px rgba(47, 53, 69, 0.12);
+}
+
+[data-theme="day"] input::placeholder,
+[data-theme="day"] textarea::placeholder {
+  color: rgba(16, 20, 32, 0.45);
+}
+
+/* ── Navbar ── */
+[data-theme="day"] .navWrap {
+  background: #ffffff;
+  border-bottom-color: rgba(16, 20, 32, 0.08);
+}
+
+/* ── Dropdown menus ── */
+[data-theme="day"] .msdMenu {
+  background: #ffffff;
+  border-color: rgba(16, 20, 32, 0.1);
+  box-shadow: 0 10px 30px rgba(16, 20, 32, 0.12);
+}
+
+[data-theme="day"] .msdItem { color: #101420; }
+[data-theme="day"] .msdTrigger { color: #101420; }
+
+/* ── Tooltip ── */
+[data-theme="day"] .iconTab[data-tip]::after {
+  background: #ffffff;
+  color: #101420;
+  border-color: rgba(16, 20, 32, 0.14);
+}
+
+/* ── Profile banner ── */
+[data-theme="day"] .profile-banner-img { opacity: 1 !important; }
+
+/* ════════════════════════════════════════
+   PRICING PAGE
+   ════════════════════════════════════════ */
+.pricing-card {
+  border: 1px solid rgba(120, 120, 120, 0.55);
+  border-radius: 16px;
+  padding: 20px;
+  background: #232323;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  color: #ededed;
+}
+
+.pricing-banner {
+  border: 1px solid rgba(120, 120, 120, 0.55);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  background: #232323;
+  color: #ededed;
+}
+
+.pricing-banner--brand {
+  background: #232323;
+  border-color: rgba(120, 120, 120, 0.9);
+  color: #ededed;
+}
+
+.pricing-pill {
+  border: 1px solid rgba(120, 120, 120, 0.5);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: rgba(120, 120, 120, 0.25);
+  height: fit-content;
+  color: #e0e0e0;
+}
+
+.bloom-coin-icon,
+[data-theme="day"] .bloom-coin-icon,
+[data-theme="day"] .pricing-page .bloom-coin-icon {
+  color: #f5c518 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.pricing-details {
+  border: 1px solid rgba(120, 120, 120, 0.45);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #232323;
+  margin-bottom: 12px;
+  color: #ededed;
+}
+
+.pricing-btn {
+  display: block;
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: var(--brand);
+  color: #111111;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.pricing-btn:hover {
+  background: var(--brand-strong);
+}
+
+a.pricing-btn,
+a.pricing-btn:visited,
+a.pricing-btn:link {
+  display: block;
+  text-decoration: none;
+}
+
+/* ── Day mode: pricing ── */
+[data-theme="day"] .pricing-card {
+  border-color: #2f3545;
+  background: #ffffff;
+  color: #1a1f2b;
+  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
+}
+
+[data-theme="day"] .pricing-banner {
+  border-color: #2f3545;
+  background: #ffffff;
+  color: #1a1f2b;
+  box-shadow: 0 12px 28px rgba(16, 20, 32, 0.10);
+}
+
+[data-theme="day"] .pricing-banner--brand {
+  background: #ffffff;
+  border-color: #232938;
+  color: #1a1f2b;
+  box-shadow: none;
+}
+
+[data-theme="day"] .pricing-pill {
+  border-color: #2f3545;
+  background: #f0f3fa;
+  color: #1f2533;
+}
+
+[data-theme="day"] .pricing-details {
+  border-color: #2f3545;
+  background: #ffffff;
+  color: #1a1f2b;
+}
+
+[data-theme="day"] .pricing-btn {
+  border-color: #232938;
+  background: #2f3545;
+  color: #ffffff;
+}
+
+[data-theme="day"] .pricing-btn:hover {
+  background: #232938;
+}
+
+/* ── Chapter editor ── */
+[data-theme="day"] .chapter-editor { color: #1a1a1a; }
+
+[data-theme="day"] .chapter-editor p[data-scene-break] {
+  color: rgba(140, 40, 40, 0.55);
+}
+
+/* ── Tailwind neutral backgrounds (catches all opacity variants) ── */
+/* Hierarchy: page bg (#e4eaf4 grey) → primary cards (#ffffff white) → inner items (#eaeff8 light fill) → tertiary (#e2e8f2) */
+[data-theme="day"] [class*="bg-neutral-950"] { background-color: #e4eaf4 !important; }
+[data-theme="day"] [class*="bg-neutral-900"] { background-color: #eaeff8 !important; }
+[data-theme="day"] [class*="bg-neutral-800"] { background-color: #f0f4fb !important; }
+[data-theme="day"] [class*="bg-neutral-700"] { background-color: #e2e8f2 !important; }
+
+/* ── Arbitrary dark card / section backgrounds → white cards ── */
+[data-theme="day"] [class*="bg-[rgba(20,20,20"]    { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(18,18,18"]    { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(18,16,30"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(12,10,22"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(14,12,24"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(14,12,26"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(20,16,36"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(21,15,42"]  { background-color: #f0f4fb !important; }
+[data-theme="day"] [class*="bg-[rgba(10,8,20"]   { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[#1b1438"]        { background-color: #f0f4fb !important; }
+[data-theme="day"] [class*="bg-[#111111"]        { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[radial-gradient(circle_at_top"] { background: radial-gradient(circle at top, rgba(47,53,69,0.07), transparent 52%), #e4eaf4 !important; }
+[data-theme="day"] [class*="bg-[radial-gradient(circle_at_30%"] { background: radial-gradient(circle at 30% 20%, rgba(47,53,69,0.06), #e8edf6) !important; }
+
+/* ── Semi-transparent gray card fills → white ── */
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.05"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.06"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.08"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.1"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.12"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.14"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.15"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.18"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.2"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.24"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.25"] { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.3"]  { background-color: #ffffff !important; }
+[data-theme="day"] [class*="bg-[rgba(120,120,120,0.32"] { background-color: #ffffff !important; }
+
+/* ── Brand soft overlay backgrounds → red-tinted ── */
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.07"] { background-color: rgba(47,53,69,0.06) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.08"] { background-color: rgba(47,53,69,0.07) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.12"] { background-color: rgba(47,53,69,0.09) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.14"] { background-color: rgba(47,53,69,0.10) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.16"] { background-color: rgba(47,53,69,0.12) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.1"]  { background-color: rgba(47,53,69,0.08) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.2"]  { background-color: rgba(47,53,69,0.14) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.3"]  { background-color: rgba(47,53,69,0.2) !important; }
+
+/* ── White & light text → dark gray ── */
+[data-theme="day"] .text-white         { color: #1a1a1a !important; }
+
+/* ── Tailwind neutral text ── */
+[data-theme="day"] .text-neutral-50   { color: #1a1a1a !important; }
+[data-theme="day"] .text-neutral-100  { color: #1a1a1a !important; }
+[data-theme="day"] .text-neutral-200  { color: #2a2a2a !important; }
+[data-theme="day"] .text-neutral-300  { color: #3d3d3d !important; }
+[data-theme="day"] .text-neutral-400  { color: #3a3f4a !important; }
+[data-theme="day"] .text-neutral-500  { color: #2f3542 !important; }
+[data-theme="day"] .text-neutral-600  { color: #263040 !important; }
+
+/* ── Arbitrary light / red-tinted text → dark gray ── */
+[data-theme="day"] [class*="text-[#e9"]              { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[#ea"]              { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[#ededed"]          { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[#ffe"]             { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[rgba(210,210,210"] { color: #2a2a2a !important; }
+[data-theme="day"] .help-admin-emails a             { color: #5a6782 !important; }
+
+/* ── Beta reader cards ── */
+[data-theme="day"] .beta-reader-card { background: #ffffff !important; border-color: #c4cedd !important; }
+[data-theme="day"] [class*="text-[#ffcccc]"] { color: #e07070 !important; }
+[data-theme="day"] .beta-reader-card [class*="text-[#787878]"] { color: #5a6782 !important; }
+
+/* ── Beta reader level badge text — darken for day mode ── */
+[data-theme="day"] [class*="text-[#60a5fa]"] { color: #1d4ed8 !important; }
+[data-theme="day"] [class*="text-[#f5c518]"] { color: #92400e !important; }
+[data-theme="day"] [class*="text-[#f87171]"] { color: #b91c1c !important; }
+
+/* ── Hex grey brand backgrounds (used on <Link> CTA buttons) ── */
+[data-theme="day"] [class*="bg-[#787878]"]  { background-color: #cdd4e0 !important; border-color: rgba(47,53,69,0.28) !important; color: #101420 !important; }
+[data-theme="day"] [class*="bg-[#606060]"]  { background-color: #b8c1d0 !important; }
+[data-theme="day"] [class*="hover:bg-[#606060]"]:hover { background-color: #b8c1d0 !important; }
+
+/* ── Inline feedback popup ── */
+.feedback-inline-popup                    { background: #888888; color: #000000; }
+[data-theme="day"] .feedback-inline-popup { background: #f4f6fb; color: #0b0d13; }
+.feedback-inline-popup *                  { color: #000000 !important; }
+
+[data-theme="day"] [class*="text-[rgba(255,210,210"] { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[rgba(255,220,220"] { color: #2a2a2a !important; }
+[data-theme="day"] [class*="text-[rgba(201,187,255"] { color: #2a2a2a !important; }
+[data-theme="day"] [class*="text-[rgba(230,223,255"] { color: #1a1a1a !important; }
+[data-theme="day"] [class*="text-[rgba(240,232,255"] { color: #2a2a2a !important; }
+[data-theme="day"] [class*="text-[rgba(124,92,255"]  { color: #787878 !important; }
+
+/* ── Pricing page — override all inline light text ── */
+[data-theme="day"] .pricing-page h1,
+[data-theme="day"] .pricing-page h2,
+[data-theme="day"] .pricing-page h3,
+[data-theme="day"] .pricing-page p,
+[data-theme="day"] .pricing-page div,
+[data-theme="day"] .pricing-page span,
+[data-theme="day"] .pricing-page details,
+[data-theme="day"] .pricing-page summary,
+[data-theme="day"] .pricing-page li      { color: #1a1a1a !important; }
+/* Keep button and pricing link text white */
+[data-theme="day"] .pricing-page button,
+[data-theme="day"] .pricing-page a.pricing-btn,
+[data-theme="day"] .pricing-page a.pricing-btn:visited,
+[data-theme="day"] .pricing-page a.selectable-btn { color: #ffffff !important; }
+
+/* ── Pricing card inline color override ── */
+[data-theme="day"] .pricing-card { color: #1a1a1a !important; }
+
+/* ── Bloom coin flower icon — always gold ── */
+[data-theme="day"] .pricing-page span.bloom-coin-icon { color: #f5c518 !important; }
+
+/* ── Go to Wallet button ── */
+.wallet-btn {
+  display: block;
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 120, 120, 0.9);
+  background: #787878;
+  color: #111111;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.wallet-btn:hover { background: #606060; }
+
+[data-theme="day"] .wallet-btn {
+  background: #ffffff;
+  color: #111111;
+  border-color: rgba(120, 120, 120, 0.5);
+}
+[data-theme="day"] .wallet-btn:hover { background: #f0f0f0; }
+
+
+/* ── Notification Unread/Read tab buttons — white in day mode ── */
+[data-theme="day"] .notif-tab { background: #ffffff !important; color: #1a1a1a !important; border-color: rgba(47,53,69,0.2) !important; }
+[data-theme="day"] .notif-tab:hover { background: #f0f3fa !important; border-color: rgba(47,53,69,0.35) !important; color: #1a1a1a !important; }
+
+/* ── Purple-violet (rgba 168,85,247) used in Pro card → red ── */
+[data-theme="day"] [class*="border-[rgba(168,85,247"] { border-color: rgba(120,120,120,0.4) !important; }
+
+/* ── Inner row borders → transparent (outer card borders use rgba rules) ── */
+/* Buttons keep a visible border even though their class says border-neutral-700/800 */
+[data-theme="day"] button[class*="border-neutral-700"],
+[data-theme="day"] button[class*="border-neutral-800"] { border-color: rgba(47, 53, 69, 0.28) !important; }
+[data-theme="day"] [class*="border-neutral-700"]:not(button) { border-color: transparent !important; }
+[data-theme="day"] [class*="border-neutral-800"]:not(button) { border-color: transparent !important; }
+
+/* ── Notification cards — prevent long words from overflowing ── */
+.notification-item { overflow: hidden; }
+.notification-item p, .notification-item span { overflow-wrap: break-word; word-break: break-word; }
+
+/* ── Notification cards — must come after neutral-800 rule to win specificity fight ── */
+[data-theme="day"] li.notification-item[class] {
+  border-color: #2f3545 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
+}
+
+/* ── Parent disable modal note emphasis — white in night, black in day ── */
+.parent-note-emphasis { color: #ffffff !important; }
+[data-theme="day"] .parent-note-emphasis { color: #000000 !important; }
+
+/* ── Follow / Friend button: suppress red-900 hover outline in day mode ── */
+[data-theme="day"] [class*="hover:border-red-900"]:hover { border-color: rgba(47, 53, 69, 0.45) !important; }
+[data-theme="day"] [class*="hover:bg-red-950"]:hover     { background-color: #b8c1d0 !important; }
+[data-theme="day"] [class*="hover:text-red-400"]:hover   { color: #101420 !important; }
+[data-theme="day"] [class*="border-[rgba(124,92,255"] { border-color: rgba(47,53,69,0.55) !important; }
+[data-theme="day"] [class*="border-[rgba(120,120,120"] { border-color: #2f3545 !important; }
+
+/* ── Amber (pending / warning) states ── */
+[data-theme="day"] [class*="bg-amber-500"]   { background-color: rgba(245,158,11,0.09) !important; }
+[data-theme="day"] [class*="bg-amber-950"]   { background-color: rgba(245,158,11,0.07) !important; }
+[data-theme="day"] [class*="border-amber-500"] { border-color: rgba(217,119,6,0.45) !important; }
+[data-theme="day"] [class*="border-amber-700"] { border-color: rgba(217,119,6,0.4) !important; }
+[data-theme="day"] .text-amber-200           { color: #b45309 !important; }
+[data-theme="day"] .text-amber-300           { color: #92400e !important; }
+[data-theme="day"] .text-amber-400           { color: #b45309 !important; }
+
+/* ── Emerald (success / accepted) states ── */
+[data-theme="day"] [class*="bg-emerald-950"] { background-color: rgba(16,185,129,0.07) !important; }
+[data-theme="day"] [class*="border-emerald-700"] { border-color: rgba(5,150,105,0.45) !important; }
+[data-theme="day"] .text-emerald-200         { color: #16a34a !important; }
+[data-theme="day"] .text-emerald-400         { color: #047857 !important; }
+[data-theme="day"] .text-emerald-300         { color: #047857 !important; }
+
+/* ── Account danger zone card ── */
+.danger-zone-card {
+  background-color: rgba(185, 28, 28, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+}
+[data-theme="day"] div.danger-zone-card {
+  background-color: #b91c1c !important;
+  border: 2px solid #991b1b !important;
+}
+
+/* ── Red (danger / blocked) states ── */
+[data-theme="day"] [class*="bg-red-950"]     { background-color: rgba(239,68,68,0.06) !important; }
+[data-theme="day"] [class*="border-red-900"] { border-color: rgba(185,28,28,0.25) !important; }
+[data-theme="day"] [class*="border-red-700"] { border-color: rgba(185,28,28,0.35) !important; }
+[data-theme="day"] .text-red-300             { color: #b91c1c !important; }
+[data-theme="day"] [class*="text-red-900"]   { color: #991b1b !important; }
+
+/* ── Box shadows — soften for day mode ── */
+[data-theme="day"] [class*="shadow-[0_24px_60px_rgba(0,0,0"] { box-shadow: 0 8px 28px rgba(60,80,120,0.13) !important; }
+[data-theme="day"] [class*="shadow-[0_20px_46px_rgba(0,0,0"] { box-shadow: 0 6px 20px rgba(60,80,120,0.11) !important; }
+[data-theme="day"] [class*="shadow-[0_16px_38px_rgba(0,0,0"] { box-shadow: 0 4px 16px rgba(60,80,120,0.10) !important; }
+[data-theme="day"] [class*="shadow-[0_12px_34px_rgba(0,0,0"] { box-shadow: 0 4px 14px rgba(60,80,120,0.10) !important; }
+[data-theme="day"] [class*="shadow-[0_8px_24px_rgba(0,0,0"]  { box-shadow: 0 3px 12px rgba(60,80,120,0.09) !important; }
+
+/* ── Purple arbitrary shadows → red ── */
+[data-theme="day"] [class*="shadow-[rgba(124,92,255"] {
+  box-shadow: 0 20px 25px -5px rgba(47,53,69,0.22), 0 8px 10px -6px rgba(47,53,69,0.14) !important;
+}
+
+/* ─────────────────────────────────────── */
+
+/* ── Section card: dark grey in night mode, light in day mode ── */
+.section-card {
+  background: #232323;
+}
+[data-theme="day"] .section-card {
+  background: #ffffff;
+  border-color: #2f3545;
+  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
+  color: #1a1f2b;
+}
+
+/* ── Community upload carousel marquee ── */
+@keyframes upload-carousel-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ---------- Mobile Navbar ---------- */
+@media (max-width: 900px) {
+  .navInner {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .brand {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tabs {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .navRight {
+    width: 100%;
+    justify-content: center;
+  }
+}

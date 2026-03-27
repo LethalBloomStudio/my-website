@@ -1,0 +1,1413 @@
+
+> lethal-bloom-studio@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.84:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1292ms
+[PROXY] GET /profile
+ GET /profile 200 in 1174ms (compile: 223ms, proxy.ts: 417ms, render: 534ms)
+[PROXY] GET /profile
+ GET /profile 200 in 572ms (compile: 4ms, proxy.ts: 207ms, render: 361ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 243ms (compile: 50ms, proxy.ts: 176ms, render: 17ms)
+[PROXY] GET /profile
+ GET /profile 200 in 500ms (compile: 3ms, proxy.ts: 181ms, render: 315ms)
+✓ Compiled in 466ms
+✓ Compiled in 62ms
+[PROXY] GET /profile
+✓ Compiled in 118ms
+[PROXY] GET /profile
+ GET /profile 200 in 321ms (compile: 60ms, proxy.ts: 196ms, render: 65ms)
+ GET /profile 200 in 134ms (compile: 4ms, proxy.ts: 89ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 525ms (compile: 3ms, proxy.ts: 176ms, render: 346ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 172ms (compile: 50ms, proxy.ts: 108ms, render: 14ms)
+✓ Compiled in 38ms
+[PROXY] GET /messages
+ GET /messages 200 in 664ms (compile: 438ms, proxy.ts: 203ms, render: 23ms)
+[PROXY] GET /profile
+ GET /profile 200 in 508ms (compile: 43ms, proxy.ts: 174ms, render: 290ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 248ms (compile: 32ms, proxy.ts: 203ms, render: 13ms)
+[PROXY] GET /
+ GET / 200 in 239ms (compile: 43ms, proxy.ts: 179ms, render: 17ms)
+[PROXY] GET /profile
+ GET /profile 200 in 456ms (compile: 3ms, proxy.ts: 98ms, render: 355ms)
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 392ms (compile: 48ms, proxy.ts: 276ms, render: 67ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 84ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 4ms, proxy.ts: 80ms, render: 57ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 64ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 4ms, proxy.ts: 67ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 5ms, proxy.ts: 71ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 4ms, proxy.ts: 91ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 5ms, proxy.ts: 74ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 84ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 74ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 154ms (compile: 4ms, proxy.ts: 111ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 69ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 4ms, proxy.ts: 79ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 75ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 68ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 74ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 148ms (compile: 4ms, proxy.ts: 86ms, render: 58ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 77ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 4ms, proxy.ts: 75ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 78ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 201ms (compile: 4ms, proxy.ts: 153ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 81ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 72ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 70ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 65ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 81ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 79ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 70ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 3ms, proxy.ts: 81ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 4ms, proxy.ts: 80ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 89ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 74ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 4ms, proxy.ts: 80ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 83ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 79ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 72ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 74ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 4ms, proxy.ts: 77ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 4ms, proxy.ts: 74ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 142ms (compile: 7ms, proxy.ts: 82ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 64ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 65ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 84ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 66ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 71ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 71ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 4ms, proxy.ts: 64ms, render: 38ms)
+ GET /profile 200 in 106ms (compile: 4ms, proxy.ts: 67ms, render: 35ms)
+[PROXY] GET /profile
+✓ Compiled in 81ms
+[PROXY] GET /profile
+ GET /profile 200 in 377ms (compile: 42ms, proxy.ts: 252ms, render: 83ms)
+[PROXY] GET /profile
+ GET /profile 200 in 158ms (compile: 3ms, proxy.ts: 110ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 148ms (compile: 4ms, proxy.ts: 94ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 79ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 80ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 3ms, proxy.ts: 77ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 76ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 74ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 69ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 76ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 79ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 71ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 72ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 81ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 84ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 147ms (compile: 3ms, proxy.ts: 107ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 3ms, proxy.ts: 99ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 152ms (compile: 4ms, proxy.ts: 105ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 4ms, proxy.ts: 94ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 3ms, proxy.ts: 89ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 73ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 135ms (compile: 3ms, proxy.ts: 85ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 4ms, proxy.ts: 83ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 72ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 80ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 89ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 148ms (compile: 3ms, proxy.ts: 108ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 3ms, proxy.ts: 85ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 4ms, proxy.ts: 72ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 135ms (compile: 3ms, proxy.ts: 90ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 79ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 70ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 4ms, proxy.ts: 81ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 77ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 75ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 88ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 80ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 3ms, proxy.ts: 85ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 4ms, proxy.ts: 102ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 73ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 74ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 4ms, proxy.ts: 67ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 78ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 5ms, proxy.ts: 69ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 72ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 84ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 68ms, render: 37ms)
+ GET /profile 200 in 103ms (compile: 3ms, proxy.ts: 67ms, render: 33ms)
+[PROXY] GET /wallet
+ GET /wallet 200 in 450ms (compile: 71ms, proxy.ts: 175ms, render: 204ms)
+[PROXY] GET /profile
+ GET /profile 200 in 329ms (compile: 3ms, proxy.ts: 80ms, render: 247ms)
+✓ Compiled in 55ms
+✓ Compiled in 58ms
+[PROXY] GET /profile
+ GET /profile 200 in 625ms (compile: 5ms, proxy.ts: 231ms, render: 390ms)
+[PROXY] GET /profile
+✓ Compiled in 37ms
+[PROXY] GET /profile
+ GET /profile 200 in 373ms (compile: 84ms, proxy.ts: 211ms, render: 78ms)
+[PROXY] GET /profile
+ GET /profile 200 in 162ms (compile: 4ms, proxy.ts: 115ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 149ms (compile: 4ms, proxy.ts: 99ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 75ms, render: 42ms)
+ GET /profile 200 in 118ms (compile: 4ms, proxy.ts: 71ms, render: 44ms)
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 379ms (compile: 101ms, proxy.ts: 147ms, render: 131ms)
+[PROXY] GET /profile
+ GET /profile 200 in 158ms (compile: 5ms, proxy.ts: 85ms, render: 68ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 72ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 72ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 5ms, proxy.ts: 71ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 4ms, proxy.ts: 66ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 73ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 73ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 75ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 4ms, proxy.ts: 76ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 4ms, proxy.ts: 79ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 70ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 4ms, proxy.ts: 76ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 85ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 80ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 81ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 70ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 4ms, proxy.ts: 87ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 3ms, proxy.ts: 83ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 75ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 4ms, proxy.ts: 73ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 75ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 66ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 71ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 4ms, proxy.ts: 70ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 71ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 71ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 67ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 3ms, proxy.ts: 86ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 4ms, proxy.ts: 70ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 70ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 65ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 67ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 70ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 73ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 4ms, proxy.ts: 78ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 67ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 82ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 157ms (compile: 4ms, proxy.ts: 101ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 74ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 66ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 3ms, proxy.ts: 70ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 79ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 4ms, proxy.ts: 77ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 72ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 72ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 151ms (compile: 3ms, proxy.ts: 88ms, render: 60ms)
+ GET /profile 200 in 130ms (compile: 5ms, proxy.ts: 69ms, render: 55ms)
+[PROXY] GET /profile
+✓ Compiled in 99ms
+[PROXY] GET /profile
+ GET /profile 200 in 537ms (compile: 98ms, proxy.ts: 333ms, render: 105ms)
+[PROXY] GET /profile
+ GET /profile 200 in 166ms (compile: 4ms, proxy.ts: 85ms, render: 77ms)
+[PROXY] GET /profile
+ GET /profile 200 in 159ms (compile: 4ms, proxy.ts: 78ms, render: 77ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 78ms, render: 50ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 4ms, proxy.ts: 71ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 69ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 81ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 4ms, proxy.ts: 87ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 75ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 67ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 78ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 68ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 66ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 3ms, proxy.ts: 87ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 4ms, proxy.ts: 65ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 4ms, proxy.ts: 71ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 105ms (compile: 4ms, proxy.ts: 60ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 144ms (compile: 3ms, proxy.ts: 72ms, render: 69ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 4ms, proxy.ts: 69ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 88ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 4ms, proxy.ts: 82ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 72ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 75ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 3ms, proxy.ts: 70ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 211ms (compile: 4ms, proxy.ts: 68ms, render: 139ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 70ms, render: 58ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 78ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 3ms, proxy.ts: 63ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 153ms (compile: 3ms, proxy.ts: 112ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 4ms, proxy.ts: 59ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 68ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 63ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 4ms, proxy.ts: 72ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 63ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 72ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 68ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 152ms (compile: 5ms, proxy.ts: 103ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 74ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 67ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 63ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 73ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 69ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 5ms, proxy.ts: 72ms, render: 59ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 65ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 67ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 85ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 6ms, proxy.ts: 76ms, render: 45ms)
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 70ms, render: 39ms)
+[PROXY] GET /profile
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 772ms (compile: 81ms, proxy.ts: 316ms, render: 375ms)
+ GET /profile 200 in 373ms (compile: 9ms, proxy.ts: 177ms, render: 187ms)
+[PROXY] GET /profile
+ GET /profile 200 in 219ms (compile: 4ms, proxy.ts: 159ms, render: 57ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 94ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 138ms (compile: 3ms, proxy.ts: 86ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 65ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 82ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 105ms (compile: 3ms, proxy.ts: 65ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 66ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 4ms, proxy.ts: 68ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 69ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 3ms, proxy.ts: 84ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 105ms (compile: 3ms, proxy.ts: 65ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 67ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 4ms, proxy.ts: 74ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 73ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 84ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 77ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 3ms, proxy.ts: 76ms, render: 50ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 4ms, proxy.ts: 72ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 88ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 64ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 71ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 4ms, proxy.ts: 67ms, render: 59ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 73ms, render: 50ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 67ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 5ms, proxy.ts: 68ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 80ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 165ms (compile: 5ms, proxy.ts: 99ms, render: 61ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 4ms, proxy.ts: 70ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 73ms, render: 56ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 4ms, proxy.ts: 69ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 145ms (compile: 4ms, proxy.ts: 69ms, render: 72ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 5ms, proxy.ts: 66ms, render: 55ms)
+[PROXY] GET /profile
+ GET /profile 200 in 162ms (compile: 6ms, proxy.ts: 83ms, render: 73ms)
+[PROXY] GET /profile
+ GET /profile 200 in 190ms (compile: 4ms, proxy.ts: 133ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 72ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 70ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 103ms (compile: 3ms, proxy.ts: 62ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 69ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 4ms, proxy.ts: 68ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 5ms, proxy.ts: 76ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 195ms (compile: 11ms, proxy.ts: 114ms, render: 69ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 4ms, proxy.ts: 76ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 173ms (compile: 4ms, proxy.ts: 86ms, render: 82ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 6ms, proxy.ts: 86ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 4ms, proxy.ts: 78ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 177ms (compile: 21ms, proxy.ts: 97ms, render: 60ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 73ms, render: 53ms)
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 95ms, render: 45ms)
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 448ms (compile: 75ms, proxy.ts: 257ms, render: 116ms)
+[PROXY] GET /profile
+ GET /profile 200 in 158ms (compile: 4ms, proxy.ts: 103ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 85ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 88ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 72ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 161ms (compile: 3ms, proxy.ts: 115ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 73ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 150ms (compile: 4ms, proxy.ts: 110ms, render: 36ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 76ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 3ms, proxy.ts: 80ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 87ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 70ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 82ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 85ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 146ms (compile: 3ms, proxy.ts: 93ms, render: 50ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 92ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 84ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 81ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 4ms, proxy.ts: 78ms, render: 58ms)
+[PROXY] GET /profile
+ GET /profile 200 in 138ms (compile: 3ms, proxy.ts: 92ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 81ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 152ms (compile: 4ms, proxy.ts: 85ms, render: 63ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 7ms, proxy.ts: 75ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 4ms, proxy.ts: 72ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 87ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 100ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 79ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 69ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 138ms (compile: 14ms, proxy.ts: 87ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 3ms, proxy.ts: 82ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 105ms (compile: 3ms, proxy.ts: 67ms, render: 35ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 3ms, proxy.ts: 82ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 76ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 89ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 4ms, proxy.ts: 69ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 66ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 3ms, proxy.ts: 94ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 70ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 3ms, proxy.ts: 84ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 81ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 86ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 79ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 160ms (compile: 4ms, proxy.ts: 114ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 142ms (compile: 3ms, proxy.ts: 100ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 86ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 77ms, render: 36ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 80ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 75ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 72ms, render: 36ms)
+ GET /profile 200 in 104ms (compile: 3ms, proxy.ts: 69ms, render: 32ms)
+[PROXY] GET /profile
+✓ Compiled in 65ms
+[PROXY] GET /profile
+ GET /profile 200 in 445ms (compile: 83ms, proxy.ts: 276ms, render: 86ms)
+[PROXY] GET /profile
+ GET /profile 200 in 146ms (compile: 5ms, proxy.ts: 81ms, render: 60ms)
+[PROXY] GET /profile
+ GET /profile 200 in 166ms (compile: 4ms, proxy.ts: 117ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 182ms (compile: 4ms, proxy.ts: 125ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 152ms (compile: 3ms, proxy.ts: 106ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 3ms, proxy.ts: 82ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 3ms, proxy.ts: 97ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 150ms (compile: 3ms, proxy.ts: 106ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 67ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 67ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 73ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 174ms (compile: 4ms, proxy.ts: 130ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 15ms, proxy.ts: 81ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 117ms (compile: 3ms, proxy.ts: 72ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 4ms, proxy.ts: 70ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 68ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 231ms (compile: 10ms, proxy.ts: 186ms, render: 35ms)
+[PROXY] GET /profile
+ GET /profile 200 in 105ms (compile: 3ms, proxy.ts: 65ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 4ms, proxy.ts: 86ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 417ms (compile: 3ms, proxy.ts: 365ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 88ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 144ms (compile: 4ms, proxy.ts: 102ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 72ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 78ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 3ms, proxy.ts: 82ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 142ms (compile: 3ms, proxy.ts: 102ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 74ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 73ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 162ms (compile: 3ms, proxy.ts: 121ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 65ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 4ms, proxy.ts: 88ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 73ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 3ms, proxy.ts: 68ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 72ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 74ms, render: 36ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 67ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 175ms (compile: 3ms, proxy.ts: 129ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 66ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 83ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 87ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 70ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 79ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 69ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 72ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 3ms, proxy.ts: 65ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 77ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 74ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 137ms (compile: 4ms, proxy.ts: 94ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 166ms (compile: 3ms, proxy.ts: 127ms, render: 36ms)
+ GET /profile 200 in 164ms (compile: 3ms, proxy.ts: 129ms, render: 32ms)
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 489ms (compile: 81ms, proxy.ts: 325ms, render: 83ms)
+[PROXY] GET /profile
+ GET /profile 200 in 164ms (compile: 4ms, proxy.ts: 108ms, render: 52ms)
+[PROXY] GET /profile
+ GET /profile 200 in 137ms (compile: 3ms, proxy.ts: 84ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 154ms (compile: 4ms, proxy.ts: 97ms, render: 54ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 4ms, proxy.ts: 98ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 137ms (compile: 3ms, proxy.ts: 86ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 88ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 81ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 80ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 166ms (compile: 3ms, proxy.ts: 99ms, render: 63ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 92ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 137ms (compile: 4ms, proxy.ts: 87ms, render: 47ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 89ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 3ms, proxy.ts: 82ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 74ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 141ms (compile: 4ms, proxy.ts: 95ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 99ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 154ms (compile: 4ms, proxy.ts: 88ms, render: 62ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 95ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 76ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 91ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 3ms, proxy.ts: 80ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 151ms (compile: 3ms, proxy.ts: 107ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 4ms, proxy.ts: 74ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 123ms (compile: 4ms, proxy.ts: 81ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 129ms (compile: 3ms, proxy.ts: 83ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 579ms (compile: 3ms, proxy.ts: 542ms, render: 34ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 102ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 148ms (compile: 5ms, proxy.ts: 81ms, render: 62ms)
+[PROXY] GET /profile
+ GET /profile 200 in 146ms (compile: 4ms, proxy.ts: 80ms, render: 62ms)
+[PROXY] GET /profile
+ GET /profile 200 in 159ms (compile: 3ms, proxy.ts: 116ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 79ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 94ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 80ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 139ms (compile: 3ms, proxy.ts: 95ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 82ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 71ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 136ms (compile: 3ms, proxy.ts: 93ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 127ms (compile: 3ms, proxy.ts: 85ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 143ms (compile: 3ms, proxy.ts: 98ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 265ms (compile: 3ms, proxy.ts: 226ms, render: 36ms)
+[PROXY] GET /profile
+ GET /profile 200 in 138ms (compile: 4ms, proxy.ts: 93ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 145ms (compile: 3ms, proxy.ts: 88ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 3ms, proxy.ts: 100ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 89ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 79ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 80ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 131ms (compile: 3ms, proxy.ts: 86ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 83ms, render: 39ms)
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 74ms, render: 33ms)
+✓ Compiled in 90ms
+[PROXY] GET /profile
+[PROXY] GET /profile
+ GET /profile 200 in 426ms (compile: 95ms, proxy.ts: 243ms, render: 88ms)
+[PROXY] GET /profile
+ GET /profile 200 in 166ms (compile: 5ms, proxy.ts: 100ms, render: 60ms)
+[PROXY] GET /profile
+ GET /profile 200 in 133ms (compile: 4ms, proxy.ts: 77ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 120ms (compile: 3ms, proxy.ts: 71ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 64ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 116ms (compile: 3ms, proxy.ts: 67ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 65ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 67ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 81ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 126ms (compile: 3ms, proxy.ts: 78ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 78ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 75ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 78ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 84ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 77ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 80ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 140ms (compile: 10ms, proxy.ts: 79ms, render: 51ms)
+[PROXY] GET /profile
+ GET /profile 200 in 119ms (compile: 3ms, proxy.ts: 76ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 287ms (compile: 3ms, proxy.ts: 243ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 181ms (compile: 4ms, proxy.ts: 132ms, render: 46ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 4ms, proxy.ts: 68ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 110ms (compile: 3ms, proxy.ts: 69ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 107ms (compile: 3ms, proxy.ts: 66ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 112ms (compile: 3ms, proxy.ts: 64ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 4ms, proxy.ts: 65ms, render: 55ms)
+[PROXY] GET /profile
+ GET /profile 200 in 125ms (compile: 4ms, proxy.ts: 68ms, render: 53ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 3ms, proxy.ts: 63ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 122ms (compile: 3ms, proxy.ts: 70ms, render: 49ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 64ms, render: 44ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 82ms, render: 43ms)
+[PROXY] GET /profile
+ GET /profile 200 in 113ms (compile: 3ms, proxy.ts: 68ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 108ms (compile: 4ms, proxy.ts: 58ms, render: 45ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 3ms, proxy.ts: 66ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 68ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 114ms (compile: 3ms, proxy.ts: 74ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 128ms (compile: 3ms, proxy.ts: 74ms, render: 50ms)
+[PROXY] GET /profile
+ GET /profile 200 in 183ms (compile: 6ms, proxy.ts: 63ms, render: 115ms)
+[PROXY] GET /profile
+ GET /profile 200 in 111ms (compile: 3ms, proxy.ts: 67ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 109ms (compile: 3ms, proxy.ts: 69ms, render: 37ms)
+[PROXY] GET /profile
+ GET /profile 200 in 103ms (compile: 3ms, proxy.ts: 59ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 82ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 4ms, proxy.ts: 69ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 118ms (compile: 3ms, proxy.ts: 73ms, render: 41ms)
+[PROXY] GET /profile
+ GET /profile 200 in 121ms (compile: 3ms, proxy.ts: 79ms, render: 39ms)
+[PROXY] GET /profile
+ GET /profile 200 in 130ms (compile: 3ms, proxy.ts: 85ms, render: 42ms)
+[PROXY] GET /profile
+ GET /profile 200 in 124ms (compile: 3ms, proxy.ts: 73ms, render: 48ms)
+[PROXY] GET /profile
+ GET /profile 200 in 115ms (compile: 3ms, proxy.ts: 71ms, render: 40ms)
+[PROXY] GET /profile
+ GET /profile 200 in 379ms (compile: 3ms, proxy.ts: 338ms, render: 38ms)
+[PROXY] GET /profile
+ GET /profile 200 in 106ms (compile: 3ms, proxy.ts: 67ms, render: 36ms)
+ GET /profile 200 in 132ms (compile: 3ms, proxy.ts: 95ms, render: 35ms)
+✓ Compiled in 49ms
+✓ Compiled in 42ms
+[PROXY] GET /profile
+✓ Compiled in 181ms
+[PROXY] GET /profile
+ GET /profile 200 in 370ms (compile: 112ms, proxy.ts: 181ms, render: 77ms)
+[PROXY] GET /profile
+ GET /profile 200 in 144ms (compile: 3ms, proxy.ts: 81ms, render: 60ms)
+[PROXY] GET /profile
+ GET /profile 200 in 134ms (compile: 4ms, proxy.ts: 64ms, render: 66ms)
+[PROXY] GET /profile
+ GET /profile 200 in 260ms (compile: 11ms, proxy.ts: 102ms, render: 147ms)
+ GET /profile 200 in 120ms (compile: 4ms, proxy.ts: 71ms, render: 45ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 312ms (compile: 86ms, proxy.ts: 212ms, render: 15ms)
+[PROXY] GET /manuscripts
+✓ Compiled in 37ms
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 253ms (compile: 55ms, proxy.ts: 164ms, render: 34ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 113ms (compile: 3ms, proxy.ts: 90ms, render: 20ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 142ms (compile: 3ms, proxy.ts: 114ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 123ms (compile: 3ms, proxy.ts: 98ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 103ms (compile: 3ms, proxy.ts: 72ms, render: 28ms)
+ GET /manuscripts 200 in 93ms (compile: 3ms, proxy.ts: 72ms, render: 18ms)
+[PROXY] GET /profile
+ GET /profile 200 in 669ms (compile: 81ms, proxy.ts: 222ms, render: 365ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 202ms (compile: 4ms, proxy.ts: 184ms, render: 15ms)
+[PROXY] GET /discover
+ GET /discover 200 in 472ms (compile: 330ms, proxy.ts: 106ms, render: 36ms)
+[PROXY] GET /profile
+ GET /profile 200 in 716ms (compile: 3ms, proxy.ts: 266ms, render: 447ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 788ms (compile: 129ms, proxy.ts: 173ms, render: 485ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 708ms (compile: 4ms, proxy.ts: 202ms, render: 502ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 548ms (compile: 5ms, proxy.ts: 185ms, render: 357ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 283ms (compile: 79ms, proxy.ts: 178ms, render: 26ms)
+[PROXY] GET /wallet
+ GET /wallet 200 in 433ms (compile: 95ms, proxy.ts: 110ms, render: 228ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 94ms (compile: 3ms, proxy.ts: 71ms, render: 20ms)
+[PROXY] GET /profile
+ GET /profile 200 in 461ms (compile: 4ms, proxy.ts: 166ms, render: 291ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 261ms (compile: 3ms, proxy.ts: 245ms, render: 14ms)
+[PROXY] GET /messages
+ GET /messages 200 in 282ms (compile: 66ms, proxy.ts: 192ms, render: 25ms)
+✓ Compiled in 74ms
+[PROXY] GET /messages
+✓ Compiled in 36ms
+[PROXY] GET /api/messages/status
+ GET /messages 200 in 296ms (compile: 75ms, proxy.ts: 189ms, render: 33ms)
+ GET /api/messages/status 200 in 1201ms (compile: 749ms, proxy.ts: 259ms, render: 192ms)
+✓ Compiled in 39ms
+[PROXY] GET /
+ GET / 200 in 309ms (compile: 73ms, proxy.ts: 212ms, render: 25ms)
+[PROXY] GET /pricing
+ GET /pricing 200 in 161ms (compile: 63ms, proxy.ts: 78ms, render: 21ms)
+[PROXY] GET /help
+ GET /help 404 in 203ms (compile: 98ms, proxy.ts: 86ms, render: 19ms)
+[PROXY] GET /help
+ GET /help 404 in 183ms (compile: 6ms, proxy.ts: 76ms, render: 101ms)
+[PROXY] GET /discover
+ GET /discover 200 in 103ms (compile: 6ms, proxy.ts: 83ms, render: 14ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 207ms (compile: 4ms, proxy.ts: 183ms, render: 20ms)
+✓ Compiled in 59ms
+[PROXY] GET /manuscripts
+✓ Compiled in 79ms
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 308ms (compile: 67ms, proxy.ts: 199ms, render: 42ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 127ms (compile: 3ms, proxy.ts: 99ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 104ms (compile: 5ms, proxy.ts: 71ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 97ms (compile: 3ms, proxy.ts: 67ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 130ms (compile: 4ms, proxy.ts: 88ms, render: 38ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 109ms (compile: 3ms, proxy.ts: 80ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 115ms (compile: 3ms, proxy.ts: 81ms, render: 31ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 112ms (compile: 4ms, proxy.ts: 81ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 100ms (compile: 3ms, proxy.ts: 71ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 106ms (compile: 3ms, proxy.ts: 80ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 118ms (compile: 3ms, proxy.ts: 89ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 90ms (compile: 3ms, proxy.ts: 67ms, render: 20ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 105ms (compile: 4ms, proxy.ts: 80ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 102ms (compile: 4ms, proxy.ts: 75ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 109ms (compile: 3ms, proxy.ts: 81ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 94ms (compile: 3ms, proxy.ts: 68ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 102ms (compile: 3ms, proxy.ts: 77ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 105ms (compile: 3ms, proxy.ts: 77ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 122ms (compile: 4ms, proxy.ts: 75ms, render: 44ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 103ms (compile: 3ms, proxy.ts: 78ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 96ms (compile: 3ms, proxy.ts: 72ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 104ms (compile: 4ms, proxy.ts: 70ms, render: 30ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 153ms (compile: 5ms, proxy.ts: 72ms, render: 75ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 110ms (compile: 3ms, proxy.ts: 82ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 125ms (compile: 3ms, proxy.ts: 100ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 97ms (compile: 3ms, proxy.ts: 73ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 123ms (compile: 3ms, proxy.ts: 94ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 151ms (compile: 3ms, proxy.ts: 128ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 94ms (compile: 3ms, proxy.ts: 68ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 101ms (compile: 3ms, proxy.ts: 73ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 100ms (compile: 3ms, proxy.ts: 74ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 94ms (compile: 3ms, proxy.ts: 71ms, render: 20ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 91ms (compile: 3ms, proxy.ts: 65ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 97ms (compile: 3ms, proxy.ts: 72ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 133ms (compile: 3ms, proxy.ts: 107ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 108ms (compile: 3ms, proxy.ts: 83ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 110ms (compile: 3ms, proxy.ts: 83ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 148ms (compile: 3ms, proxy.ts: 117ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 98ms (compile: 3ms, proxy.ts: 72ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 91ms (compile: 3ms, proxy.ts: 66ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 112ms (compile: 3ms, proxy.ts: 88ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 98ms (compile: 3ms, proxy.ts: 72ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 93ms (compile: 3ms, proxy.ts: 66ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 96ms (compile: 3ms, proxy.ts: 71ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 102ms (compile: 3ms, proxy.ts: 67ms, render: 32ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 104ms (compile: 3ms, proxy.ts: 79ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 91ms (compile: 3ms, proxy.ts: 67ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 123ms (compile: 3ms, proxy.ts: 99ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 96ms (compile: 4ms, proxy.ts: 71ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 98ms (compile: 3ms, proxy.ts: 75ms, render: 20ms)
+ GET /manuscripts 200 in 357ms (compile: 3ms, proxy.ts: 338ms, render: 16ms)
+[PROXY] GET /manuscripts
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 228ms (compile: 3ms, proxy.ts: 202ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 162ms (compile: 24ms, proxy.ts: 103ms, render: 35ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 111ms (compile: 3ms, proxy.ts: 82ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 111ms (compile: 3ms, proxy.ts: 78ms, render: 30ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 119ms (compile: 3ms, proxy.ts: 92ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 119ms (compile: 4ms, proxy.ts: 90ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 120ms (compile: 4ms, proxy.ts: 83ms, render: 33ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 108ms (compile: 3ms, proxy.ts: 79ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 136ms (compile: 3ms, proxy.ts: 109ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 116ms (compile: 3ms, proxy.ts: 91ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 113ms (compile: 3ms, proxy.ts: 88ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 125ms (compile: 4ms, proxy.ts: 101ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 113ms (compile: 3ms, proxy.ts: 86ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 126ms (compile: 4ms, proxy.ts: 86ms, render: 36ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 178ms (compile: 6ms, proxy.ts: 87ms, render: 85ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 118ms (compile: 3ms, proxy.ts: 89ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 100ms (compile: 3ms, proxy.ts: 76ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 103ms (compile: 3ms, proxy.ts: 78ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 115ms (compile: 3ms, proxy.ts: 90ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 127ms (compile: 4ms, proxy.ts: 103ms, render: 20ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 109ms (compile: 4ms, proxy.ts: 83ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 124ms (compile: 3ms, proxy.ts: 89ms, render: 31ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 114ms (compile: 3ms, proxy.ts: 90ms, render: 21ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 113ms (compile: 3ms, proxy.ts: 83ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 116ms (compile: 4ms, proxy.ts: 84ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 127ms (compile: 5ms, proxy.ts: 94ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 114ms (compile: 3ms, proxy.ts: 83ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 150ms (compile: 3ms, proxy.ts: 123ms, render: 23ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 124ms (compile: 6ms, proxy.ts: 90ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 133ms (compile: 3ms, proxy.ts: 102ms, render: 27ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 168ms (compile: 3ms, proxy.ts: 128ms, render: 36ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 111ms (compile: 4ms, proxy.ts: 81ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 127ms (compile: 4ms, proxy.ts: 91ms, render: 32ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 154ms (compile: 4ms, proxy.ts: 114ms, render: 35ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 122ms (compile: 5ms, proxy.ts: 85ms, render: 33ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 125ms (compile: 4ms, proxy.ts: 94ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 162ms (compile: 3ms, proxy.ts: 134ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 120ms (compile: 3ms, proxy.ts: 92ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 116ms (compile: 3ms, proxy.ts: 88ms, render: 24ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 108ms (compile: 3ms, proxy.ts: 79ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 123ms (compile: 3ms, proxy.ts: 93ms, render: 26ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 131ms (compile: 3ms, proxy.ts: 102ms, render: 25ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 138ms (compile: 3ms, proxy.ts: 106ms, render: 29ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 145ms (compile: 3ms, proxy.ts: 96ms, render: 46ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 126ms (compile: 4ms, proxy.ts: 94ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 137ms (compile: 3ms, proxy.ts: 106ms, render: 28ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 138ms (compile: 4ms, proxy.ts: 104ms, render: 30ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 126ms (compile: 3ms, proxy.ts: 93ms, render: 30ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 117ms (compile: 4ms, proxy.ts: 84ms, render: 29ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 140ms (compile: 4ms, proxy.ts: 103ms, render: 32ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 116ms (compile: 6ms, proxy.ts: 76ms, render: 33ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 118ms (compile: 4ms, proxy.ts: 86ms, render: 28ms)
+ GET /manuscripts 200 in 177ms (compile: 3ms, proxy.ts: 153ms, render: 20ms)
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 596ms (compile: 384ms, proxy.ts: 191ms, render: 20ms)
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 279ms (compile: 4ms, proxy.ts: 165ms, render: 111ms)
+[PROXY] GET /
+ GET / 200 in 218ms (compile: 6ms, proxy.ts: 190ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 207ms (compile: 4ms, proxy.ts: 189ms, render: 14ms)
+✓ Compiled in 36ms
+✓ Compiled in 54ms
+✓ Compiled in 36ms
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 298ms (compile: 60ms, proxy.ts: 211ms, render: 27ms)
+✓ Compiled in 40ms
+✓ Compiled in 55ms
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 353ms (compile: 57ms, proxy.ts: 176ms, render: 120ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 261ms (compile: 54ms, proxy.ts: 185ms, render: 22ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 184ms (compile: 3ms, proxy.ts: 169ms, render: 12ms)
+✓ Compiled in 80ms
+✓ Compiled in 36ms
+✓ Compiled in 41ms
+✓ Compiled in 55ms
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 281ms (compile: 56ms, proxy.ts: 202ms, render: 22ms)
+✓ Compiled in 41ms
+[PROXY] GET /manuscripts/new
+ GET /manuscripts/new 200 in 472ms (compile: 56ms, proxy.ts: 301ms, render: 115ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 404ms (compile: 68ms, proxy.ts: 310ms, render: 27ms)
+✓ Compiled in 39ms
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 279ms (compile: 58ms, proxy.ts: 198ms, render: 22ms)
+✓ Compiled in 42ms
+[PROXY] GET /profile
+ GET /profile 200 in 689ms (compile: 21ms, proxy.ts: 240ms, render: 428ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 868ms (compile: 148ms, proxy.ts: 252ms, render: 468ms)
+[PROXY] GET /account
+Error: Route "/account" used `searchParams.error`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at AccountPage (app\account\page.tsx:76:5)
+  74 |
+  75 |   const errorMsg =
+> 76 |     searchParams?.error === "email_required"
+     |     ^
+  77 |       ? "Email is required."
+  78 |       : searchParams?.error === "dob_required"
+  79 |       ? "Date of birth is required."
+ GET /account 200 in 904ms (compile: 193ms, proxy.ts: 285ms, render: 426ms)
+[PROXY] GET /pricing
+ GET /pricing 200 in 241ms (compile: 6ms, proxy.ts: 213ms, render: 22ms)
+[PROXY] GET /wallet
+ GET /wallet 200 in 475ms (compile: 7ms, proxy.ts: 237ms, render: 232ms)
+[PROXY] GET /messages
+ GET /messages 200 in 320ms (compile: 61ms, proxy.ts: 233ms, render: 26ms)
+[PROXY] GET /api/messages/status
+ GET /api/messages/status 200 in 261ms (compile: 3ms, proxy.ts: 74ms, render: 184ms)
+[PROXY] GET /api/messages/status
+ GET /api/messages/status 200 in 209ms (compile: 3ms, proxy.ts: 71ms, render: 135ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 220ms (compile: 5ms, proxy.ts: 199ms, render: 16ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 221ms (compile: 3ms, proxy.ts: 207ms, render: 11ms)
+[PROXY] GET /wallet
+ GET /wallet 200 in 317ms (compile: 3ms, proxy.ts: 120ms, render: 194ms)
+[PROXY] GET /manuscripts
+ GET /manuscripts 200 in 159ms (compile: 60ms, proxy.ts: 73ms, render: 25ms)
+[PROXY] GET /discover
+ GET /discover 200 in 98ms (compile: 6ms, proxy.ts: 80ms, render: 12ms)
+[PROXY] GET /pricing
+ GET /pricing 200 in 220ms (compile: 3ms, proxy.ts: 202ms, render: 16ms)
+[PROXY] GET /profile
+ GET /profile 200 in 422ms (compile: 3ms, proxy.ts: 101ms, render: 317ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 808ms (compile: 6ms, proxy.ts: 249ms, render: 552ms)
+[PROXY] GET /profile
+ GET /profile 200 in 578ms (compile: 3ms, proxy.ts: 253ms, render: 322ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 473ms (compile: 4ms, proxy.ts: 207ms, render: 263ms)
+[PROXY] GET /account
+Error: Route "/account" used `searchParams.error`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at AccountPage (app\account\page.tsx:76:5)
+  74 |
+  75 |   const errorMsg =
+> 76 |     searchParams?.error === "email_required"
+     |     ^
+  77 |       ? "Email is required."
+  78 |       : searchParams?.error === "dob_required"
+  79 |       ? "Date of birth is required."
+ GET /account 200 in 501ms (compile: 3ms, proxy.ts: 222ms, render: 275ms)
+[PROXY] GET /pricing
+ GET /pricing 200 in 109ms (compile: 3ms, proxy.ts: 89ms, render: 17ms)
+[PROXY] GET /wallet
+ GET /wallet 200 in 263ms (compile: 3ms, proxy.ts: 70ms, render: 190ms)
+[PROXY] GET /messages
+ GET /messages 200 in 95ms (compile: 3ms, proxy.ts: 79ms, render: 12ms)
+[PROXY] GET /api/messages/status
+ GET /api/messages/status 200 in 209ms (compile: 2ms, proxy.ts: 71ms, render: 135ms)
+[PROXY] GET /api/messages/status
+ GET /api/messages/status 200 in 258ms (compile: 2ms, proxy.ts: 71ms, render: 185ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 91ms (compile: 3ms, proxy.ts: 77ms, render: 11ms)
+[PROXY] GET /notifications
+ GET /notifications 200 in 78ms (compile: 3ms, proxy.ts: 64ms, render: 11ms)
+[PROXY] GET /pricing
+ GET /pricing 200 in 79ms (compile: 3ms, proxy.ts: 60ms, render: 16ms)
+[PROXY] GET /discover
+ GET /discover 200 in 84ms (compile: 4ms, proxy.ts: 70ms, render: 10ms)
+[PROXY] GET /profile
+ GET /profile 200 in 547ms (compile: 3ms, proxy.ts: 273ms, render: 271ms)
+[PROXY] GET /settings/profile
+Error: Route "/settings/profile" used `searchParams.saved`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfileAccountPage (app\settings\profile\page.tsx:87:10)
+  85 |         <h1 className="text-3xl font-semibold tracking-tight">Edit profile</h1>
+  86 |
+> 87 |         {searchParams?.saved ? (
+     |          ^
+  88 |           <div className="mt-6 rounded-xl border border-emerald-900 bg-emerald-950/40 p-4 text-sm text-emerald-200">
+  89 |             Saved.
+  90 |           </div>
+ GET /settings/profile 200 in 490ms (compile: 5ms, proxy.ts: 201ms, render: 285ms)
+[PROXY] GET /profile
+ GET /profile 200 in 489ms (compile: 3ms, proxy.ts: 182ms, render: 304ms)
+[PROXY] GET /profile
+ GET /profile 200 in 2.2s (compile: 137ms, proxy.ts: 637ms, render: 1378ms)
+^C^C
