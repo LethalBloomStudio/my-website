@@ -958,6 +958,16 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
+  // When a feedback card is selected, scroll the sidebar so the card aligns with its text marker
+  useEffect(() => {
+    if (!selectedFeedbackId) return;
+    const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
+    const container = cardAreaRef.current;
+    if (!cardEl || !container) return;
+    const desiredTop = markerTops[selectedFeedbackId] ?? 0;
+    container.scrollTop = cardEl.offsetTop - desiredTop;
+  }, [selectedFeedbackId, markerTops]);
+
   // Auto-dismiss coin toast after 5 seconds
   useEffect(() => {
     if (!coinToast) return;
@@ -1755,8 +1765,7 @@ function PageInner() {
               {canRead && (
                 <div
                   ref={asideRef}
-                  className="w-72 shrink-0 sticky top-6 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
-                  style={chapterHeight ? { height: chapterHeight } : undefined}
+                  className="w-72 shrink-0 sticky top-20 self-start rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden max-h-[calc(100vh-5.5rem)]"
                 >
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && (
@@ -1833,8 +1842,8 @@ function PageInner() {
                     </div>
                   )}
 
-                  {/* Card area */}
-                  <div ref={cardAreaRef} className="flex-1 relative overflow-hidden">
+                  {/* Card area — running log, always visible */}
+                  <div ref={cardAreaRef} className="flex-1 overflow-y-auto">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
                     const allFeedback = chapterFeedbackSource
@@ -1849,181 +1858,167 @@ function PageInner() {
                       );
                     }
 
-                    if (selectedFeedbackId) {
-                      // Single card — positioned at the Y of its text marker
-                      const f = allFeedback.find((x) => x.id === selectedFeedbackId);
-                      if (!f) return null;
-                      const cardAreaHeight = cardAreaRef.current?.offsetHeight ?? (chapterHeight || 9999);
-                      const rawTop = clickedMarkerTop ?? markerTops[f.id] ?? 0;
-                      const top = Math.min(rawTop, cardAreaHeight - 200);
-                      return (
-                        <div className="absolute w-full px-3" style={{ top }}>
-                          <div
-                            id={`feedback-item-${f.id}`}
-                            className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)] p-2.5 shadow-[0_8px_24px_rgba(120,120,120,0.15)]"
-                            onClick={(e) => {
-                              if ((e.target as HTMLElement).closest("button,textarea")) return;
-                              setSelectedFeedbackId(null);
-                            }}
-                          >
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">
-                              {names[f.reader_id] || "Reader"}
-                            </p>
-                            {f.reader_id === userId && (
-                              <div className="flex gap-1 shrink-0">
-                                <button
-                                  onClick={() => { setEditingFeedbackId(f.id); setEditFeedbackDraft(f.comment_text); }}
-                                  className="rounded-lg px-1.5 py-0.5 text-[10px] text-[rgba(210,210,210,0.7)] hover:bg-[rgba(120,120,120,0.2)] transition"
-                                >
-                                  Edit
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          {f.selection_excerpt && !manuscriptParagraphs.some((p) => p.includes(f.selection_excerpt)) ? (
-                            <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
-                          ) : (
-                          <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
-                            &ldquo;{f.selection_excerpt}&rdquo;
-                          </blockquote>
-                          )}
-                          {editingFeedbackId === f.id ? (
-                            <div className="mt-1.5">
-                              <textarea
-                                rows={3}
-                                value={editFeedbackDraft}
-                                onChange={(e) => setEditFeedbackDraft(e.target.value)}
-                                className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.5)] focus:outline-none"
-                              />
-                              <div className="mt-1 flex gap-1">
-                                <button
-                                  onClick={() => void saveLineFeedbackEdit(f.id)}
-                                  disabled={!editFeedbackDraft.trim()}
-                                  className="flex-1 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-2 py-1 text-[10px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => { setEditingFeedbackId(null); setEditFeedbackDraft(""); }}
-                                  className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-[10px] text-neutral-300 hover:border-neutral-500 transition"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            /* Chat thread */
-                            <div className="mt-1.5 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                              {/* Reader's original comment — LEFT (they wrote it, so it's "theirs") */}
-                              <div className={`flex ${f.reader_id === userId ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${f.reader_id === userId ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
-                                  <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{names[f.reader_id] || "Reader"}</p>
-                                  <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
-                                </div>
-                              </div>
-                              {/* Author response badge */}
-                              {f.author_response && (
-                                <p className={`text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
-                                  {f.author_response === "agree" ? "✓ Author agreed" : "✗ Author disagreed"}
-                                </p>
-                              )}
-                              {/* Reply bubbles */}
-                              {replies.filter((r) => r.feedback_id === f.id).map((r) => {
-                                const isMe = r.replier_id === userId;
-                                return (
-                                  <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
-                                      <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
-                                        {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
-                                      </p>
-                                      <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {/* Reply box: only before agree/disagree, visible to author and the reader who wrote it */}
-                          {!f.resolved && (isOwner || f.reader_id === userId) && (
-                            isOwner && adultReplyBlockedForFeedback(f.reader_id) ? (
-                              <p className="mt-2 text-[10px] italic text-neutral-600">
-                                Replies to feedback from youth readers are disabled on youth-category manuscripts.
-                              </p>
-                            ) : (
-                              <div className="mt-2 flex gap-1.5">
-                                <textarea
-                                  rows={1}
-                                  placeholder="Reply… (Enter to send)"
-                                  value={replyDrafts[f.id] ?? ""}
-                                  ref={(el) => { if (el) replyTextareaRefs.current.set(f.id, el); else replyTextareaRefs.current.delete(f.id); }}
-                                  onChange={(e) => setReplyDrafts((p) => ({ ...p, [f.id]: e.target.value }))}
-                                  onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 96) + "px"; }}
-                                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void replyToFeedback(f); } }}
-                                  className="flex-1 resize-none overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.5)] focus:outline-none"
-                                />
-                                <button
-                                  onClick={() => replyToFeedback(f)}
-                                  disabled={!(replyDrafts[f.id] ?? "").trim()}
-                                  className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-[11px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition"
-                                >
-                                  Send
-                                </button>
-                              </div>
-                            )
-                          )}
-                          {isOwner && !f.author_response && (
-                            <div className="mt-2 flex gap-1.5">
-                              <button
-                                onClick={() => void resolveFeedback(f.id, "agree")}
-                                className="flex-1 rounded-lg border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-[10px] font-medium text-emerald-400 hover:bg-emerald-900/40 transition"
-                              >
-                                ✓ Agree
-                              </button>
-                              <button
-                                onClick={() => void resolveFeedback(f.id, "disagree")}
-                                className="flex-1 rounded-lg border border-rose-700/60 bg-rose-950/40 px-2 py-1 text-[10px] font-medium text-rose-400 hover:bg-rose-900/40 transition"
-                              >
-                                ✗ Disagree
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                    }
-
-                    // All-cards scrollable list
                     return (
-                      <div className="h-full overflow-y-auto p-3 space-y-3">
+                      <div className="p-3 space-y-3">
                         {allFeedback.map((f) => {
+                          const isSelected = selectedFeedbackId === f.id;
                           const cardReplies = replies.filter((r) => r.feedback_id === f.id);
+
+                          if (!isSelected) {
+                            return (
+                              <div
+                                key={f.id}
+                                id={`feedback-item-${f.id}`}
+                                className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-2.5 hover:border-[rgba(120,120,120,0.6)] transition"
+                                onClick={(e) => {
+                                  if ((e.target as HTMLElement).closest("button,textarea")) return;
+                                  setClickedMarkerTop(null);
+                                  setSelectedFeedbackId(f.id);
+                                  document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
+                                  <span className="text-[10px] text-neutral-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                                </div>
+                                {f.selection_excerpt && (
+                                  <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
+                                    &ldquo;{f.selection_excerpt}&rdquo;
+                                  </blockquote>
+                                )}
+                                <p className="mt-1 text-[11px] leading-relaxed text-neutral-300 line-clamp-2">{f.comment_text}</p>
+                                {cardReplies.length > 0 && (
+                                  <p className="mt-1 text-[10px] text-neutral-500">{cardReplies.length} repl{cardReplies.length === 1 ? "y" : "ies"}</p>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          // Expanded card (selected) — inline in the list
                           return (
                             <div
                               key={f.id}
                               id={`feedback-item-${f.id}`}
-                              className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-2.5 hover:border-[rgba(120,120,120,0.6)] transition"
+                              className="rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)] p-2.5 shadow-[0_8px_24px_rgba(120,120,120,0.15)]"
                               onClick={(e) => {
                                 if ((e.target as HTMLElement).closest("button,textarea")) return;
-                                setClickedMarkerTop(null);
-                                setSelectedFeedbackId(f.id);
-                                document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                setSelectedFeedbackId(null);
                               }}
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">
-                                  {names[f.reader_id] || "Reader"}
-                                </p>
-                                <span className="text-[10px] text-neutral-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                                <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
+                                {f.reader_id === userId && (
+                                  <div className="flex gap-1 shrink-0">
+                                    <button
+                                      onClick={() => { setEditingFeedbackId(f.id); setEditFeedbackDraft(f.comment_text); }}
+                                      className="rounded-lg px-1.5 py-0.5 text-[10px] text-[rgba(210,210,210,0.7)] hover:bg-[rgba(120,120,120,0.2)] transition"
+                                    >
+                                      Edit
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                              {f.selection_excerpt && (
+                              {f.selection_excerpt && !manuscriptParagraphs.some((p) => p.includes(f.selection_excerpt)) ? (
+                                <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
+                              ) : (
                                 <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
                                   &ldquo;{f.selection_excerpt}&rdquo;
                                 </blockquote>
                               )}
-                              <p className="mt-1 text-[11px] leading-relaxed text-neutral-300 line-clamp-2">{f.comment_text}</p>
-                              {cardReplies.length > 0 && (
-                                <p className="mt-1 text-[10px] text-neutral-500">{cardReplies.length} repl{cardReplies.length === 1 ? "y" : "ies"}</p>
+                              {editingFeedbackId === f.id ? (
+                                <div className="mt-1.5">
+                                  <textarea
+                                    rows={3}
+                                    value={editFeedbackDraft}
+                                    onChange={(e) => setEditFeedbackDraft(e.target.value)}
+                                    className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.5)] focus:outline-none"
+                                  />
+                                  <div className="mt-1 flex gap-1">
+                                    <button
+                                      onClick={() => void saveLineFeedbackEdit(f.id)}
+                                      disabled={!editFeedbackDraft.trim()}
+                                      className="flex-1 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-2 py-1 text-[10px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={() => { setEditingFeedbackId(null); setEditFeedbackDraft(""); }}
+                                      className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-[10px] text-neutral-300 hover:border-neutral-500 transition"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-1.5 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
+                                  <div className={`flex ${f.reader_id === userId ? "justify-end" : "justify-start"}`}>
+                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${f.reader_id === userId ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                      <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{names[f.reader_id] || "Reader"}</p>
+                                      <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
+                                    </div>
+                                  </div>
+                                  {f.author_response && (
+                                    <p className={`text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
+                                      {f.author_response === "agree" ? "✓ Author agreed" : "✗ Author disagreed"}
+                                    </p>
+                                  )}
+                                  {cardReplies.map((r) => {
+                                    const isMe = r.replier_id === userId;
+                                    return (
+                                      <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                          <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
+                                            {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
+                                          </p>
+                                          <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {!f.resolved && (isOwner || f.reader_id === userId) && (
+                                isOwner && adultReplyBlockedForFeedback(f.reader_id) ? (
+                                  <p className="mt-2 text-[10px] italic text-neutral-600">
+                                    Replies to feedback from youth readers are disabled on youth-category manuscripts.
+                                  </p>
+                                ) : (
+                                  <div className="mt-2 flex gap-1.5">
+                                    <textarea
+                                      rows={1}
+                                      placeholder="Reply… (Enter to send)"
+                                      value={replyDrafts[f.id] ?? ""}
+                                      ref={(el) => { if (el) replyTextareaRefs.current.set(f.id, el); else replyTextareaRefs.current.delete(f.id); }}
+                                      onChange={(e) => setReplyDrafts((p) => ({ ...p, [f.id]: e.target.value }))}
+                                      onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 96) + "px"; }}
+                                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void replyToFeedback(f); } }}
+                                      className="flex-1 resize-none overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.5)] focus:outline-none"
+                                    />
+                                    <button
+                                      onClick={() => replyToFeedback(f)}
+                                      disabled={!(replyDrafts[f.id] ?? "").trim()}
+                                      className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-[11px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition"
+                                    >
+                                      Send
+                                    </button>
+                                  </div>
+                                )
+                              )}
+                              {isOwner && !f.author_response && (
+                                <div className="mt-2 flex gap-1.5">
+                                  <button
+                                    onClick={() => void resolveFeedback(f.id, "agree")}
+                                    className="flex-1 rounded-lg border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-[10px] font-medium text-emerald-400 hover:bg-emerald-900/40 transition"
+                                  >
+                                    ✓ Agree
+                                  </button>
+                                  <button
+                                    onClick={() => void resolveFeedback(f.id, "disagree")}
+                                    className="flex-1 rounded-lg border border-rose-700/60 bg-rose-950/40 px-2 py-1 text-[10px] font-medium text-rose-400 hover:bg-rose-900/40 transition"
+                                  >
+                                    ✗ Disagree
+                                  </button>
+                                </div>
                               )}
                             </div>
                           );
@@ -2031,7 +2026,7 @@ function PageInner() {
                       </div>
                     );
                   })()}
-                </div>
+                  </div>
               </div>
             )}
           </div>
