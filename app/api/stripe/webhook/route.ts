@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env["STRIPE_WEBHOOK_SECRET"];
 
   if (!sig) {
     return NextResponse.json({ error: "Missing stripe-signature header." }, { status: 400 });
