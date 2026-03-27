@@ -491,7 +491,7 @@ function PageInner() {
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`}>
           {isActive
-            ? <span className="rounded bg-[rgba(255,200,60,0.22)] border-b-2 border-[rgba(255,180,40,0.9)]">{excerpt}</span>
+            ? <span className="border-b-2 border-[rgba(255,180,40,0.9)]">{excerpt}</span>
             : <span className="border-b border-dotted border-[rgba(255,180,40,0.65)]">{excerpt}</span>}
           <button
             onClick={(e) => {
