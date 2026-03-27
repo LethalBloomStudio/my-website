@@ -4,10 +4,9 @@ import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { getStripe, COIN_PACKAGES, SUBSCRIPTION_PLANS } from "@/lib/stripe";
 import type { CoinPackageId, SubscriptionPlanId } from "@/lib/stripe";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export async function POST(req: Request) {
   try {
+  const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_origin ?? "http://localhost:3000";
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
@@ -49,8 +48,8 @@ export async function POST(req: Request) {
         recipient_id: recipientId,
         coins: String(pkg.coins),
       },
-      success_url: `${SITE_URL}/wallet?success=1`,
-      cancel_url: `${SITE_URL}/wallet?canceled=1`,
+      success_url: `${origin}/wallet?success=1`,
+      cancel_url: `${origin}/wallet?canceled=1`,
     });
 
     return NextResponse.json({ url: session.url });
@@ -104,8 +103,8 @@ export async function POST(req: Request) {
           user_id: userId,
         },
       },
-      success_url: `${SITE_URL}/subscription?success=1`,
-      cancel_url: `${SITE_URL}/subscription?canceled=1`,
+      success_url: `${origin}/subscription?success=1`,
+      cancel_url: `${origin}/subscription?canceled=1`,
     });
 
     return NextResponse.json({ url: session.url });

@@ -3,11 +3,10 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { getStripe } from "@/lib/stripe";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 // Opens the Stripe Customer Portal so users can manage/cancel their subscription
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     const supabase = await supabaseServer();
     const { data: auth } = await supabase.auth.getUser();
     const userId = auth?.user?.id;
@@ -39,7 +38,7 @@ export async function POST() {
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${SITE_URL}/subscription`,
+      return_url: `${origin}/subscription`,
     });
 
     return NextResponse.json({ url: session.url });

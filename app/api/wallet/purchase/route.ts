@@ -3,9 +3,8 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { getStripe, COIN_PACKAGES } from "@/lib/stripe";
 import type { CoinPackageId } from "@/lib/stripe";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export async function POST(req: Request) {
+  const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
@@ -39,8 +38,8 @@ export async function POST(req: Request) {
       recipient_id: recipientId,
       coins: String(pkg.coins),
     },
-    success_url: `${SITE_URL}/wallet?success=1`,
-    cancel_url: `${SITE_URL}/wallet?canceled=1`,
+    success_url: `${origin}/wallet?success=1`,
+    cancel_url: `${origin}/wallet?canceled=1`,
   });
 
   return NextResponse.json({ ok: true, url: session.url });
