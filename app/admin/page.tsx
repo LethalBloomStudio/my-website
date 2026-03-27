@@ -515,7 +515,7 @@ function AdminPageInner() {
         lifetime_suspension_count: u.lifetime_suspension_count,
         manuscript_conduct_strikes: u.manuscript_conduct_strikes,
         manuscript_lifetime_suspension_count: u.manuscript_lifetime_suspension_count,
-      }, { conduct_strikes: 0, lifetime_suspension_count: 0, manuscript_conduct_strikes: 0, manuscript_lifetime_suspension_count: 0 }, actionReason || null);
+      }, { conduct_strikes: 0, lifetime_suspension_count: 0, manuscript_conduct_strikes: 0, manuscript_lifetime_suspension_count: 0 }, actionReason ?? undefined);
     } else if (actionType === "delete") {
       const token = await getToken();
       const delRes = await fetch("/api/admin/action", {
