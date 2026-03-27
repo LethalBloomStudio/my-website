@@ -48,7 +48,7 @@ export default function AuthGatedNav() {
 
     void check();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: { user?: unknown } | null) => {
       if (!session?.user) {
         setSignedIn(false);
         setIsDeactivated(false);

@@ -970,7 +970,7 @@ function PageInner() {
     if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     const ch = supabase
       .channel(`feedback-replies-${manuscriptId}-reader`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
         setReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
       })

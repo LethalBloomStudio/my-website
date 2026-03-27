@@ -42,7 +42,7 @@ export default function BlockedUsersPanel() {
       .in("user_id", ids);
 
     setBlocked(
-      ids.map((id) => {
+      ids.map((id: string) => {
         const p = ((profiles ?? []) as { user_id: string; pen_name: string | null; username: string | null; avatar_url: string | null }[]).find((x) => x.user_id === id);
         return {
           blocked_id: id,

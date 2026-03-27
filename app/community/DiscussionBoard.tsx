@@ -370,7 +370,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   useEffect(() => {
     const channel = supabase
       .channel(`discussion-posts-realtime-${community}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "discussion_posts", filter: `community=eq.${community}` }, async (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "discussion_posts", filter: `community=eq.${community}` }, async (payload: { new: Record<string, unknown> }) => {
         const row = payload.new as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; coin_prize?: number | null; ends_at?: string | null };
         const { data: prof } = await supabase
           .from("public_profiles")
@@ -398,7 +398,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   useEffect(() => {
     const channel = supabase
       .channel("discussion-comments-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "discussion_comments" }, async (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "discussion_comments" }, async (payload: { new: Record<string, unknown> }) => {
         const row = payload.new as { id: string; post_id: string; author_id: string; content: string; parent_id: string | null; reply_to_id: string | null; reply_to_author_id: string | null; created_at: string };
         // Skip if this user posted it (already added optimistically)
         if (row.author_id === currentUserId) return;

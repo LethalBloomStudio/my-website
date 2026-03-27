@@ -72,7 +72,7 @@ export default function AuthButton() {
 
     load();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: { user?: unknown } | null) => {
       if (!session?.user) {
         setSignedIn(false);
         setLabel("Sign in");

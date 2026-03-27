@@ -55,7 +55,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "manuscripts" },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           const row = payload.new as { id: string; title: string; cover_url: string | null; visibility: string; owner_id: string; categories?: string[] | null };
           const isAllowedOwner = allowedOwnerIdsRef.current.has(row.owner_id);
           const isYouthCategory = audience === "youth" && (row.categories ?? []).some((c) => YOUTH_CATEGORIES.includes(c));
@@ -70,7 +70,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "manuscripts" },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           const row = payload.new as { id: string; title: string; cover_url: string | null; visibility: string; owner_id: string; categories?: string[] | null };
           const isAllowedOwner = allowedOwnerIdsRef.current.has(row.owner_id);
           const isYouthCategory = audience === "youth" && (row.categories ?? []).some((c) => YOUTH_CATEGORIES.includes(c));

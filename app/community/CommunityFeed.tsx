@@ -196,7 +196,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
   useEffect(() => {
     const channel = supabase
       .channel(`community-feed-realtime-${audience}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profile_announcements" }, async (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profile_announcements" }, async (payload: { new: Record<string, unknown> }) => {
         const row = payload.new as { id: string; user_id: string; type: string | null; title: string | null; content: string | null; created_at: string };
         if (allowedUserIdsRef.current && !allowedUserIdsRef.current.includes(row.user_id)) return;
         const { data: prof } = await supabase

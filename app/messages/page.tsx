@@ -368,7 +368,7 @@ function MessagesPageInner() {
     const chanName = ["dm", ...[myId, withUser].sort()].join(":");
     const ch = supabase
       .channel(chanName, { config: { broadcast: { self: false } } })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, (payload: { new: Record<string, unknown> }) => {
         const m = payload.new as Msg;
         if (
           (m.sender_id === withUser && m.receiver_id === myId) ||

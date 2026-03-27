@@ -699,7 +699,7 @@ export default function ManuscriptDetailsPage() {
     if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     const ch = supabase
       .channel(`feedback-replies-${manuscriptId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
         setFeedbackReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
       })
@@ -716,7 +716,7 @@ export default function ManuscriptDetailsPage() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "accounts", filter: `user_id=eq.${authorUserId}` },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           const newBalance = (payload.new as { bloom_coins?: number }).bloom_coins;
           if (typeof newBalance === "number") setCoinBalance(newBalance);
         },
