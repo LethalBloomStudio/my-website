@@ -491,8 +491,8 @@ function PageInner() {
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`}>
           {isActive
-            ? <mark className="rounded bg-[rgba(120,120,120,0.4)] px-0.5 text-[#e9e6ff] not-italic">{excerpt}</mark>
-            : <span className="border-b border-dotted border-[rgba(120,120,120,0.55)]">{excerpt}</span>}
+            ? <mark className="rounded bg-[rgba(255,200,60,0.35)] px-0.5 text-[#e9e6ff] not-italic">{excerpt}</mark>
+            : <mark className="rounded bg-[rgba(255,200,60,0.15)] border-b border-dashed border-[rgba(255,180,40,0.7)] not-italic text-inherit">{excerpt}</mark>}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -507,7 +507,7 @@ function PageInner() {
                 setClickedMarkerTop(null);
               }
             }}
-            className="relative -top-0.5 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-lg bg-[rgba(120,120,120,0.65)] text-white hover:bg-[rgba(120,120,120,0.9)] align-middle select-none transition-colors"
+            className="relative -top-0.5 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(255,180,40,0.75)] text-[#1a1400] hover:bg-[rgba(255,180,40,1)] align-middle select-none transition-colors"
             title="View comment"
             aria-label="View comment"
           >
@@ -1763,9 +1763,10 @@ function PageInner() {
 
               {/* Feedback column — same size as chapter box, cards align with their text */}
               {canRead && (
+                <div className="w-72 shrink-0">
                 <div
                   ref={asideRef}
-                  className="w-72 shrink-0 sticky top-20 self-start rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden max-h-[calc(100vh-5.5rem)]"
+                  className="sticky top-20 max-h-[calc(100vh-5.5rem)] rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
                 >
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && (
@@ -2028,6 +2029,7 @@ function PageInner() {
                   })()}
                   </div>
               </div>
+                </div>
             )}
           </div>
           )}
