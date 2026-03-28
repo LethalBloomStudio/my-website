@@ -14,7 +14,7 @@ import ProseTextarea from "@/components/ProseTextarea";
 import ChapterEditor from "@/components/ChapterEditor";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
-import { normalizeChapterText, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 
@@ -2069,7 +2069,7 @@ export default function ManuscriptDetailsPage() {
               });
             const activeFeedback = chapterFeedback.find((f) => f.id === selectedFeedbackId) ?? null;
             const activeExcerpt = activeFeedback?.selection_excerpt ?? "";
-            const previewParagraphs = chapterEditorContent.split(/\n\n+/).map((b) => sanitizeChapterHtml(b.trim())).filter(Boolean);
+            const previewHtml = chapterTextToPreviewHtml(chapterEditorContent);
             return (
               <div className="flex gap-6 items-start">
                 {/* Chapter editor / preview */}
@@ -2140,7 +2140,7 @@ export default function ManuscriptDetailsPage() {
 
                     <div>
                       {previewMode ? (
-                        <div className="chapter-ms-font relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
+                        <div className="chapter-editor relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
                           {/* Owner watermark — tiled, same style as reader watermark */}
                           <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                             {Array.from({ length: 16 }).map((_, row) =>
@@ -2169,25 +2169,12 @@ export default function ManuscriptDetailsPage() {
                               ))
                             )}
                           </div>
-                          {/* Paragraphs — identical to reader rendering */}
-                          <div className="relative z-[1] space-y-4">
-                            {previewParagraphs.length === 0 ? (
-                              <p className="text-sm text-neutral-400">No content yet.</p>
-                            ) : (
-                              previewParagraphs.map((para, idx) => (
-                                <p
-                                  key={idx}
-                                  id={`preview-para-${idx}`}
-                                  className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0 mb-3"
-                                  style={{ letterSpacing: "0.01em" }}
-                                >
-                                  {activeExcerpt
-                                    ? highlightExcerpt(para, activeExcerpt)
-                                    : <span dangerouslySetInnerHTML={{ __html: para }} />}
-                                </p>
-                              ))
-                            )}
-                          </div>
+                          {/* Paragraphs — rendered with chapterTextToPreviewHtml for identical structure to ChapterEditor */}
+                          {previewHtml ? (
+                            <div className="relative z-[1]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                          ) : (
+                            <p className="relative z-[1] text-sm text-neutral-400">No content yet.</p>
+                          )}
                         </div>
                       ) : (
                         <div ref={editorWrapperRef} className="relative">

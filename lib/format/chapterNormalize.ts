@@ -62,3 +62,31 @@ export function normalizeChapterText(raw: string): string {
     })
     .join("\n\n");
 }
+
+/**
+ * Converts the chapter plain-text format (as stored by ChapterEditor's domToText)
+ * into the exact same HTML that ChapterEditor renders in the DOM.
+ *
+ * Handles:
+ *  - First paragraph and post-scene-break paragraphs → data-no-indent="1"
+ *  - Scene breaks (***) → data-scene-break="1"
+ *  - Soft breaks (\n within a block) → <br>
+ *
+ * Use this to render a read-only preview that is pixel-identical to the editor view.
+ */
+export function chapterTextToPreviewHtml(text: string): string {
+  if (!text.trim()) return "";
+  const blocks = text
+    .split(/\n\n/)
+    .map((b) => b.replace(/^\t/, "").trim())
+    .filter(Boolean);
+  return blocks
+    .map((b, i) => {
+      if (b === "***") return `<p data-scene-break="1">***</p>`;
+      const html = sanitizeChapterHtml(b).replace(/\n/g, "<br>");
+      const prev = blocks[i - 1];
+      const noIndent = i === 0 || prev === "***";
+      return noIndent ? `<p data-no-indent="1">${html}</p>` : `<p>${html}</p>`;
+    })
+    .join("");
+}
