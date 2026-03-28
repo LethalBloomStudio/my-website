@@ -124,6 +124,7 @@ function PageInner() {
   const [markerTops, setMarkerTops] = useState<Record<string, number>>({});
   const [clickedMarkerTop, setClickedMarkerTop] = useState<number | null>(null);
   const [chapterHeight, setChapterHeight] = useState(0);
+  const [navH, setNavH] = useState(0);
 
   function handleSelectionUp() {
     if (!canLeaveLineEdits) return;
@@ -1003,6 +1004,27 @@ function PageInner() {
     return () => document.removeEventListener("click", onDocClick, true);
   }, [selectedFeedbackId]);
 
+  // Measure navbar height so the fixed chapter reader sits flush below it
+  useEffect(() => {
+    const nav = document.querySelector(".navWrap") as HTMLElement | null;
+    if (!nav) return;
+    const update = () => setNavH(nav.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, []);
+
+  // Lock body scroll while the chapter reader is open
+  useEffect(() => {
+    if (activeChapter) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [activeChapter]);
+
   async function _reply(f: LineFeedback) {
     const body = (replyDrafts[f.id] ?? "").trim();
     if (!body || !userId || !manuscript) return;
@@ -1661,7 +1683,10 @@ function PageInner() {
             </section>
           )}
           {activeChapter && (
-            <div className="flex gap-4" style={{ height: "calc(100vh - 6rem)" }}>
+            <div
+              className="flex gap-4 bg-neutral-950 px-6 pb-6"
+              style={{ position: "fixed", top: navH, left: 0, right: 0, bottom: 0, zIndex: 40 }}
+            >
               {/* Chapter text box */}
               <section ref={chapterSectionRef} className="min-w-0 flex-1 overflow-y-auto rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
