@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
@@ -15,6 +16,9 @@ export default function AuthButton() {
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [_isYouth, setIsYouth] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,14 +92,11 @@ export default function AuthButton() {
     };
   }, [supabase]);
 
-
-
   function handleClick() {
     if (!signedIn) {
       router.push("/sign-in");
       return;
     }
-
     setOpen((v) => !v);
   }
 
@@ -119,68 +120,71 @@ export default function AuthButton() {
         {loading ? "..." : label}
       </button>
 
-      {signedIn && open ? (
+      {signedIn && open && (
         <>
-          {/* Full-screen tap-catcher — z-[99] beats the nav's z-50; button ensures iOS fires click */}
-          <button
-            className="fixed inset-0 z-[99] cursor-default bg-transparent"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-            tabIndex={-1}
-          />
+          {/* Portal backdrop — rendered on document.body so nav's overflow:clip can't clip it */}
+          {mounted && createPortal(
+            <button
+              className="fixed inset-0 z-[99] cursor-default bg-transparent"
+              onClick={() => setOpen(false)}
+              aria-hidden="true"
+              tabIndex={-1}
+            />,
+            document.body
+          )}
+
           <div className="absolute right-0 z-[100] mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
-          {isAdmin && (
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-[rgba(120,120,120,0.35)]"
+                onClick={() => setOpen(false)}
+              >
+                <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Admin</span>
+                Dashboard
+              </Link>
+            )}
             <Link
-              href="/admin"
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-[rgba(120,120,120,0.35)]"
+              href="/profile"
+              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
               onClick={() => setOpen(false)}
             >
-              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Admin</span>
-              Dashboard
+              Profile
             </Link>
-          )}
-          <Link
-            href="/profile"
-            className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-            onClick={() => setOpen(false)}
-          >
-            Profile
-          </Link>
-          <Link
-            href="/account"
-            className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-            onClick={() => setOpen(false)}
-          >
-            Account
-          </Link>
-          <Link
-            href="/subscription"
-            className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-            onClick={() => setOpen(false)}
-          >
-            Subscription
-          </Link>
-          <Link
-            href="/manage-youth"
-            className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-            onClick={() => setOpen(false)}
-          >
-            Manage Youth
-          </Link>
-          <Link
-            href="/sign-in"
-            onClick={(e) => {
-              e.preventDefault();
-              void handleSignOut();
-            }}
-            className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-          >
-            Sign out
-          </Link>
-        </div>
+            <Link
+              href="/account"
+              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
+              onClick={() => setOpen(false)}
+            >
+              Account
+            </Link>
+            <Link
+              href="/subscription"
+              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
+              onClick={() => setOpen(false)}
+            >
+              Subscription
+            </Link>
+            <Link
+              href="/manage-youth"
+              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
+              onClick={() => setOpen(false)}
+            >
+              Manage Youth
+            </Link>
+            <Link
+              href="/sign-in"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleSignOut();
+              }}
+              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
+            >
+              Sign out
+            </Link>
+          </div>
         </>
-      ) : null }
-
+      )}
     </div>
   );
 }
