@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 export default function AuthButton() {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
@@ -17,6 +18,7 @@ export default function AuthButton() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [_isYouth, setIsYouth] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -97,6 +99,10 @@ export default function AuthButton() {
       router.push("/sign-in");
       return;
     }
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
     setOpen((v) => !v);
   }
 
@@ -111,6 +117,7 @@ export default function AuthButton() {
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={handleClick}
         disabled={loading}
         className={`tab ${signedIn ? "tabCta" : ""}`}
@@ -120,18 +127,20 @@ export default function AuthButton() {
         {loading ? "..." : label}
       </button>
 
-      {signedIn && open && (
+      {signedIn && open && mounted && createPortal(
         <>
-          {/* Portal backdrop — rendered on document.body so nav's overflow:clip can't clip it */}
-          {mounted && createPortal(
-            <button
-              style={{ position: "fixed", inset: 0, zIndex: 99, background: "rgba(0,0,0,0.001)", border: "none", cursor: "default", padding: 0 }}
-              onClick={() => setOpen(false)}
-            />,
-            document.body
-          )}
-
-          <div className="absolute right-0 z-[100] mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
+          {/* Backdrop — z-99 in document root catches all outside clicks */}
+          <button
+            style={{ position: "fixed", inset: 0, zIndex: 99, background: "rgba(0,0,0,0.001)", border: "none", padding: 0, cursor: "default" }}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          {/* Dropdown — z-100 in document root, above backdrop */}
+          <div
+            style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 100 }}
+            className="w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl"
+          >
             {isAdmin && (
               <Link
                 href="/admin"
@@ -142,46 +151,28 @@ export default function AuthButton() {
                 Dashboard
               </Link>
             )}
-            <Link
-              href="/profile"
-              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/profile" className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]" onClick={() => setOpen(false)}>
               Profile
             </Link>
-            <Link
-              href="/account"
-              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/account" className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]" onClick={() => setOpen(false)}>
               Account
             </Link>
-            <Link
-              href="/subscription"
-              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/subscription" className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]" onClick={() => setOpen(false)}>
               Subscription
             </Link>
-            <Link
-              href="/manage-youth"
-              className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/manage-youth" className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]" onClick={() => setOpen(false)}>
               Manage Youth
             </Link>
             <Link
               href="/sign-in"
-              onClick={(e) => {
-                e.preventDefault();
-                void handleSignOut();
-              }}
+              onClick={(e) => { e.preventDefault(); void handleSignOut(); }}
               className="block rounded-md px-3 py-2 text-sm text-white hover:bg-[rgba(120,120,120,0.35)]"
             >
               Sign out
             </Link>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
