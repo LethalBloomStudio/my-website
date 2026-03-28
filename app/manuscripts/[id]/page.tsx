@@ -1750,21 +1750,16 @@ function PageInner() {
                           const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && para.includes(f.selection_excerpt));
                           const activeFeedback = paraFeedbacks.find((f) => f.id === selectedFeedbackId);
 
-                          // Build HTML string for paragraph (preserves inline formatting)
-                          let paraHtml = para;
-                          if (activeFeedback?.selection_excerpt) {
-                            const ex = activeFeedback.selection_excerpt;
-                            const exIdx = paraHtml.indexOf(ex);
-                            if (exIdx !== -1) {
-                              paraHtml =
-                                paraHtml.slice(0, exIdx) +
-                                `<span style="background-color:rgba(255,200,60,0.28)">${paraHtml.slice(exIdx, exIdx + ex.length)}</span>` +
-                                paraHtml.slice(exIdx + ex.length);
-                            }
-                          }
-
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
+                              {/* Highlight overlay — shown when this paragraph has the active feedback.
+                                  Uses a separate element so the <p> innerHTML never changes and the font stays stable. */}
+                              {activeFeedback && (
+                                <div
+                                  className="absolute inset-0 rounded pointer-events-none"
+                                  style={{ backgroundColor: "rgba(255,200,60,0.07)", borderLeft: "2px solid rgba(255,180,40,0.55)", marginLeft: "-0.5rem", paddingLeft: "0.5rem" }}
+                                />
+                              )}
                               {paraFeedbacks.length > 0 && (
                                 <div className="absolute -left-6 top-0.5 flex flex-col gap-1.5">
                                   {paraFeedbacks.map((f) => (
@@ -1793,7 +1788,7 @@ function PageInner() {
                               <p
                                 className="whitespace-pre-line [text-indent:1.5rem] m-0"
                                 style={{ letterSpacing: "0.01em" }}
-                                dangerouslySetInnerHTML={{ __html: paraHtml }}
+                                dangerouslySetInnerHTML={{ __html: para }}
                               />
                             </div>
                           );
