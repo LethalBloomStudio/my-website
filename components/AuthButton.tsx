@@ -23,6 +23,20 @@ export default function AuthButton() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    if (!open) return;
+    function close() { setOpen(false); }
+    const t = setTimeout(() => {
+      window.addEventListener("click", close);
+      window.addEventListener("touchstart", close);
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("click", close);
+      window.removeEventListener("touchstart", close);
+    };
+  }, [open]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function load() {
@@ -129,14 +143,7 @@ export default function AuthButton() {
 
       {signedIn && open && mounted && createPortal(
         <>
-          {/* Backdrop — z-99 in document root catches all outside clicks */}
-          <button
-            style={{ position: "fixed", inset: 0, zIndex: 99, background: "rgba(0,0,0,0.001)", border: "none", padding: 0, cursor: "default" }}
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-          {/* Dropdown — z-100 in document root, above backdrop */}
+          {/* Dropdown — portalled to document.body to escape navWrap stacking context */}
           <div
             style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 100 }}
             className="w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl"
@@ -171,6 +178,7 @@ export default function AuthButton() {
               Sign out
             </Link>
           </div>
+        </div>
         </>,
         document.body
       )}
