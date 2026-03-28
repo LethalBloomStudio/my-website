@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
@@ -91,15 +91,35 @@ export default function MobileNav() {
 
   const showAuthNav = signedIn && !isDeactivated && !isLocked;
   const [mounted, setMounted] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
+  // Close drawer on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    const t = setTimeout(() => {
+      window.addEventListener("mousedown", handleOutside);
+      window.addEventListener("touchstart", handleOutside);
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("mousedown", handleOutside);
+      window.removeEventListener("touchstart", handleOutside);
+    };
+  }, [open]);
+
   function close() { setOpen(false); }
 
   const drawer = open && mounted ? createPortal(
-    <nav className="mobileDrawer">
+    <nav className="mobileDrawer" ref={drawerRef}>
       <Link href="/" className="mobileNavLink" onClick={close}>Home</Link>
       <Link href="/pricing" className="mobileNavLink" onClick={close}>Pricing</Link>
       <Link href="/help" className="mobileNavLink" onClick={close}>Help</Link>
@@ -111,13 +131,13 @@ export default function MobileNav() {
           <Link href="/beta-readers" className="mobileNavLink" onClick={close}>Beta Readers</Link>
           <Link href="/manuscripts" className="mobileNavLink" onClick={close}>Manuscripts</Link>
           <Link href="/wallet" className="mobileNavLink" onClick={close}>Wallet</Link>
-          <Link href="/messages" className="mobileNavLink" onClick={close}>
+          <Link href="/messages" className="mobileNavLink" onClick={close} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             Messages
-            {msgCount > 0 && <span className="notifBadge" style={{ marginLeft: "8px" }}>{msgCount > 99 ? "99+" : msgCount}</span>}
+            {msgCount > 0 && <span className="notifBadge" style={{ position: "relative", top: "auto", right: "auto" }}>{msgCount > 99 ? "99+" : msgCount}</span>}
           </Link>
-          <Link href="/notifications" className="mobileNavLink" onClick={close}>
+          <Link href="/notifications" className="mobileNavLink" onClick={close} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             Notifications
-            {notifCount > 0 && <span className="notifBadge" style={{ marginLeft: "8px" }}>{notifCount > 99 ? "99+" : notifCount}</span>}
+            {notifCount > 0 && <span className="notifBadge" style={{ position: "relative", top: "auto", right: "auto" }}>{notifCount > 99 ? "99+" : notifCount}</span>}
           </Link>
           {(isYouth || isAdmin) && (
             <Link href="/youth-community" className="mobileNavLink" onClick={close}>Youth Community</Link>
@@ -133,22 +153,23 @@ export default function MobileNav() {
 
   return (
     <div className="mobileNavWrap">
-      <button
-        className="hamburger"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Toggle menu"
-        aria-expanded={open}
-        style={{ position: "relative" }}
-      >
+      <div style={{ position: "relative", display: "inline-flex" }}>
+        <button
+          className="hamburger"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Toggle menu"
+          aria-expanded={open}
+        >
+          <span className={`hamburgerBar${open ? " open" : ""}`} />
+          <span className={`hamburgerBar${open ? " open" : ""}`} />
+          <span className={`hamburgerBar${open ? " open" : ""}`} />
+        </button>
         {(msgCount + notifCount) > 0 && (
-          <span className="notifBadge" style={{ position: "absolute", top: "-4px", right: "-4px" }}>
+          <span className="notifBadge">
             {(msgCount + notifCount) > 99 ? "99+" : (msgCount + notifCount)}
           </span>
         )}
-        <span className={`hamburgerBar${open ? " open" : ""}`} />
-        <span className={`hamburgerBar${open ? " open" : ""}`} />
-        <span className={`hamburgerBar${open ? " open" : ""}`} />
-      </button>
+      </div>
       {drawer}
     </div>
   );
