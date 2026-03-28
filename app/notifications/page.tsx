@@ -1311,7 +1311,7 @@ export default function NotificationsPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto w-fit max-w-5xl px-6 py-16">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-32 lg:px-6 lg:pt-16">
         <h1 className="text-3xl font-semibold tracking-tight">Notifications</h1>
         <p className="mt-2 text-neutral-300">
           Feedback, line edit recommendations, comments, read requests, and admin updates.
@@ -1332,7 +1332,7 @@ export default function NotificationsPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
+                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
                   activeCategory === cat
                     ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white"
                     : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-300 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-100"
@@ -1346,13 +1346,13 @@ export default function NotificationsPage() {
             );
           })}
 
-          <span className="h-5 w-px bg-[rgba(120,120,120,0.3)]" aria-hidden="true" />
+          <span className="h-5 w-px shrink-0 bg-[rgba(120,120,120,0.3)]" aria-hidden="true" />
 
           {(["unread", "read"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(activeTab === tab ? "all" : tab)}
-              className={`notif-tab inline-flex h-9 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
+              className={`notif-tab inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
                 activeTab === tab
                   ? "border-[rgba(120,120,120,0.7)] bg-white/15 text-white"
                   : "border-[rgba(120,120,120,0.25)] bg-white/7 text-neutral-400 hover:text-neutral-200"
@@ -1369,7 +1369,7 @@ export default function NotificationsPage() {
           ))}
 
           <button
-            className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 text-sm text-neutral-300 transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-[rgba(120,120,120,0.5)] enabled:hover:text-neutral-100"
+            className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 text-sm text-neutral-300 transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-[rgba(120,120,120,0.5)] enabled:hover:text-neutral-100"
             onClick={markAllAsRead}
             disabled={unreadCount === 0}
           >
