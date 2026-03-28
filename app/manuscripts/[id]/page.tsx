@@ -524,7 +524,7 @@ function PageInner() {
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`} className="inline">
           <span
-            className={`border-b border-dotted border-[rgba(255,180,40,0.75)] rounded-sm transition-colors ${isActive ? "bg-[rgba(255,180,40,0.2)]" : ""}`}
+            className={`border-b-2 border-dotted border-amber-400 rounded-sm transition-colors ${isActive ? "bg-amber-400/25" : ""}`}
             dangerouslySetInnerHTML={{ __html: excerptHtml }}
           />
           <button
@@ -534,7 +534,7 @@ function PageInner() {
               setSelectedFeedbackId(isDeselecting ? null : item.id);
               setClickedMarkerTop(null);
             }}
-            className="relative -top-0.5 ml-0.5 inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[rgba(255,160,20,0.85)] text-[#1a1400] hover:bg-[rgba(255,160,20,1)] align-middle select-none transition-colors"
+            className={`relative -top-0.5 ml-0.5 inline-flex h-[20px] w-[20px] items-center justify-center rounded-full align-middle select-none transition-all shadow-sm ${isActive ? "bg-amber-400 text-amber-950 shadow-amber-400/50 scale-110" : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"}`}
             title="View feedback"
             aria-label="View feedback"
           >

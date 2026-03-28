@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -159,7 +159,8 @@ export default function ManuscriptDetailsPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const feedbackAsideRef = useRef<HTMLElement>(null);
-  type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
+  const [navH, setNavH] = useState(0);
+  type MarkerInfo = { top: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
@@ -179,6 +180,17 @@ export default function ManuscriptDetailsPage() {
   const genreOptions = genreOptionsForAgeCategory(profileAgeCategory);
   const sortedGenreOptions = useMemo(() => [...genreOptions].sort((a, b) => a.localeCompare(b)), [genreOptions]);
   const categoryMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Navbar height (keeps the sticky aside flush below the nav) ────────────
+  useLayoutEffect(() => {
+    const nav = document.querySelector(".navWrap") as HTMLElement | null;
+    if (!nav) return;
+    const update = () => setNavH(nav.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, []);
 
   // ── Auto-save ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -752,13 +764,28 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Scroll the selected feedback card into view and scroll the page to the text marker
+  // Align the selected feedback card beside its text marker in the sidebar
   useEffect(() => {
     if (!selectedFeedbackId) return;
     setTimeout(() => {
-      document.getElementById(`feedback-card-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      document.getElementById(`editor-marker-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
+      const aside = feedbackAsideRef.current;
+      const wrapper = editorWrapperRef.current;
+      const info = markerInfos[selectedFeedbackId];
+      if (cardEl && aside && wrapper && info) {
+        // Desired screen Y of the marker
+        const markerScreenY = wrapper.getBoundingClientRect().top + info.top;
+        // Desired screen Y of the aside top
+        const asideScreenTop = aside.getBoundingClientRect().top;
+        // Scroll the aside so the card's top aligns with the marker
+        const desiredRelativeTop = Math.max(0, markerScreenY - asideScreenTop);
+        aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
+      } else {
+        // Fallback: just bring card into view
+        cardEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
     }, 80);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
 
   // Find the DOM Range for an excerpt inside a root element using a TreeWalker
@@ -802,7 +829,6 @@ export default function ManuscriptDetailsPage() {
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
         top: lastRect.top - wrapperRect.top + lastRect.height / 2,
-        left: lastRect.right - wrapperRect.left + 2,
         highlightRects: clientRects.map((r) => ({
           top: r.top - wrapperRect.top,
           left: r.left - wrapperRect.left,
@@ -2093,14 +2119,14 @@ export default function ManuscriptDetailsPage() {
                                 left: r.left,
                                 width: r.width,
                                 height: r.height,
-                                backgroundColor: "rgba(255,180,40,0.18)",
-                                borderRadius: "2px",
+                                backgroundColor: "rgba(255,190,40,0.32)",
+                                borderRadius: "3px",
                                 pointerEvents: "none",
                                 zIndex: 5,
                               }}
                             />
                           ))}
-                          {/* Inline speech-bubble markers — appear right after each excerpt */}
+                          {/* Speech-bubble markers — right margin of editor, aligned to excerpt line */}
                           {Object.entries(markerInfos).map(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
                             return (
@@ -2117,17 +2143,17 @@ export default function ManuscriptDetailsPage() {
                                 style={{
                                   position: "absolute",
                                   top: info.top,
-                                  left: info.left,
+                                  right: 8,
                                   transform: "translateY(-50%)",
                                   zIndex: 10,
                                 }}
-                                className={`flex h-[18px] w-[18px] items-center justify-center rounded-full transition ${
+                                className={`flex h-[22px] w-[22px] items-center justify-center rounded-full shadow-md transition-all ${
                                   isSelected
-                                    ? "bg-[rgba(255,160,20,1)] text-[#1a1400] shadow-lg"
-                                    : "bg-[rgba(255,160,20,0.75)] text-[#1a1400] hover:bg-[rgba(255,160,20,1)]"
+                                    ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/40"
+                                    : "bg-amber-400/80 text-amber-950 hover:bg-amber-400 hover:scale-105"
                                 }`}
                               >
-                                <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
+                                <svg width="11" height="11" viewBox="0 0 9 9" fill="currentColor">
                                   <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                                 </svg>
                               </button>
@@ -2177,7 +2203,7 @@ export default function ManuscriptDetailsPage() {
                 </section>
 
                 {/* Feedback aside — always visible when chapter is open */}
-                <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+                <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}>
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                       Reader Feedback
