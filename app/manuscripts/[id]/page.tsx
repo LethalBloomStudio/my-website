@@ -1705,7 +1705,6 @@ function PageInner() {
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
                   className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] pl-12 pr-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
-                  style={{ fontFamily: "var(--font-merriweather, 'Merriweather', Georgia, 'Times New Roman', serif)" }}
                 >
                   {/* Watermark overlay — non-owners only */}
                   {!isOwner && (
@@ -1770,23 +1769,23 @@ function PageInner() {
                                         e.stopPropagation();
                                         setSelectedFeedbackId(selectedFeedbackId === f.id ? null : f.id);
                                       }}
-                                      className={`transition-opacity ${selectedFeedbackId === f.id ? "opacity-100" : "opacity-40 hover:opacity-80"}`}
+                                      className={`transition-opacity ${selectedFeedbackId === f.id ? "opacity-100" : "opacity-75 hover:opacity-100"}`}
                                       title="View feedback"
                                       aria-label="View feedback"
                                     >
-                                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <rect x="1" y="1" width="12" height="9" rx="2" fill="rgba(255,180,40,0.9)" />
-                                        <path d="M5 10.5L7 13L9 10.5H5Z" fill="rgba(255,180,40,0.9)" />
-                                        <circle cx="4.5" cy="5.5" r="1" fill="rgba(20,14,0,0.7)" />
-                                        <circle cx="7" cy="5.5" r="1" fill="rgba(20,14,0,0.7)" />
-                                        <circle cx="9.5" cy="5.5" r="1" fill="rgba(20,14,0,0.7)" />
+                                      <svg width="18" height="18" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="1" y="1" width="12" height="9" rx="2" fill="rgba(255,160,20,1)" />
+                                        <path d="M5 10.5L7 13L9 10.5H5Z" fill="rgba(255,160,20,1)" />
+                                        <circle cx="4.5" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
+                                        <circle cx="7" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
+                                        <circle cx="9.5" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
                                       </svg>
                                     </button>
                                   ))}
                                 </div>
                               )}
                               <p
-                                className="whitespace-pre-line [text-indent:1.5rem] m-0"
+                                className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0"
                                 style={{ letterSpacing: "0.01em" }}
                                 dangerouslySetInnerHTML={{ __html: para }}
                               />
@@ -1913,7 +1912,7 @@ function PageInner() {
                                   if ((e.target as HTMLElement).closest("button,textarea")) return;
                                   setClickedMarkerTop(null);
                                   setSelectedFeedbackId(f.id);
-                                  document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "instant", block: "nearest" });
                                 }}
                               >
                                 <div className="flex items-center justify-between gap-1">

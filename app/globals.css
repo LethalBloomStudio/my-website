@@ -463,13 +463,18 @@ select optgroup {
   outline: none;
 }
 
+/* ---------- Shared manuscript font — used in editor AND reader so they always match ---------- */
+.chapter-ms-font {
+  font-family: var(--font-merriweather, Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif) !important;
+}
+
 /* ---------- Chapter Editor (contenteditable) ---------- */
 .chapter-editor {
   outline: none;
   word-break: break-word;
   overflow-wrap: break-word;
-  /* Manuscript typography */
-  font-family: Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif;
+  /* Manuscript typography — must match reader view */
+  font-family: var(--font-merriweather, Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif);
   font-size: 1.0625rem;        /* ~17px — comfortable reading size */
   line-height: 1.65;
   color: #e8e8e8;
