@@ -80,6 +80,10 @@ export const metadata: Metadata = {
     shortcut: "/brand/logo.svg",
     apple: "/brand/logo.svg",
   },
+
+  verification: {
+    google: "wZNOEZmRBm0uf-lQ3X79cewcsWFpRlKobWbCzdvHI5I",
+  },
 };
 
 export const viewport: Viewport = {
