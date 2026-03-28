@@ -157,6 +157,9 @@ export default function ManuscriptDetailsPage() {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+  const feedbackAsideRef = useRef<HTMLElement>(null);
+  const [markerPositions, setMarkerPositions] = useState<Record<string, number>>({});
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
@@ -754,6 +757,56 @@ export default function ManuscriptDetailsPage() {
     setTimeout(() => {
       document.getElementById(`feedback-card-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 60);
+  }, [selectedFeedbackId]);
+
+  // Compute marker Y positions — runs after the editor DOM has settled
+  function recomputeMarkers() {
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+    const editorEl = wrapper.querySelector(".chapter-editor") as HTMLElement | null;
+    if (!editorEl) return;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const editorRect = editorEl.getBoundingClientRect();
+    const editorOffsetTop = editorRect.top - wrapperRect.top;
+    const positions: Record<string, number> = {};
+    const paragraphs = Array.from(editorEl.querySelectorAll("p"));
+    for (const f of feedbackItems) {
+      if (!f.selection_excerpt || f.resolved || !!f.author_response) continue;
+      const p = paragraphs.find((el) => (el.textContent ?? "").includes(f.selection_excerpt));
+      if (!p) continue;
+      const pRect = p.getBoundingClientRect();
+      positions[f.id] = editorOffsetTop + (pRect.top - editorRect.top) + pRect.height * 0.4;
+    }
+    setMarkerPositions(positions);
+  }
+
+  useEffect(() => {
+    // Wait one frame for the editor DOM to paint before measuring
+    const id = requestAnimationFrame(recomputeMarkers);
+    return () => cancelAnimationFrame(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChapterId, feedbackItems]);
+
+  useEffect(() => {
+    const wrapper = editorWrapperRef.current;
+    if (!wrapper) return;
+    const ro = new ResizeObserver(() => recomputeMarkers());
+    ro.observe(wrapper);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChapterId]);
+
+  // Click anywhere outside the editor markers and feedback aside to deselect
+  useEffect(() => {
+    if (!selectedFeedbackId) return;
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (feedbackAsideRef.current?.contains(target)) return;
+      if (editorWrapperRef.current?.contains(target)) return;
+      setSelectedFeedbackId(null);
+    }
+    document.addEventListener("click", onDocClick, true);
+    return () => document.removeEventListener("click", onDocClick, true);
   }, [selectedFeedbackId]);
 
   function categoryLimit(nextCategories: string[]) {
@@ -1988,13 +2041,38 @@ export default function ManuscriptDetailsPage() {
                           ))}
                         </div>
                       ) : (
-                        <ChapterEditor
-                          value={chapterEditorContent}
-                          onChange={setChapterEditorContent}
-                          normalize={normalizeChapterText}
-                          placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
-                          className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
-                        />
+                        <div ref={editorWrapperRef} className="relative">
+                          <ChapterEditor
+                            value={chapterEditorContent}
+                            onChange={setChapterEditorContent}
+                            normalize={normalizeChapterText}
+                            placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
+                            className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
+                          />
+                          {/* Inline feedback markers — positioned over the editor text */}
+                          {Object.entries(markerPositions).map(([fid, topPx]) => {
+                            const isSelected = selectedFeedbackId === fid;
+                            return (
+                              <button
+                                key={fid}
+                                type="button"
+                                title="View feedback"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFeedbackId(isSelected ? null : fid);
+                                }}
+                                style={{ position: "absolute", right: "0.5rem", top: topPx, transform: "translateY(-50%)" }}
+                                className={`z-10 flex h-6 w-6 items-center justify-center rounded-full border text-[11px] leading-none transition ${
+                                  isSelected
+                                    ? "border-[rgba(180,180,180,0.9)] bg-[rgba(120,120,120,0.55)] text-white shadow-lg"
+                                    : "border-[rgba(120,120,120,0.6)] bg-[rgba(30,30,30,0.85)] text-neutral-400 hover:border-[rgba(180,180,180,0.7)] hover:text-white"
+                                }`}
+                              >
+                                💬
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                       {!previewMode && (
                         <div className="mt-2 flex items-center justify-between gap-4">
@@ -2038,7 +2116,7 @@ export default function ManuscriptDetailsPage() {
                 </section>
 
                 {/* Feedback aside — always visible when chapter is open */}
-                <aside className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+                <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                       Reader Feedback
@@ -2090,7 +2168,7 @@ export default function ManuscriptDetailsPage() {
                               isSelected
                                 ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)]"
                                 : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)] hover:border-[rgba(120,120,120,0.45)] hover:bg-[rgba(120,120,120,0.09)]"
-                            }`}
+                            } ${selectedFeedbackId && !isSelected ? "opacity-40" : ""}`}
                           >
                             {/* Header */}
                             <div className="flex items-center justify-between gap-1 mb-1.5">
