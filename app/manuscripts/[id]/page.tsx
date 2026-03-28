@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export const dynamic = "force-dynamic";
 
@@ -1773,9 +1774,9 @@ function PageInner() {
             </section>
           )}
           {activeChapter && (
-            <div className="flex gap-4 items-start pb-16">
+            <div className="flex flex-col gap-4 items-start pb-16 lg:flex-row">
               {/* Chapter text — full page scroll, no internal scrollbox */}
-              <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+              <section ref={chapterSectionRef} className="w-full min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {activeChapter.chapter_order}</p>
@@ -1917,7 +1918,7 @@ function PageInner() {
               {canRead && (
                 <div
                   ref={asideRef}
-                  className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
+                  className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
                   style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}
                 >
                   {/* Total word count for this reader's feedback + coin progress */}

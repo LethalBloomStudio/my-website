@@ -185,6 +185,13 @@ button:hover {
   }
 }
 
+/* Force chapter layout to stack when running as a standalone/PWA to prevent overlap. */
+@media all and (display-mode: standalone) {
+  .manuscript-layout {
+    flex-direction: column !important;
+  }
+}
+
 @media (min-width: 1281px) {
   .mobileNavWrap {
     display: none !important;
@@ -508,6 +515,16 @@ select optgroup {
   content: attr(data-placeholder);
   color: rgba(115, 115, 115, 0.55);
   pointer-events: none;
+}
+
+/* ---------- Chapter feedback aside — responsive sticky ---------- */
+/* On screens narrower than lg (1024px) override the inline sticky/maxHeight
+   so the feedback panel stacks below the chapter text as a full-width box. */
+@media (max-width: 1023px) {
+  .chapter-feedback-aside {
+    position: static !important;
+    max-height: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
