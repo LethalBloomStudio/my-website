@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-expressions */
 
 export const dynamic = "force-dynamic";
 
@@ -159,6 +160,7 @@ export default function ManuscriptDetailsPage() {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [ownerPenName, setOwnerPenName] = useState("");
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const feedbackAsideRef = useRef<HTMLElement>(null);
   const [navH, setNavH] = useState(0);
@@ -408,11 +410,13 @@ export default function ManuscriptDetailsPage() {
 
     const { data: profile } = await supabase
       .from("public_profiles")
-      .select("writer_level, feedback_preference")
+      .select("writer_level, feedback_preference, pen_name, username")
       .eq("user_id", userId)
       .maybeSingle();
-    const writerLevel = (profile as { writer_level?: string | null; feedback_preference?: string | null } | null)?.writer_level;
-    const feedbackPref = (profile as { writer_level?: string | null; feedback_preference?: string | null } | null)?.feedback_preference ?? "gentle";
+    const profRow = profile as { writer_level?: string | null; feedback_preference?: string | null; pen_name?: string | null; username?: string | null } | null;
+    const writerLevel = profRow?.writer_level;
+    const feedbackPref = profRow?.feedback_preference ?? "gentle";
+    setOwnerPenName(profRow?.pen_name || (profRow?.username ? `@${profRow.username}` : "Author"));
     setProfileFeedbackPreference(feedbackPref);
     const subscription = (accountRow?.subscription_status ?? "").toLowerCase();
     const lethalFromSubscription = subscription.includes("lethal");
@@ -660,13 +664,11 @@ export default function ManuscriptDetailsPage() {
         }
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, chapters]);
+  }, [loading, chapters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parent view: always show chapters in read-only preview mode
   useEffect(() => {
     if (isParentView && selectedChapterId) setPreviewMode(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isParentView, selectedChapterId]);
 
   useEffect(() => {
@@ -703,7 +705,6 @@ export default function ManuscriptDetailsPage() {
     const ro = new ResizeObserver(() => onReaderScroll());
     ro.observe(el);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -2139,12 +2140,54 @@ export default function ManuscriptDetailsPage() {
 
                     <div>
                       {previewMode ? (
-                        <div className="min-h-[44rem] rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(18,18,18,0.85)] px-8 py-8 space-y-5 overflow-y-auto">
-                          {previewParagraphs.map((para, idx) => (
-                            <p key={idx} id={`preview-para-${idx}`} className="text-base leading-relaxed text-neutral-200">
-                              {activeExcerpt ? highlightExcerpt(para, activeExcerpt) : para}
-                            </p>
-                          ))}
+                        <div className="chapter-ms-font relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
+                          {/* Owner watermark — tiled, same style as reader watermark */}
+                          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+                            {Array.from({ length: 16 }).map((_, row) =>
+                              Array.from({ length: 3 }).map((_, col) => (
+                                <span
+                                  key={`${row}-${col}`}
+                                  style={{
+                                    position: "absolute",
+                                    top: `${row * 7 + (col * 11 % 5)}%`,
+                                    left: `${col * 35 + (row * 7 % 12) - 5}%`,
+                                    transform: "rotate(-30deg)",
+                                    fontSize: "26px",
+                                    fontFamily: "sans-serif",
+                                    fontWeight: 600,
+                                    color: "rgba(25,25,27,0.85)",
+                                    whiteSpace: "nowrap",
+                                    letterSpacing: "0.04em",
+                                    userSelect: "none",
+                                    pointerEvents: "none",
+                                  }}
+                                >
+                                  <span style={{ display: "block" }}>
+                                    {ownerPenName} · Uploaded: {selectedChapter.created_at ? new Date(selectedChapter.created_at).toLocaleDateString() : ""}
+                                  </span>
+                                </span>
+                              ))
+                            )}
+                          </div>
+                          {/* Paragraphs — identical to reader rendering */}
+                          <div className="relative z-[1] space-y-4">
+                            {previewParagraphs.length === 0 ? (
+                              <p className="text-sm text-neutral-400">No content yet.</p>
+                            ) : (
+                              previewParagraphs.map((para, idx) => (
+                                <p
+                                  key={idx}
+                                  id={`preview-para-${idx}`}
+                                  className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0 mb-3"
+                                  style={{ letterSpacing: "0.01em" }}
+                                >
+                                  {activeExcerpt
+                                    ? highlightExcerpt(para, activeExcerpt)
+                                    : <span dangerouslySetInnerHTML={{ __html: para }} />}
+                                </p>
+                              ))
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div ref={editorWrapperRef} className="relative">
