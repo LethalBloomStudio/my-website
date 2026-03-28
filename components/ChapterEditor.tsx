@@ -8,6 +8,7 @@ type Props = {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  style?: React.CSSProperties;
   normalize?: (raw: string) => string;
 };
 
@@ -199,7 +200,7 @@ function ensureParagraphWrap(el: HTMLElement) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ChapterEditor({ value, onChange, placeholder, className, normalize }: Props) {
+export default function ChapterEditor({ value, onChange, placeholder, className, style, normalize }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const lastEmitted = useRef<string>("");
   const applyNorm = normalize ?? normalizeChapterText;
@@ -389,6 +390,7 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
         onInput={handleInput}
         data-placeholder={placeholder ?? ""}
         className={`chapter-editor rounded-t-none ${className ?? ""}`}
+        style={style}
       />
     </div>
   );
