@@ -1749,18 +1749,16 @@ function PageInner() {
                           const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && para.includes(f.selection_excerpt));
                           const activeFeedback = paraFeedbacks.find((f) => f.id === selectedFeedbackId);
 
-                          let paraContent: React.ReactNode = para;
+                          // Build HTML string for paragraph (preserves inline formatting)
+                          let paraHtml = para;
                           if (activeFeedback?.selection_excerpt) {
                             const ex = activeFeedback.selection_excerpt;
-                            const exIdx = para.indexOf(ex);
+                            const exIdx = paraHtml.indexOf(ex);
                             if (exIdx !== -1) {
-                              paraContent = (
-                                <>
-                                  {para.slice(0, exIdx)}
-                                  <span style={{ backgroundColor: "rgba(255,200,60,0.28)" }}>{para.slice(exIdx, exIdx + ex.length)}</span>
-                                  {para.slice(exIdx + ex.length)}
-                                </>
-                              );
+                              paraHtml =
+                                paraHtml.slice(0, exIdx) +
+                                `<span style="background-color:rgba(255,200,60,0.28)">${paraHtml.slice(exIdx, exIdx + ex.length)}</span>` +
+                                paraHtml.slice(exIdx + ex.length);
                             }
                           }
 
@@ -1794,9 +1792,8 @@ function PageInner() {
                               <p
                                 className="whitespace-pre-line [text-indent:1.5rem] m-0"
                                 style={{ letterSpacing: "0.01em" }}
-                              >
-                                {paraContent}
-                              </p>
+                                dangerouslySetInnerHTML={{ __html: paraHtml }}
+                              />
                             </div>
                           );
                         });
