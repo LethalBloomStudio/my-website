@@ -11,10 +11,12 @@ export default function MessagesNavButton() {
 
   useEffect(() => {
     let mounted = true;
+    let userId: string | null = null;
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
     async function load() {
       const { data: auth } = await supabase.auth.getSession();
-      const userId = auth.session?.user?.id;
+      userId = auth.session?.user?.id ?? null;
       if (!userId || !mounted) {
         if (mounted) setVisible(false);
         return;
@@ -58,6 +60,36 @@ export default function MessagesNavButton() {
         setVisible(true);
         setCount(total);
       }
+
+      // Set up realtime after we know the userId
+      if (realtimeChannel) {
+        void supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
+      if (userId && mounted) {
+        realtimeChannel = supabase
+          .channel(`msg-badge-${userId}`)
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${userId}` },
+            () => { if (mounted) void refreshCount(userId!); }
+          )
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${userId}` },
+            () => { if (mounted) void refreshCount(userId!); }
+          )
+          .subscribe();
+      }
+    }
+
+    async function refreshCount(uid: string) {
+      const [friendReq, contactReq, unreadMessages] = await Promise.all([
+        supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
+        supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
+        supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
+      ]);
+      if (mounted) setCount((friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0));
     }
 
     load();
@@ -67,15 +99,16 @@ export default function MessagesNavButton() {
     });
 
     const timer = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        load();
+      if (document.visibilityState === "visible" && userId) {
+        void refreshCount(userId);
       }
-    }, 90000);
+    }, 30000);
 
     return () => {
       mounted = false;
       clearInterval(timer);
       sub.subscription.unsubscribe();
+      if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
     };
   }, [supabase]);
 
