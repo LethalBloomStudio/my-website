@@ -993,26 +993,29 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
-  // When a feedback card is selected, scroll the sidebar and scroll the text to the marker
+  // When a feedback card is selected, scroll the page to show the text marker
+  // then align the sidebar card beside it
   useEffect(() => {
     if (!selectedFeedbackId) return;
-    // Sync sidebar card position
-    const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
-    const container = cardAreaRef.current;
-    if (cardEl && container) {
-      const desiredTop = markerTops[selectedFeedbackId] ?? 0;
-      container.scrollTop = cardEl.offsetTop - desiredTop;
-    }
-    // Scroll the text panel so the marker is roughly a third from the top
     const markerEl = document.getElementById(`text-marker-${selectedFeedbackId}`);
-    const textPanel = chapterSectionRef.current;
-    if (markerEl && textPanel) {
-      const panelRect = textPanel.getBoundingClientRect();
-      const markerRect = markerEl.getBoundingClientRect();
-      const targetScroll = textPanel.scrollTop + (markerRect.top - panelRect.top) - textPanel.clientHeight / 3;
-      textPanel.scrollTo({ top: targetScroll, behavior: "smooth" });
+    if (markerEl) {
+      const rect = markerEl.getBoundingClientRect();
+      const targetScrollY = window.scrollY + rect.top - window.innerHeight * 0.35;
+      window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
     }
-  }, [selectedFeedbackId, markerTops]);
+    // After page scroll animation, align sidebar card beside the marker
+    setTimeout(() => {
+      const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
+      const container = asideRef.current;
+      if (cardEl && container) {
+        // Marker lands at ~35% from viewport top; aside sticky top = navH + 12
+        const markerViewportY = window.innerHeight * 0.35;
+        const desiredRelativeTop = Math.max(0, markerViewportY - navH - 12);
+        container.scrollTop = cardEl.offsetTop - desiredRelativeTop;
+      }
+    }, 350);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFeedbackId]);
 
   // Auto-dismiss coin toast after 5 seconds
   useEffect(() => {
@@ -1061,15 +1064,7 @@ function PageInner() {
     return () => ro.disconnect();
   }, []);
 
-  // Lock body scroll while the chapter reader is open
-  useEffect(() => {
-    if (activeChapter) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [activeChapter]);
+  // (body scroll lock removed — chapter now uses normal page scroll)
 
   async function _reply(f: LineFeedback) {
     const body = (replyDrafts[f.id] ?? "").trim();
@@ -1729,12 +1724,9 @@ function PageInner() {
             </section>
           )}
           {activeChapter && (
-            <div
-              className="flex gap-4 bg-neutral-950 px-6 pb-6"
-              style={{ position: "fixed", top: navH, left: 0, right: 0, bottom: 0, zIndex: 40 }}
-            >
-              {/* Chapter text box */}
-              <section ref={chapterSectionRef} className="min-w-0 flex-1 overflow-y-auto rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+            <div className="flex gap-4 items-start pb-16">
+              {/* Chapter text — full page scroll, no internal scrollbox */}
+              <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {activeChapter.chapter_order}</p>
@@ -1848,12 +1840,12 @@ function PageInner() {
                 </div>
               </section>
 
-              {/* Feedback column — same size as chapter box, cards align with their text */}
+              {/* Feedback column — sticky alongside the chapter text */}
               {canRead && (
-                <div className="w-72 shrink-0 flex flex-col">
                 <div
                   ref={asideRef}
-                  className="flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
+                  className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
+                  style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}
                 >
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && (
@@ -2132,7 +2124,6 @@ function PageInner() {
                     );
                   })()}
                   </div>
-              </div>
                 </div>
             )}
           </div>
