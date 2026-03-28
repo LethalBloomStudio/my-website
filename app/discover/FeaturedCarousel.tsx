@@ -9,6 +9,7 @@ import OutOfCoinsModal from "@/components/OutOfCoinsModal";
 
 const MAX_SLOTS = 25;
 const COST = 100;
+const INITIAL_NOW = Date.now();
 
 type FeaturedSlot = {
   id: string;
@@ -50,7 +51,7 @@ export default function FeaturedCarousel() {
   const [coins, setCoins] = useState(0);
   const [userManuscripts, setUserManuscripts] = useState<UserManuscript[]>([]);
   const [myActiveSlot, setMyActiveSlot] = useState<{ manuscript_id: string; expires_at: string } | null | undefined>(undefined);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(INITIAL_NOW);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
@@ -75,14 +76,15 @@ export default function FeaturedCarousel() {
     if (!el) return;
     const amount = 220;
     const copyWidth = el.scrollWidth / 3;
-    // Silently reposition into the middle copy before animating —
-    // all three copies are identical so this is invisible to the user.
+    // Silently reposition into the middle copy so both arrows always have room.
     if (el.scrollLeft < copyWidth) {
       el.scrollLeft += copyWidth;
     } else if (el.scrollLeft > copyWidth * 2) {
       el.scrollLeft -= copyWidth;
     }
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    // Direct assignment — avoids the scrollBy smooth-scroll being cancelled by the
+    // RAF loop's own direct scrollLeft writes on the very next animation frame.
+    el.scrollLeft += dir === "left" ? -amount : amount;
   }, []);
 
   const loadSlots = useCallback(async () => {
@@ -186,6 +188,7 @@ export default function FeaturedCarousel() {
   // Load slots once audience is known, and refresh every 60s
   useEffect(() => {
     if (!audience) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSlots();
     const id = setInterval(() => void loadSlots(), 60_000);
     return () => clearInterval(id);
@@ -305,6 +308,9 @@ export default function FeaturedCarousel() {
         className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
         onMouseEnter={() => { isHoveredRef.current = true; }}
         onMouseLeave={() => { isHoveredRef.current = false; }}
+        onTouchStart={() => { isHoveredRef.current = true; }}
+        onTouchEnd={() => { isHoveredRef.current = false; }}
+        onTouchCancel={() => { isHoveredRef.current = false; }}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Featured</h2>
