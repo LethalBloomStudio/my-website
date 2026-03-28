@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import React, { Suspense } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
@@ -456,72 +456,104 @@ function PageInner() {
     if (json.reply) setReplies((prev) => [...prev, json.reply!]);
   }
 
-  function _highlightExcerpt(text: string, excerpt: string) {
-    if (!excerpt) return <>{text}</>;
-    const idx = text.indexOf(excerpt);
-    if (idx === -1) return <>{text}</>;
-    return (
-      <>
-        {text.slice(0, idx)}
-        <mark className="rounded bg-[rgba(120,120,120,0.4)] px-0.5 text-[#e9e6ff] not-italic">{text.slice(idx, idx + excerpt.length)}</mark>
-        {text.slice(idx + excerpt.length)}
-      </>
-    );
-  }
+  /**
+   * Renders a paragraph (which may contain inline HTML like <strong>, <em>) with
+   * speech-bubble marker buttons inserted right after each feedback excerpt.
+   * The HTML is split at excerpt positions so that React only updates the button
+   * element when selectedFeedbackId changes — the surrounding HTML spans are
+   * never re-set, preventing any font flash.
+   */
+  function renderParagraphContent(
+    html: string,
+    markerItems: LineFeedback[],
+  ): React.ReactNode {
+    // Derive plain text (tag-stripped) for excerpt position searching
+    const plainText = html.replace(/<[^>]+>/g, "");
 
-  function renderWithMarkers(text: string, markerItems: LineFeedback[], activeId: string | null): React.ReactNode {
+    // Find non-overlapping positions of each excerpt in the plain text
     const found: { start: number; end: number; id: string }[] = [];
     for (const f of markerItems) {
       if (!f.selection_excerpt) continue;
-      const idx = text.indexOf(f.selection_excerpt);
+      const idx = plainText.indexOf(f.selection_excerpt);
       if (idx === -1) continue;
       found.push({ start: idx, end: idx + f.selection_excerpt.length, id: f.id });
     }
-    if (found.length === 0) return <>{text}</>;
+    if (found.length === 0) return <span dangerouslySetInnerHTML={{ __html: html }} />;
+
     found.sort((a, b) => a.start - b.start);
     const clean: typeof found = [];
     let lastEnd = -1;
     for (const item of found) {
       if (item.start >= lastEnd) { clean.push(item); lastEnd = item.end; }
     }
+
+    // Map a plain-text character offset → index in the HTML string
+    function plainToHtmlIdx(target: number): number {
+      let plain = 0;
+      let i = 0;
+      while (i < html.length) {
+        if (html[i] === "<") {
+          while (i < html.length && html[i] !== ">") i++;
+          i++;
+        } else {
+          if (plain === target) return i;
+          plain++;
+          i++;
+        }
+      }
+      return html.length;
+    }
+
     const parts: React.ReactNode[] = [];
-    let cursor = 0;
+    let lastHtmlIdx = 0;
+
     for (const item of clean) {
-      if (item.start > cursor) parts.push(text.slice(cursor, item.start));
-      const isActive = activeId === item.id;
-      const excerpt = text.slice(item.start, item.end);
+      const startH = plainToHtmlIdx(item.start);
+      const endH   = plainToHtmlIdx(item.end);
+
+      // Text before this excerpt
+      if (startH > lastHtmlIdx) {
+        parts.push(
+          <span key={`pre-${item.id}`} dangerouslySetInnerHTML={{ __html: html.slice(lastHtmlIdx, startH) }} />
+        );
+      }
+
+      // The excerpt with dotted underline + speech-bubble button
+      const excerptHtml = html.slice(startH, endH);
       parts.push(
-        <span key={item.id} id={`text-marker-${item.id}`}>
-          {isActive
-            ? <span className="border-b-2 border-[rgba(255,180,40,0.9)]">{excerpt}</span>
-            : <span className="border-b border-dotted border-[rgba(255,180,40,0.65)]">{excerpt}</span>}
+        <span key={item.id} id={`text-marker-${item.id}`} className="inline">
+          <span
+            className="border-b border-dotted border-[rgba(255,180,40,0.75)]"
+            dangerouslySetInnerHTML={{ __html: excerptHtml }}
+          />
           <button
             onClick={(e) => {
               e.stopPropagation();
               const isDeselecting = selectedFeedbackId === item.id;
               setSelectedFeedbackId(isDeselecting ? null : item.id);
-              if (!isDeselecting && cardAreaRef.current) {
-                const markerRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                const cardAreaRect = cardAreaRef.current.getBoundingClientRect();
-                const relTop = Math.max(0, markerRect.top - cardAreaRect.top - 8);
-                setClickedMarkerTop(relTop);
-              } else {
-                setClickedMarkerTop(null);
-              }
+              setClickedMarkerTop(null);
             }}
-            className="relative -top-0.5 ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(255,180,40,0.75)] text-[#1a1400] hover:bg-[rgba(255,180,40,1)] align-middle select-none transition-colors"
-            title="View comment"
-            aria-label="View comment"
+            className="relative -top-0.5 ml-0.5 inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[rgba(255,160,20,0.85)] text-[#1a1400] hover:bg-[rgba(255,160,20,1)] align-middle select-none transition-colors"
+            title="View feedback"
+            aria-label="View feedback"
           >
-            <svg width="9" height="9" viewBox="0 0 9 9" fill="currentColor">
+            <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
               <path d="M1 1h7v5H6L4 8V6H1V1z"/>
             </svg>
           </button>
         </span>
       );
-      cursor = item.end;
+
+      lastHtmlIdx = endH;
     }
-    if (cursor < text.length) parts.push(text.slice(cursor));
+
+    // Remaining text after all excerpts
+    if (lastHtmlIdx < html.length) {
+      parts.push(
+        <span key="tail" dangerouslySetInnerHTML={{ __html: html.slice(lastHtmlIdx) }} />
+      );
+    }
+
     return <>{parts}</>;
   }
 
@@ -1004,8 +1036,10 @@ function PageInner() {
     return () => document.removeEventListener("click", onDocClick, true);
   }, [selectedFeedbackId]);
 
-  // Measure navbar height so the fixed chapter reader sits flush below it
-  useEffect(() => {
+  // Measure navbar height so the fixed chapter reader sits flush below it.
+  // useLayoutEffect fires synchronously before the browser paints, so navH is
+  // set before the first frame — the fixed panel never flashes at top:0.
+  useLayoutEffect(() => {
     const nav = document.querySelector(".navWrap") as HTMLElement | null;
     if (!nav) return;
     const update = () => setNavH(nav.getBoundingClientRect().height);
@@ -1729,7 +1763,7 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] pl-12 pr-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`chapter-ms-font relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
                 >
                   {/* Watermark overlay — non-owners only */}
                   {!isOwner && (
@@ -1771,49 +1805,28 @@ function PageInner() {
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
                         return manuscriptParagraphs.map((para, idx) => {
-                          const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && para.includes(f.selection_excerpt));
+                          const plainPara = para.replace(/<[^>]+>/g, "");
+                          const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && (para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt)));
                           const activeFeedback = paraFeedbacks.find((f) => f.id === selectedFeedbackId);
 
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
-                              {/* Highlight overlay — shown when this paragraph has the active feedback.
-                                  Uses a separate element so the <p> innerHTML never changes and the font stays stable. */}
+                              {/* Subtle left-border highlight when this paragraph's feedback is selected */}
                               {activeFeedback && (
                                 <div
                                   className="absolute inset-0 rounded pointer-events-none"
-                                  style={{ backgroundColor: "rgba(255,200,60,0.07)", borderLeft: "2px solid rgba(255,180,40,0.55)", marginLeft: "-0.5rem", paddingLeft: "0.5rem" }}
+                                  style={{ borderLeft: "2px solid rgba(255,180,40,0.6)", marginLeft: "-0.5rem" }}
                                 />
-                              )}
-                              {paraFeedbacks.length > 0 && (
-                                <div className="absolute -left-6 top-0.5 flex flex-col gap-1.5">
-                                  {paraFeedbacks.map((f) => (
-                                    <button
-                                      key={f.id}
-                                      id={`text-marker-${f.id}`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFeedbackId(selectedFeedbackId === f.id ? null : f.id);
-                                      }}
-                                      className={`transition-opacity ${selectedFeedbackId === f.id ? "opacity-100" : "opacity-75 hover:opacity-100"}`}
-                                      title="View feedback"
-                                      aria-label="View feedback"
-                                    >
-                                      <svg width="18" height="18" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <rect x="1" y="1" width="12" height="9" rx="2" fill="rgba(255,160,20,1)" />
-                                        <path d="M5 10.5L7 13L9 10.5H5Z" fill="rgba(255,160,20,1)" />
-                                        <circle cx="4.5" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
-                                        <circle cx="7" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
-                                        <circle cx="9.5" cy="5.5" r="1" fill="rgba(20,14,0,0.8)" />
-                                      </svg>
-                                    </button>
-                                  ))}
-                                </div>
                               )}
                               <p
                                 className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0"
                                 style={{ letterSpacing: "0.01em" }}
-                                dangerouslySetInnerHTML={{ __html: para }}
-                              />
+                              >
+                                {paraFeedbacks.length > 0
+                                  ? renderParagraphContent(para, paraFeedbacks)
+                                  : <span dangerouslySetInnerHTML={{ __html: para }} />
+                                }
+                              </p>
                             </div>
                           );
                         });
