@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { normalizeChapterText } from "@/lib/format/chapterNormalize";
+import { normalizeChapterText, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 
 type Props = {
   value: string;
@@ -28,8 +28,8 @@ function textToHtml(text: string): string {
   return blocks
     .map((b, i) => {
       if (b === "***") return `<p data-scene-break="1">***</p>`;
-      // Don't escape — content may contain inline HTML formatting (<strong>, <em>, <u>, <s>)
-      const html = b.replace(/\n/g, "<br>");
+      // Sanitize legacy inline HTML (strips styles/unknown tags), then convert soft breaks
+      const html = sanitizeChapterHtml(b).replace(/\n/g, "<br>");
       const prev = blocks[i - 1];
       const noIndent = i === 0 || prev === "***";
       return noIndent ? `<p data-no-indent="1">${html}</p>` : `<p>${html}</p>`;
@@ -228,6 +228,35 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     if (ref.current) emit(ref.current);
   }
 
+  function insertChar(char: string) {
+    ref.current?.focus();
+    document.execCommand("insertText", false, char);
+    if (ref.current) emit(ref.current);
+  }
+
+  function insertSceneBreak() {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    ensureParagraphWrap(el);
+    const curP = currentParagraph(el);
+    const breakP = document.createElement("p");
+    breakP.setAttribute("data-scene-break", "1");
+    breakP.textContent = "***";
+    const afterP = document.createElement("p");
+    afterP.setAttribute("data-no-indent", "1");
+    afterP.innerHTML = "<br>";
+    if (curP) {
+      curP.after(breakP);
+      breakP.after(afterP);
+    } else {
+      el.appendChild(breakP);
+      el.appendChild(afterP);
+    }
+    placeCaretAt(afterP, false);
+    emit(el);
+  }
+
   function handleInput() {
     const el = ref.current;
     if (!el) return;
@@ -369,14 +398,28 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     <div className="flex flex-col gap-0">
       {/* Formatting toolbar */}
       <div className="flex flex-wrap gap-1 rounded-t-xl border border-b-0 border-neutral-700 bg-neutral-900/80 px-3 py-2">
+        {/* Undo / Redo */}
+        <button onMouseDown={(e) => { e.preventDefault(); execFormat("undo"); }} className={btnBase} title="Undo (Ctrl+Z)">↩</button>
+        <button onMouseDown={(e) => { e.preventDefault(); execFormat("redo"); }} className={btnBase} title="Redo (Ctrl+Y)">↪</button>
+        <div className="w-px bg-neutral-700 mx-1" />
+        {/* Inline formatting */}
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("bold"); }} className={`${btnBase} font-bold`} title="Bold (Ctrl+B)">B</button>
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("italic"); }} className={`${btnBase} italic`} title="Italic (Ctrl+I)">I</button>
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("underline"); }} className={`${btnBase} underline`} title="Underline (Ctrl+U)">U</button>
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("strikeThrough"); }} className={`${btnBase} line-through`} title="Strikethrough">S</button>
         <div className="w-px bg-neutral-700 mx-1" />
+        {/* Super / Subscript */}
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("superscript"); }} className={btnBase} title="Superscript">x²</button>
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("subscript"); }} className={btnBase} title="Subscript">x₂</button>
         <div className="w-px bg-neutral-700 mx-1" />
+        {/* Insert characters */}
+        <button onMouseDown={(e) => { e.preventDefault(); insertChar("—"); }} className={btnBase} title="Em dash (—)">—</button>
+        <button onMouseDown={(e) => { e.preventDefault(); insertChar("…"); }} className={btnBase} title="Ellipsis (…)">…</button>
+        <div className="w-px bg-neutral-700 mx-1" />
+        {/* Scene break */}
+        <button onMouseDown={(e) => { e.preventDefault(); insertSceneBreak(); }} className={btnBase} title="Insert scene break (***)">⁂ Scene break</button>
+        <div className="w-px bg-neutral-700 mx-1" />
+        {/* Clear */}
         <button onMouseDown={(e) => { e.preventDefault(); execFormat("removeFormat"); }} className={btnBase} title="Clear formatting">✕ Format</button>
       </div>
 

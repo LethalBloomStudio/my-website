@@ -9,6 +9,7 @@ import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
+import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -620,7 +621,7 @@ function PageInner() {
       activeText
         .replace(/\r\n/g, "\n")
         .split(/\n\s*\n/)
-        .map((block) => block.trim())
+        .map((block) => sanitizeChapterHtml(block.trim()))
         .filter(Boolean),
     [activeText],
   );

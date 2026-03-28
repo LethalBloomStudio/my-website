@@ -1,4 +1,23 @@
 /**
+ * Strips inline styles, class/id attributes, and non-whitelisted tags from
+ * chapter HTML, preserving only the safe inline formatting tags writers use.
+ * Whitelist: <strong>, <em>, <u>, <s>, <sup>, <sub>, <br>
+ */
+export function sanitizeChapterHtml(html: string): string {
+  return html
+    // Normalize common tag aliases to canonical forms
+    .replace(/<b(\s[^>]*)?\/?>/gi, "<strong>").replace(/<\/b>/gi, "</strong>")
+    .replace(/<i(\s[^>]*)?\/?>/gi, "<em>").replace(/<\/i>/gi, "</em>")
+    .replace(/<(?:del|strike)(\s[^>]*)?\/?>/gi, "<s>").replace(/<\/(?:del|strike)>/gi, "</s>")
+    // Strip attributes (inline styles, class, id, etc.) from allowed tags
+    .replace(/<(strong|em|u|s|sup|sub)\s[^>]*>/gi, "<$1>")
+    // Normalise <br> variants
+    .replace(/<br(\s[^>]*)?\/?>/gi, "<br>")
+    // Remove all remaining tags (keeps their text content)
+    .replace(/<(?!\/?(?:strong|em|u|s|sup|sub|br)\b)[^>]+>/gi, "");
+}
+
+/**
  * Normalizes raw chapter text into clean fiction manuscript format.
  *
  * Rules applied (formatting only — prose, voice, and structure are preserved):

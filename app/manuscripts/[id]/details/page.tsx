@@ -13,7 +13,7 @@ import ProseTextarea from "@/components/ProseTextarea";
 import ChapterEditor from "@/components/ChapterEditor";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
-import { normalizeChapterText } from "@/lib/format/chapterNormalize";
+import { normalizeChapterText, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 
@@ -2039,7 +2039,7 @@ export default function ManuscriptDetailsPage() {
               });
             const activeFeedback = chapterFeedback.find((f) => f.id === selectedFeedbackId) ?? null;
             const activeExcerpt = activeFeedback?.selection_excerpt ?? "";
-            const previewParagraphs = chapterEditorContent.split(/\n\n+/).filter(Boolean);
+            const previewParagraphs = chapterEditorContent.split(/\n\n+/).map((b) => sanitizeChapterHtml(b.trim())).filter(Boolean);
             return (
               <div className="flex gap-6 items-start">
                 {/* Chapter editor / preview */}
