@@ -178,7 +178,6 @@ export default function AuthButton() {
               Sign out
             </Link>
           </div>
-        </div>
         </>,
         document.body
       )}
