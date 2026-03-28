@@ -1955,36 +1955,81 @@ export default function ManuscriptDetailsPage() {
                                 {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
                               </p>
                             )}
-                            {/* Expand replies button */}
-                            {fReplies.length > 0 && (
+                            {/* Expand button — show when there are replies OR feedback is unresolved */}
+                            {(fReplies.length > 0 || !f.resolved && !f.author_response) && (
                               <button
                                 type="button"
                                 onClick={toggleExpand}
                                 className="mt-2 rounded-lg border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] px-3 py-1 text-[10px] text-neutral-300 hover:bg-[rgba(120,120,120,0.2)] transition"
                               >
-                                {isExpanded ? "Hide conversation" : `View ${fReplies.length} ${fReplies.length === 1 ? "reply" : "replies"}`}
+                                {isExpanded ? "Hide conversation" : fReplies.length > 0 ? `View ${fReplies.length} ${fReplies.length === 1 ? "reply" : "replies"}` : "Reply"}
                               </button>
                             )}
-                            {/* Expanded chat thread */}
-                            {isExpanded && fReplies.length > 0 && (
-                              <div className="mt-2 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                                <div className="flex justify-start">
-                                  <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 px-3 py-2">
-                                    <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
-                                    <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
-                                  </div>
-                                </div>
-                                {fReplies.map((r) => {
-                                  const isAuthorReply = r.replier_id === authorUserId;
-                                  return (
-                                    <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
-                                      <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
-                                        <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
-                                        <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
-                                      </div>
+                            {/* Expanded conversation thread + reply box */}
+                            {isExpanded && (
+                              <div className="mt-2">
+                                <div className="rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
+                                  {/* Reader's original comment */}
+                                  <div className="flex justify-start">
+                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 px-3 py-2">
+                                      <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
+                                      <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                  {fReplies.map((r) => {
+                                    const isAuthorReply = r.replier_id === authorUserId;
+                                    return (
+                                      <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                          <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
+                                          <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {/* Reply input */}
+                                {!isParentView && !f.resolved && !f.author_response && (
+                                  <div className="mt-2 flex gap-1.5">
+                                    <textarea
+                                      rows={1}
+                                      placeholder="Reply… (Enter to send)"
+                                      value={replyDrafts[f.id] ?? ""}
+                                      ref={(el) => { if (el) replyTextareaRefs.current.set(f.id, el); else replyTextareaRefs.current.delete(f.id); }}
+                                      onChange={(e) => setReplyDrafts((p) => ({ ...p, [f.id]: e.target.value }))}
+                                      onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 96) + "px"; }}
+                                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void replyToFeedback(f.id); } }}
+                                      className="flex-1 resize-none overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.5)] focus:outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => void replyToFeedback(f.id)}
+                                      disabled={!(replyDrafts[f.id] ?? "").trim()}
+                                      className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-[11px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition"
+                                    >
+                                      Send
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Agree / Disagree buttons */}
+                            {!isParentView && !f.resolved && !f.author_response && (
+                              <div className="mt-2.5 flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => void resolveFeedback(f.id, "agree")}
+                                  className="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-2.5 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40 transition"
+                                >
+                                  Agree
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void resolveFeedback(f.id, "disagree")}
+                                  className="rounded-lg border border-rose-700/60 bg-rose-900/20 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/40 transition"
+                                >
+                                  Disagree
+                                </button>
                               </div>
                             )}
                           </div>
