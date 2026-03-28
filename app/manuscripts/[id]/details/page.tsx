@@ -159,7 +159,8 @@ export default function ManuscriptDetailsPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const feedbackAsideRef = useRef<HTMLElement>(null);
-  const [markerPositions, setMarkerPositions] = useState<Record<string, number>>({});
+  type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
+  const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
@@ -751,33 +752,66 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Scroll the selected feedback card into view in the sidebar
+  // Scroll the selected feedback card into view and scroll the page to the text marker
   useEffect(() => {
     if (!selectedFeedbackId) return;
     setTimeout(() => {
       document.getElementById(`feedback-card-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, 60);
+      document.getElementById(`editor-marker-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
   }, [selectedFeedbackId]);
 
-  // Compute marker Y positions — runs after the editor DOM has settled
+  // Find the DOM Range for an excerpt inside a root element using a TreeWalker
+  function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let n: Node | null;
+    while ((n = walker.nextNode())) textNodes.push(n as Text);
+    const fullText = textNodes.map((t) => t.textContent ?? "").join("");
+    const idx = fullText.indexOf(excerpt);
+    if (idx === -1) return null;
+    let cumul = 0;
+    let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
+    for (const t of textNodes) {
+      const len = (t.textContent ?? "").length;
+      if (!startNode && cumul + len > idx) { startNode = t; startOff = idx - cumul; }
+      if (!endNode && cumul + len >= idx + excerpt.length) { endNode = t; endOff = idx + excerpt.length - cumul; break; }
+      cumul += len;
+    }
+    if (!startNode || !endNode) return null;
+    const range = document.createRange();
+    range.setStart(startNode, startOff);
+    range.setEnd(endNode, endOff);
+    return range;
+  }
+
+  // Compute inline marker positions from the Range API — runs after the editor DOM has settled
   function recomputeMarkers() {
     const wrapper = editorWrapperRef.current;
     if (!wrapper) return;
     const editorEl = wrapper.querySelector(".chapter-editor") as HTMLElement | null;
     if (!editorEl) return;
     const wrapperRect = wrapper.getBoundingClientRect();
-    const editorRect = editorEl.getBoundingClientRect();
-    const editorOffsetTop = editorRect.top - wrapperRect.top;
-    const positions: Record<string, number> = {};
-    const paragraphs = Array.from(editorEl.querySelectorAll("p"));
+    const newInfos: Record<string, MarkerInfo> = {};
     for (const f of feedbackItems) {
       if (!f.selection_excerpt || f.resolved || !!f.author_response) continue;
-      const p = paragraphs.find((el) => (el.textContent ?? "").includes(f.selection_excerpt));
-      if (!p) continue;
-      const pRect = p.getBoundingClientRect();
-      positions[f.id] = editorOffsetTop + (pRect.top - editorRect.top) + pRect.height * 0.4;
+      const range = findExcerptRange(editorEl, f.selection_excerpt);
+      if (!range) continue;
+      const clientRects = Array.from(range.getClientRects());
+      if (!clientRects.length) continue;
+      const lastRect = clientRects[clientRects.length - 1];
+      newInfos[f.id] = {
+        top: lastRect.top - wrapperRect.top + lastRect.height / 2,
+        left: lastRect.right - wrapperRect.left + 2,
+        highlightRects: clientRects.map((r) => ({
+          top: r.top - wrapperRect.top,
+          left: r.left - wrapperRect.left,
+          width: r.width,
+          height: r.height,
+        })),
+      };
     }
-    setMarkerPositions(positions);
+    setMarkerInfos(newInfos);
   }
 
   useEffect(() => {
@@ -796,13 +830,13 @@ export default function ManuscriptDetailsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChapterId]);
 
-  // Click anywhere outside the editor markers and feedback aside to deselect
+  // Click anywhere outside the feedback aside and marker buttons to deselect
   useEffect(() => {
     if (!selectedFeedbackId) return;
     function onDocClick(e: MouseEvent) {
-      const target = e.target as Node;
+      const target = e.target as HTMLElement;
       if (feedbackAsideRef.current?.contains(target)) return;
-      if (editorWrapperRef.current?.contains(target)) return;
+      if (target.closest("[data-feedback-marker]")) return;
       setSelectedFeedbackId(null);
     }
     document.addEventListener("click", onDocClick, true);
@@ -2049,26 +2083,53 @@ export default function ManuscriptDetailsPage() {
                             placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
                             className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
                           />
-                          {/* Inline feedback markers — positioned over the editor text */}
-                          {Object.entries(markerPositions).map(([fid, topPx]) => {
+                          {/* Highlight rects — golden wash behind the selected excerpt */}
+                          {selectedFeedbackId && (markerInfos[selectedFeedbackId]?.highlightRects ?? []).map((r, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                position: "absolute",
+                                top: r.top,
+                                left: r.left,
+                                width: r.width,
+                                height: r.height,
+                                backgroundColor: "rgba(255,180,40,0.18)",
+                                borderRadius: "2px",
+                                pointerEvents: "none",
+                                zIndex: 5,
+                              }}
+                            />
+                          ))}
+                          {/* Inline speech-bubble markers — appear right after each excerpt */}
+                          {Object.entries(markerInfos).map(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
                             return (
                               <button
                                 key={fid}
+                                id={`editor-marker-${fid}`}
+                                data-feedback-marker="1"
                                 type="button"
                                 title="View feedback"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedFeedbackId(isSelected ? null : fid);
                                 }}
-                                style={{ position: "absolute", right: "0.5rem", top: topPx, transform: "translateY(-50%)" }}
-                                className={`z-10 flex h-6 w-6 items-center justify-center rounded-full border text-[11px] leading-none transition ${
+                                style={{
+                                  position: "absolute",
+                                  top: info.top,
+                                  left: info.left,
+                                  transform: "translateY(-50%)",
+                                  zIndex: 10,
+                                }}
+                                className={`flex h-[18px] w-[18px] items-center justify-center rounded-full transition ${
                                   isSelected
-                                    ? "border-[rgba(180,180,180,0.9)] bg-[rgba(120,120,120,0.55)] text-white shadow-lg"
-                                    : "border-[rgba(120,120,120,0.6)] bg-[rgba(30,30,30,0.85)] text-neutral-400 hover:border-[rgba(180,180,180,0.7)] hover:text-white"
+                                    ? "bg-[rgba(255,160,20,1)] text-[#1a1400] shadow-lg"
+                                    : "bg-[rgba(255,160,20,0.75)] text-[#1a1400] hover:bg-[rgba(255,160,20,1)]"
                                 }`}
                               >
-                                💬
+                                <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
+                                  <path d="M1 1h7v5H6L4 8V6H1V1z"/>
+                                </svg>
                               </button>
                             );
                           })}

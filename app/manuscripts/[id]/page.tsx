@@ -520,10 +520,11 @@ function PageInner() {
 
       // The excerpt with dotted underline + speech-bubble button
       const excerptHtml = html.slice(startH, endH);
+      const isActive = selectedFeedbackId === item.id;
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`} className="inline">
           <span
-            className="border-b border-dotted border-[rgba(255,180,40,0.75)]"
+            className={`border-b border-dotted border-[rgba(255,180,40,0.75)] rounded-sm transition-colors ${isActive ? "bg-[rgba(255,180,40,0.2)]" : ""}`}
             dangerouslySetInnerHTML={{ __html: excerptHtml }}
           />
           <button
@@ -992,14 +993,25 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
-  // When a feedback card is selected, scroll the sidebar so the card aligns with its text marker
+  // When a feedback card is selected, scroll the sidebar and scroll the text to the marker
   useEffect(() => {
     if (!selectedFeedbackId) return;
+    // Sync sidebar card position
     const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
     const container = cardAreaRef.current;
-    if (!cardEl || !container) return;
-    const desiredTop = markerTops[selectedFeedbackId] ?? 0;
-    container.scrollTop = cardEl.offsetTop - desiredTop;
+    if (cardEl && container) {
+      const desiredTop = markerTops[selectedFeedbackId] ?? 0;
+      container.scrollTop = cardEl.offsetTop - desiredTop;
+    }
+    // Scroll the text panel so the marker is roughly a third from the top
+    const markerEl = document.getElementById(`text-marker-${selectedFeedbackId}`);
+    const textPanel = chapterSectionRef.current;
+    if (markerEl && textPanel) {
+      const panelRect = textPanel.getBoundingClientRect();
+      const markerRect = markerEl.getBoundingClientRect();
+      const targetScroll = textPanel.scrollTop + (markerRect.top - panelRect.top) - textPanel.clientHeight / 3;
+      textPanel.scrollTo({ top: targetScroll, behavior: "smooth" });
+    }
   }, [selectedFeedbackId, markerTops]);
 
   // Auto-dismiss coin toast after 5 seconds
