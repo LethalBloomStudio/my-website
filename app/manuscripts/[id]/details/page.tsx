@@ -1711,7 +1711,7 @@ export default function ManuscriptDetailsPage() {
                   type="button"
                   onClick={() => setDeleteProjectModal(true)}
                   title="Delete project"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-900/60 bg-red-950/30 text-red-400 transition hover:bg-red-950/60 hover:text-red-300 hover:border-red-700/70"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-700 bg-red-700 text-white transition hover:bg-red-600 hover:border-red-600"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
