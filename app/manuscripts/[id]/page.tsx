@@ -1865,7 +1865,7 @@ function PageInner() {
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
                               <p
-                                className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0"
+                                className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0 mb-3"
                                 style={{ letterSpacing: "0.01em" }}
                               >
                                 {paraFeedbacks.length > 0

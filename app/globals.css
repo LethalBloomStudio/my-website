@@ -488,7 +488,7 @@ select optgroup {
 }
 
 .chapter-editor p {
-  margin: 0;                   /* no gap — manuscript uses indent, not blank lines */
+  margin: 0 0 0.55em 0;        /* small gap between paragraphs */
   text-indent: 2.5em;
   white-space: pre-wrap;       /* preserve Shift+Enter soft breaks */
 }
