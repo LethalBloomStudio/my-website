@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
@@ -15,7 +15,6 @@ export default function AuthButton() {
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [_isYouth, setIsYouth] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,23 +89,6 @@ export default function AuthButton() {
   }, [supabase]);
 
 
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: Event) {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    }
-    // setTimeout so the click that opened the menu doesn't immediately close it
-    const t = setTimeout(() => {
-      document.addEventListener("click", handler, true);
-      document.addEventListener("touchend", handler, true);
-    }, 0);
-    return () => {
-      clearTimeout(t);
-      document.removeEventListener("click", handler, true);
-      document.removeEventListener("touchend", handler, true);
-    };
-  }, [open]);
 
   function handleClick() {
     if (!signedIn) {
@@ -126,7 +108,7 @@ export default function AuthButton() {
   }
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative">
       <button
         onClick={handleClick}
         disabled={loading}
@@ -139,7 +121,14 @@ export default function AuthButton() {
 
       {signedIn && open ? (
         <>
-          <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
+          {/* Full-screen tap-catcher — z-[99] beats the nav's z-50; button ensures iOS fires click */}
+          <button
+            className="fixed inset-0 z-[99] cursor-default bg-transparent"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <div className="absolute right-0 z-[100] mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
           {isAdmin && (
             <Link
               href="/admin"
