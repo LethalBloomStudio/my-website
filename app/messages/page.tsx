@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 export const dynamic = "force-dynamic";
 
@@ -83,10 +84,11 @@ function MessagesPageInner() {
   const [myId, setMyId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
-  const [targetIsYouth, setTargetIsYouth] = useState(false);
-  const [_excludedFromMessaging, setExcludedFromMessaging] = useState<string[]>([]);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [status, setStatus] = useState<ModerationStatus>(null);
+const [targetIsYouth, setTargetIsYouth] = useState(false);
+const [_excludedFromMessaging, setExcludedFromMessaging] = useState<string[]>([]);
+const [msg, setMsg] = useState<string | null>(null);
+const [status, setStatus] = useState<ModerationStatus>(null);
+const [now] = useState(() => Date.now());
   const [recipientInput, setRecipientInput] = useState("");
   const [withUserLabel, setWithUserLabel] = useState<string>("");
   const [withUserAvatar, setWithUserAvatar] = useState<string | null>(null);
@@ -110,7 +112,9 @@ function MessagesPageInner() {
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [requestAction, setRequestAction] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
+  const [sidebarLoading, setSidebarLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef(0);
@@ -155,7 +159,7 @@ function MessagesPageInner() {
 
   const blocked =
     !!status?.blacklisted ||
-    (!!status?.messaging_suspended_until && new Date(status.messaging_suspended_until).getTime() > Date.now());
+    (!!status?.messaging_suspended_until && new Date(status.messaging_suspended_until).getTime() > now);
   const youthLocked = status?.age_category === "youth_13_17";
 
   const sidebarLoadedRef = useRef(false);
@@ -284,6 +288,7 @@ function MessagesPageInner() {
     })));
 
     sidebarLoadedRef.current = true;
+    setSidebarLoading(false);
   }
 
   async function markAsRead(senderId: string) {
@@ -349,8 +354,7 @@ function MessagesPageInner() {
       }
     }
     void init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When switching chats, only reload the messages — sidebar stays cached
   useEffect(() => {
@@ -369,8 +373,7 @@ function MessagesPageInner() {
       setWithUserAvatar(cached.avatarUrl);
     }
     void loadChat(withUser, excludedRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [withUser]);
+  }, [withUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Realtime: new messages + typing indicator
   useEffect(() => {
@@ -412,15 +415,16 @@ function MessagesPageInner() {
       }
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
-  }, [myId, withUser, supabase]);
+  }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!messagesEndRef.current) return;
+    const container = messagesContainerRef.current;
+    if (!container) return;
     if (!initialScrollDoneRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "instant" });
+      container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
     } else {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      container.scrollTop = container.scrollHeight;
     }
   }, [messages]);
 
@@ -480,7 +484,7 @@ function MessagesPageInner() {
 
     if (status?.messaging_suspended_until) {
       const until = new Date(status.messaging_suspended_until);
-      if (until.getTime() > Date.now()) {
+      if (until.getTime() > now) {
         return setMsg(`Messaging is suspended until ${until.toLocaleString()}.`);
       }
     }
@@ -734,7 +738,13 @@ function MessagesPageInner() {
               </div>
 
               <div className="mt-3 space-y-2">
-                {friends.length === 0 ? (
+                {sidebarLoading ? (
+                  <>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-10 rounded-lg bg-neutral-800/50 animate-pulse" />
+                    ))}
+                  </>
+                ) : friends.length === 0 ? (
                   <p className="text-xs text-neutral-400">No accepted friends yet.</p>
                 ) : (
                   friends.map((f) => (
@@ -924,7 +934,7 @@ function MessagesPageInner() {
                   {status?.blacklisted
                     ? <span className="text-red-400 font-medium">Blacklisted</span>
                     : status?.messaging_suspended_until &&
-                      new Date(status.messaging_suspended_until).getTime() > Date.now()
+                      new Date(status.messaging_suspended_until).getTime() > now
                     ? <span className="text-amber-400 font-medium">Suspended until {new Date(status.messaging_suspended_until).toLocaleString()}</span>
                     : <span className="text-emerald-400">Active</span>}
                 </p>
@@ -955,7 +965,7 @@ function MessagesPageInner() {
               )}
 
               {/* Appeal section — only when suspended or blacklisted */}
-              {(status?.blacklisted || (status?.messaging_suspended_until && new Date(status.messaging_suspended_until).getTime() > Date.now())) && (
+              {(status?.blacklisted || (status?.messaging_suspended_until && new Date(status.messaging_suspended_until).getTime() > now)) && (
                 <div className="mt-4 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] p-4">
                   <p className="text-sm font-semibold text-neutral-100 mb-1">Submit an Appeal</p>
                   <p className="text-xs text-neutral-400 mb-3">If you believe your suspension was issued in error, you may submit a written appeal. An admin will review it and respond via your notifications.</p>
@@ -1001,7 +1011,7 @@ function MessagesPageInner() {
                 </button>
               </div>
 
-              <div className="h-[420px] overflow-y-auto space-y-3 pr-1">
+              <div ref={messagesContainerRef} className="h-[420px] overflow-y-auto space-y-3 pr-1">
                 {messages.length === 0 ? (
                   <p className="text-sm text-neutral-300">No messages yet.</p>
                 ) : (
@@ -1029,7 +1039,7 @@ function MessagesPageInner() {
                 <textarea
                   ref={inputRef}
                   value={text}
-                  rows={1}
+                  rows={2}
                   onChange={(e) => {
                     setText(e.target.value);
                     e.target.style.height = "auto";
@@ -1051,7 +1061,7 @@ function MessagesPageInner() {
                   }}
                   placeholder="Type a message... (Shift+Enter for new line)"
                   disabled={youthLocked}
-                  className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-hidden min-h-[44px] max-h-48"
+                  className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-hidden min-h-[72px] max-h-48"
                   style={{ lineHeight: "1.5" }}
                 />
                 <div ref={emojiPickerRef} className="relative">
