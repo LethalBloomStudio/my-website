@@ -59,7 +59,7 @@ export const metadata: Metadata = {
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously. Lethal Bloom Studio is the creative platform for writers who mean it.",
     images: [
       {
-        url: "/brand/og-image.png",
+        url: "/Website Logo.png",
         width: 1200,
         height: 630,
         alt: "Lethal Bloom Studio — Creative Writing Platform",
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     title: "Lethal Bloom Studio — Where Dark Stories Take Root",
     description:
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously.",
-    images: ["/brand/og-image.png"],
+    images: ["/Website Logo.png"],
   },
 
   icons: {
