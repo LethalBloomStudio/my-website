@@ -463,9 +463,9 @@ select optgroup {
   outline: none;
 }
 
-/* ---------- Shared manuscript font — used in editor AND reader so they always match ---------- */
+/* ---------- Shared manuscript font — editor AND reader always match ---------- */
 .chapter-ms-font {
-  font-family: var(--font-merriweather, Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif) !important;
+  font-family: 'Merriweather', Georgia, "Times New Roman", serif !important;
 }
 
 /* ---------- Chapter Editor (contenteditable) ---------- */
@@ -473,8 +473,8 @@ select optgroup {
   outline: none;
   word-break: break-word;
   overflow-wrap: break-word;
-  /* Manuscript typography — must match reader view */
-  font-family: var(--font-merriweather, Georgia, "Times New Roman", "Palatino Linotype", Palatino, serif);
+  /* Same font as reader so editing and reading look identical */
+  font-family: 'Merriweather', Georgia, "Times New Roman", serif;
   font-size: 1.0625rem;        /* ~17px — comfortable reading size */
   line-height: 1.65;
   color: #e8e8e8;
@@ -582,9 +582,11 @@ button.btn-success:hover {
 
 /* ── Danger / success action buttons — override broad day-mode button reset ── */
 [data-theme="day"] button.btn-danger,
-[data-theme="day"] button.btn-danger:hover {
+[data-theme="day"] button.btn-danger:hover,
+[data-theme="day"] button.btn-red,
+[data-theme="day"] button.btn-red:hover {
   background: #dc2626 !important;
-  border-color: #b91c1c !important;
+  border-color: #dc2626 !important;
   color: #ffffff !important;
 }
 
