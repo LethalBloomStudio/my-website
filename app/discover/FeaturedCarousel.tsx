@@ -333,7 +333,7 @@ export default function FeaturedCarousel() {
           <div
             ref={scrollRef}
 
-            className="flex flex-1 gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex flex-1 gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {/* Three identical copies for continuous infinite scroll */}
             {[0, 1, 2].map((copyIdx) => (
@@ -343,7 +343,7 @@ export default function FeaturedCarousel() {
                   <Link
                     key={`${copyIdx}-${slot.id}`}
                     href={slot.owner_id === userId ? `/manuscripts/${slot.manuscript_id}/details` : `/manuscripts/${slot.manuscript_id}`}
-                    className="group flex shrink-0 flex-col items-center gap-1.5"
+                    className="group flex shrink-0 snap-start flex-col items-center gap-1.5"
                     title={slot.title}
                   >
                     <div className="relative h-[210px] w-36 overflow-hidden rounded-xl border-2 border-[rgba(120,120,120,0.6)] bg-neutral-900 shadow-[0_0_10px_rgba(120,120,120,0.25)] transition group-hover:border-[rgba(120,120,120,0.9)]">
@@ -369,7 +369,7 @@ export default function FeaturedCarousel() {
 
                 {/* Empty slots */}
                 {Array.from({ length: emptyCount }).map((_, i) => (
-                  <div key={`${copyIdx}-empty-${i}`} className="flex shrink-0 flex-col items-center gap-1.5">
+                  <div key={`${copyIdx}-empty-${i}`} className="flex shrink-0 snap-start flex-col items-center gap-1.5">
                     <button
                       type="button"
                       onClick={userId && !userHasSlot ? openModal : undefined}
