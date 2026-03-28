@@ -240,7 +240,7 @@ export default function ManuscriptDetailsPage() {
   async function resolveFeedback(feedbackId: string, response: "agree" | "disagree") {
     const { error } = await supabase.from("line_feedback").update({ resolved: true, author_response: response }).eq("id", feedbackId);
     if (error) return setMsg(error.message);
-    if (selectedFeedbackId === feedbackId) { setSelectedFeedbackId(null); setPreviewMode(false); }
+    if (selectedFeedbackId === feedbackId) { setSelectedFeedbackId(null); }
     setFeedbackItems((prev) => prev.map((f) => f.id === feedbackId ? { ...f, resolved: true, author_response: response } : f));
   }
 
@@ -639,7 +639,6 @@ export default function ManuscriptDetailsPage() {
         setSelectedChapterId(chapterParam);
         if (feedbackParam) {
           setSelectedFeedbackId(feedbackParam);
-          setPreviewMode(true);
         }
       }
     }
@@ -749,18 +748,13 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Auto-scroll to highlighted paragraph when feedback is selected in preview mode
+  // Scroll the selected feedback card into view in the sidebar
   useEffect(() => {
-    if (!selectedFeedbackId || !previewMode) return;
-    const activeFb = feedbackItems.find((f) => f.id === selectedFeedbackId);
-    if (!activeFb) return;
-    const paragraphs = chapterEditorContent.split(/\n\n+/).filter(Boolean);
-    const paraIdx = paragraphs.findIndex((p) => p.includes(activeFb.selection_excerpt));
-    if (paraIdx === -1) return;
+    if (!selectedFeedbackId) return;
     setTimeout(() => {
-      document.getElementById(`preview-para-${paraIdx}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 80);
-  }, [selectedFeedbackId, previewMode, feedbackItems, chapterEditorContent]);
+      document.getElementById(`feedback-card-${selectedFeedbackId}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 60);
+  }, [selectedFeedbackId]);
 
   function categoryLimit(nextCategories: string[]) {
     if (profileAgeCategory === "youth_13_17") return 2;
@@ -1929,18 +1923,9 @@ export default function ManuscriptDetailsPage() {
                       <span className="rounded-full border border-neutral-800 bg-neutral-900/60 px-3 py-1 text-xs text-neutral-300">
                         {countWords(chapterEditorContent)} words
                       </span>
-                      {previewMode && !isParentView && (
-                        <button
-                          type="button"
-                          onClick={() => { setPreviewMode(false); setSelectedFeedbackId(null); }}
-                          className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-sm text-neutral-200 hover:border-[rgba(120,120,120,0.5)] transition"
-                        >
-                          ← Back to editor
-                        </button>
-                      )}
                       <button
                         type="button"
-                        onClick={() => { setSelectedChapterId(null); setSelectedFeedbackId(null); setPreviewMode(false); }}
+                        onClick={() => { setSelectedChapterId(null); setSelectedFeedbackId(null); }}
                         className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] transition"
                       >
                         ← Back to manuscript info
@@ -2097,14 +2082,9 @@ export default function ManuscriptDetailsPage() {
                         return (
                           <div
                             key={f.id}
+                            id={`feedback-card-${f.id}`}
                             onClick={() => {
-                              if (isSelected) {
-                                setSelectedFeedbackId(null);
-                                setPreviewMode(false);
-                              } else {
-                                setSelectedFeedbackId(f.id);
-                                setPreviewMode(true);
-                              }
+                              setSelectedFeedbackId(isSelected ? null : f.id);
                             }}
                             className={`cursor-pointer rounded-lg border p-3 transition ${
                               isSelected
