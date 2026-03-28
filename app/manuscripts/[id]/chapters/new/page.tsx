@@ -229,7 +229,8 @@ export default function NewChapterPage() {
               value={content}
               onChange={setContent}
               normalize={normalizeChapterText}
-              className="mt-2 w-full min-h-[22rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-6 font-['Merriweather','Georgia','Times_New_Roman',serif] text-[16px] leading-[2] text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
+              className="mt-2 w-full min-h-[22rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-6 text-[16px] leading-[2] text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
+              style={{ fontFamily: "var(--font-merriweather, 'Merriweather', Georgia, 'Times New Roman', serif)" }}
               placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
             />
           </label>

@@ -435,6 +435,7 @@ function PageInner() {
       .eq("id", id);
     if (error) return setMsg(error.message);
     setFeedback((prev) => prev.map((f) => f.id === id ? { ...f, resolved: true, author_response: response } : f));
+    setSelectedFeedbackId(null);
   }
 
   async function replyToFeedback(f: LineFeedback) {
@@ -1704,7 +1705,7 @@ function PageInner() {
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
                   className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
-                  style={{ fontFamily: "'Merriweather', Georgia, 'Times New Roman', serif" }}
+                  style={{ fontFamily: "var(--font-merriweather, 'Merriweather', Georgia, 'Times New Roman', serif)" }}
                 >
                   {/* Watermark overlay — non-owners only */}
                   {!isOwner && (
@@ -1765,7 +1766,7 @@ function PageInner() {
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
                               {paraFeedbacks.length > 0 && (
-                                <div className="absolute -left-6 top-1 flex flex-col gap-1.5">
+                                <div className="absolute left-2 top-1 flex flex-col gap-1.5">
                                   {paraFeedbacks.map((f) => (
                                     <button
                                       key={f.id}
@@ -1950,16 +1951,23 @@ function PageInner() {
                             >
                               <div className="flex items-center justify-between gap-1">
                                 <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
-                                {f.reader_id === userId && (
-                                  <div className="flex gap-1 shrink-0">
+                                <div className="flex gap-1 shrink-0 items-center">
+                                  {f.reader_id === userId && (
                                     <button
                                       onClick={() => { setEditingFeedbackId(f.id); setEditFeedbackDraft(f.comment_text); }}
                                       className="rounded-lg px-1.5 py-0.5 text-[10px] text-[rgba(210,210,210,0.7)] hover:bg-[rgba(120,120,120,0.2)] transition"
                                     >
                                       Edit
                                     </button>
-                                  </div>
-                                )}
+                                  )}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(null); }}
+                                    className="rounded-lg px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.2)] hover:text-neutral-200 transition"
+                                    title="Close"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
                               </div>
                               {f.selection_excerpt && !manuscriptParagraphs.some((p) => p.includes(f.selection_excerpt)) ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
