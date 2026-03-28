@@ -12,8 +12,74 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
-  title: "Lethal Bloom Studio",
-  description: "Your description",
+  metadataBase: new URL("https://lethalbloomstudio.com"),
+
+  title: {
+    default: "Lethal Bloom Studio",
+    template: "%s | Lethal Bloom Studio",
+  },
+
+  description:
+    "Lethal Bloom Studio is a creative writing platform for authors, beta readers, and storytellers. Upload manuscripts, collect line-level feedback, and grow your craft inside a community built for serious writers.",
+
+  keywords: [
+    "creative writing",
+    "manuscript feedback",
+    "beta readers",
+    "fiction writing",
+    "writing community",
+    "storytelling platform",
+    "author tools",
+    "Lethal Bloom Studio",
+  ],
+
+  authors: [{ name: "Lethal Bloom Studio" }],
+  creator: "Lethal Bloom Studio",
+  publisher: "Lethal Bloom Studio",
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://lethalbloomstudio.com",
+    siteName: "Lethal Bloom Studio",
+    title: "Lethal Bloom Studio — Where Dark Stories Take Root",
+    description:
+      "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously. Lethal Bloom Studio is the creative platform for writers who mean it.",
+    images: [
+      {
+        url: "/brand/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Lethal Bloom Studio — Creative Writing Platform",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Lethal Bloom Studio — Where Dark Stories Take Root",
+    description:
+      "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously.",
+    images: ["/brand/og-image.png"],
+  },
+
+  icons: {
+    icon: "/brand/logo.svg",
+    shortcut: "/brand/logo.svg",
+    apple: "/brand/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {
