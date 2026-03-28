@@ -2126,24 +2126,28 @@ export default function ManuscriptDetailsPage() {
                             placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
                             className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
                           />
-                          {/* Highlight rects — golden wash behind the selected excerpt */}
-                          {selectedFeedbackId && (markerInfos[selectedFeedbackId]?.highlightRects ?? []).map((r, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                position: "absolute",
-                                top: r.top,
-                                left: r.left,
-                                width: r.width,
-                                height: r.height,
-                                backgroundColor: "rgba(255,190,40,0.32)",
-                                borderRadius: "3px",
-                                pointerEvents: "none",
-                                zIndex: 5,
-                              }}
-                            />
-                          ))}
-                          {/* Speech-bubble markers — right margin of editor, aligned to excerpt line */}
+                          {/* Dotted amber underlines — always visible, same style as reader view.
+                              Dim (0.45 opacity) when idle, bright (0.95) + bg fill when selected. */}
+                          {Object.entries(markerInfos).flatMap(([fid, info]) => {
+                            const isSelected = selectedFeedbackId === fid;
+                            return info.highlightRects.map((r, i) => (
+                              <div
+                                key={`${fid}-${i}`}
+                                style={{
+                                  position: "absolute",
+                                  top: r.top,
+                                  left: r.left,
+                                  width: r.width,
+                                  height: r.height,
+                                  backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
+                                  borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
+                                  pointerEvents: "none",
+                                  zIndex: 5,
+                                }}
+                              />
+                            ));
+                          })}
+                          {/* Speech-bubble markers — same size and style as reader view */}
                           {Object.entries(markerInfos).map(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
                             return (
@@ -2163,13 +2167,13 @@ export default function ManuscriptDetailsPage() {
                                   left: info.left,
                                   zIndex: 10,
                                 }}
-                                className={`flex h-[14px] w-[14px] items-center justify-center rounded-full shadow-sm transition-all ${
+                                className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
                                   isSelected
-                                    ? "bg-amber-400 text-amber-950 scale-125 shadow-amber-400/50"
-                                    : "bg-amber-400/90 text-amber-950 hover:bg-amber-400 hover:scale-110"
+                                    ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
+                                    : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
                                 }`}
                               >
-                                <svg width="8" height="8" viewBox="0 0 9 9" fill="currentColor">
+                                <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
                                   <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                                 </svg>
                               </button>

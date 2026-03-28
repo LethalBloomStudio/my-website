@@ -169,7 +169,16 @@ export default function SignUpPage() {
             </Link>
           </p>
 
-          <form onSubmit={handleSignUp} className="mt-6 space-y-3">
+          <form
+            onSubmit={handleSignUp}
+            className="mt-6 space-y-3"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+                e.preventDefault();
+                (e.currentTarget as HTMLFormElement).requestSubmit();
+              }
+            }}
+          >
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Name <span className="text-neutral-500 text-xs">(private, not shown publicly)</span></span>
               <input
