@@ -1872,17 +1872,9 @@ function PageInner() {
                         return manuscriptParagraphs.map((para, idx) => {
                           const plainPara = para.replace(/<[^>]+>/g, "");
                           const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && (para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt)));
-                          const activeFeedback = paraFeedbacks.find((f) => f.id === selectedFeedbackId);
 
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
-                              {/* Subtle left-border highlight when this paragraph's feedback is selected */}
-                              {activeFeedback && (
-                                <div
-                                  className="absolute inset-0 rounded pointer-events-none"
-                                  style={{ borderLeft: "2px solid rgba(255,180,40,0.6)", marginLeft: "-0.5rem" }}
-                                />
-                              )}
                               <p
                                 className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0"
                                 style={{ letterSpacing: "0.01em" }}
