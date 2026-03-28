@@ -12,7 +12,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lethalbloomstudio.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lethalbloomstudio.com"),
 
   title: {
     default: "Lethal Bloom Studio",
