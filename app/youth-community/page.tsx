@@ -26,7 +26,7 @@ export default async function YouthCommunityPage() {
   if (!isYouth && !isAdmin) {
     return (
       <main className="min-h-screen bg-neutral-950 text-neutral-100">
-        <div className="mx-auto max-w-2xl px-6 py-16 space-y-6">
+        <div className="mx-auto max-w-2xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
           <header>
             <h1 className="text-3xl font-semibold tracking-tight">Youth Community</h1>
           </header>
@@ -43,7 +43,7 @@ export default async function YouthCommunityPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-[1400px] px-6 py-16 space-y-8">
+      <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Youth Community</h1>
           <p className="mt-2 text-sm text-neutral-400">Connect with fellow young authors and readers.</p>
