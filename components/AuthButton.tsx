@@ -15,7 +15,7 @@ export default function AuthButton() {
   const [label, setLabel] = useState("Sign in");
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isYouth, setIsYouth] = useState(false);
+  const [_isYouth, setIsYouth] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +96,11 @@ export default function AuthButton() {
     }
 
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("touchstart", onClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("touchstart", onClickOutside);
+    };
   }, []);
 
   function handleClick() {
