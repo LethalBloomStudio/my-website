@@ -160,7 +160,7 @@ export default function ManuscriptDetailsPage() {
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const feedbackAsideRef = useRef<HTMLElement>(null);
   const [navH, setNavH] = useState(0);
-  type MarkerInfo = { top: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
+  type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
@@ -764,27 +764,34 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Align the selected feedback card beside its text marker in the sidebar
+  // Scroll page to the text marker, then align the sidebar card beside it
   useEffect(() => {
     if (!selectedFeedbackId) return;
-    setTimeout(() => {
-      const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
-      const aside = feedbackAsideRef.current;
-      const wrapper = editorWrapperRef.current;
-      const info = markerInfos[selectedFeedbackId];
-      if (cardEl && aside && wrapper && info) {
-        // Desired screen Y of the marker
-        const markerScreenY = wrapper.getBoundingClientRect().top + info.top;
-        // Desired screen Y of the aside top
-        const asideScreenTop = aside.getBoundingClientRect().top;
-        // Scroll the aside so the card's top aligns with the marker
-        const desiredRelativeTop = Math.max(0, markerScreenY - asideScreenTop);
-        aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
-      } else {
-        // Fallback: just bring card into view
-        cardEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const info = markerInfos[selectedFeedbackId];
+    const wrapper = editorWrapperRef.current;
+    const aside = feedbackAsideRef.current;
+    const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
+
+    if (info && wrapper) {
+      // Absolute document Y of the marker
+      const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + info.top;
+      // Scroll page so the marker lands ~30% from the top of the viewport
+      const targetScrollY = markerDocY - window.innerHeight * 0.3;
+      window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
+
+      // After scroll completes, align the sidebar card
+      // Marker will be at ~30% from viewport top; aside sticky top = navH + 12
+      if (aside && cardEl) {
+        const markerViewportY = window.innerHeight * 0.3;
+        const asideViewportTop = navH + 12;
+        const desiredRelativeTop = Math.max(0, markerViewportY - asideViewportTop);
+        setTimeout(() => {
+          aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
+        }, 350); // after smooth scroll animation (~300ms)
       }
-    }, 80);
+    } else {
+      cardEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
 
@@ -828,7 +835,10 @@ export default function ManuscriptDetailsPage() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        top: lastRect.top - wrapperRect.top + lastRect.height / 2,
+        // Place the bubble just above the text ascender (superscript position)
+        // so it sits in the line-height gap and doesn't cover any words
+        top: lastRect.top - wrapperRect.top - 4,
+        left: lastRect.right - wrapperRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - wrapperRect.top,
           left: r.left - wrapperRect.left,
@@ -2019,7 +2029,14 @@ export default function ManuscriptDetailsPage() {
           )}
 
           {selectedChapterId && selectedChapter && (() => {
-            const chapterFeedback = feedbackItems.filter((f) => f.chapter_id === selectedChapterId);
+            const plainChapterText = chapterEditorContent.replace(/<[^>]+>/g, "");
+            const chapterFeedback = feedbackItems
+              .filter((f) => f.chapter_id === selectedChapterId)
+              .sort((a, b) => {
+                const ia = a.selection_excerpt ? plainChapterText.indexOf(a.selection_excerpt) : Infinity;
+                const ib = b.selection_excerpt ? plainChapterText.indexOf(b.selection_excerpt) : Infinity;
+                return ia - ib;
+              });
             const activeFeedback = chapterFeedback.find((f) => f.id === selectedFeedbackId) ?? null;
             const activeExcerpt = activeFeedback?.selection_excerpt ?? "";
             const previewParagraphs = chapterEditorContent.split(/\n\n+/).filter(Boolean);
@@ -2143,17 +2160,16 @@ export default function ManuscriptDetailsPage() {
                                 style={{
                                   position: "absolute",
                                   top: info.top,
-                                  right: 8,
-                                  transform: "translateY(-50%)",
+                                  left: info.left,
                                   zIndex: 10,
                                 }}
-                                className={`flex h-[22px] w-[22px] items-center justify-center rounded-full shadow-md transition-all ${
+                                className={`flex h-[14px] w-[14px] items-center justify-center rounded-full shadow-sm transition-all ${
                                   isSelected
-                                    ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/40"
-                                    : "bg-amber-400/80 text-amber-950 hover:bg-amber-400 hover:scale-105"
+                                    ? "bg-amber-400 text-amber-950 scale-125 shadow-amber-400/50"
+                                    : "bg-amber-400/90 text-amber-950 hover:bg-amber-400 hover:scale-110"
                                 }`}
                               >
-                                <svg width="11" height="11" viewBox="0 0 9 9" fill="currentColor">
+                                <svg width="8" height="8" viewBox="0 0 9 9" fill="currentColor">
                                   <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                                 </svg>
                               </button>

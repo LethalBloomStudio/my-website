@@ -1934,9 +1934,19 @@ function PageInner() {
                   <div ref={cardAreaRef} className="flex-1 overflow-y-auto">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
+                    const plainActiveText = activeText.replace(/<[^>]+>/g, "");
                     const allFeedback = chapterFeedbackSource
                       .filter((f) => !f.resolved)
-                      .sort((a, b) => (a.start_offset ?? 0) - (b.start_offset ?? 0));
+                      .sort((a, b) => {
+                        // Prefer stored start_offset; fall back to text search position
+                        const ia = (a.start_offset ?? 0) > 0
+                          ? a.start_offset!
+                          : (a.selection_excerpt ? plainActiveText.indexOf(a.selection_excerpt) : Infinity);
+                        const ib = (b.start_offset ?? 0) > 0
+                          ? b.start_offset!
+                          : (b.selection_excerpt ? plainActiveText.indexOf(b.selection_excerpt) : Infinity);
+                        return ia - ib;
+                      });
 
                     if (allFeedback.length === 0 && !pendingSelection) {
                       return (
