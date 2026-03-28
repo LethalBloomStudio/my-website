@@ -125,10 +125,8 @@ export default function AuthButton() {
           {/* Portal backdrop — rendered on document.body so nav's overflow:clip can't clip it */}
           {mounted && createPortal(
             <button
-              className="fixed inset-0 z-[99] cursor-default bg-transparent"
+              style={{ position: "fixed", inset: 0, zIndex: 99, background: "rgba(0,0,0,0.001)", border: "none", cursor: "default", padding: 0 }}
               onClick={() => setOpen(false)}
-              aria-hidden="true"
-              tabIndex={-1}
             />,
             document.body
           )}
