@@ -101,6 +101,8 @@ export default function ManuscriptDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [exportModal, setExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [deleteProjectModal, setDeleteProjectModal] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -1044,6 +1046,19 @@ export default function ManuscriptDetailsPage() {
     await load();
   }
 
+  async function deleteManuscript() {
+    if (!manuscript) return;
+    setDeletingProject(true);
+    const { error } = await supabase.from("manuscripts").delete().eq("id", manuscript.id);
+    if (error) {
+      setMsg(friendlyDbError(error.message));
+      setDeletingProject(false);
+      setDeleteProjectModal(false);
+      return;
+    }
+    router.replace("/manuscripts");
+  }
+
   async function saveSelectedChapter() {
     if (!selectedChapterId) return;
     if (!chapterEditorContent.trim()) return setMsg("Chapter content is required.");
@@ -1691,6 +1706,19 @@ export default function ManuscriptDetailsPage() {
                   style={manuscript.visibility === "public" ? { backgroundColor: "#dc2626", borderColor: "#b91c1c", color: "#ffffff" } : { backgroundColor: "#16a34a", borderColor: "#15803d", color: "#ffffff" }}
                 >
                   {manuscript.visibility === "public" ? "Unpublish" : "Publish all"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteProjectModal(true)}
+                  title="Delete project"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-900/60 bg-red-950/30 text-red-400 transition hover:bg-red-950/60 hover:text-red-300 hover:border-red-700/70"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -2673,6 +2701,47 @@ export default function ManuscriptDetailsPage() {
                 type="button"
                 onClick={() => { setParentDisableModal(false); setParentDisableReason(""); }}
                 className="flex-1 h-10 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteProjectModal && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/75 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-2xl border border-red-900/50 bg-[rgba(18,18,18,0.98)] p-7 shadow-2xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-950/50 border border-red-900/50">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-white">Delete &ldquo;{manuscript?.title || "this manuscript"}&rdquo;?</h2>
+            <p className="mt-2 text-sm text-neutral-300">
+              This will permanently delete the entire project including all chapters, feedback, and reader access.
+            </p>
+            <div className="mt-4 rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3">
+              <p className="text-sm font-semibold text-red-400">⚠ This action cannot be undone.</p>
+              <p className="mt-1 text-xs text-neutral-400">Once deleted, the manuscript will be removed from Discover, the community, and all beta reader feeds. There is no way to recover it.</p>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => void deleteManuscript()}
+                disabled={deletingProject}
+                className="flex-1 rounded-lg border border-red-700/70 bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+              >
+                {deletingProject ? "Deleting…" : "Yes, delete permanently"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteProjectModal(false)}
+                disabled={deletingProject}
+                className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900/60 px-4 py-2.5 text-sm text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-50"
               >
                 Cancel
               </button>
