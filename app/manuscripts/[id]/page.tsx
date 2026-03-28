@@ -46,6 +46,7 @@ type LineFeedback = {
   author_response?: "agree" | "disagree" | null;
 };
 type FeedbackReply = { id: string; feedback_id: string; replier_id: string; body: string; created_at: string };
+type ReaderMarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
 
 function PageInner() {
   const params = useParams<{ id: string }>();
@@ -125,6 +126,7 @@ function PageInner() {
   const [clickedMarkerTop, setClickedMarkerTop] = useState<number | null>(null);
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
+  const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
 
   function handleSelectionUp() {
     if (!canLeaveLineEdits) return;
@@ -457,11 +459,61 @@ function PageInner() {
   }
 
   /**
+   * Range API helpers for absolute-positioned overlay markers (same approach as details/page.tsx).
+   */
+  function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let n: Node | null;
+    while ((n = walker.nextNode())) textNodes.push(n as Text);
+    const fullText = textNodes.map((t) => t.textContent ?? "").join("");
+    const idx = fullText.indexOf(excerpt);
+    if (idx === -1) return null;
+    let cumul = 0;
+    let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
+    for (const t of textNodes) {
+      const len = (t.textContent ?? "").length;
+      if (!startNode && cumul + len > idx) { startNode = t; startOff = idx - cumul; }
+      if (!endNode && cumul + len >= idx + excerpt.length) { endNode = t; endOff = idx + excerpt.length - cumul; break; }
+      cumul += len;
+    }
+    if (!startNode || !endNode) return null;
+    const range = document.createRange();
+    range.setStart(startNode, startOff);
+    range.setEnd(endNode, endOff);
+    return range;
+  }
+
+  function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
+    const container = textContainerRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const newInfos: Record<string, ReaderMarkerInfo> = {};
+    for (const f of markerFeedback) {
+      if (!f.selection_excerpt) continue;
+      const range = findExcerptRange(container, f.selection_excerpt);
+      if (!range) continue;
+      const clientRects = Array.from(range.getClientRects());
+      if (!clientRects.length) continue;
+      const lastRect = clientRects[clientRects.length - 1];
+      newInfos[f.id] = {
+        top: lastRect.top - containerRect.top - 4,
+        left: lastRect.right - containerRect.left + 1,
+        highlightRects: clientRects.map((r) => ({
+          top: r.top - containerRect.top,
+          left: r.left - containerRect.left,
+          width: r.width,
+          height: r.height,
+        })),
+      };
+    }
+    setReaderMarkerInfos(newInfos);
+  }
+
+  /**
    * Renders a paragraph (which may contain inline HTML like <strong>, <em>) with
-   * speech-bubble marker buttons inserted right after each feedback excerpt.
-   * The HTML is split at excerpt positions so that React only updates the button
-   * element when selectedFeedbackId changes — the surrounding HTML spans are
-   * never re-set, preventing any font flash.
+   * only a dotted-underline span (for scroll targeting) — no inline button.
+   * The actual speech-bubble buttons are rendered as absolute overlays via Range API.
    */
   function renderParagraphContent(
     html: string,
@@ -518,30 +570,11 @@ function PageInner() {
         );
       }
 
-      // The excerpt with dotted underline + speech-bubble button
+      // The excerpt — id used for scroll targeting; underline + bubble rendered as absolute overlays
       const excerptHtml = html.slice(startH, endH);
-      const isActive = selectedFeedbackId === item.id;
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`} className="inline">
-          <span
-            className={`border-b-2 border-dotted border-amber-400 rounded-sm transition-colors ${isActive ? "bg-amber-400/25" : ""}`}
-            dangerouslySetInnerHTML={{ __html: excerptHtml }}
-          />
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const isDeselecting = selectedFeedbackId === item.id;
-              setSelectedFeedbackId(isDeselecting ? null : item.id);
-              setClickedMarkerTop(null);
-            }}
-            className={`relative -top-0.5 ml-0.5 inline-flex h-[20px] w-[20px] items-center justify-center rounded-full align-middle select-none transition-all shadow-sm ${isActive ? "bg-amber-400 text-amber-950 shadow-amber-400/50 scale-110" : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"}`}
-            title="View feedback"
-            aria-label="View feedback"
-          >
-            <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
-              <path d="M1 1h7v5H6L4 8V6H1V1z"/>
-            </svg>
-          </button>
+          <span dangerouslySetInnerHTML={{ __html: excerptHtml }} />
         </span>
       );
 
@@ -993,15 +1026,42 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
+  // Recompute Range-API absolute marker positions when chapter or feedback changes
+  useEffect(() => {
+    const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+    const id = requestAnimationFrame(() => recomputeReaderMarkers(markerFeedback));
+    return () => cancelAnimationFrame(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
+
+  // Recompute on resize (e.g. window resize or font load)
+  useEffect(() => {
+    const container = textContainerRef.current;
+    if (!container) return;
+    const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+    const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
+    ro.observe(container);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
+
   // When a feedback card is selected, scroll the page to show the text marker
   // then align the sidebar card beside it
   useEffect(() => {
     if (!selectedFeedbackId) return;
-    const markerEl = document.getElementById(`text-marker-${selectedFeedbackId}`);
-    if (markerEl) {
-      const rect = markerEl.getBoundingClientRect();
-      const targetScrollY = window.scrollY + rect.top - window.innerHeight * 0.35;
+    const info = readerMarkerInfos[selectedFeedbackId];
+    const container = textContainerRef.current;
+    if (info && container) {
+      const markerDocY = container.getBoundingClientRect().top + window.scrollY + info.top;
+      const targetScrollY = markerDocY - window.innerHeight * 0.35;
       window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
+    } else {
+      const markerEl = document.getElementById(`text-marker-${selectedFeedbackId}`);
+      if (markerEl) {
+        const rect = markerEl.getBoundingClientRect();
+        const targetScrollY = window.scrollY + rect.top - window.innerHeight * 0.35;
+        window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
+      }
     }
     // After page scroll animation, align sidebar card beside the marker
     setTimeout(() => {
@@ -1039,13 +1099,14 @@ function PageInner() {
     return () => { if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current); };
   }, [userId, manuscriptId, supabase]);
 
-  // Click anywhere outside the feedback column to deselect
+  // Click anywhere outside the feedback column (and not on a marker bubble) to deselect
   useEffect(() => {
     if (!selectedFeedbackId) return;
     function onDocClick(e: MouseEvent) {
-      if (asideRef.current && !asideRef.current.contains(e.target as Node)) {
-        setSelectedFeedbackId(null);
-      }
+      const target = e.target as HTMLElement;
+      if (asideRef.current?.contains(target)) return;
+      if (target.closest("[data-feedback-marker]")) return;
+      setSelectedFeedbackId(null);
     }
     document.addEventListener("click", onDocClick, true);
     return () => document.removeEventListener("click", onDocClick, true);
@@ -1837,6 +1898,38 @@ function PageInner() {
                       })()}
                     </div>
                   )}
+
+                  {/* Absolute-positioned dotted underline highlights */}
+                  {Object.entries(readerMarkerInfos).flatMap(([fid, info]) => {
+                    const isSelected = selectedFeedbackId === fid;
+                    return info.highlightRects.map((r, i) => (
+                      <div key={`${fid}-hl-${i}`} style={{
+                        position: "absolute", top: r.top, left: r.left, width: r.width, height: r.height,
+                        backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
+                        borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
+                        pointerEvents: "none", zIndex: 5,
+                      }} />
+                    ));
+                  })}
+
+                  {/* Absolute-positioned speech-bubble marker buttons */}
+                  {Object.entries(readerMarkerInfos).map(([fid, info]) => {
+                    const isSelected = selectedFeedbackId === fid;
+                    return (
+                      <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
+                        onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
+                        style={{ position: "absolute", top: info.top, left: info.left, zIndex: 10 }}
+                        className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
+                          isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
+                                     : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
+                        }`}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
+                          <path d="M1 1h7v5H6L4 8V6H1V1z"/>
+                        </svg>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
 
