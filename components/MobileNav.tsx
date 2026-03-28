@@ -22,16 +22,44 @@ export default function MobileNav() {
     let userId: string | null = null;
     let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
+    function getReadKeySet(uid: string): Set<string> {
+      try {
+        const raw = typeof window !== "undefined" ? window.localStorage.getItem(`notif_read_keys_${uid}`) : null;
+        const parsed = raw ? (JSON.parse(raw) as (string | { key: string })[]) : [];
+        return new Set(Array.isArray(parsed) ? parsed.map((e) => (typeof e === "string" ? e : e.key)) : []);
+      } catch { return new Set(); }
+    }
+
     async function refreshCounts(uid: string) {
-      const [friendReq, contactReq, unreadMessages, unreadNotifs] = await Promise.all([
+      const { data: manuscripts } = await supabase.from("manuscripts").select("id").eq("owner_id", uid);
+      const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
+
+      const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
         supabase.from("system_notifications").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("is_read", false),
+        manuscriptIds.length > 0
+          ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds)
+          : Promise.resolve({ data: [] as Array<{ id: string }> }),
+        manuscriptIds.length > 0
+          ? supabase.from("manuscript_access_requests").select("id").in("manuscript_id", manuscriptIds).eq("status", "pending")
+          : Promise.resolve({ data: [] as Array<{ id: string }> }),
+        supabase.from("manuscript_invitations").select("*", { count: "exact", head: true }).eq("reader_id", uid).eq("status", "pending"),
       ]);
       if (cancelled) return;
+
+      const readKeySet = getReadKeySet(uid);
+      const ownerFeedbackIds = ((ownerFeedback.data as Array<{ id: string }> | null) ?? []).map((f) => f.id);
+      const accessIds = ((accessRequests.data as Array<{ id: string }> | null) ?? []).map((r) => r.id);
+      const localKeys = [
+        ...ownerFeedbackIds.map((id) => `feedback-${id}`),
+        ...accessIds.map((id) => `request-${id}`),
+      ];
+      const unreadLocal = localKeys.filter((k) => !readKeySet.has(k)).length;
+
       setMsgCount((friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0));
-      setNotifCount(unreadNotifs.count ?? 0);
+      setNotifCount(unreadLocal + (systemUpdates.count ?? 0) + (pendingInvitations.count ?? 0));
     }
 
     async function check() {
@@ -86,7 +114,20 @@ export default function MobileNav() {
       }
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); if (realtimeChannel) void supabase.removeChannel(realtimeChannel); };
+    function onStorage(ev: StorageEvent) {
+      if (ev.key?.startsWith("notif_read_keys_") && userId) void refreshCounts(userId);
+    }
+    function onBadgeRefresh() { if (userId) void refreshCounts(userId); }
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("notif-badge-refresh", onBadgeRefresh);
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+      if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
+    };
   }, [supabase]);
 
   const showAuthNav = signedIn && !isDeactivated && !isLocked;
