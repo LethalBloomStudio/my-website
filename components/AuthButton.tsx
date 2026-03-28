@@ -126,7 +126,7 @@ export default function AuthButton() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
         onClick={handleClick}
         disabled={loading}
@@ -139,7 +139,7 @@ export default function AuthButton() {
 
       {signedIn && open ? (
         <>
-          <div ref={menuRef} className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
           {isAdmin && (
             <Link
               href="/admin"
