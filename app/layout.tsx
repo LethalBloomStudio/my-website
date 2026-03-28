@@ -10,18 +10,9 @@ import MessagesNavButton from "@/components/MessagesNavButton";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
-import { Merriweather } from "next/font/google";
-
-const merriweather = Merriweather({
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
-  variable: "--font-merriweather",
-  display: "block",
-});
 
 export const metadata: Metadata = {
-  title: "Your Site",
+  title: "Lethal Bloom Studio",
   description: "Your description",
 };
 
@@ -41,10 +32,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={merriweather.variable}>
+    <html lang="en" suppressHydrationWarning>
       {/* Runs before React hydrates to prevent flash of wrong theme */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='day')document.documentElement.setAttribute('data-theme','day');}catch(e){}})();` }} />
+        {/* Merriweather loaded with display=block so it never flashes a fallback font */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&display=block" rel="stylesheet" />
       </head>
       <body>
         <ThemeProvider>
