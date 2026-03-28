@@ -15,6 +15,7 @@ type Friend = {
 type Props = {
   friends: Friend[];
   profileUserId: string;
+  viewerUserId?: string | null;
 };
 
 function Avatar({ url, name, size = 36 }: { url: string | null; name: string; size?: number }) {
@@ -35,7 +36,8 @@ function Avatar({ url, name, size = 36 }: { url: string | null; name: string; si
 
 const STORAGE_KEY = (profileUserId: string) => `friend-stars-${profileUserId}`;
 
-export default function FriendsPanel({ friends, profileUserId }: Props) {
+export default function FriendsPanel({ friends, profileUserId, viewerUserId }: Props) {
+  const isOwnList = viewerUserId === profileUserId;
   const [open, setOpen] = useState(false);
   const [starred, setStarred] = useState<Set<string>>(new Set());
 
@@ -132,25 +134,27 @@ export default function FriendsPanel({ friends, profileUserId }: Props) {
                           ) : (
                             <span className="block text-sm font-medium text-neutral-200 truncate">{displayName}</span>
                           )}
-                          {isStarred && (
+                          {isOwnList && isStarred && (
                             <p className="text-[10px] text-amber-400 uppercase tracking-wide">Favorite</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => toggleStar(f.userId)}
-                          title={isStarred ? "Remove from favorites" : "Add to favorites"}
-                          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full transition hover:scale-110 hover:bg-[rgba(120,120,120,0.15)]"
-                        >
-                          {isStarred ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                          )}
-                        </button>
+                        {isOwnList && (
+                          <button
+                            onClick={() => toggleStar(f.userId)}
+                            title={isStarred ? "Remove from favorites" : "Add to favorites"}
+                            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full transition hover:scale-110 hover:bg-[rgba(120,120,120,0.15)]"
+                          >
+                            {isStarred ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                              </svg>
+                            ) : (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                              </svg>
+                            )}
+                          </button>
+                        )}
                       </li>
                     );
                   })}
@@ -158,7 +162,7 @@ export default function FriendsPanel({ friends, profileUserId }: Props) {
               )}
             </div>
 
-            {starred.size > 0 && (
+            {isOwnList && starred.size > 0 && (
               <div className="border-t border-[rgba(120,120,120,0.2)] px-5 py-2">
                 <p className="text-[10px] text-neutral-600">★ Favorites stay at the top of your list</p>
               </div>

@@ -104,13 +104,17 @@ export default function SignInPage() {
             Welcome back. Access your writing workspace and public profile.
           </p>
 
-          <div className="mt-6 space-y-3">
+          <form
+            className="mt-6 space-y-3"
+            onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
+          >
             <input
               className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              type="email"
             />
 
             <div className="flex gap-2">
@@ -137,7 +141,7 @@ export default function SignInPage() {
             </div>
 
             <button
-              onClick={handleSignIn}
+              type="submit"
               disabled={loading}
               className="h-11 w-full rounded-lg border border-[rgba(120,120,120,0.9)] bg-[#787878] font-medium text-white hover:bg-[#606060] disabled:opacity-70"
             >
@@ -145,13 +149,13 @@ export default function SignInPage() {
             </button>
             <button
               type="button"
-              onClick={handleMagicLink}
+              onClick={() => void handleMagicLink()}
               disabled={sendingLink}
               className="h-11 w-full rounded-lg border border-neutral-700 bg-neutral-900/60 font-medium text-neutral-100 hover:bg-neutral-800 disabled:opacity-70"
             >
               {sendingLink ? "Sending link..." : "Email me a sign-in link"}
             </button>
-          </div>
+          </form>
 
           {msg ? (
             <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>

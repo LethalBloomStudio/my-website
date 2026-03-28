@@ -332,7 +332,7 @@ export default async function PublicProfilePage(props: {
           {/* Friends button + social media icons — bottom-left corner */}
           {!profileOwnerIsYouth && (
             <div className="absolute bottom-3 left-3 z-20 flex gap-2">
-              <FriendsPanel friends={friends} profileUserId={p.user_id} />
+              <FriendsPanel friends={friends} profileUserId={p.user_id} viewerUserId={viewerId} />
               {p.social_tiktok && (
                 <a href={`https://tiktok.com/@${p.social_tiktok}`} target="_blank" rel="noopener noreferrer"
                   title={`TikTok: @${p.social_tiktok}`}

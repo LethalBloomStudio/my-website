@@ -182,7 +182,7 @@ export default async function ProfilePage() {
 
           {/* Friends button + social media icons — bottom-left corner */}
           <div className="absolute bottom-3 left-3 z-20 flex gap-2">
-            <FriendsPanel friends={friends} profileUserId={user.id} />
+            <FriendsPanel friends={friends} profileUserId={user.id} viewerUserId={user.id} />
             {isAdult && (
               <>
                 {p?.social_tiktok && (

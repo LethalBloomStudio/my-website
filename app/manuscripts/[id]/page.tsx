@@ -364,21 +364,8 @@ function PageInner() {
       setRequesting(false);
     }
 
-    if (shouldNotify && manuscript) {
-      const { data: requesterProfile } = await supabase
-        .from("public_profiles")
-        .select("pen_name, username")
-        .eq("user_id", userId)
-        .maybeSingle();
-      const requesterName = (requesterProfile as { pen_name?: string | null; username?: string | null } | null)?.pen_name
-        || (requesterProfile as { pen_name?: string | null; username?: string | null } | null)?.username
-        || "A reader";
-      await supabase.from("system_notifications").insert({
-        user_id: manuscript.owner_id,
-        title: "New beta reader request",
-        body: `${requesterName} has requested to read "${manuscript.title || "your manuscript"}".`,
-      });
-    }
+    // No system_notification here — the manuscript_access_requests row already creates
+    // an actionable accept/decline notification for the author in the notifications feed.
 
     setRequestSent(true);
   }
