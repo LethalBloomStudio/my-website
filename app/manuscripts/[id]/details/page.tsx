@@ -711,9 +711,20 @@ export default function ManuscriptDetailsPage() {
     setTimeout(() => onReaderScroll(), 50);
   }, [readerSlots, acceptedReaders.length]);
 
-  // Realtime subscription — live feedback replies
+  // Realtime + polling — live feedback replies
   useEffect(() => {
     if (!authorUserId || !manuscriptId) return;
+
+    async function refreshReplies() {
+      const ids = feedbackItems.map((f) => f.id);
+      if (ids.length === 0) return;
+      const { data } = await supabase
+        .from("line_feedback_replies")
+        .select("id, feedback_id, replier_id, body, created_at")
+        .in("feedback_id", ids);
+      if (data) setFeedbackReplies(data as FeedbackReply[]);
+    }
+
     if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     const ch = supabase
       .channel(`feedback-replies-${manuscriptId}`)
@@ -723,8 +734,17 @@ export default function ManuscriptDetailsPage() {
       })
       .subscribe();
     replyChannelRef.current = ch;
-    return () => { if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current); };
-  }, [authorUserId, manuscriptId, supabase]);
+
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") void refreshReplies();
+    }, 10000);
+
+    return () => {
+      if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
+      clearInterval(timer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorUserId, manuscriptId, supabase, feedbackItems.length]);
 
   // Realtime subscription — keep coin balance live as coins are earned/spent anywhere
   useEffect(() => {
