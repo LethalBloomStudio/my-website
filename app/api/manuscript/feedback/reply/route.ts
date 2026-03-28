@@ -85,13 +85,15 @@ export async function POST(req: Request) {
     }
 
     let manuscriptOwnerId: string | null = null;
+    let manuscriptTitle: string | null = null;
     if (manuscriptId) {
       const { data: msRow } = await supabase
         .from("manuscripts")
-        .select("owner_id")
+        .select("owner_id, title")
         .eq("id", manuscriptId)
         .maybeSingle();
-      manuscriptOwnerId = (msRow as { owner_id?: string } | null)?.owner_id ?? null;
+      manuscriptOwnerId = (msRow as { owner_id?: string; title?: string } | null)?.owner_id ?? null;
+      manuscriptTitle = (msRow as { owner_id?: string; title?: string } | null)?.title ?? null;
     }
 
     // Block youth from replying on adult-owned manuscripts — adults can never reply to youth
@@ -152,6 +154,23 @@ export async function POST(req: Request) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    // Notify the other party in the conversation
+    const recipientId = userId === manuscriptOwnerId ? feedbackReaderId : manuscriptOwnerId;
+    if (recipientId && recipientId !== userId) {
+      const isAuthorReplying = userId === manuscriptOwnerId;
+      const titleText = isAuthorReplying
+        ? `The author replied to your feedback${manuscriptTitle ? ` on "${manuscriptTitle}"` : ""}`
+        : `A reader replied to feedback${manuscriptTitle ? ` on "${manuscriptTitle}"` : ""}`;
+      const bodyText = replyBody.length > 120 ? replyBody.slice(0, 120) + "…" : replyBody;
+      await admin.from("system_notifications").insert({
+        user_id: recipientId,
+        category: "feedback_reply",
+        title: titleText,
+        body: bodyText,
+        metadata: { feedback_id: feedbackId, manuscript_id: manuscriptId },
+      });
+    }
 
     return NextResponse.json({ ok: true, reply: inserted });
   } catch (e: unknown) {
