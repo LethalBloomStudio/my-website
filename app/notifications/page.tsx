@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
 
@@ -148,10 +148,23 @@ export default function NotificationsPage() {
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [friendRequestAction, setFriendRequestAction] = useState<string | null>(null);
+  const [catMenuOpen, setCatMenuOpen] = useState(false);
+  const [tabMenuOpen, setTabMenuOpen] = useState(false);
+  const catMenuRef = useRef<HTMLDivElement>(null);
+  const tabMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) setCatMenuOpen(false);
+      if (tabMenuRef.current && !tabMenuRef.current.contains(e.target as Node)) setTabMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -1323,53 +1336,98 @@ export default function NotificationsPage() {
           </div>
         ) : null}
 
-        {/* Filter bar — all buttons in one non-wrapping row; defines container width for w-fit */}
-        <div className="mt-8 flex items-center gap-2 overflow-x-auto">
-          {(["all", "manuscript", "beta_reading", "social", "admin"] as Category[]).map((cat) => {
-            const label = cat === "all" ? "All" : cat === "beta_reading" ? "Beta Reading" : cat.charAt(0).toUpperCase() + cat.slice(1);
-            const count = cat === "all" ? allUnreadCount : catCounts[cat as keyof typeof catCounts];
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
-                  activeCategory === cat
-                    ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white"
-                    : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-300 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-100"
-                }`}
-              >
-                {label}
-                {count > 0 && (
-                  <span className="rounded-full bg-[rgba(120,120,120,0.3)] px-1.5 py-0.5 text-xs">{count}</span>
-                )}
-              </button>
-            );
-          })}
+        {/* Filter bar — dropdown menus */}
+        <div className="mt-6 flex items-center gap-3 flex-wrap">
 
-          <span className="h-5 w-px shrink-0 bg-[rgba(120,120,120,0.3)]" aria-hidden="true" />
-
-          {(["unread", "read"] as const).map((tab) => (
+          {/* Category dropdown */}
+          <div className="relative" ref={catMenuRef}>
             <button
-              key={tab}
-              onClick={() => setActiveTab(activeTab === tab ? "all" : tab)}
-              className={`notif-tab inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
-                activeTab === tab
-                  ? "border-[rgba(120,120,120,0.7)] bg-white/15 text-white"
-                  : "border-[rgba(120,120,120,0.25)] bg-white/7 text-neutral-400 hover:text-neutral-200"
-              }`}
+              onClick={() => { setCatMenuOpen(o => !o); setTabMenuOpen(false); }}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.12)] px-4 text-sm font-medium text-neutral-100 transition hover:border-[rgba(120,120,120,0.65)] hover:bg-[rgba(120,120,120,0.18)]"
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {tab === "unread" && unreadCount > 0 && (
-                <span className="rounded-full bg-[rgba(120,120,120,0.35)] px-1.5 py-0.5 text-xs text-[rgba(210,210,210,0.9)]">{unreadCount}</span>
+              <span>
+                {activeCategory === "all" ? "All" : activeCategory === "beta_reading" ? "Beta Reading" : activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
+              </span>
+              {(activeCategory === "all" ? allUnreadCount : catCounts[activeCategory as keyof typeof catCounts]) > 0 && (
+                <span className="rounded-full bg-[rgba(120,120,120,0.35)] px-1.5 py-0.5 text-xs">
+                  {activeCategory === "all" ? allUnreadCount : catCounts[activeCategory as keyof typeof catCounts]}
+                </span>
               )}
-              {tab === "read" && readCount > 0 && (
-                <span className="rounded-full bg-[rgba(120,120,120,0.2)] px-1.5 py-0.5 text-xs text-neutral-400">{readCount}</span>
-              )}
+              <svg className={`w-3.5 h-3.5 shrink-0 text-neutral-400 transition-transform ${catMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M2 4l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
-          ))}
+            {catMenuOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[160px] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.35)] bg-neutral-900 shadow-2xl">
+                {(["all", "manuscript", "beta_reading", "social", "admin"] as Category[]).map((cat) => {
+                  const label = cat === "all" ? "All" : cat === "beta_reading" ? "Beta Reading" : cat.charAt(0).toUpperCase() + cat.slice(1);
+                  const count = cat === "all" ? allUnreadCount : catCounts[cat as keyof typeof catCounts];
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => { setActiveCategory(cat); setCatMenuOpen(false); }}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm transition ${
+                        activeCategory === cat
+                          ? "bg-[rgba(120,120,120,0.18)] text-white"
+                          : "text-neutral-300 hover:bg-[rgba(120,120,120,0.12)] hover:text-neutral-100"
+                      }`}
+                    >
+                      {label}
+                      {count > 0 && (
+                        <span className="rounded-full bg-[rgba(120,120,120,0.3)] px-1.5 py-0.5 text-xs">{count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
+          {/* Status dropdown */}
+          <div className="relative" ref={tabMenuRef}>
+            <button
+              onClick={() => { setTabMenuOpen(o => !o); setCatMenuOpen(false); }}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.12)] px-4 text-sm font-medium text-neutral-100 transition hover:border-[rgba(120,120,120,0.65)] hover:bg-[rgba(120,120,120,0.18)]"
+            >
+              <span>{activeTab === "all" ? "All" : activeTab === "unread" ? "Unread" : "Read"}</span>
+              {activeTab !== "all" && (activeTab === "unread" ? unreadCount : readCount) > 0 && (
+                <span className="rounded-full bg-[rgba(120,120,120,0.35)] px-1.5 py-0.5 text-xs">
+                  {activeTab === "unread" ? unreadCount : readCount}
+                </span>
+              )}
+              <svg className={`w-3.5 h-3.5 shrink-0 text-neutral-400 transition-transform ${tabMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M2 4l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {tabMenuOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.35)] bg-neutral-900 shadow-2xl">
+                {([
+                  { value: "all" as const, label: "All" },
+                  { value: "unread" as const, label: "Unread", count: unreadCount },
+                  { value: "read" as const, label: "Read", count: readCount },
+                ]).map(({ value, label, count }) => (
+                  <button
+                    key={value}
+                    onClick={() => { setActiveTab(value); setTabMenuOpen(false); }}
+                    className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm transition ${
+                      activeTab === value
+                        ? "bg-[rgba(120,120,120,0.18)] text-white"
+                        : "text-neutral-300 hover:bg-[rgba(120,120,120,0.12)] hover:text-neutral-100"
+                    }`}
+                  >
+                    {label}
+                    {count != null && count > 0 && (
+                      <span className="rounded-full bg-[rgba(120,120,120,0.25)] px-1.5 py-0.5 text-xs">{count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mark all as read */}
           <button
-            className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 text-sm text-neutral-300 transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-[rgba(120,120,120,0.5)] enabled:hover:text-neutral-100"
+            className="inline-flex h-10 items-center rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 text-sm text-neutral-300 transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-[rgba(120,120,120,0.5)] enabled:hover:text-neutral-100"
             onClick={markAllAsRead}
             disabled={unreadCount === 0}
           >
