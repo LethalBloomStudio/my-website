@@ -1704,7 +1704,7 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] pl-12 pr-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
                   style={{ fontFamily: "var(--font-merriweather, 'Merriweather', Georgia, 'Times New Roman', serif)" }}
                 >
                   {/* Watermark overlay — non-owners only */}
@@ -1766,7 +1766,7 @@ function PageInner() {
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
                               {paraFeedbacks.length > 0 && (
-                                <div className="absolute left-2 top-1 flex flex-col gap-1.5">
+                                <div className="absolute -left-6 top-0.5 flex flex-col gap-1.5">
                                   {paraFeedbacks.map((f) => (
                                     <button
                                       key={f.id}
