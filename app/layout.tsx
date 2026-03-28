@@ -36,6 +36,9 @@ export default function RootLayout({
       {/* Runs before React hydrates to prevent flash of wrong theme */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='day')document.documentElement.setAttribute('data-theme','day');}catch(e){}})();` }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
       </head>
       <body>
         <ThemeProvider>

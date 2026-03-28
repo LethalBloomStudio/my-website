@@ -1703,7 +1703,7 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 font-['Merriweather','Georgia','Times_New_Roman',serif] text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)] overflow-hidden${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
                   style={{ fontFamily: "'Merriweather', Georgia, 'Times New Roman', serif" }}
                 >
                   {/* Watermark overlay — non-owners only */}
