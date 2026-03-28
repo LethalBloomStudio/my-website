@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
 export default function AuthButton() {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
@@ -89,19 +88,6 @@ export default function AuthButton() {
     };
   }, [supabase]);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) setOpen(false);
-    }
-
-    document.addEventListener("mousedown", onClickOutside);
-    document.addEventListener("touchstart", onClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-      document.removeEventListener("touchstart", onClickOutside);
-    };
-  }, []);
 
   function handleClick() {
     if (!signedIn) {
@@ -121,7 +107,7 @@ export default function AuthButton() {
   }
 
   return (
-    <div ref={menuRef} className="relative">
+    <div className="relative">
       <button
         onClick={handleClick}
         disabled={loading}
@@ -133,7 +119,9 @@ export default function AuthButton() {
       </button>
 
       {signedIn && open ? (
-        <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} onTouchStart={() => setOpen(false)} />
+          <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[rgba(120,120,120,0.75)] bg-[#111111] p-1 shadow-xl">
           {isAdmin && (
             <Link
               href="/admin"
@@ -183,6 +171,7 @@ export default function AuthButton() {
             Sign out
           </Link>
         </div>
+        </>
       ) : null}
     </div>
   );
