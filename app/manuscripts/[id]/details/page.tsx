@@ -1711,7 +1711,8 @@ export default function ManuscriptDetailsPage() {
                   type="button"
                   onClick={() => setDeleteProjectModal(true)}
                   title="Delete project"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-700 bg-red-700 text-white transition hover:bg-red-600 hover:border-red-600"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white transition hover:opacity-90"
+                  style={{ background: "#dc2626", border: "1px solid #dc2626" }}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
@@ -2733,7 +2734,8 @@ export default function ManuscriptDetailsPage() {
                 type="button"
                 onClick={() => void deleteManuscript()}
                 disabled={deletingProject}
-                className="flex-1 rounded-lg border border-red-700/70 bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+                className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                style={{ background: "#dc2626", border: "1px solid #dc2626" }}
               >
                 {deletingProject ? "Deleting…" : "Yes, delete permanently"}
               </button>
