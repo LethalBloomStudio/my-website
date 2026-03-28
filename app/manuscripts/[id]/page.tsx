@@ -1659,14 +1659,14 @@ function PageInner() {
               <div className="max-h-[480px] overflow-y-auto pr-1 space-y-4">
                 {myAllFeedback.filter((f) =>
                   feedbackFilter === "all" ? true :
-                  feedbackFilter === "resolved" ? f.resolved :
-                  !f.resolved
+                  feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
+                  !f.resolved && !f.author_response
                 ).map((f) => {
                   const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                   const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
                   const fReplies = replies.filter((r) => r.feedback_id === f.id);
                   const isExpanded = expandedFeedbackIds.has(f.id);
-                  const canReply = !f.resolved;
+                  const canReply = !f.resolved && !f.author_response;
                   const toggleExpand = () => setExpandedFeedbackIds((prev) => {
                     const n = new Set(prev);
                     if (n.has(f.id)) { n.delete(f.id); } else { n.add(f.id); }
@@ -1695,6 +1695,9 @@ function PageInner() {
                         </blockquote>
                       )}
                       <p className="mt-1.5 text-sm leading-relaxed text-neutral-200">{f.comment_text}</p>
+                      {(f.resolved || !!f.author_response) && (
+                        <p className="mt-2 text-[11px] font-medium text-neutral-400">✓ Resolved</p>
+                      )}
                       {/* Expand replies */}
                       {(fReplies.length > 0 || canReply) && (
                         <button
