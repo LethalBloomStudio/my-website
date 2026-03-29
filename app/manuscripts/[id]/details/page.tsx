@@ -2526,8 +2526,14 @@ export default function ManuscriptDetailsPage() {
                               })}
                             </div>
 
-                            {/* Reply box — visible when this card is expanded (author only) */}
-                            {isSelected && !isParentView && (
+                            {/* Conversation closed indicator */}
+                            {(f.resolved || !!f.author_response) && (
+                              <p className={`mt-2 text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
+                                {f.author_response === "agree" ? "✓ You agreed — conversation closed" : "✗ You disagreed — conversation closed"}
+                              </p>
+                            )}
+                            {/* Reply box — visible when this card is selected and not resolved */}
+                            {isSelected && !isParentView && !f.resolved && !f.author_response && (
                               <div className="mt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                                 <textarea
                                   rows={1}
