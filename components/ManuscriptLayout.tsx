@@ -94,9 +94,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
       const ua = window.navigator.userAgent || "";
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any)?.standalone;
       const isWebView = /\bwv\b/i.test(ua) || /LethalBloomApp/i.test(ua);
-      const isNarrow = window.innerWidth < 1440; // guard against overlapping columns on mid-size app windows
-      const vertical = isStandalone || isWebView || isNarrow;
-      setForceVerticalLayout(vertical);
+      setForceVerticalLayout(isStandalone || isWebView);
     }
     compute();
     window.addEventListener("resize", compute);
@@ -253,7 +251,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
 
   return (
     <section
-      className={`manuscript-layout mt-6 flex gap-6 ${verticalStack ? "flex-col" : "flex-col lg:flex-row"}`}
+      className={`manuscript-layout mt-6 flex gap-6 ${verticalStack ? "flex-col" : "flex-col md:flex-row"}`}
       style={verticalStack ? { flexDirection: "column" } : undefined}
     >
       {verticalStack ? (
