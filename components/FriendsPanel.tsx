@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -34,30 +34,49 @@ function Avatar({ url, name, size = 36 }: { url: string | null; name: string; si
   );
 }
 
-const STORAGE_KEY = (profileUserId: string) => `friend-stars-${profileUserId}`;
-
 export default function FriendsPanel({ friends, profileUserId, viewerUserId }: Props) {
   const isOwnList = viewerUserId === profileUserId;
   const [open, setOpen] = useState(false);
   const [starred, setStarred] = useState<Set<string>>(new Set());
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  // Load starred friends from localStorage on mount
-  useEffect(() => {
+  const loadFavorites = useCallback(async () => {
+    if (!isOwnList) return;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY(profileUserId));
-      if (raw) setStarred(new Set(JSON.parse(raw) as string[]));
+      const res = await fetch("/api/friends/favorites");
+      if (!res.ok) return;
+      const { favorites } = await res.json() as { favorites: string[] };
+      setStarred(new Set(favorites));
     } catch {
-      // ignore parse errors
+      // ignore
     }
-  }, [profileUserId]);
+  }, [isOwnList]);
 
-  function toggleStar(userId: string) {
+  useEffect(() => {
+    void loadFavorites();
+  }, [loadFavorites]);
+
+  async function toggleStar(userId: string) {
+    if (togglingId) return;
+    setTogglingId(userId);
+    // Optimistic update
     setStarred(prev => {
       const next = new Set(prev);
-      next.has(userId) ? next.delete(userId) : next.add(userId);
-      try { localStorage.setItem(STORAGE_KEY(profileUserId), JSON.stringify([...next])); } catch { /* ignore */ }
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
       return next;
     });
+    try {
+      await fetch("/api/friends/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendUserId: userId }),
+      });
+    } catch {
+      // On failure, reload the real state from the server
+      void loadFavorites();
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   // Sort: starred first, then alphabetical by display name
@@ -140,9 +159,10 @@ export default function FriendsPanel({ friends, profileUserId, viewerUserId }: P
                         </div>
                         {isOwnList && (
                           <button
-                            onClick={() => toggleStar(f.userId)}
+                            onClick={() => void toggleStar(f.userId)}
+                            disabled={togglingId === f.userId}
                             title={isStarred ? "Remove from favorites" : "Add to favorites"}
-                            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full transition hover:scale-110 hover:bg-[rgba(120,120,120,0.15)]"
+                            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full transition hover:scale-110 hover:bg-[rgba(120,120,120,0.15)] disabled:opacity-50"
                           >
                             {isStarred ? (
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
