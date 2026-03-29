@@ -62,8 +62,8 @@ export default async function SubscriptionPage() {
   }
 
   // Billing breakdown
-  const isLethal = status === "lethal_member" || status === "lethal_member_annual";
-  const isAnnual = status === "lethal_member_annual";
+  const isLethal = status === "lethal" || status === "lethal_annual" || status === "lethal_member" || status === "lethal_member_annual";
+  const isAnnual = status === "lethal_annual" || status === "lethal_member_annual";
   const baseMonthly = isLethal ? (isAnnual ? 100 : 10) : 0;
   const unlimitedYouth = youthLinks.filter((l) => l.subscription_tier === "unlimited");
   const youthAddonMonthly = unlimitedYouth.length * 5;
