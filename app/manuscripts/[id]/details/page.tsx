@@ -104,6 +104,7 @@ export default function ManuscriptDetailsPage() {
   const [exportModal, setExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleteProjectModal, setDeleteProjectModal] = useState(false);
+  const [alertModal, setAlertModal] = useState<string | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
@@ -2362,7 +2363,7 @@ export default function ManuscriptDetailsPage() {
                             if (t === "trigger_page" && chapterType !== "trigger_page") {
                               const existingTriggerPages = chapters.filter(c => c.id !== selectedChapter.id && c.chapter_type === "trigger_page").length;
                               if (existingTriggerPages >= 1) {
-                                setMsg("Each project can only have one Trigger Page.");
+                                setAlertModal("Each project can only have one Trigger Page.");
                                 return;
                               }
                             }
@@ -2765,6 +2766,27 @@ export default function ManuscriptDetailsPage() {
             );
           })()}
         </ManuscriptLayout>
+
+        {alertModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setAlertModal(null)}>
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="w-full max-w-sm rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="mb-3 text-base font-semibold text-white">Not Allowed</h2>
+              <p className="mb-5 text-sm text-neutral-300">{alertModal}</p>
+              <button
+                type="button"
+                onClick={() => setAlertModal(null)}
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.15)] px-4 py-2 text-sm font-medium text-white hover:bg-[rgba(120,120,120,0.25)] transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
 
         {showPendingPanel && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowPendingPanel(false)}>
