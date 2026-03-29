@@ -2361,18 +2361,8 @@ export default function ManuscriptDetailsPage() {
                             const t = e.target.value as "chapter" | "prologue" | "trigger_page";
                             if (t === "trigger_page" && chapterType !== "trigger_page") {
                               const existingTriggerPages = chapters.filter(c => c.id !== selectedChapter.id && c.chapter_type === "trigger_page").length;
-                              const isLethalMember = memberTier === "lethal";
-                              if (existingTriggerPages >= 1 && !isLethalMember) {
-                                setCoinConfirm({
-                                  amount: 10,
-                                  label: "add a second trigger page",
-                                  onConfirm: () => {
-                                    void spendBloomCoins(10, "extra_chapter_upload", { manuscript_id: manuscript?.id, note: "trigger_page" }).then((r) => {
-                                      if (r.ok) { setChapterType("trigger_page"); setChapterEditorTitle("Trigger Page"); }
-                                      else setMsg(r.error);
-                                    });
-                                  },
-                                });
+                              if (existingTriggerPages >= 1) {
+                                setMsg("Each project can only have one Trigger Page.");
                                 return;
                               }
                             }
