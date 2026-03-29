@@ -41,6 +41,7 @@ type Chapter = {
   content: string;
   is_private: boolean;
   created_at: string;
+  chapter_type: "chapter" | "prologue" | "trigger_page";
 };
 
 type AcceptedReader = {
@@ -175,6 +176,7 @@ export default function ManuscriptDetailsPage() {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
   const [chapterEditorContent, setChapterEditorContent] = useState("");
+  const [chapterType, setChapterType] = useState<"chapter" | "prologue" | "trigger_page">("chapter");
   const [dragChapterId, setDragChapterId] = useState<string | null>(null);
   const [dragOverChapterId, setDragOverChapterId] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -223,6 +225,7 @@ export default function ManuscriptDetailsPage() {
           .update({
             title: chapterEditorTitle.trim() || "Untitled Chapter",
             content: chapterEditorContent.trim(),
+            chapter_type: chapterType,
           })
           .eq("id", selectedChapterId);
         if (error) {
@@ -510,7 +513,7 @@ export default function ManuscriptDetailsPage() {
 
     const { data: chapterData } = await supabase
       .from("manuscript_chapters")
-      .select("id, chapter_order, title, content, is_private, created_at")
+      .select("id, chapter_order, title, content, is_private, created_at, chapter_type")
       .eq("manuscript_id", manuscriptId)
       .order("chapter_order", { ascending: true });
 
@@ -829,6 +832,7 @@ export default function ManuscriptDetailsPage() {
       const normalized = normalizeChapterText(selected.content);
       setChapterEditorTitle(selected.title);
       setChapterEditorContent(normalized);
+      setChapterType((selected.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = selected.title;
       setAutoSaveStatus("idle");
@@ -840,6 +844,7 @@ export default function ManuscriptDetailsPage() {
       setSelectedChapterId(fallback.id);
       setChapterEditorTitle(fallback.title);
       setChapterEditorContent(normalized);
+      setChapterType((fallback.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = fallback.title;
       setAutoSaveStatus("idle");
@@ -1061,7 +1066,7 @@ export default function ManuscriptDetailsPage() {
         content: "",
         is_private: true,
       })
-      .select("id, chapter_order, title, content, is_private, created_at")
+      .select("id, chapter_order, title, content, is_private, created_at, chapter_type")
       .single();
     if (error) return setMsg(friendlyDbError(error.message));
 
@@ -1182,6 +1187,7 @@ export default function ManuscriptDetailsPage() {
       .update({
         title: chapterEditorTitle.trim() || "Untitled Chapter",
         content: chapterEditorContent.trim(),
+        chapter_type: chapterType,
       })
       .eq("id", selectedChapterId);
     setManualSaving(false);
@@ -1603,7 +1609,9 @@ export default function ManuscriptDetailsPage() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">Chapter {chapter.chapter_order}</span>
+            <span className="text-sm font-semibold">
+              {chapter.chapter_type === "prologue" ? "Prologue" : chapter.chapter_type === "trigger_page" ? "Trigger Page" : `Chapter ${chapter.chapter_order}`}
+            </span>
             <span
               className={`text-[10px] uppercase tracking-wide ${
                 chapter.is_private ? "text-amber-200" : "text-emerald-200"
@@ -2279,7 +2287,21 @@ export default function ManuscriptDetailsPage() {
                 <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {selectedChapter.chapter_order}</p>
+                      {!isParentView ? (
+                        <select
+                          value={chapterType}
+                          onChange={(e) => setChapterType(e.target.value as "chapter" | "prologue" | "trigger_page")}
+                          className="mb-1 rounded border border-neutral-700 bg-neutral-900/60 px-2 py-0.5 text-xs uppercase tracking-wide text-[rgba(210,210,210,0.8)] focus:outline-none focus:border-[rgba(120,120,120,0.7)]"
+                        >
+                          <option value="chapter">Chapter {selectedChapter.chapter_order}</option>
+                          <option value="prologue">Prologue</option>
+                          <option value="trigger_page">Trigger Page</option>
+                        </select>
+                      ) : (
+                        <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">
+                          {chapterType === "prologue" ? "Prologue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${selectedChapter.chapter_order}`}
+                        </p>
+                      )}
                       <h2 className="text-lg font-semibold text-white">{selectedChapter.title || "Untitled chapter"}</h2>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -2300,7 +2322,7 @@ export default function ManuscriptDetailsPage() {
                     {!previewMode && (
                       <div className="flex flex-wrap items-end gap-3">
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm text-neutral-300">Chapter title</div>
+                          <div className="text-sm text-neutral-300">{chapterType === "prologue" ? "Prologue title" : chapterType === "trigger_page" ? "Trigger page title" : "Chapter title"}</div>
                           <input
                             value={chapterEditorTitle}
                             onChange={(e) => setChapterEditorTitle(e.target.value)}
