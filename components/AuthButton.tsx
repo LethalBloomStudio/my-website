@@ -27,12 +27,10 @@ export default function AuthButton() {
     function close() { setOpen(false); }
     const t = setTimeout(() => {
       window.addEventListener("click", close);
-      window.addEventListener("touchstart", close);
     }, 0);
     return () => {
       clearTimeout(t);
       window.removeEventListener("click", close);
-      window.removeEventListener("touchstart", close);
     };
   }, [open]);
 

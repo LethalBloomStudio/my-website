@@ -1953,12 +1953,27 @@ export default function ManuscriptDetailsPage() {
                         const toggleExpand = () => setOverviewExpandedIds((prev) => {
                           const n = new Set(prev); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n;
                         });
+                        function showInChapter() {
+                          if (!f.chapter_id) return;
+                          setSelectedChapterId(f.chapter_id);
+                          setSelectedFeedbackId(f.id);
+                          setPreviewMode(false);
+                        }
                         return (
                           <div key={f.id} className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3">
                             <div className="flex flex-wrap items-center justify-between gap-1">
                               <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">{readerName}</p>
                               <div className="flex items-center gap-2 text-[10px] text-neutral-500">
                                 {chapterLabel && <span className="rounded-lg bg-neutral-800 px-1.5 py-0.5">{chapterLabel}</span>}
+                                {f.chapter_id && !excerptDetached && (
+                                  <button
+                                    type="button"
+                                    onClick={showInChapter}
+                                    className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.1)] px-1.5 py-0.5 text-[10px] text-neutral-300 hover:bg-[rgba(120,120,120,0.2)] transition"
+                                  >
+                                    Show me
+                                  </button>
+                                )}
                                 <span>{new Date(f.created_at).toLocaleDateString()}</span>
                               </div>
                             </div>
@@ -2346,8 +2361,8 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </section>
 
-                {/* Feedback aside — always visible when chapter is open */}
-                <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}>
+                {/* Feedback aside — hidden in reader view preview */}
+                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}>
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                       Reader Feedback
@@ -2511,7 +2526,7 @@ export default function ManuscriptDetailsPage() {
                     </div>
                   );
                   })()}
-                </aside>
+                </aside>}
               </div>
             );
           })()}
