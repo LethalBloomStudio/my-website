@@ -109,9 +109,8 @@ export default async function SubscriptionPage() {
           <>
             <SubscriptionClient currentStatus={status} />
 
-            {/* Billing summary — only show when there's something to break down */}
-            {(youthLinks.length > 0 || isLethal) && (
-              <section className="space-y-3">
+            {/* Billing summary — always visible */}
+            <section className="space-y-3">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
                   Billing Summary
                 </h2>
@@ -188,7 +187,6 @@ export default async function SubscriptionPage() {
                   </p>
                 )}
               </section>
-            )}
           </>
         )}
 
