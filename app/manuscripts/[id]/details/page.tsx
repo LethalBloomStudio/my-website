@@ -1036,7 +1036,8 @@ export default function ManuscriptDetailsPage() {
     if (!manuscript) return;
     const order = nextChapterOrder();
     const isLethalMember = memberTier === "lethal";
-    const chapterCost = !isLethalMember && chapters.length >= freeChapterLimit ? 10 : 0;
+    const realChapterCount = chapters.filter((c) => c.chapter_type === "chapter").length;
+    const chapterCost = !isLethalMember && realChapterCount >= freeChapterLimit ? 10 : 0;
     if (chapterCost > 0) {
       setCoinConfirm({ amount: chapterCost, label: "add a new chapter", onConfirm: () => void doAddChapter(order, chapterCost) });
       return;
@@ -1546,7 +1547,8 @@ export default function ManuscriptDetailsPage() {
           : [];
   const displayedWordCount = chapters.reduce((sum, c) => sum + countWords(c.content ?? ""), 0);
   const selectedChapter = selectedChapterId ? chapters.find((c) => c.id === selectedChapterId) ?? null : null;
-  const nextChapterCost = !isLethalMember && chapters.length >= freeChapterLimit ? 10 : 0;
+  const realChapterCount = chapters.filter((c) => c.chapter_type === "chapter").length;
+  const nextChapterCost = !isLethalMember && realChapterCount >= freeChapterLimit ? 10 : 0;
 
   const detailItems = [
     { label: "Author", value: `You${manuscript?.created_at ? ` · ${new Date(manuscript.created_at).toLocaleDateString()}` : ""}` },

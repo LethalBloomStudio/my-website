@@ -31,7 +31,7 @@ type Manuscript = {
   chapter_count?: number | null;
   created_at?: string | null;
 };
-type Chapter = { id: string; title: string; chapter_order: number; content: string; is_private: boolean };
+type Chapter = { id: string; title: string; chapter_order: number; content: string; is_private: boolean; chapter_type?: "chapter" | "prologue" | "trigger_page" };
 type AccessGrant = { id: string; reader_id: string };
 type LineFeedback = {
   id: string;
@@ -283,10 +283,12 @@ function PageInner() {
       setFeedback((prev) => [newItem, ...prev]);
 
       // Bloom coin check — beta readers earn 5 coins after 200 words of feedback per chapter
+      // Trigger pages never award coins
       const chId = activeChapter?.id;
       const isBetaReader = manuscript && userId !== manuscript.owner_id &&
         grants.some((g) => g.reader_id === userId);
-      if (isBetaReader && chId && !completedChapterIds.has(chId)) {
+      const isTriggerPage = activeChapter?.chapter_type === "trigger_page";
+      if (isBetaReader && chId && !completedChapterIds.has(chId) && !isTriggerPage) {
         const existingWords = myChapterFeedback.reduce((sum, f) => sum + (f.word_count ?? 0), 0);
         const totalWords = existingWords + wordCount;
         if (totalWords >= 200) {
@@ -854,7 +856,7 @@ function PageInner() {
       if (viewerCanRead || ownerView) {
         const chapterQuery = supabase
           .from("manuscript_chapters")
-          .select("id, title, chapter_order, content, is_private")
+          .select("id, title, chapter_order, content, is_private, chapter_type")
           .eq("manuscript_id", manuscriptId)
           .order("chapter_order", { ascending: true });
         if (!ownerOrParentView && !gRows.some((x) => x.reader_id === uid)) {
