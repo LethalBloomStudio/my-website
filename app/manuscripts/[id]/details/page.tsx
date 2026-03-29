@@ -2290,10 +2290,18 @@ export default function ManuscriptDetailsPage() {
                       {!isParentView ? (
                         <select
                           value={chapterType}
-                          onChange={(e) => setChapterType(e.target.value as "chapter" | "prologue" | "trigger_page")}
+                          onChange={(e) => {
+                            const t = e.target.value as "chapter" | "prologue" | "trigger_page";
+                            setChapterType(t);
+                            setChapterEditorTitle(
+                              t === "prologue" ? "Prologue" :
+                              t === "trigger_page" ? "Trigger Page" :
+                              `Chapter ${selectedChapter.chapter_order}`
+                            );
+                          }}
                           className="mb-1 rounded border border-neutral-700 bg-neutral-900/60 px-2 py-0.5 text-xs uppercase tracking-wide text-[rgba(210,210,210,0.8)] focus:outline-none focus:border-[rgba(120,120,120,0.7)]"
                         >
-                          <option value="chapter">Chapter {selectedChapter.chapter_order}</option>
+                          <option value="chapter">Chapter</option>
                           <option value="prologue">Prologue</option>
                           <option value="trigger_page">Trigger Page</option>
                         </select>
@@ -2302,7 +2310,7 @@ export default function ManuscriptDetailsPage() {
                           {chapterType === "prologue" ? "Prologue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${selectedChapter.chapter_order}`}
                         </p>
                       )}
-                      <h2 className="text-lg font-semibold text-white">{selectedChapter.title || "Untitled chapter"}</h2>
+                      <h2 className="text-lg font-semibold text-white">{chapterEditorTitle || "Untitled"}</h2>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full border border-neutral-800 bg-neutral-900/60 px-3 py-1 text-xs text-neutral-300">
