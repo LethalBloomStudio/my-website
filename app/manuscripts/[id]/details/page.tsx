@@ -165,6 +165,9 @@ export default function ManuscriptDetailsPage() {
   const [ownerPenName, setOwnerPenName] = useState("");
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const feedbackAsideRef = useRef<HTMLElement>(null);
+  const chapterSectionRef = useRef<HTMLElement>(null);
+  const [chapterSectionH, setChapterSectionH] = useState(0);
+  const prevMarkerInfosRef = useRef<Record<string, unknown>>({});
   const [navH, setNavH] = useState(0);
   type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
@@ -818,6 +821,38 @@ export default function ManuscriptDetailsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
 
+  // When "Show me" navigates to a chapter, markerInfos populates after render —
+  // re-trigger the scroll once the selected feedback's marker appears for the first time.
+  useEffect(() => {
+    if (!selectedFeedbackId) { prevMarkerInfosRef.current = {}; return; }
+    const info = markerInfos[selectedFeedbackId];
+    const prevInfo = prevMarkerInfosRef.current[selectedFeedbackId];
+    if (info && !prevInfo) {
+      const wrapper = editorWrapperRef.current;
+      const aside = feedbackAsideRef.current;
+      const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
+      if (wrapper) {
+        const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + (info as { top: number }).top;
+        window.scrollTo({ top: Math.max(0, markerDocY - window.innerHeight * 0.3), behavior: "smooth" });
+        if (aside && cardEl) {
+          const desiredRelativeTop = Math.max(0, window.innerHeight * 0.3 - (navH + 12));
+          setTimeout(() => { aside.scrollTop = cardEl.offsetTop - desiredRelativeTop; }, 350);
+        }
+      }
+    }
+    prevMarkerInfosRef.current = markerInfos;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markerInfos, selectedFeedbackId]);
+
+  // Track chapter section height so the aside only scrolls when feedback exceeds it
+  useEffect(() => {
+    const el = chapterSectionRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setChapterSectionH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selectedChapterId]);
+
   // Find the DOM Range for an excerpt inside a root element using a TreeWalker
   function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -929,7 +964,7 @@ export default function ManuscriptDetailsPage() {
     return (
       <>
         {text.slice(0, idx)}
-        <mark className="rounded bg-[rgba(120,120,120,0.4)] px-0.5 text-[#e9e6ff] not-italic">{text.slice(idx, idx + excerpt.length)}</mark>
+        <mark className="rounded bg-[rgba(253,224,71,0.75)] px-0.5 text-neutral-900 not-italic">{text.slice(idx, idx + excerpt.length)}</mark>
         {text.slice(idx + excerpt.length)}
       </>
     );
@@ -2192,7 +2227,7 @@ export default function ManuscriptDetailsPage() {
             return (
               <div className="flex gap-6 items-start">
                 {/* Chapter editor / preview */}
-                <section className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+                <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {selectedChapter.chapter_order}</p>
@@ -2317,8 +2352,8 @@ export default function ManuscriptDetailsPage() {
                                   left: r.left,
                                   width: r.width,
                                   height: r.height,
-                                  backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
-                                  borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
+                                  backgroundColor: isSelected ? "rgba(253,224,71,0.28)" : "rgba(253,224,71,0.08)",
+                                  borderBottom: `2px dotted ${isSelected ? "rgba(253,224,71,1)" : "rgba(253,224,71,0.82)"}`,
                                   pointerEvents: "none",
                                   zIndex: 5,
                                 }}
@@ -2347,8 +2382,8 @@ export default function ManuscriptDetailsPage() {
                                 }}
                                 className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
                                   isSelected
-                                    ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
-                                    : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
+                                    ? "bg-yellow-300 text-yellow-950 scale-110 shadow-yellow-300/60"
+                                    : "bg-yellow-300 text-yellow-950 hover:bg-yellow-200 hover:scale-105"
                                 }`}
                               >
                                 <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
@@ -2401,7 +2436,7 @@ export default function ManuscriptDetailsPage() {
                 </section>
 
                 {/* Feedback aside — hidden in reader view preview */}
-                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}>
+                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: chapterSectionH > 0 ? chapterSectionH : `calc(100vh - ${navH + 24}px)` }}>
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                       Reader Feedback
