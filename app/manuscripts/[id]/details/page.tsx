@@ -481,9 +481,14 @@ export default function ManuscriptDetailsPage() {
     const feedbackPref = profRow?.feedback_preference ?? "gentle";
     setOwnerPenName(profRow?.pen_name || (profRow?.username ? `@${profRow.username}` : "Author"));
     setProfileFeedbackPreference(feedbackPref);
-    const subscription = (accountRow?.subscription_status ?? "").toLowerCase();
-    const lethalFromSubscription = subscription.includes("lethal");
-    setMemberTier(writerLevel === "lethal" || lethalFromSubscription ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
+    // memberTier is based ONLY on subscription_status, NOT writer_level
+    // writer_level is the user's self-selected writing experience — unrelated to subscription
+    const subscription = (accountRow?.subscription_status ?? "").toLowerCase().trim();
+    setMemberTier(
+      subscription === "lethal" || subscription.includes("lethal") ? "lethal" :
+      subscription === "forge" || subscription.includes("forge") ? "forge" :
+      "bloom"
+    );
 
     const { data, error } = await supabase
       .from("manuscripts")
@@ -1057,7 +1062,7 @@ export default function ManuscriptDetailsPage() {
     const order = nextChapterOrder();
     const isLethalMember = memberTier === "lethal";
     // Trigger pages don't count toward the free chapter limit; prologues and chapters do
-    const nonTriggerCount = chapters.filter((c) => c.chapter_type !== "trigger_page").length;
+    const nonTriggerCount = chapters.filter((c) => (c.chapter_type ?? "chapter") !== "trigger_page").length;
     const chapterCost = !isLethalMember && nonTriggerCount >= freeChapterLimit ? 10 : 0;
     if (chapterCost > 0) {
       setCoinConfirm({ amount: chapterCost, label: "add a new chapter", onConfirm: () => void doAddChapter(order, chapterCost) });
@@ -1601,7 +1606,7 @@ export default function ManuscriptDetailsPage() {
           : [];
   const displayedWordCount = chapters.reduce((sum, c) => sum + countWords(c.content ?? ""), 0);
   const selectedChapter = selectedChapterId ? chapters.find((c) => c.id === selectedChapterId) ?? null : null;
-  const nonTriggerCount = chapters.filter((c) => c.chapter_type !== "trigger_page").length;
+  const nonTriggerCount = chapters.filter((c) => (c.chapter_type ?? "chapter") !== "trigger_page").length;
   const nextChapterCost = !isLethalMember && nonTriggerCount >= freeChapterLimit ? 10 : 0;
 
   const detailItems = [
