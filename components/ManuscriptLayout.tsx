@@ -224,7 +224,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
   );
 
   const mainContent = (
-    <div className="min-w-0 flex-1 w-full space-y-6">
+    <div className="min-w-0 flex-1 space-y-6">
       {rightHeader}
       {topContent}
       {!hideDefaultSections && description ? (
