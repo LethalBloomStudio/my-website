@@ -117,6 +117,8 @@ export default function ManuscriptDetailsPage() {
   const [copyrightInfo, setCopyrightInfo] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [isMatureContent, setIsMatureContent] = useState(false);
+  const [isPotentiallyTriggering, setIsPotentiallyTriggering] = useState(false);
   const [profileAgeCategory, setProfileAgeCategory] = useState<"youth_13_17" | "adult_18_plus">("adult_18_plus");
   const [memberTier, setMemberTier] = useState<"bloom" | "forge" | "lethal">("bloom");
   const [coinBalance, setCoinBalance] = useState(0);
@@ -376,9 +378,10 @@ export default function ManuscriptDetailsPage() {
         );
         setPotentialTriggers(ms.potential_triggers ?? "");
         setCopyrightInfo(ms.copyright_info ?? "");
-        setSelectedCategories(
-          ms.categories && ms.categories.length > 0 ? ms.categories : ms.genre ? [ms.genre] : []
-        );
+        const rawCats = ms.categories && ms.categories.length > 0 ? ms.categories : ms.genre ? [ms.genre] : [];
+        setIsMatureContent(rawCats.includes("Mature Content"));
+        setIsPotentiallyTriggering(rawCats.includes("Potentially Triggering Content"));
+        setSelectedCategories(rawCats.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content"));
         setChapters(d.chapters);
         setAcceptedReaders(d.acceptedReaders);
         setReaderSlots(Math.max(3, d.acceptedReaders.length));
@@ -623,13 +626,10 @@ export default function ManuscriptDetailsPage() {
     );
     setPotentialTriggers(row.potential_triggers ?? "");
     setCopyrightInfo(row.copyright_info ?? "");
-    setSelectedCategories(
-      row.categories && row.categories.length > 0
-        ? row.categories
-        : row.genre
-          ? [row.genre]
-          : [],
-    );
+    const rawCats2 = row.categories && row.categories.length > 0 ? row.categories : row.genre ? [row.genre] : [];
+    setIsMatureContent(rawCats2.includes("Mature Content"));
+    setIsPotentiallyTriggering(rawCats2.includes("Potentially Triggering Content"));
+    setSelectedCategories(rawCats2.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content"));
     const chapterRows = (chapterData as Chapter[]) ?? [];
     setChapters(chapterRows);
     setSelectedChapterId((prev) => {
@@ -1261,7 +1261,7 @@ export default function ManuscriptDetailsPage() {
       requested_feedback: requestedFeedback,
       potential_triggers: potentialTriggers.trim(),
       copyright_info: copyrightInfo.trim(),
-      categories: selectedCategories,
+      categories: [...selectedCategories, ...(isMatureContent ? ["Mature Content"] : []), ...(isPotentiallyTriggering ? ["Potentially Triggering Content"] : [])],
       genre: selectedCategories[0] ?? null,
     };
 
@@ -1846,43 +1846,82 @@ export default function ManuscriptDetailsPage() {
                   ))}
                 </div>
 
-                {/* Read-only: Requested feedback (mirrors profile setting) */}
-                <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">Requested Feedback</p>
-                  <p className="text-sm text-neutral-200">
-                    {FEEDBACK_PREFERENCE_OPTIONS.find((o) => o.value === profileFeedbackPreference)?.label ?? "Bloom"}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 mt-0.5">Set via your <a href="/settings/profile" className="underline hover:text-neutral-300">profile settings</a></p>
+                {/* Feedback & Content — 3 boxes side by side */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500 mb-1">Requested Feedback</p>
+                    <p className="text-sm text-neutral-200">
+                      {FEEDBACK_PREFERENCE_OPTIONS.find((o) => o.value === profileFeedbackPreference)?.label ?? "Bloom"}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 mt-0.5">Set via your <a href="/settings/profile" className="underline hover:text-neutral-300">profile settings</a></p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isParentView}
+                    onClick={() => !isParentView && setIsMatureContent((v) => !v)}
+                    className={`rounded-lg border px-3 py-2 text-left transition ${isMatureContent ? "border-amber-600/50 bg-amber-950/25" : "border-neutral-800 bg-neutral-950/30"} ${!isParentView ? "hover:bg-neutral-900/60 cursor-pointer" : "cursor-default"}`}
+                  >
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">Content Flag</p>
+                    <p className={`mt-1 text-sm font-medium ${isMatureContent ? "text-amber-300" : "text-neutral-400"}`}>Mature Content</p>
+                    <p className="mt-1 text-xs text-neutral-500">{isMatureContent ? "Flagged ✓" : isParentView ? "Not flagged" : "Click to flag"}</p>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isParentView}
+                    onClick={() => !isParentView && setIsPotentiallyTriggering((v) => !v)}
+                    className={`rounded-lg border px-3 py-2 text-left transition ${isPotentiallyTriggering ? "border-rose-600/50 bg-rose-950/25" : "border-neutral-800 bg-neutral-950/30"} ${!isParentView ? "hover:bg-neutral-900/60 cursor-pointer" : "cursor-default"}`}
+                  >
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">Content Warning</p>
+                    <p className={`mt-1 text-sm font-medium ${isPotentiallyTriggering ? "text-rose-300" : "text-neutral-400"}`}>May Contain Triggering Content</p>
+                    <p className="mt-1 text-xs text-neutral-500">{isPotentiallyTriggering ? "Flagged ✓" : isParentView ? "Not flagged" : "Click to flag"}</p>
+                  </button>
                 </div>
 
                 {/* Editable: Categories */}
-                <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">Categories</p>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {selectedCategories.length === 0 && <span className="text-sm text-neutral-500">Not set</span>}
-                    {selectedCategories.map((cat) => (
-                      <span key={cat} className="flex items-center gap-1 rounded-full border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.1)] px-2 py-0.5 text-xs text-neutral-200">
-                        {cat}
-                        {!isParentView && (
-                          <button onClick={() => setSelectedCategories((prev) => prev.filter((c) => c !== cat))} className="text-neutral-400 hover:text-white leading-none">×</button>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                  {!isParentView && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val && !selectedCategories.includes(val)) setSelectedCategories((prev) => [...prev, val]);
-                    }}
-                    className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-[rgba(120,120,120,0.7)]"
-                  >
-                    <option value="">Add a category…</option>
-                    {genreOptionsForAgeCategory(profileAgeCategory).filter((g) => !selectedCategories.includes(g)).sort().map((g) => (
-                      <option key={g} value={g}>{g}</option>
-                    ))}
-                  </select>
+                <div ref={categoryMenuRef} className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2">Categories</p>
+                  {isParentView ? (
+                    <p className="text-sm text-neutral-400">{selectedCategories.length ? selectedCategories.join(", ") : "Not set"}</p>
+                  ) : (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setCategoryOpen((v) => !v)}
+                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-2 text-left text-sm text-neutral-200 hover:border-[rgba(120,120,120,0.5)] transition"
+                      >
+                        <span className="flex items-center justify-between">
+                          <span>{selectedCategories.length > 0 ? selectedCategories.join(", ") : "Select categories…"}</span>
+                          <span className="text-xs text-neutral-500 shrink-0 ml-2">{selectedCategories.length}/{categoryLimit(selectedCategories)}</span>
+                        </span>
+                      </button>
+                      {categoryOpen && (
+                        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-1.5 shadow-xl">
+                          {sortedGenreOptions.map((g) => {
+                            const checked = selectedCategories.includes(g);
+                            const limit = categoryLimit(checked ? selectedCategories : [...selectedCategories, g]);
+                            const disabled = !checked && selectedCategories.length >= limit;
+                            return (
+                              <button
+                                key={g}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => toggleCategory(g)}
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition ${
+                                  checked
+                                    ? "bg-[rgba(120,120,120,0.2)] text-neutral-100"
+                                    : disabled
+                                    ? "cursor-not-allowed text-neutral-600"
+                                    : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
+                                }`}
+                              >
+                                <span>{g}</span>
+                                {checked && <span className="text-xs text-neutral-400">✓</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 

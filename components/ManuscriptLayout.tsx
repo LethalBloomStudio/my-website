@@ -80,8 +80,28 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
 
   // Keep edit value in sync if title prop changes externally
   useEffect(() => {
-    if (!editingTitle) setEditTitleValue(title);
+    if (!editingTitle) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEditTitleValue(title);
+    }
   }, [title, editingTitle]);
+
+  // Detect app/webview contexts so we can stack columns vertically there (prevents overlap).
+  const [forceVerticalLayout, setForceVerticalLayout] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function compute() {
+      const ua = window.navigator.userAgent || "";
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any)?.standalone;
+      const isWebView = /\bwv\b/i.test(ua) || /LethalBloomApp/i.test(ua);
+      const isNarrow = window.innerWidth < 1440; // guard against overlapping columns on mid-size app windows
+      const vertical = isStandalone || isWebView || isNarrow;
+      setForceVerticalLayout(vertical);
+    }
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
 
   function commitTitleEdit() {
     setEditingTitle(false);
@@ -148,8 +168,8 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
             ) : (
               <h1 className="text-sm font-semibold leading-snug text-neutral-50">{title}</h1>
             )}
-            {categories && categories.length ? (
-              <p className="text-[11px] text-[rgba(210,210,210,0.85)]">{categories.join(", ")}</p>
+            {categories && categories.filter((c) => c !== "Mature Content" && c !== "Potentially Triggering Content").length ? (
+              <p className="text-[11px] text-[rgba(210,210,210,0.85)]">{categories.filter((c) => c !== "Mature Content" && c !== "Potentially Triggering Content").join(", ")}</p>
             ) : (
               <p className="text-[11px] text-[rgba(210,210,210,0.65)]">Uncategorized</p>
             )}
@@ -206,7 +226,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
   );
 
   const mainContent = (
-    <div className="min-w-0 flex-1 space-y-6">
+    <div className="min-w-0 flex-1 w-full space-y-6">
       {rightHeader}
       {topContent}
       {!hideDefaultSections && description ? (
@@ -229,9 +249,19 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
     </div>
   );
 
+  const verticalStack = forceVerticalLayout;
+
   return (
-    <section className="mt-6 flex flex-col gap-6 md:flex-row">
-      {sidebarPosition === "right" ? (
+    <section
+      className={`manuscript-layout mt-6 flex gap-6 ${verticalStack ? "flex-col" : "flex-col lg:flex-row"}`}
+      style={verticalStack ? { flexDirection: "column" } : undefined}
+    >
+      {verticalStack ? (
+        <>
+          {sidebar}
+          <div className="mt-3">{mainContent}</div>
+        </>
+      ) : sidebarPosition === "right" ? (
         <>
           {mainContent}
           {sidebar}

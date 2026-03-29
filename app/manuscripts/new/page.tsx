@@ -36,6 +36,8 @@ function NewManuscriptInner() {
   const [description, setDescription] = useState("");
   const [requestedFeedback, setRequestedFeedback] = useState<FeedbackLevel>("bloom");
   const [potentialTriggers, setPotentialTriggers] = useState("");
+  const [isMatureContent, setIsMatureContent] = useState(false);
+  const [isPotentiallyTriggering, setIsPotentiallyTriggering] = useState(false);
   const [copyrightInfo, setCopyrightInfo] = useState("");
   const [profileAgeCategory, setProfileAgeCategory] = useState<"youth_13_17" | "adult_18_plus">("adult_18_plus");
   const [memberTier, setMemberTier] = useState<"bloom" | "forge" | "lethal">("bloom");
@@ -163,11 +165,16 @@ function NewManuscriptInner() {
       return setMsg("Your first manuscript is free. Additional manuscripts require 10 Bloom Coins and include 1 chapter.");
     }
 
+    const contentWarnings: string[] = [];
+    if (isMatureContent) contentWarnings.push("Mature Content");
+    if (isPotentiallyTriggering) contentWarnings.push("Potentially Triggering Content");
+    const allCategories = [...selectedCategories, ...contentWarnings];
+
     const payload = {
       owner_id: auth.user.id,
       title,
       genre: selectedCategories[0] ?? null,
-      categories: selectedCategories,
+      categories: allCategories,
       description,
       requested_feedback: requestedFeedback,
       potential_triggers: potentialTriggers,
@@ -344,19 +351,22 @@ function NewManuscriptInner() {
                         const limit = categoryLimit(checked ? selectedCategories : [...selectedCategories, g]);
                         const disabled = !checked && selectedCategories.length >= limit;
                         return (
-                          <label
+                          <button
                             key={g}
-                            className={`flex items-center gap-2 rounded-lg px-2 py-2 text-sm ${disabled ? "opacity-50" : "hover:bg-neutral-800/70"}`}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => toggleCategory(g)}
+                            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition ${
+                              checked
+                                ? "bg-[rgba(120,120,120,0.2)] text-neutral-100"
+                                : disabled
+                                ? "cursor-not-allowed text-neutral-600"
+                                : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
+                            }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={disabled}
-                              onChange={() => toggleCategory(g)}
-                              className="h-4 w-4"
-                            />
                             <span>{g}</span>
-                          </label>
+                            {checked && <span className="text-xs text-neutral-400">✓</span>}
+                          </button>
                         );
                       })}
                     </div>
@@ -414,15 +424,34 @@ function NewManuscriptInner() {
               </label>
 
               <div className="block">
-                <div className="text-sm text-neutral-300">Desired/requested feedback</div>
-                <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-900/40 px-4 py-3 text-sm text-neutral-200 capitalize">
-                  {requestedFeedback}
-                </div>
-                <div className="mt-3 rounded-lg border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] p-3">
-                  <p className="text-sm text-neutral-100">{REQUESTED_FEEDBACK_DESCRIPTIONS[requestedFeedback]}</p>
+                <div className="text-sm text-neutral-300">Feedback &amp; Content</div>
+                <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">Requested Feedback</p>
+                    <p className="mt-1 text-sm font-medium capitalize text-neutral-200">{requestedFeedback}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-neutral-400">{REQUESTED_FEEDBACK_DESCRIPTIONS[requestedFeedback]}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMatureContent((v) => !v)}
+                    className={`rounded-lg border px-4 py-3 text-left transition ${isMatureContent ? "border-amber-600/50 bg-amber-950/25" : "border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900/60"}`}
+                  >
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">Content Flag</p>
+                    <p className={`mt-1 text-sm font-medium ${isMatureContent ? "text-amber-300" : "text-neutral-400"}`}>Mature Content</p>
+                    <p className="mt-1 text-xs text-neutral-500">{isMatureContent ? "Flagged ✓" : "Click to flag"}</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPotentiallyTriggering((v) => !v)}
+                    className={`rounded-lg border px-4 py-3 text-left transition ${isPotentiallyTriggering ? "border-rose-600/50 bg-rose-950/25" : "border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900/60"}`}
+                  >
+                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">Content Warning</p>
+                    <p className={`mt-1 text-sm font-medium ${isPotentiallyTriggering ? "text-rose-300" : "text-neutral-400"}`}>May Contain Triggering Content</p>
+                    <p className="mt-1 text-xs text-neutral-500">{isPotentiallyTriggering ? "Flagged ✓" : "Click to flag"}</p>
+                  </button>
                 </div>
                 <p className="mt-2 text-xs text-neutral-500">
-                  Set from your profile. To change it, update your{" "}
+                  Requested feedback is set from your profile. To change it, update your{" "}
                   <Link href="/profile" className="text-neutral-300 underline hover:text-white">profile settings</Link>.
                 </p>
               </div>
