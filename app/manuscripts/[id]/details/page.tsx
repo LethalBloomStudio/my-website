@@ -1223,7 +1223,6 @@ export default function ManuscriptDetailsPage() {
     // Show prominent toast
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 3000);
-    await load();
   }
 
   async function setChapterVisibility(chapterId: string, makePublic: boolean) {
