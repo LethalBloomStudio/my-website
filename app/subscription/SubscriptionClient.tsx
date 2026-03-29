@@ -10,13 +10,13 @@ export default function SubscriptionClient({
   currentStatus: string;
 }) {
   const isFree = !currentStatus || currentStatus === "free";
-  const isMonthly = currentStatus === "lethal_member";
-  const isAnnual = currentStatus === "lethal_member_annual";
+  const isMonthly = currentStatus === "lethal" || currentStatus === "lethal_member";
+  const isAnnual = currentStatus === "lethal_annual" || currentStatus === "lethal_member_annual";
   const isLethal = isMonthly || isAnnual;
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [_confirmCancel, _setConfirmCancel] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan>("lethal_member");
 
   async function handleSubscribe() {
@@ -76,7 +76,7 @@ export default function SubscriptionClient({
           <span
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
               isLethal
-                ? "border border-violet-700/50 bg-violet-950/30 text-violet-700 dark:text-violet-300"
+                ? "border border-emerald-700/50 bg-emerald-950/30 text-emerald-400"
                 : "border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.1)] text-neutral-400"
             }`}
           >

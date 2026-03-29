@@ -5,7 +5,14 @@ import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
-const KNOWN_PLANS = new Set(["bloom", "forge", "lethal"]);
+const KNOWN_PLANS = new Set(["bloom", "forge", "lethal", "lethal_member", "lethal_member_annual"]);
+
+// Normalise checkout plan_id → the value stored in accounts.subscription_status
+function planToStoredStatus(planId: string): string {
+  if (planId === "lethal_member") return "lethal";
+  if (planId === "lethal_member_annual") return "lethal_annual";
+  return planId;
+}
 
 // Stripe sends the raw body — Next.js must NOT parse it
 export async function POST(req: Request) {
@@ -50,7 +57,7 @@ export async function POST(req: Request) {
         await admin
           .from("accounts")
           .update({
-            subscription_status: plan_id,
+            subscription_status: planToStoredStatus(plan_id),
             ...(subscriptionId ? { stripe_subscription_id: subscriptionId } : {}),
             ...(customerId ? { stripe_customer_id: customerId } : {}),
             updated_at: new Date().toISOString(),
@@ -152,7 +159,7 @@ export async function POST(req: Request) {
 
       // treat past_due as still active — Stripe retries payment during grace period
       const isActive = sub.status === "active" || sub.status === "trialing" || sub.status === "past_due";
-      const newStatus = isActive ? plan_id : "free";
+      const newStatus = isActive ? planToStoredStatus(plan_id) : "free";
 
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
 
