@@ -592,7 +592,7 @@ function PageInner() {
   const hasGrant = grants.some((g) => g.reader_id === userId);
   const canRead = isOwner || hasGrant || isParentView;
 
-  const canLeaveLineEdits = canRead && !isParentView;
+  const canLeaveLineEdits = canRead && !isParentView && !isOwner;
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -1932,8 +1932,8 @@ function PageInner() {
                 </div>
               </section>
 
-              {/* Feedback column — sticky alongside the chapter text */}
-              {canRead && (
+              {/* Feedback column — sticky alongside the chapter text (hidden for owner) */}
+              {canRead && !isOwner && (
                 <div
                   ref={asideRef}
                   className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
