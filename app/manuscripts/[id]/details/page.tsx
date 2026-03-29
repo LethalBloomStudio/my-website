@@ -185,9 +185,10 @@ export default function ManuscriptDetailsPage() {
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [manualSaving, setManualSaving] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
-  // Track the last content/title that was actually saved to DB to avoid unnecessary writes
+  // Track the last content/title/type that was actually saved to DB to avoid unnecessary writes
   const lastSavedContent = useRef<string>("");
   const lastSavedTitle = useRef<string>("");
+  const lastSavedChapterType = useRef<"chapter" | "prologue" | "trigger_page">("chapter");
   // Track last-saved manuscript info to drive auto-save
   const infoAutoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedInfo = useRef<string>("");
@@ -211,7 +212,8 @@ export default function ManuscriptDetailsPage() {
     if (!selectedChapterId) return;
     const contentChanged = chapterEditorContent !== lastSavedContent.current;
     const titleChanged = chapterEditorTitle !== lastSavedTitle.current;
-    if (!contentChanged && !titleChanged) return;
+    const typeChanged = chapterType !== lastSavedChapterType.current;
+    if (!contentChanged && !titleChanged && !typeChanged) return;
 
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     setAutoSaveStatus("idle");
@@ -233,8 +235,10 @@ export default function ManuscriptDetailsPage() {
         } else {
           lastSavedContent.current = chapterEditorContent;
           lastSavedTitle.current = chapterEditorTitle;
+          lastSavedChapterType.current = chapterType;
+          // Update local chapters state so sidebar labels reflect the saved type
+          setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType } : c));
           setAutoSaveStatus("saved");
-          // Fade back to idle after 3 seconds
           setTimeout(() => setAutoSaveStatus("idle"), 3000);
         }
       })();
@@ -242,7 +246,7 @@ export default function ManuscriptDetailsPage() {
 
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterEditorContent, chapterEditorTitle, selectedChapterId]);
+  }, [chapterEditorContent, chapterEditorTitle, chapterType, selectedChapterId]);
 
   // ── Auto-save manuscript info fields ──────────────────────────────────────
   useEffect(() => {
@@ -835,6 +839,7 @@ export default function ManuscriptDetailsPage() {
       setChapterType((selected.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = selected.title;
+      lastSavedChapterType.current = (selected.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter";
       setAutoSaveStatus("idle");
       return;
     }
@@ -847,6 +852,7 @@ export default function ManuscriptDetailsPage() {
       setChapterType((fallback.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = fallback.title;
+      lastSavedChapterType.current = (fallback.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter";
       setAutoSaveStatus("idle");
     }
   }, [chapters, selectedChapterId]);
@@ -1210,6 +1216,8 @@ export default function ManuscriptDetailsPage() {
     if (error) return setMsg(friendlyDbError(error.message));
     lastSavedContent.current = chapterEditorContent;
     lastSavedTitle.current = chapterEditorTitle;
+    lastSavedChapterType.current = chapterType;
+    setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType } : c));
     setAutoSaveStatus("saved");
     setTimeout(() => setAutoSaveStatus("idle"), 3000);
     // Show prominent toast
@@ -1236,6 +1244,16 @@ export default function ManuscriptDetailsPage() {
     const [moved] = reordered.splice(fromIndex, 1);
     reordered.splice(toIndex, 0, moved);
 
+    // Compute old chapter numbers (rank among type='chapter') before reorder
+    let oldNum = 0;
+    const oldChapterNums = new Map<string, number>();
+    for (const c of ordered) { if (c.chapter_type === "chapter") oldChapterNums.set(c.id, ++oldNum); }
+
+    // Compute new chapter numbers after reorder
+    let newNum = 0;
+    const newChapterNums = new Map<string, number>();
+    for (const c of reordered) { if (c.chapter_type === "chapter") newChapterNums.set(c.id, ++newNum); }
+
     const previousById = new Map<string, Chapter>();
     ordered.forEach((c) => previousById.set(c.id, c));
 
@@ -1244,8 +1262,15 @@ export default function ManuscriptDetailsPage() {
         const newOrder = i + 1;
         const prev = previousById.get(c.id);
         if (!prev) return null;
-        const autoTitle = isDefaultChapterTitle(prev.title, prev.chapter_order);
-        const nextTitle = autoTitle ? `Chapter ${newOrder}` : prev.title;
+        // Only auto-rename real chapters (not prologues or trigger pages)
+        let nextTitle = prev.title;
+        if (c.chapter_type === "chapter") {
+          const wasNum = oldChapterNums.get(c.id) ?? 0;
+          const isNum = newChapterNums.get(c.id) ?? 0;
+          if (prev.title.trim().toLowerCase() === `chapter ${wasNum}`) {
+            nextTitle = `Chapter ${isNum}`;
+          }
+        }
         const orderChanged = prev.chapter_order !== newOrder;
         const titleChanged = prev.title !== nextTitle;
         if (!orderChanged && !titleChanged) return null;
@@ -1255,6 +1280,22 @@ export default function ManuscriptDetailsPage() {
 
     if (updates.length === 0) return;
 
+    // Optimistic update — reflect order instantly in the sidebar
+    const updatesById = new Map(updates.map((u) => [u.id, u]));
+    setChapters(reordered.map((c, i) => {
+      const u = updatesById.get(c.id);
+      return u ? { ...c, chapter_order: i + 1, title: u.title } : { ...c, chapter_order: i + 1 };
+    }));
+
+    // Also update the open chapter's title ref/state if it was renamed
+    if (selectedChapterId) {
+      const renamed = updatesById.get(selectedChapterId);
+      if (renamed && renamed.title !== chapterEditorTitle) {
+        setChapterEditorTitle(renamed.title);
+        lastSavedTitle.current = renamed.title;
+      }
+    }
+
     const results = await Promise.all(
       updates.map((u) =>
         supabase.from("manuscript_chapters").update({ chapter_order: u.chapter_order, title: u.title }).eq("id", u.id),
@@ -1263,10 +1304,8 @@ export default function ManuscriptDetailsPage() {
     const failed = results.find((r) => r.error);
     if (failed?.error) {
       setMsg(friendlyDbError(failed.error.message));
-      return;
+      await load(); // revert optimistic update on error
     }
-    setMsg("Chapter order updated.");
-    await load();
   }
 
   async function setWholeVisibility(nextVisibility: "private" | "public") {
