@@ -5,6 +5,8 @@ import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
+const KNOWN_PLANS = new Set(["bloom", "forge", "lethal"]);
+
 // Stripe sends the raw body — Next.js must NOT parse it
 export async function POST(req: Request) {
   const body = await req.text();
@@ -34,24 +36,44 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode !== "payment") break;
 
+      // Only credit coins once payment is confirmed
+      if (session.payment_status !== "paid") break;
+
       const { user_id, recipient_id, package_id, coins } = session.metadata ?? {};
       if (!user_id || !recipient_id || !coins) break;
 
-      const coinsNum = Number(coins);
+      const coinsNum = parseInt(coins, 10);
+      if (isNaN(coinsNum) || coinsNum <= 0) break;
 
-      // Credit coins to recipient
-      const { data: acct } = await admin
-        .from("accounts")
-        .select("bloom_coins")
-        .eq("user_id", recipient_id)
+      // Idempotency — skip if this session was already processed
+      const { data: existing } = await admin
+        .from("bloom_coin_ledger")
+        .select("id")
+        .eq("reason", "coin_purchase")
+        .contains("metadata", { stripe_session_id: session.id })
         .maybeSingle();
 
-      const current = (acct as { bloom_coins?: number } | null)?.bloom_coins ?? 0;
+      if (existing) break;
 
-      await admin
-        .from("accounts")
-        .update({ bloom_coins: current + coinsNum, updated_at: new Date().toISOString() })
-        .eq("user_id", recipient_id);
+      // Atomic coin increment via RPC to avoid read-then-write race condition
+      const { error: rpcError } = await admin.rpc("increment_bloom_coins", {
+        p_user_id: recipient_id,
+        p_amount: coinsNum,
+      });
+
+      if (rpcError) {
+        // Fallback to read-then-write if RPC not available
+        const { data: acct } = await admin
+          .from("accounts")
+          .select("bloom_coins")
+          .eq("user_id", recipient_id)
+          .maybeSingle();
+        const current = (acct as { bloom_coins?: number } | null)?.bloom_coins ?? 0;
+        await admin
+          .from("accounts")
+          .update({ bloom_coins: current + coinsNum, updated_at: new Date().toISOString() })
+          .eq("user_id", recipient_id);
+      }
 
       // Ledger entry
       await admin.from("bloom_coin_ledger").insert({
@@ -89,7 +111,11 @@ export async function POST(req: Request) {
       const { user_id, plan_id } = sub.metadata ?? {};
       if (!user_id || !plan_id) break;
 
-      const isActive = sub.status === "active" || sub.status === "trialing";
+      // Validate plan_id against known values
+      if (!KNOWN_PLANS.has(plan_id)) break;
+
+      // treat past_due as still active — Stripe retries payment during grace period
+      const isActive = sub.status === "active" || sub.status === "trialing" || sub.status === "past_due";
       const newStatus = isActive ? plan_id : "free";
 
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
@@ -123,6 +149,17 @@ export async function POST(req: Request) {
       const sub = event.data.object as Stripe.Subscription;
       const { user_id } = sub.metadata ?? {};
       if (!user_id) break;
+
+      // Only downgrade if this subscription is the one currently on the account
+      // Guards against out-of-order events when a user upgrades plans
+      const { data: acct } = await admin
+        .from("accounts")
+        .select("stripe_subscription_id")
+        .eq("user_id", user_id)
+        .maybeSingle();
+
+      const currentSubId = (acct as { stripe_subscription_id?: string | null } | null)?.stripe_subscription_id;
+      if (currentSubId && currentSubId !== sub.id) break;
 
       await admin
         .from("accounts")
