@@ -5,13 +5,13 @@ import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
-const KNOWN_PLANS = new Set(["bloom", "forge", "lethal", "lethal_member", "lethal_member_annual"]);
+// Valid Stripe plan_id values sent in checkout metadata
+const KNOWN_PLANS = new Set(["lethal_member", "lethal_member_annual"]);
 
-// Normalise checkout plan_id → the value stored in accounts.subscription_status
+// Map Stripe plan_id → the value stored in accounts.subscription_status
 function planToStoredStatus(planId: string): string {
-  if (planId === "lethal_member") return "lethal";
   if (planId === "lethal_member_annual") return "lethal_annual";
-  return planId;
+  return "lethal"; // default for lethal_member (monthly)
 }
 
 // Stripe sends the raw body — Next.js must NOT parse it
