@@ -1012,11 +1012,24 @@ export default function ManuscriptDetailsPage() {
     return title.trim().toLowerCase() === `chapter ${chapterOrder}`;
   }
 
+  // 1-based chapter number among chapter_type='chapter' entries, sorted by chapter_order
+  function chapterNumFor(chapterId: string, typeOverride?: "chapter" | "prologue" | "trigger_page"): number {
+    const list = chapters
+      .map(c => (c.id === chapterId && typeOverride) ? { ...c, chapter_type: typeOverride } : c)
+      .filter(c => c.chapter_type === "chapter")
+      .sort((a, b) => a.chapter_order - b.chapter_order);
+    const idx = list.findIndex(c => c.id === chapterId);
+    return idx === -1 ? 1 : idx + 1;
+  }
+
   function chapterDisplayLabel(chapter: Chapter) {
-    if (!chapter.title.trim() || isDefaultChapterTitle(chapter.title, chapter.chapter_order)) {
-      return `Chapter ${chapter.chapter_order}`;
+    if (chapter.chapter_type === "prologue") return chapter.title.trim() ? `Prologue: ${chapter.title}` : "Prologue";
+    if (chapter.chapter_type === "trigger_page") return chapter.title.trim() ? `Trigger Page: ${chapter.title}` : "Trigger Page";
+    const num = chapterNumFor(chapter.id);
+    if (!chapter.title.trim() || chapter.title.trim().toLowerCase() === `chapter ${num}`) {
+      return `Chapter ${num}`;
     }
-    return `Chapter ${chapter.chapter_order}: ${chapter.title}`;
+    return `Chapter ${num}: ${chapter.title}`;
   }
 
   function highlightExcerpt(text: string, excerpt: string): React.ReactNode {
@@ -1036,8 +1049,9 @@ export default function ManuscriptDetailsPage() {
     if (!manuscript) return;
     const order = nextChapterOrder();
     const isLethalMember = memberTier === "lethal";
-    const realChapterCount = chapters.filter((c) => c.chapter_type === "chapter").length;
-    const chapterCost = !isLethalMember && realChapterCount >= freeChapterLimit ? 10 : 0;
+    // Trigger pages don't count toward the free chapter limit; prologues and chapters do
+    const nonTriggerCount = chapters.filter((c) => c.chapter_type !== "trigger_page").length;
+    const chapterCost = !isLethalMember && nonTriggerCount >= freeChapterLimit ? 10 : 0;
     if (chapterCost > 0) {
       setCoinConfirm({ amount: chapterCost, label: "add a new chapter", onConfirm: () => void doAddChapter(order, chapterCost) });
       return;
@@ -1057,7 +1071,8 @@ export default function ManuscriptDetailsPage() {
         return;
       }
     }
-    const defaultTitle = `Chapter ${order}`;
+    const newChapterNum = chapters.filter((c) => c.chapter_type === "chapter").length + 1;
+    const defaultTitle = `Chapter ${newChapterNum}`;
     const { data, error } = await supabase
       .from("manuscript_chapters")
       .insert({
@@ -1076,7 +1091,7 @@ export default function ManuscriptDetailsPage() {
     setSelectedChapterId(newChapter.id);
     setChapterEditorTitle(defaultTitle);
     setChapterEditorContent("");
-    setMsg(chapterCost > 0 ? `Chapter ${order} added as draft. Charged ${chapterCost} Bloom Coins.` : `Chapter ${order} added as draft.`);
+    setMsg(chapterCost > 0 ? `${defaultTitle} added as draft. Charged ${chapterCost} Bloom Coins.` : `${defaultTitle} added as draft.`);
   }
 
   async function spendBloomCoins(amount: number, reason: string, metadata: Record<string, unknown>) {
@@ -1547,8 +1562,8 @@ export default function ManuscriptDetailsPage() {
           : [];
   const displayedWordCount = chapters.reduce((sum, c) => sum + countWords(c.content ?? ""), 0);
   const selectedChapter = selectedChapterId ? chapters.find((c) => c.id === selectedChapterId) ?? null : null;
-  const realChapterCount = chapters.filter((c) => c.chapter_type === "chapter").length;
-  const nextChapterCost = !isLethalMember && realChapterCount >= freeChapterLimit ? 10 : 0;
+  const nonTriggerCount = chapters.filter((c) => c.chapter_type !== "trigger_page").length;
+  const nextChapterCost = !isLethalMember && nonTriggerCount >= freeChapterLimit ? 10 : 0;
 
   const detailItems = [
     { label: "Author", value: `You${manuscript?.created_at ? ` · ${new Date(manuscript.created_at).toLocaleDateString()}` : ""}` },
@@ -1612,7 +1627,7 @@ export default function ManuscriptDetailsPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">
-              {chapter.chapter_type === "prologue" ? "Prologue" : chapter.chapter_type === "trigger_page" ? "Trigger Page" : `Chapter ${chapter.chapter_order}`}
+              {chapter.chapter_type === "prologue" ? "Prologue" : chapter.chapter_type === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(chapter.id)}`}
             </span>
             <span
               className={`text-[10px] uppercase tracking-wide ${
@@ -1634,12 +1649,18 @@ export default function ManuscriptDetailsPage() {
     try {
       const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = await import("docx");
       const sorted = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
+      let chNum = 0;
+      const chapterNumbers = new Map<string, number>();
+      for (const ch of sorted) { if (ch.chapter_type === "chapter") chapterNumbers.set(ch.id, ++chNum); }
       const children: InstanceType<typeof Paragraph>[] = [
         new Paragraph({ text: manuscript.title || "Untitled", heading: HeadingLevel.TITLE }),
         new Paragraph({ text: "" }),
       ];
       for (const ch of sorted) {
-        children.push(new Paragraph({ text: `Chapter ${ch.chapter_order}: ${ch.title || "Untitled"}`, heading: HeadingLevel.HEADING_1 }));
+        const label = ch.chapter_type === "prologue" ? `Prologue: ${ch.title || "Untitled"}` :
+          ch.chapter_type === "trigger_page" ? `Trigger Page: ${ch.title || "Untitled"}` :
+          `Chapter ${chapterNumbers.get(ch.id) ?? ""}: ${ch.title || "Untitled"}`;
+        children.push(new Paragraph({ text: label, heading: HeadingLevel.HEADING_1 }));
         const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
         for (const para of paras) {
           children.push(new Paragraph({ children: [new TextRun({ text: para })] }));
@@ -1664,10 +1685,16 @@ export default function ManuscriptDetailsPage() {
     if (!manuscript) return;
     setExporting(true);
     const sorted = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
+    let htmlChNum = 0;
+    const htmlChapterNumbers = new Map<string, number>();
+    for (const ch of sorted) { if (ch.chapter_type === "chapter") htmlChapterNumbers.set(ch.id, ++htmlChNum); }
     let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${manuscript.title || "Untitled"}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;line-height:1.8;font-size:16px;}h1{font-size:2em;margin-bottom:0.2em;}h2{font-size:1.4em;margin-top:2em;page-break-before:always;}p{text-indent:1.5em;margin:0.4em 0;}</style></head><body>`;
     html += `<h1>${manuscript.title || "Untitled"}</h1>`;
     for (const ch of sorted) {
-      html += `<h2>Chapter ${ch.chapter_order}: ${ch.title || "Untitled"}</h2>`;
+      const label = ch.chapter_type === "prologue" ? `Prologue: ${ch.title || "Untitled"}` :
+        ch.chapter_type === "trigger_page" ? `Trigger Page: ${ch.title || "Untitled"}` :
+        `Chapter ${htmlChapterNumbers.get(ch.id) ?? ""}: ${ch.title || "Untitled"}`;
+      html += `<h2>${label}</h2>`;
       const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
       for (const para of paras) {
         html += `<p>${para.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
@@ -2078,7 +2105,7 @@ export default function ManuscriptDetailsPage() {
                     <div className="max-h-[480px] overflow-y-auto pr-1 space-y-4">
                       {overviewFiltered.map((f) => {
                         const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
-                        const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
+                        const chapterLabel = chapterObj ? (chapterObj.chapter_type === "prologue" ? `Prologue: ${chapterObj.title || "Untitled"}` : chapterObj.chapter_type === "trigger_page" ? `Trigger Page: ${chapterObj.title || "Untitled"}` : `Ch. ${chapterNumFor(chapterObj.id)}: ${chapterObj.title || "Untitled"}`) : null;
                         const excerptDetached = !!f.selection_excerpt && !!chapterObj && !(chapterObj.content ?? "").includes(f.selection_excerpt);
                         const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const isExpanded = overviewExpandedIds.has(f.id);
@@ -2231,7 +2258,7 @@ export default function ManuscriptDetailsPage() {
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="text-xs text-neutral-300 truncate">{readerNames[c.reader_id] || "Reader"}</span>
                               {chapterObj && (
-                                <span className="text-[10px] text-neutral-600 truncate">Ch. {chapterObj.chapter_order}</span>
+                                <span className="text-[10px] text-neutral-600 truncate">{chapterObj.chapter_type === "prologue" ? "Prologue" : chapterObj.chapter_type === "trigger_page" ? "Trigger Page" : `Ch. ${chapterNumFor(chapterObj.id)}`}</span>
                               )}
                             </div>
                             <span className="text-xs font-semibold text-emerald-400 shrink-0 ml-2">+{c.coins_awarded} <span style={{ color: '#f59e0b' }}>✿</span></span>
@@ -2294,11 +2321,29 @@ export default function ManuscriptDetailsPage() {
                           value={chapterType}
                           onChange={(e) => {
                             const t = e.target.value as "chapter" | "prologue" | "trigger_page";
+                            if (t === "trigger_page" && chapterType !== "trigger_page") {
+                              const existingTriggerPages = chapters.filter(c => c.id !== selectedChapter.id && c.chapter_type === "trigger_page").length;
+                              const isLethalMember = memberTier === "lethal";
+                              if (existingTriggerPages >= 1 && !isLethalMember) {
+                                setCoinConfirm({
+                                  amount: 10,
+                                  label: "add a second trigger page",
+                                  onConfirm: () => {
+                                    void spendBloomCoins(10, "extra_chapter_upload", { manuscript_id: manuscript?.id, note: "trigger_page" }).then((r) => {
+                                      if (r.ok) { setChapterType("trigger_page"); setChapterEditorTitle("Trigger Page"); }
+                                      else setMsg(r.error);
+                                    });
+                                  },
+                                });
+                                return;
+                              }
+                            }
+                            const num = chapterNumFor(selectedChapter.id, t === "chapter" ? "chapter" : undefined);
                             setChapterType(t);
                             setChapterEditorTitle(
                               t === "prologue" ? "Prologue" :
                               t === "trigger_page" ? "Trigger Page" :
-                              `Chapter ${selectedChapter.chapter_order}`
+                              `Chapter ${num}`
                             );
                           }}
                           className="mb-1 rounded border border-neutral-700 bg-neutral-900/60 px-2 py-0.5 text-xs uppercase tracking-wide text-[rgba(210,210,210,0.8)] focus:outline-none focus:border-[rgba(120,120,120,0.7)]"
@@ -2309,7 +2354,7 @@ export default function ManuscriptDetailsPage() {
                         </select>
                       ) : (
                         <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">
-                          {chapterType === "prologue" ? "Prologue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${selectedChapter.chapter_order}`}
+                          {chapterType === "prologue" ? "Prologue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(selectedChapter.id)}`}
                         </p>
                       )}
                       <h2 className="text-lg font-semibold text-white">{chapterEditorTitle || "Untitled"}</h2>
