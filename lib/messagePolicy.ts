@@ -1,88 +1,12 @@
 export type TriggerCode =
-  | "poaching"
-  | "offsite_contact"
-  | "social_media"
-  | "fiverr"
-  | "phone_contact"
-  | "offplatform_redirect"
-  | "external_link"
   | "solicitation"
-  | "secrecy"
+  | "social_media"
   | "cursing"
   | "foul_language"
   | "sexual_language";
 
+// BASE_TRIGGERS apply to adult profiles only — solicitation is the sole check
 const BASE_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
-  {
-    code: "poaching",
-    terms: [
-      "leave this site",
-      "poach",
-      "come to my site",
-      "better platform",
-      "i know a better place",
-      "take you somewhere else",
-      "work outside this site",
-      "collaborate outside",
-    ],
-  },
-  {
-    code: "offsite_contact",
-    terms: [
-      // email variants
-      "email",
-      "e-mail",
-      "mail me",
-      "send me your email",
-      "what's your email",
-      "whats your email",
-      "my email",
-      "email me",
-      "contact me at",
-      "gmail",
-      "yahoo",
-      "outlook",
-      "protonmail",
-      "aol",
-      "icloud",
-      "g m a i l",
-      "g-mail",
-      "g_mail",
-      "y a h o o",
-      "out look",
-      "proton mail",
-      "mail dot com",
-      "at gmail dot com",
-      "at yahoo dot com",
-      "dot com",
-      "dot net",
-      "dot org",
-      // legacy
-      "email me at",
-      "@gmail.com",
-      "@yahoo.com",
-      "@outlook.com",
-    ],
-  },
-  {
-    code: "external_link",
-    terms: [
-      "google doc",
-      "google docs",
-      "drive link",
-      "google drive",
-      "dropbox",
-      "pastebin",
-      "send link",
-      "link here",
-      "shared doc",
-      "shared document",
-      "pdf link",
-      "external link",
-      "upload link",
-      "file share",
-    ],
-  },
   {
     code: "solicitation",
     terms: [
@@ -96,20 +20,6 @@ const BASE_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
       "fiverr",
       "upwork",
       "freelancer.com",
-    ],
-  },
-  {
-    code: "secrecy",
-    terms: [
-      "don't tell mods",
-      "dont tell mods",
-      "keep this between us",
-      "just us",
-      "secret",
-      "trust me",
-      "no one has to know",
-      "won't report you",
-      "wont report you",
     ],
   },
 ];
@@ -170,9 +80,11 @@ export function consequenceFromStrike(strike: number) {
 }
 
 export function consequenceMessage(consequence: string) {
-  if (consequence === "warning_1") return "Warning issued. Keep conversation on-platform and policy-safe.";
-  if (consequence === "warning_2") return "Second warning issued. Another violation will trigger suspension.";
+  if (consequence === "warning_1")
+    return "Heads up! We're a community of writers who respect each other. Please avoid soliciting other members for paid work or external opportunities.";
+  if (consequence === "warning_2")
+    return "This is your second reminder. We ask that all members keep interactions respectful and free of solicitation. One more violation will result in a temporary messaging suspension.";
   if (consequence === "suspended_3_days")
-    return "Chat/feedback privileges suspended for 3 days due to repeated violations.";
-  return "Account blacklisted from messaging. You may request an appeal for owner review.";
+    return "Your messaging has been temporarily suspended for 3 days. We want this to be a safe and welcoming space for all writers — repeated policy violations won't be tolerated.";
+  return "Your messaging access has been removed after repeated violations. This is a community built on trust and respect. You may submit an appeal for owner review.";
 }
