@@ -420,7 +420,7 @@ export default async function PublicProfilePage(props: {
         </header>
 
         {/* Info + Manuscripts side by side */}
-        <div className="grid gap-6 lg:grid-cols-2 items-stretch">
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
           {/* Info left */}
           <section className="space-y-4 rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-neutral-400">Get to Know Me</h2>

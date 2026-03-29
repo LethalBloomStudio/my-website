@@ -30,7 +30,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
   const [blurbPending, startBlurbTransition] = useTransition();
   const [editingBlurb, setEditingBlurb] = useState(false);
   const [blurbDraft, setBlurbDraft] = useState("");
-  const [blurbExpanded, setBlurbExpanded] = useState(false);
+  const [blurbExpanded, setBlurbExpanded] = useState(true);
 
   if (manuscripts.length === 0) {
     return <p className="text-sm text-neutral-400">No manuscripts yet.</p>;
@@ -55,6 +55,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
     if (!onSaveBlurb) return;
     setEditingBlurb(false);
     // Update local copy so it reflects immediately
+    // eslint-disable-next-line react-hooks/immutability
     m.description = blurbDraft;
     startBlurbTransition(() => onSaveBlurb(m.id, blurbDraft));
   }
@@ -65,7 +66,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
         <div className="flex gap-5 p-4 items-start">
           {/* Book cover */}
           <Link href={isOwner ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}`} className="shrink-0">
-            <div className="relative w-44 rounded border border-neutral-700 overflow-hidden shadow-md" style={{ aspectRatio: "2/3" }}>
+            <div className="relative w-56 rounded border border-neutral-700 overflow-hidden shadow-md" style={{ aspectRatio: "2/3" }}>
               {m.cover_url ? (
                 <Image
                   src={m.cover_url}
@@ -134,16 +135,10 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                           onClick={isOwner ? startEditBlurb : undefined}
                           className={isOwner ? "cursor-pointer group" : ""}
                         >
-                          <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed ${!blurbExpanded ? "line-clamp-3" : ""} ${isOwner ? "group-hover:text-white transition" : ""}`}>
+                          <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed ${isOwner ? "group-hover:text-white transition" : ""}`}>
                             {m.description}
                           </p>
                         </div>
-                        <button
-                          onClick={() => setBlurbExpanded((v) => !v)}
-                          className="mt-1 text-[10px] text-neutral-500 hover:text-neutral-300 transition"
-                        >
-                          {blurbExpanded ? "See less" : "See more"}
-                        </button>
                       </>
                     ) : (
                       isOwner ? (
