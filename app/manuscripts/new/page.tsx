@@ -336,16 +336,17 @@ function NewManuscriptInner() {
 
               <label className="block">
                 <div className="text-sm text-neutral-300">Categories</div>
-                <div ref={categoryMenuRef} className="relative mt-2">
+                <div ref={categoryMenuRef} className="msdWrap mt-2">
                   <button
                     type="button"
                     onClick={() => setCategoryOpen((v) => !v)}
-                    className="w-full rounded-lg border border-neutral-800 bg-neutral-900/40 px-4 py-3 text-left text-sm text-neutral-200"
+                    className="msdTrigger"
                   >
-                    {selectedCategories.length > 0 ? selectedCategories.join(", ") : "Select up to 5 categories"}
+                    <span className="msdValue">{selectedCategories.length > 0 ? selectedCategories.join(", ") : "Select up to 5 categories"}</span>
+                    <span className="msdChevron">{categoryOpen ? "▲" : "▼"}</span>
                   </button>
-                  {categoryOpen ? (
-                    <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-2 shadow-xl">
+                  {categoryOpen && (
+                    <div className="msdMenu">
                       {sortedGenreOptions.map((g) => {
                         const checked = selectedCategories.includes(g);
                         const limit = categoryLimit(checked ? selectedCategories : [...selectedCategories, g]);
@@ -356,32 +357,20 @@ function NewManuscriptInner() {
                             type="button"
                             disabled={disabled}
                             onClick={() => toggleCategory(g)}
-                            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition ${
-                              checked
-                                ? "bg-[rgba(120,120,120,0.2)] text-neutral-100"
-                                : disabled
-                                ? "cursor-not-allowed text-neutral-600"
-                                : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
-                            }`}
+                            className={`msdItem w-full text-left rounded-lg transition ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-[rgba(120,120,120,0.15)]"}`}
                           >
+                            <span className={`h-4 w-4 shrink-0 flex items-center justify-center rounded-sm border text-[10px] ${checked ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.35)] text-white" : "border-neutral-600"}`}>{checked ? "✓" : ""}</span>
                             <span>{g}</span>
-                            {checked && <span className="text-xs text-neutral-400">✓</span>}
                           </button>
                         );
                       })}
                     </div>
-                  ) : null}
-                  <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
-                    <p className="text-xs text-neutral-500">
-                      Selected: {selectedCategories.length}/{categoryLimit(selectedCategories)}
-                      {selectedCategories.length > 0 ? ` - ${selectedCategories.join(", ")}` : ""}
-                    </p>
-                    {profileAgeCategory !== "youth_13_17" && (
-                      <p className="mt-1 text-xs text-neutral-500">
-                        Up to 5 categories, or up to 2 when YA/MG is selected.
-                      </p>
-                    )}
-                  </div>
+                  )}
+                  <p className="mt-2 text-xs text-neutral-500">
+                    Selected: {selectedCategories.length}/{categoryLimit(selectedCategories)}
+                    {selectedCategories.length > 0 ? ` — ${selectedCategories.join(", ")}` : ""}
+                    {profileAgeCategory !== "youth_13_17" && " · Up to 5, or 2 when YA/MG is selected."}
+                  </p>
                 </div>
               </label>
 

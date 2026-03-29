@@ -1918,19 +1918,17 @@ export default function ManuscriptDetailsPage() {
                   {isParentView ? (
                     <p className="text-sm text-neutral-400">{selectedCategories.length ? selectedCategories.join(", ") : "Not set"}</p>
                   ) : (
-                    <div className="relative">
+                    <div className="msdWrap">
                       <button
                         type="button"
                         onClick={() => setCategoryOpen((v) => !v)}
-                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-2 text-left text-sm text-neutral-200 hover:border-[rgba(120,120,120,0.5)] transition"
+                        className="msdTrigger"
                       >
-                        <span className="flex items-center justify-between">
-                          <span>{selectedCategories.length > 0 ? selectedCategories.join(", ") : "Select categories…"}</span>
-                          <span className="text-xs text-neutral-500 shrink-0 ml-2">{selectedCategories.length}/{categoryLimit(selectedCategories)}</span>
-                        </span>
+                        <span className="msdValue">{selectedCategories.length > 0 ? selectedCategories.join(", ") : "Select categories…"}</span>
+                        <span className="msdChevron">{categoryOpen ? "▲" : "▼"}</span>
                       </button>
                       {categoryOpen && (
-                        <div className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-neutral-800 bg-neutral-900 p-1.5 shadow-xl">
+                        <div className="msdMenu">
                           {sortedGenreOptions.map((g) => {
                             const checked = selectedCategories.includes(g);
                             const limit = categoryLimit(checked ? selectedCategories : [...selectedCategories, g]);
@@ -1941,16 +1939,10 @@ export default function ManuscriptDetailsPage() {
                                 type="button"
                                 disabled={disabled}
                                 onClick={() => toggleCategory(g)}
-                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition ${
-                                  checked
-                                    ? "bg-[rgba(120,120,120,0.2)] text-neutral-100"
-                                    : disabled
-                                    ? "cursor-not-allowed text-neutral-600"
-                                    : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
-                                }`}
+                                className={`msdItem w-full text-left rounded-lg transition ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-[rgba(120,120,120,0.15)]"}`}
                               >
+                                <span className={`h-4 w-4 shrink-0 flex items-center justify-center rounded-sm border text-[10px] ${checked ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.35)] text-white" : "border-neutral-600"}`}>{checked ? "✓" : ""}</span>
                                 <span>{g}</span>
-                                {checked && <span className="text-xs text-neutral-400">✓</span>}
                               </button>
                             );
                           })}
