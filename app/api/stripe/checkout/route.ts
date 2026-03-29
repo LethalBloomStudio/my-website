@@ -6,7 +6,7 @@ import type { CoinPackageId, SubscriptionPlanId } from "@/lib/stripe";
 
 export async function POST(req: Request) {
   try {
-  const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_origin ?? "http://localhost:3000";
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get("origin") ?? "http://localhost:3000";
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
