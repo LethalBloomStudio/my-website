@@ -1195,7 +1195,7 @@ function PageInner() {
   }
 
   return (
-    <main className={`mx-auto px-6 py-12 text-neutral-100 ${chapterId ? (isOwner ? "max-w-4xl" : "max-w-[1600px]") : "max-w-6xl"}`}>
+    <main className={`mx-auto px-6 py-12 text-neutral-100 ${chapterId ? (isOwner ? "max-w-5xl" : "max-w-[1600px]") : "max-w-6xl"}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           href={backHref}
