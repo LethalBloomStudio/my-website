@@ -257,10 +257,10 @@ export default function DiscoverPage() {
                           {(m.categories?.includes("Mature Content") || m.categories?.includes("Potentially Triggering Content")) && (
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               {m.categories.includes("Mature Content") && (
-                                <span className="rounded px-1.5 py-0.5 text-[10px] font-medium border border-amber-600/40 bg-amber-950/30 text-amber-300">Mature Content</span>
+                                <span className="badge-mature rounded px-1.5 py-0.5 text-[10px] font-medium border border-amber-600/40 bg-amber-950/30 text-amber-300">Mature Content</span>
                               )}
                               {m.categories.includes("Potentially Triggering Content") && (
-                                <span className="rounded px-1.5 py-0.5 text-[10px] font-medium border border-rose-600/40 bg-rose-950/30 text-rose-300">May Contain Triggering Content</span>
+                                <span className="badge-triggering rounded px-1.5 py-0.5 text-[10px] font-medium border border-rose-600/40 bg-rose-950/30 text-rose-300">May Contain Triggering Content</span>
                               )}
                             </div>
                           )}

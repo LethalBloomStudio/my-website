@@ -655,6 +655,18 @@ button.btn-success:hover {
   color: #4c1d95 !important;
 }
 
+[data-theme="day"] .badge-mature {
+  background: rgba(180, 83, 9, 0.15) !important;
+  border-color: rgba(180, 83, 9, 0.45) !important;
+  color: #92400e !important;
+}
+
+[data-theme="day"] .badge-triggering {
+  background: rgba(185, 28, 28, 0.12) !important;
+  border-color: rgba(185, 28, 28, 0.4) !important;
+  color: #991b1b !important;
+}
+
 [data-theme="day"] .tabActive {
   background: #cdd4e0 !important;
   border-color: rgba(47, 53, 69, 0.35) !important;
