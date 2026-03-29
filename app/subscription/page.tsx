@@ -126,7 +126,7 @@ export default async function SubscriptionPage() {
                             : "Lethal Member — Monthly"
                           : "Bloom Member"}
                       </p>
-                      <p className="text-xs text-neutral-500">Base plan</p>
+                      <p className="text-xs text-neutral-500">{isLethal ? "Subscription" : "Base plan"}</p>
                     </div>
                     <span className="text-sm font-medium text-neutral-200 shrink-0">
                       {isLethal ? (isAnnual ? "$100/yr" : "$10/mo") : "Free"}
