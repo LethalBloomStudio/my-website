@@ -39,14 +39,20 @@ function formatLevel(value: string | null | undefined) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function formatRequestedFeedback(value: string | null | undefined) {
-  if (!value) return "-";
+function normalizeFeedbackLevel(value: string | null | undefined): string | null {
+  if (!value) return null;
   const v = value.trim().toLowerCase();
-  if (v === "bloom" || v === "forge" || v === "lethal") return v.charAt(0).toUpperCase() + v.slice(1);
-  if (v === "gentle") return "Bloom";
-  if (v === "balanced") return "Forge";
-  if (v === "direct") return "Lethal";
-  return value;
+  if (v === "bloom" || v === "forge" || v === "lethal") return v;
+  if (v === "gentle") return "bloom";
+  if (v === "balanced") return "forge";
+  if (v === "direct") return "lethal";
+  return null;
+}
+
+function formatRequestedFeedback(value: string | null | undefined) {
+  const level = normalizeFeedbackLevel(value);
+  if (!level) return "-";
+  return level.charAt(0).toUpperCase() + level.slice(1);
 }
 
 export default function DiscoverPage() {
@@ -155,7 +161,8 @@ export default function DiscoverPage() {
     if (isYouth && !categories.some((c) => YOUTH_ALLOWED_CATEGORIES.includes(c))) return false;
     if (categoryFilter && !categories.includes(categoryFilter)) return false;
     if (writerLevelFilter && profile?.writer_level !== writerLevelFilter) return false;
-    if (feedbackFilter && m.requested_feedback?.trim().toLowerCase() !== feedbackFilter) return false;
+    const resolvedFeedback = normalizeFeedbackLevel(profile?.feedback_preference) ?? normalizeFeedbackLevel(m.requested_feedback);
+    if (feedbackFilter && resolvedFeedback !== feedbackFilter) return false;
     if (!normalized) return true;
 
     return (
@@ -256,7 +263,7 @@ export default function DiscoverPage() {
                             Writer: {formatLevel(profile?.writer_level)}
                           </p>
                           <p className="mt-1 text-xs text-neutral-400">
-                            Desired feedback: <span className="text-neutral-200">{formatRequestedFeedback(m.requested_feedback ?? profiles[m.owner_id]?.feedback_preference)}</span>
+                            Desired feedback: <span className="text-neutral-200">{formatRequestedFeedback(profiles[m.owner_id]?.feedback_preference ?? m.requested_feedback)}</span>
                           </p>
                           {(m.categories?.includes("Mature Content") || m.categories?.includes("Potentially Triggering Content")) && (
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
