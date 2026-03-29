@@ -31,6 +31,7 @@ type Profile = {
   username: string | null;
   writer_level: "bloom" | "forge" | "lethal" | null;
   beta_reader_level: "bloom" | "forge" | "lethal" | null;
+  feedback_preference: string | null;
 };
 
 function formatLevel(value: string | null | undefined) {
@@ -42,6 +43,9 @@ function formatRequestedFeedback(value: string | null | undefined) {
   if (!value) return "-";
   const v = value.trim().toLowerCase();
   if (v === "bloom" || v === "forge" || v === "lethal") return v.charAt(0).toUpperCase() + v.slice(1);
+  if (v === "gentle") return "Bloom";
+  if (v === "balanced") return "Forge";
+  if (v === "direct") return "Lethal";
   return value;
 }
 
@@ -99,7 +103,7 @@ export default function DiscoverPage() {
             .in("manuscript_id", manuscriptIds),
           supabase
             .from("public_profiles")
-            .select("user_id, pen_name, username, writer_level, beta_reader_level")
+            .select("user_id, pen_name, username, writer_level, beta_reader_level, feedback_preference")
             .in("user_id", Array.from(new Set(manuscripts.map((r) => r.owner_id)))),
         ]);
 
@@ -252,7 +256,7 @@ export default function DiscoverPage() {
                             Writer: {formatLevel(profile?.writer_level)}
                           </p>
                           <p className="mt-1 text-xs text-neutral-400">
-                            Desired feedback: <span className="text-neutral-200">{formatRequestedFeedback(m.requested_feedback)}</span>
+                            Desired feedback: <span className="text-neutral-200">{formatRequestedFeedback(m.requested_feedback ?? profiles[m.owner_id]?.feedback_preference)}</span>
                           </p>
                           {(m.categories?.includes("Mature Content") || m.categories?.includes("Potentially Triggering Content")) && (
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
