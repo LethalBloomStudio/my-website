@@ -31,9 +31,45 @@ export async function POST(req: Request) {
   const admin = supabaseAdmin();
 
   switch (event.type) {
-    // ── One-time coin purchase completed ──────────────────────────────────────
+    // ── Checkout completed (covers both coin purchases AND subscriptions) ─────
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // ── Subscription checkout ──────────────────────────────────────────────
+      if (session.mode === "subscription") {
+        const { user_id, plan_id } = session.metadata ?? {};
+        if (!user_id || !plan_id || !KNOWN_PLANS.has(plan_id)) break;
+
+        const subscriptionId = typeof session.subscription === "string"
+          ? session.subscription
+          : (session.subscription as { id?: string } | null)?.id ?? null;
+        const customerId = typeof session.customer === "string"
+          ? session.customer
+          : (session.customer as { id?: string } | null)?.id ?? null;
+
+        await admin
+          .from("accounts")
+          .update({
+            subscription_status: plan_id,
+            ...(subscriptionId ? { stripe_subscription_id: subscriptionId } : {}),
+            ...(customerId ? { stripe_customer_id: customerId } : {}),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user_id);
+
+        await admin.from("system_notifications").insert({
+          user_id,
+          category: "account_action",
+          title: "Subscription Active",
+          body: `Your Lethal Member subscription is now active. Enjoy the benefits!`,
+          severity: "info",
+          dedupe_key: `sub-active-checkout-${session.id}`,
+        });
+
+        break;
+      }
+
+      // ── One-time coin purchase ─────────────────────────────────────────────
       if (session.mode !== "payment") break;
 
       // Only credit coins once payment is confirmed
