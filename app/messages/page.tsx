@@ -66,10 +66,8 @@ type PendingRequest = {
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
-  poaching: "Poaching or soliciting members to leave the platform",
-  offsite_contact: "Requesting off-platform contact (email, phone number)",
-  social_media: "Sharing external social media handles or links",
-  fiverr: "Soliciting freelance or paid services outside the platform",
+  solicitation: "Soliciting other members for paid work or external opportunities",
+  social_media: "Sharing external social media handles or links (youth accounts)",
   cursing: "Use of prohibited language (youth accounts)",
   foul_language: "Severely offensive language (youth accounts)",
   sexual_language: "Sexual or explicit language (youth accounts)",
@@ -906,22 +904,20 @@ const [now] = useState(() => Date.now());
               ) : null}
               <div className="mt-3 space-y-4 text-sm text-neutral-300">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Prohibited Content</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Community Guidelines</p>
                   <ul className="space-y-1.5">
-                    <li>• Sharing or requesting off-platform contact info (email addresses, social handles, external links).</li>
-                    <li>• Poaching — encouraging users to leave for another platform or community.</li>
-                    <li>• Solicitation — paid work offers, hiring requests, or freelance pitches.</li>
-                    <li>• Secrecy — asking someone to hide a conversation from moderators.</li>
-                    <li>• Graphic sexual content, sexual violence, or content involving minors.</li>
-                    <li>• Hate speech, harassment, or slurs.</li>
-                    <li>• Self-harm, suicide, or extreme violence (flagged for admin review).</li>
+                    <li>• We're all adults here — keep things appropriate and respectful for our community.</li>
+                    <li>• No soliciting other members for paid work, freelance opportunities, or external projects.</li>
+                    <li>• No bullying, harassment, hate speech, or targeted negativity toward other members.</li>
+                    <li>• Treat every writer with the same respect you'd want for yourself and your work.</li>
+                    <li>• Keep feedback and conversations constructive — we're here to support each other's growth.</li>
                   </ul>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Strike System</p>
                   <ul className="space-y-1.5">
-                    <li>• <span className="text-neutral-200">Strike 1:</span> Written warning.</li>
-                    <li>• <span className="text-neutral-200">Strike 2:</span> Second warning — next violation triggers suspension.</li>
+                    <li>• <span className="text-neutral-200">Strike 1:</span> Friendly reminder of community guidelines.</li>
+                    <li>• <span className="text-neutral-200">Strike 2:</span> Second reminder — one more violation triggers a suspension.</li>
                     <li>• <span className="text-neutral-200">Strike 3:</span> 3-day messaging suspension.</li>
                     <li>• Appeals may be submitted.</li>
                   </ul>
