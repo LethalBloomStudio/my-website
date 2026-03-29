@@ -186,6 +186,9 @@ export default function ManuscriptDetailsPage() {
   // Track the last content/title that was actually saved to DB to avoid unnecessary writes
   const lastSavedContent = useRef<string>("");
   const lastSavedTitle = useRef<string>("");
+  // Track last-saved manuscript info to drive auto-save
+  const infoAutoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedInfo = useRef<string>("");
   const genreOptions = genreOptionsForAgeCategory(profileAgeCategory);
   const sortedGenreOptions = useMemo(() => [...genreOptions].sort((a, b) => a.localeCompare(b)), [genreOptions]);
   const categoryMenuRef = useRef<HTMLDivElement | null>(null);
@@ -237,6 +240,44 @@ export default function ManuscriptDetailsPage() {
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterEditorContent, chapterEditorTitle, selectedChapterId]);
+
+  // ── Auto-save manuscript info fields ──────────────────────────────────────
+  useEffect(() => {
+    if (!manuscript) return;
+    if (!lastSavedInfo.current) return; // baseline not yet set (still loading)
+    const allCats = [...selectedCategories, ...(isMatureContent ? ["Mature Content"] : []), ...(isPotentiallyTriggering ? ["Potentially Triggering Content"] : [])];
+    const current = JSON.stringify({
+      title: manuscriptTitle.trim(),
+      description: description.trim(),
+      categories: allCats,
+      potentialTriggers: potentialTriggers.trim(),
+      copyrightInfo: copyrightInfo.trim(),
+    });
+    if (current === lastSavedInfo.current) return;
+    if (!manuscriptTitle.trim() || selectedCategories.length === 0) return;
+
+    if (infoAutoSaveTimer.current) clearTimeout(infoAutoSaveTimer.current);
+    infoAutoSaveTimer.current = setTimeout(() => {
+      void (async () => {
+        const payload = {
+          title: manuscriptTitle.trim(),
+          description: description.trim(),
+          requested_feedback: requestedFeedback,
+          potential_triggers: potentialTriggers.trim(),
+          copyright_info: copyrightInfo.trim(),
+          categories: allCats,
+          genre: selectedCategories[0] ?? null,
+        };
+        const { error } = await supabase.from("manuscripts").update(payload).eq("id", manuscript.id);
+        if (!error) {
+          lastSavedInfo.current = current;
+          setSaveToast(true);
+        }
+      })();
+    }, 1500);
+    return () => { if (infoAutoSaveTimer.current) clearTimeout(infoAutoSaveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manuscriptTitle, description, selectedCategories, isMatureContent, isPotentiallyTriggering, potentialTriggers, copyrightInfo, manuscript]);
 
   function friendlyDbError(message: string) {
     const m = message.toLowerCase();
@@ -384,7 +425,15 @@ export default function ManuscriptDetailsPage() {
         const rawCats = ms.categories && ms.categories.length > 0 ? ms.categories : ms.genre ? [ms.genre] : [];
         setIsMatureContent(rawCats.includes("Mature Content"));
         setIsPotentiallyTriggering(rawCats.includes("Potentially Triggering Content"));
-        setSelectedCategories(rawCats.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content"));
+        const genreCats = rawCats.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content");
+        setSelectedCategories(genreCats);
+        lastSavedInfo.current = JSON.stringify({
+          title: (ms.title ?? "").trim(),
+          description: (ms.description ?? "").trim(),
+          categories: rawCats,
+          potentialTriggers: (ms.potential_triggers ?? "").trim(),
+          copyrightInfo: (ms.copyright_info ?? "").trim(),
+        });
         setChapters(d.chapters);
         setAcceptedReaders(d.acceptedReaders);
         setReaderSlots(Math.max(3, d.acceptedReaders.length));
@@ -632,7 +681,15 @@ export default function ManuscriptDetailsPage() {
     const rawCats2 = row.categories && row.categories.length > 0 ? row.categories : row.genre ? [row.genre] : [];
     setIsMatureContent(rawCats2.includes("Mature Content"));
     setIsPotentiallyTriggering(rawCats2.includes("Potentially Triggering Content"));
-    setSelectedCategories(rawCats2.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content"));
+    const genreCats2 = rawCats2.filter((c: string) => c !== "Mature Content" && c !== "Potentially Triggering Content");
+    setSelectedCategories(genreCats2);
+    lastSavedInfo.current = JSON.stringify({
+      title: (row.title ?? "").trim(),
+      description: (row.description ?? "").trim(),
+      categories: rawCats2,
+      potentialTriggers: (row.potential_triggers ?? "").trim(),
+      copyrightInfo: (row.copyright_info ?? "").trim(),
+    });
     const chapterRows = (chapterData as Chapter[]) ?? [];
     setChapters(chapterRows);
     setSelectedChapterId((prev) => {
@@ -2146,7 +2203,7 @@ export default function ManuscriptDetailsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">Coin Activity</h2>
                   <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-                    <span>🪙</span>
+                    <span style={{ color: '#f59e0b' }}>✿</span>
                     <span className="font-semibold text-neutral-200">{coinBalance.toLocaleString()}</span>
                     <span>available</span>
                   </div>
@@ -2167,7 +2224,7 @@ export default function ManuscriptDetailsPage() {
                                 <span className="text-[10px] text-neutral-600 truncate">Ch. {chapterObj.chapter_order}</span>
                               )}
                             </div>
-                            <span className="text-xs font-semibold text-emerald-400 shrink-0 ml-2">+{c.coins_awarded} 🪙</span>
+                            <span className="text-xs font-semibold text-emerald-400 shrink-0 ml-2">+{c.coins_awarded} <span style={{ color: '#f59e0b' }}>✿</span></span>
                           </div>
                         );
                       })}
@@ -2191,7 +2248,7 @@ export default function ManuscriptDetailsPage() {
                         return (
                           <div key={entry.id} className="flex items-center justify-between rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] px-3 py-1.5">
                             <span className="text-xs text-neutral-300 capitalize">{label}</span>
-                            <span className="text-xs font-semibold text-rose-400 shrink-0 ml-2">{entry.delta} 🪙</span>
+                            <span className="text-xs font-semibold text-rose-400 shrink-0 ml-2">{entry.delta} <span style={{ color: '#f59e0b' }}>✿</span></span>
                           </div>
                         );
                       })}
