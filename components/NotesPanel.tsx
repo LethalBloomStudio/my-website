@@ -18,7 +18,6 @@ export default function NotesPanel({
   defaultManuscriptId,
   manuscripts,
 }: {
-  /** Pre-select this manuscript for new notes (hides project selector) */
   defaultManuscriptId?: string;
   manuscripts?: Manuscript[];
 }) {
@@ -45,8 +44,8 @@ export default function NotesPanel({
         : "/api/notes";
       const res = await fetch(url);
       const data = (await res.json()) as { notes?: Note[]; error?: string };
-      if (!res.ok) { setError(data.error ?? "Failed to load notes."); }
-      else { setNotes(data.notes ?? []); }
+      if (!res.ok) setError(data.error ?? "Failed to load notes.");
+      else setNotes(data.notes ?? []);
     } catch {
       setError("Could not connect. Check your connection.");
     }
@@ -55,8 +54,7 @@ export default function NotesPanel({
 
   useEffect(() => { void load(); }, [defaultManuscriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Debounced auto-save for edits
-  const scheduleSave = useCallback((id: string, content: string, manuscriptId: string) => {
+  const scheduleSave = useCallback((id: string, content: string, msId: string) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setAutoSaveLabel("Saving…");
     saveTimerRef.current = setTimeout(async () => {
@@ -64,7 +62,7 @@ export default function NotesPanel({
         const res = await fetch(`/api/notes/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, manuscript_id: manuscriptId || null }),
+          body: JSON.stringify({ content, manuscript_id: msId || null }),
         });
         const data = (await res.json()) as { note?: Note; error?: string };
         if (res.ok && data.note) {
@@ -87,10 +85,10 @@ export default function NotesPanel({
     setAutoSaveLabel(null);
   }
 
-  function onEditChange(content: string, manuscriptId: string) {
+  function onEditChange(content: string, msId: string) {
     setEditContent(content);
-    setEditManuscriptId(manuscriptId);
-    if (editingId) scheduleSave(editingId, content, manuscriptId);
+    setEditManuscriptId(msId);
+    if (editingId) scheduleSave(editingId, content, msId);
   }
 
   async function addNote() {
@@ -125,7 +123,7 @@ export default function NotesPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolved }),
       });
-      const data = (await res.json()) as { note?: Note; error?: string };
+      const data = (await res.json()) as { note?: Note };
       if (res.ok && data.note) {
         setNotes((prev) => prev.map((n) => (n.id === id ? data.note! : n)));
         if (editingId === id) setEditingId(null);
@@ -141,18 +139,15 @@ export default function NotesPanel({
     }
   }
 
-  function manuscriptTitle(id: string | null) {
+  function msTitle(id: string | null) {
     if (!id || !manuscripts) return null;
     return manuscripts.find((m) => m.id === id)?.title ?? null;
   }
 
-  const activeNotes = notes.filter((n) => !n.resolved);
-  const resolvedNotes = notes.filter((n) => n.resolved);
-
-  function NoteCard({ note }: { note: Note }) {
+  function renderNote(note: Note) {
     const isEditing = editingId === note.id;
     return (
-      <div className="group rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3">
+      <div key={note.id} className="group rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3">
         {isEditing ? (
           <div className="space-y-2">
             <textarea
@@ -189,13 +184,15 @@ export default function NotesPanel({
         ) : (
           <>
             <p
-              onClick={() => !note.resolved && startEdit(note)}
-              className={`whitespace-pre-wrap text-xs leading-relaxed ${note.resolved ? "text-neutral-500 line-through" : "cursor-text text-neutral-300"}`}
+              onClick={() => { if (!note.resolved) startEdit(note); }}
+              className={`whitespace-pre-wrap text-xs leading-relaxed ${
+                note.resolved ? "text-neutral-500 line-through" : "cursor-text text-neutral-300"
+              }`}
             >
               {note.content}
             </p>
-            {manuscriptTitle(note.manuscript_id) && (
-              <p className="mt-1.5 text-[10px] text-neutral-600">📖 {manuscriptTitle(note.manuscript_id)}</p>
+            {msTitle(note.manuscript_id) && (
+              <p className="mt-1.5 text-[10px] text-neutral-600">📖 {msTitle(note.manuscript_id)}</p>
             )}
             <div className="mt-2 flex items-center justify-between gap-2">
               <span className="text-[10px] text-neutral-700">
@@ -230,6 +227,9 @@ export default function NotesPanel({
       </div>
     );
   }
+
+  const activeNotes = notes.filter((n) => !n.resolved);
+  const resolvedNotes = notes.filter((n) => n.resolved);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -278,7 +278,7 @@ export default function NotesPanel({
         ) : activeNotes.length === 0 ? (
           <p className="text-xs text-neutral-600">No notes yet. Jot something down above.</p>
         ) : (
-          activeNotes.map((note) => <NoteCard key={note.id} note={note} />)
+          activeNotes.map((note) => renderNote(note))
         )}
 
         {/* Resolved log */}
@@ -293,7 +293,7 @@ export default function NotesPanel({
             </button>
             {showResolved && (
               <div className="mt-2 space-y-2">
-                {resolvedNotes.map((note) => <NoteCard key={note.id} note={note} />)}
+                {resolvedNotes.map((note) => renderNote(note))}
               </div>
             )}
           </div>
