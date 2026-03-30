@@ -1499,8 +1499,8 @@ function PageInner() {
               </div>
             </section>
           )}
-          {/* Brainstorm Notes — visible to any logged-in user in overview mode */}
-          {!activeChapter && userId && manuscriptId && (
+          {/* Brainstorm Notes — visible to manuscript owner only */}
+          {!activeChapter && isOwner && manuscriptId && (
             <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
               <NotesPanel defaultManuscriptId={manuscriptId} />
             </section>
