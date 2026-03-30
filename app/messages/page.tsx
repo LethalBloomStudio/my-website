@@ -225,12 +225,8 @@ const [now] = useState(() => Date.now());
     const blockedIds = Array.from(new Set(blockedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
     const senderIds = pending.map((r) => r.sender_id);
 
-    // Fetch all profiles + message stats in parallel
-    const messagingFriendIds = friendIds.filter((id) => !excluded.includes(id));
-    const [profilesRes, hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, recentRes, unreadRes] = await Promise.all([
-      messagingFriendIds.length > 0
-        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", messagingFriendIds)
-        : Promise.resolve({ data: [] }),
+    // Fetch message history + supporting data in parallel (not gated on friend status)
+    const [hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, recentRes, unreadRes] = await Promise.all([
       hiddenIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", hiddenIds)
         : Promise.resolve({ data: [] }),
@@ -240,28 +236,41 @@ const [now] = useState(() => Date.now());
       senderIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", senderIds)
         : Promise.resolve({ data: [] }),
-      friendIds.length > 0
-        ? supabase.from("direct_messages").select("sender_id, receiver_id, created_at")
-            .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
-            .order("created_at", { ascending: false }).limit(500)
-        : Promise.resolve({ data: [] }),
+      supabase.from("direct_messages").select("sender_id, receiver_id, created_at")
+        .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
+        .order("created_at", { ascending: false }).limit(500),
       supabase.from("direct_messages").select("sender_id")
         .eq("receiver_id", signedInUserId).eq("status", "sent"),
     ]);
 
+    // Build message stats and derive conversation partner IDs from actual message history
     const lastMsgMap = new Map<string, number>();
     const unreadMap = new Map<string, number>();
+    const conversationPartnerIds: string[] = [];
     for (const m of (recentRes.data ?? []) as { sender_id: string; receiver_id: string; created_at: string }[]) {
       const otherId = m.sender_id === signedInUserId ? m.receiver_id : m.sender_id;
-      if (!lastMsgMap.has(otherId)) lastMsgMap.set(otherId, new Date(m.created_at).getTime());
+      if (!lastMsgMap.has(otherId)) {
+        lastMsgMap.set(otherId, new Date(m.created_at).getTime());
+        conversationPartnerIds.push(otherId);
+      }
     }
     for (const m of (unreadRes.data ?? []) as { sender_id: string }[]) {
       unreadMap.set(m.sender_id, (unreadMap.get(m.sender_id) ?? 0) + 1);
     }
 
+    // Filter out blocked and age-restricted users from conversation list
+    const activeConversationIds = conversationPartnerIds.filter(
+      (id) => !blockedIds.includes(id) && !excluded.includes(id)
+    );
+
+    // Fetch profiles for all conversation partners regardless of friend status
+    const profilesRes = activeConversationIds.length > 0
+      ? await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", activeConversationIds)
+      : { data: [] };
+
     const mapped: Friend[] = ((profilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
       userId: p.user_id,
-      penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
+      penName: p.pen_name || (p.username ? `@${p.username}` : "User"),
       avatarUrl: p.avatar_url ?? null,
       lastMessageAt: lastMsgMap.get(p.user_id) ?? 0,
       unreadCount: unreadMap.get(p.user_id) ?? 0,
@@ -713,9 +722,9 @@ const [now] = useState(() => Date.now());
               </div>
             )}
 
-            {/* Friends list */}
+            {/* Conversations list */}
             <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
-              <p className="text-sm font-medium text-neutral-100">Friends</p>
+              <p className="text-sm font-medium text-neutral-100">Conversations</p>
 
               <div className="mt-3 flex gap-2">
                 <input
@@ -743,7 +752,7 @@ const [now] = useState(() => Date.now());
                     ))}
                   </>
                 ) : friends.length === 0 ? (
-                  <p className="text-xs text-neutral-400">No accepted friends yet.</p>
+                  <p className="text-xs text-neutral-400">No conversations yet.</p>
                 ) : (
                   friends.map((f) => (
                     <div
