@@ -193,7 +193,14 @@ export default function NotificationsPage() {
     const now = Date.now();
     const existingMap = new Map(existingEntries.map((e) => [e.key, e.readAt]));
     const entries = keys.map((k) => ({ key: k, readAt: existingMap.get(k) ?? now }));
+    // Persist to localStorage (fast, same-device cache)
     window.localStorage.setItem(`notif_read_keys_${uid}`, JSON.stringify(entries));
+    // Persist to DB (survives across devices/browsers)
+    void fetch("/api/notifications/read-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entries }),
+    });
     window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
   }
 
@@ -220,6 +227,20 @@ export default function NotificationsPage() {
       setMsg("Please sign in to view notifications.");
       setLoading(false);
       return;
+    }
+
+    // Load read keys from DB first (cross-device persistence), merge with localStorage cache
+    try {
+      const rkRes = await fetch("/api/notifications/read-keys");
+      if (rkRes.ok) {
+        const rkData = (await rkRes.json()) as { keys: string[] };
+        const localKeys = loadClientReadKeys(signedInUserId);
+        const merged = Array.from(new Set([...rkData.keys, ...localKeys]));
+        setClientReadKeys(merged);
+      }
+    } catch {
+      // fallback to localStorage only
+      setClientReadKeys(loadClientReadKeys(signedInUserId));
     }
 
     const { data: manuscripts, error: manuscriptsError } = await supabase

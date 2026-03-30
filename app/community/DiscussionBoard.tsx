@@ -337,7 +337,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setLoading(false);
   }
 
-  useEffect(() => { void loadPosts(); }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadPosts(); }, [supabase]);
 
   // Auto-expand and scroll to a deep-linked post (from notification reply link)
   useEffect(() => {
@@ -349,13 +350,27 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       const el = document.getElementById(`discussion-post-${deepLinkPostId}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 150);
-  }, [deepLinkPostId, loading, posts]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [deepLinkPostId, loading, posts]);
+
+  async function drawGiveaway(postId: string) {
+    const res = await fetch("/api/draw-giveaway", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ post_id: postId }),
+    });
+    if (res.ok) {
+      const data = await res.json() as { winner_id?: string | null; winner_name?: string };
+      setPosts(prev => prev.map(p => p.id === postId
+        ? { ...p, winner_drawn: true, winner_id: data.winner_id ?? null, winner_name: data.winner_name ?? null }
+        : p));
+    }
+  }
 
   // Auto-draw expired giveaways whenever posts load
   useEffect(() => {
     const expired = posts.filter(p => p.type === "giveaway" && !p.winner_drawn && p.ends_at && new Date(p.ends_at) <= new Date());
     for (const p of expired) void drawGiveaway(p.id);
-  }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [posts]);
 
   // ── Infinite scroll ──
   useEffect(() => {
@@ -392,7 +407,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [supabase]);
+  }, [supabase, community]);
 
   // ── Realtime: new comments ──
   useEffect(() => {
@@ -617,21 +632,6 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setSubmittingComment(false);
   }
 
-  // ── Giveaway draw ──
-  async function drawGiveaway(postId: string) {
-    const res = await fetch("/api/draw-giveaway", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: postId }),
-    });
-    if (res.ok) {
-      const data = await res.json() as { winner_id?: string | null; winner_name?: string };
-      setPosts(prev => prev.map(p => p.id === postId
-        ? { ...p, winner_drawn: true, winner_id: data.winner_id ?? null, winner_name: data.winner_name ?? null }
-        : p));
-    }
-  }
-
   // ── Edit post ──
   async function submitEdit() {
     if (!editingPost) return;
@@ -719,6 +719,31 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       };
       setPosts(prev => [newPost, ...prev]);
       setShowCreator(false);
+
+      // Notify followers about the new post (fire-and-forget)
+      void (async () => {
+        const authorName = (prof as { pen_name?: string | null; username?: string | null } | null)?.pen_name
+          || (prof as { username?: string | null } | null)?.username
+          || "Someone";
+        const { data: followers } = await supabase
+          .from("profile_follows")
+          .select("follower_id")
+          .eq("following_id", currentUserId);
+        const followerIds = ((followers ?? []) as { follower_id: string }[])
+          .map((f) => f.follower_id)
+          .filter((id) => id !== currentUserId);
+        if (followerIds.length === 0) return;
+        const notifications = followerIds.map((followerId) => ({
+          user_id: followerId,
+          category: "socials",
+          title: `${authorName} posted in the community`,
+          body: row.title,
+          severity: "info",
+          metadata: { post_id: row.id, community },
+          dedupe_key: `community-post-${row.id}-${followerId}`,
+        }));
+        await supabase.from("system_notifications").insert(notifications);
+      })();
     }
     setSubmittingPost(false);
   }
