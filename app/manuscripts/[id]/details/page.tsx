@@ -17,6 +17,7 @@ import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
+import NotesPanel from "@/components/NotesPanel";
 
 type Manuscript = {
   id: string;
@@ -2104,6 +2105,13 @@ export default function ManuscriptDetailsPage() {
                 </div>
               </div>
           </section>
+
+              {/* Brainstorm Notes */}
+              {manuscriptId && (
+                <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
+                  <NotesPanel defaultManuscriptId={manuscriptId} />
+                </section>
+              )}
 
               {/* Feedback from Beta Readers — manuscript overview */}
               <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
