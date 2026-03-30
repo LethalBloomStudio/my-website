@@ -6,6 +6,8 @@ type Note = {
   id: string;
   content: string;
   manuscript_id: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -13,53 +15,67 @@ type Note = {
 type Manuscript = { id: string; title: string };
 
 export default function NotesPanel({
-  /** If provided, only notes for this manuscript are shown and new notes default to it */
   defaultManuscriptId,
-  /** Pass user's manuscripts so the project selector is populated */
   manuscripts,
 }: {
+  /** Pre-select this manuscript for new notes (hides project selector) */
   defaultManuscriptId?: string;
   manuscripts?: Manuscript[];
 }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newContent, setNewContent] = useState("");
   const [newManuscriptId, setNewManuscriptId] = useState<string>(defaultManuscriptId ?? "");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [editManuscriptId, setEditManuscriptId] = useState<string>("");
+  const [autoSaveLabel, setAutoSaveLabel] = useState<string | null>(null);
+  const [showResolved, setShowResolved] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load notes
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
       const url = defaultManuscriptId
         ? `/api/notes?manuscript_id=${encodeURIComponent(defaultManuscriptId)}`
         : "/api/notes";
       const res = await fetch(url);
-      if (res.ok) {
-        const data = (await res.json()) as { notes: Note[] };
-        setNotes(data.notes ?? []);
-      }
-      setLoading(false);
+      const data = (await res.json()) as { notes?: Note[]; error?: string };
+      if (!res.ok) { setError(data.error ?? "Failed to load notes."); }
+      else { setNotes(data.notes ?? []); }
+    } catch {
+      setError("Could not connect. Check your connection.");
     }
-    void load();
-  }, [defaultManuscriptId]);
+    setLoading(false);
+  }
 
-  // Auto-save edited note (debounced 800ms)
+  useEffect(() => { void load(); }, [defaultManuscriptId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounced auto-save for edits
   const scheduleSave = useCallback((id: string, content: string, manuscriptId: string) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setAutoSaveLabel("Saving…");
     saveTimerRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/notes/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, manuscript_id: manuscriptId || null }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { note: Note };
-        setNotes((prev) => prev.map((n) => (n.id === id ? data.note : n)));
+      try {
+        const res = await fetch(`/api/notes/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content, manuscript_id: manuscriptId || null }),
+        });
+        const data = (await res.json()) as { note?: Note; error?: string };
+        if (res.ok && data.note) {
+          setNotes((prev) => prev.map((n) => (n.id === id ? data.note! : n)));
+          setAutoSaveLabel("Saved");
+          setTimeout(() => setAutoSaveLabel(null), 1500);
+        } else {
+          setAutoSaveLabel("Save failed");
+        }
+      } catch {
+        setAutoSaveLabel("Save failed");
       }
     }, 800);
   }, []);
@@ -68,6 +84,7 @@ export default function NotesPanel({
     setEditingId(note.id);
     setEditContent(note.content);
     setEditManuscriptId(note.manuscript_id ?? "");
+    setAutoSaveLabel(null);
   }
 
   function onEditChange(content: string, manuscriptId: string) {
@@ -80,28 +97,138 @@ export default function NotesPanel({
     const trimmed = newContent.trim();
     if (!trimmed) return;
     setSaving(true);
-    const res = await fetch("/api/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: trimmed, manuscript_id: newManuscriptId || null }),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { note: Note };
-      setNotes((prev) => [data.note, ...prev]);
-      setNewContent("");
-      if (!defaultManuscriptId) setNewManuscriptId("");
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed, manuscript_id: newManuscriptId || null }),
+      });
+      const data = (await res.json()) as { note?: Note; error?: string };
+      if (!res.ok) {
+        setSaveError(data.error ?? "Failed to save note.");
+      } else if (data.note) {
+        setNotes((prev) => [data.note!, ...prev]);
+        setNewContent("");
+        if (!defaultManuscriptId) setNewManuscriptId("");
+      }
+    } catch {
+      setSaveError("Could not connect. Check your connection.");
     }
     setSaving(false);
   }
 
+  async function resolveNote(id: string, resolved: boolean) {
+    try {
+      const res = await fetch(`/api/notes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolved }),
+      });
+      const data = (await res.json()) as { note?: Note; error?: string };
+      if (res.ok && data.note) {
+        setNotes((prev) => prev.map((n) => (n.id === id ? data.note! : n)));
+        if (editingId === id) setEditingId(null);
+      }
+    } catch { /* silent */ }
+  }
+
   async function deleteNote(id: string) {
     const res = await fetch(`/api/notes/${id}`, { method: "DELETE" });
-    if (res.ok) setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (res.ok) {
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+      if (editingId === id) setEditingId(null);
+    }
   }
 
   function manuscriptTitle(id: string | null) {
     if (!id || !manuscripts) return null;
     return manuscripts.find((m) => m.id === id)?.title ?? null;
+  }
+
+  const activeNotes = notes.filter((n) => !n.resolved);
+  const resolvedNotes = notes.filter((n) => n.resolved);
+
+  function NoteCard({ note }: { note: Note }) {
+    const isEditing = editingId === note.id;
+    return (
+      <div className="group rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3">
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => onEditChange(e.target.value, editManuscriptId)}
+              rows={3}
+              autoFocus
+              className="w-full resize-none rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 focus:outline-none"
+            />
+            {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
+              <select
+                value={editManuscriptId}
+                onChange={(e) => onEditChange(editContent, e.target.value)}
+                className="w-full rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1 text-xs text-neutral-300 focus:outline-none"
+              >
+                <option value="">No project</option>
+                {manuscripts.map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            )}
+            <div className="flex items-center justify-between">
+              {autoSaveLabel && (
+                <span className="text-[10px] text-neutral-500">{autoSaveLabel}</span>
+              )}
+              <button
+                onClick={() => setEditingId(null)}
+                className="ml-auto text-[10px] text-neutral-400 hover:text-neutral-200"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p
+              onClick={() => !note.resolved && startEdit(note)}
+              className={`whitespace-pre-wrap text-xs leading-relaxed ${note.resolved ? "text-neutral-500 line-through" : "cursor-text text-neutral-300"}`}
+            >
+              {note.content}
+            </p>
+            {manuscriptTitle(note.manuscript_id) && (
+              <p className="mt-1.5 text-[10px] text-neutral-600">📖 {manuscriptTitle(note.manuscript_id)}</p>
+            )}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] text-neutral-700">
+                {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              </span>
+              <div className="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                {!note.resolved ? (
+                  <button
+                    onClick={() => void resolveNote(note.id, true)}
+                    className="text-[10px] text-neutral-500 hover:text-emerald-400"
+                  >
+                    Resolve
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => void resolveNote(note.id, false)}
+                    className="text-[10px] text-neutral-500 hover:text-neutral-300"
+                  >
+                    Restore
+                  </button>
+                )}
+                <button
+                  onClick={() => void deleteNote(note.id)}
+                  className="text-[10px] text-neutral-500 hover:text-red-400"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -112,15 +239,12 @@ export default function NotesPanel({
       <div className="space-y-2">
         <textarea
           value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void addNote();
-          }}
-          placeholder="Jot down an idea…"
+          onChange={(e) => { setNewContent(e.target.value); setSaveError(null); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void addNote(); }}
+          placeholder="Jot down an idea… (Ctrl+Enter to save)"
           rows={3}
           className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/50 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.8)] focus:outline-none"
         />
-        {/* Project selector */}
         {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
           <select
             value={newManuscriptId}
@@ -133,6 +257,7 @@ export default function NotesPanel({
             ))}
           </select>
         )}
+        {saveError && <p className="text-[11px] text-red-400">{saveError}</p>}
         <button
           onClick={() => void addNote()}
           disabled={saving || !newContent.trim()}
@@ -142,76 +267,36 @@ export default function NotesPanel({
         </button>
       </div>
 
-      {/* Notes list */}
+      {/* Active notes */}
       <div className="flex-1 space-y-2 overflow-y-auto">
         {loading ? (
           <div className="space-y-2">
             {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}
           </div>
-        ) : notes.length === 0 ? (
-          <p className="text-xs text-neutral-600">No notes yet.</p>
+        ) : error ? (
+          <p className="text-xs text-red-400">{error}</p>
+        ) : activeNotes.length === 0 ? (
+          <p className="text-xs text-neutral-600">No notes yet. Jot something down above.</p>
         ) : (
-          notes.map((note) => (
-            <div
-              key={note.id}
-              className="group rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3"
+          activeNotes.map((note) => <NoteCard key={note.id} note={note} />)
+        )}
+
+        {/* Resolved log */}
+        {resolvedNotes.length > 0 && (
+          <div className="mt-3 border-t border-[rgba(120,120,120,0.2)] pt-3">
+            <button
+              onClick={() => setShowResolved((v) => !v)}
+              className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-600 hover:text-neutral-400"
             >
-              {editingId === note.id ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => onEditChange(e.target.value, editManuscriptId)}
-                    rows={3}
-                    autoFocus
-                    className="w-full resize-none rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 focus:outline-none"
-                  />
-                  {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
-                    <select
-                      value={editManuscriptId}
-                      onChange={(e) => onEditChange(editContent, e.target.value)}
-                      className="w-full rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1 text-xs text-neutral-300 focus:outline-none"
-                    >
-                      <option value="">No project</option>
-                      {manuscripts.map((m) => (
-                        <option key={m.id} value={m.id}>{m.title}</option>
-                      ))}
-                    </select>
-                  )}
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="text-[10px] text-neutral-500 hover:text-neutral-300"
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p
-                    onClick={() => startEdit(note)}
-                    className="cursor-text whitespace-pre-wrap text-xs leading-relaxed text-neutral-300"
-                  >
-                    {note.content}
-                  </p>
-                  {manuscriptTitle(note.manuscript_id) && (
-                    <p className="mt-1.5 text-[10px] text-neutral-600">
-                      📖 {manuscriptTitle(note.manuscript_id)}
-                    </p>
-                  )}
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] text-neutral-700">
-                      {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </span>
-                    <button
-                      onClick={() => void deleteNote(note.id)}
-                      className="text-[10px] text-neutral-700 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))
+              <span>Resolved ({resolvedNotes.length})</span>
+              <span>{showResolved ? "▲" : "▼"}</span>
+            </button>
+            {showResolved && (
+              <div className="mt-2 space-y-2">
+                {resolvedNotes.map((note) => <NoteCard key={note.id} note={note} />)}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

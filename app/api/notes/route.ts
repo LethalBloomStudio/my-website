@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
   let query = supabase
     .from("user_notes")
-    .select("id, content, manuscript_id, created_at, updated_at")
+    .select("id, content, manuscript_id, resolved, resolved_at, created_at, updated_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const { data, error } = await supabase
     .from("user_notes")
     .insert({ user_id: userId, content, manuscript_id: body.manuscript_id ?? null })
-    .select("id, content, manuscript_id, created_at, updated_at")
+    .select("id, content, manuscript_id, resolved, resolved_at, created_at, updated_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

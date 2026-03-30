@@ -8,18 +8,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = (await req.json()) as { content?: string; manuscript_id?: string | null };
+  const body = (await req.json()) as { content?: string; manuscript_id?: string | null; resolved?: boolean };
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (body.content !== undefined) updates.content = body.content;
   if ("manuscript_id" in body) updates.manuscript_id = body.manuscript_id ?? null;
+  if (body.resolved !== undefined) {
+    updates.resolved = body.resolved;
+    updates.resolved_at = body.resolved ? new Date().toISOString() : null;
+  }
 
   const { data, error } = await supabase
     .from("user_notes")
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
-    .select("id, content, manuscript_id, created_at, updated_at")
+    .select("id, content, manuscript_id, resolved, resolved_at, created_at, updated_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
