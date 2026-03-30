@@ -265,16 +265,6 @@ export default function DiscoverPage() {
                           <p className="mt-1 text-xs text-neutral-400">
                             Desired feedback: <span className="text-neutral-200">{formatRequestedFeedback(profiles[m.owner_id]?.feedback_preference ?? m.requested_feedback)}</span>
                           </p>
-                          {(m.categories?.includes("Mature Content") || m.categories?.includes("Potentially Triggering Content")) && (
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {m.categories.includes("Mature Content") && (
-                                <span className="badge-mature rounded px-1.5 py-0.5 text-[10px] font-medium border border-amber-600/40 bg-amber-950/30 text-amber-300">Mature Content</span>
-                              )}
-                              {m.categories.includes("Potentially Triggering Content") && (
-                                <span className="badge-triggering rounded px-1.5 py-0.5 text-[10px] font-medium border border-rose-600/40 bg-rose-950/30 text-rose-300">May Contain Triggering Content</span>
-                              )}
-                            </div>
-                          )}
                           <p className="mt-1 text-xs text-neutral-500">
                             Uploaded: {new Date(m.created_at).toLocaleDateString()}
                           </p>
