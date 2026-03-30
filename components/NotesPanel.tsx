@@ -205,21 +205,21 @@ export default function NotesPanel({
                 {!note.resolved ? (
                   <button
                     onClick={() => void resolveNote(note.id, true)}
-                    className="text-[10px] text-neutral-500 hover:text-emerald-400"
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-emerald-700/50 hover:text-emerald-400"
                   >
                     Resolve
                   </button>
                 ) : (
                   <button
                     onClick={() => void resolveNote(note.id, false)}
-                    className="text-[10px] text-neutral-500 hover:text-neutral-300"
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-300"
                   >
                     Restore
                   </button>
                 )}
                 <button
                   onClick={() => void deleteNote(note.id)}
-                  className="text-[10px] text-neutral-500 hover:text-red-400"
+                  className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-red-700/50 hover:text-red-400"
                 >
                   Delete
                 </button>
