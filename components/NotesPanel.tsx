@@ -32,7 +32,7 @@ export default function NotesPanel({
   const [editContent, setEditContent] = useState("");
   const [editManuscriptId, setEditManuscriptId] = useState<string>("");
   const [autoSaveLabel, setAutoSaveLabel] = useState<string | null>(null);
-  const [showResolved, setShowResolved] = useState(false);
+  const [filter, setFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function load() {
@@ -184,9 +184,8 @@ export default function NotesPanel({
         ) : (
           <>
             <p
-              onClick={() => { if (!note.resolved) startEdit(note); }}
               className={`whitespace-pre-wrap text-xs leading-relaxed ${
-                note.resolved ? "text-neutral-500 line-through" : "cursor-text text-neutral-300"
+                note.resolved ? "text-neutral-500 line-through" : "text-neutral-300"
               }`}
             >
               {note.content}
@@ -199,6 +198,14 @@ export default function NotesPanel({
                 {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               </span>
               <div className="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+                {!note.resolved && (
+                  <button
+                    onClick={() => startEdit(note)}
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200"
+                  >
+                    Edit
+                  </button>
+                )}
                 {!note.resolved ? (
                   <button
                     onClick={() => void resolveNote(note.id, true)}
@@ -228,12 +235,31 @@ export default function NotesPanel({
     );
   }
 
-  const activeNotes = notes.filter((n) => !n.resolved);
-  const resolvedNotes = notes.filter((n) => n.resolved);
+  const filteredNotes = notes.filter((n) =>
+    filter === "all" ? true : filter === "resolved" ? n.resolved : !n.resolved
+  );
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Notes</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Notes</p>
+        <div className="flex gap-1">
+          {(["unresolved", "resolved", "all"] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setFilter(opt)}
+              className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-medium transition ${
+                filter === opt
+                  ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.22)] text-neutral-100"
+                  : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.07)] text-neutral-400 hover:bg-[rgba(120,120,120,0.14)] hover:text-neutral-200"
+              }`}
+            >
+              {opt.charAt(0).toUpperCase() + opt.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* New note form */}
       <div className="space-y-2">
@@ -267,7 +293,7 @@ export default function NotesPanel({
         </button>
       </div>
 
-      {/* Active notes */}
+      {/* Notes list */}
       <div className="flex-1 space-y-2 overflow-y-auto">
         {loading ? (
           <div className="space-y-2">
@@ -275,28 +301,12 @@ export default function NotesPanel({
           </div>
         ) : error ? (
           <p className="text-xs text-red-400">{error}</p>
-        ) : activeNotes.length === 0 ? (
-          <p className="text-xs text-neutral-600">No notes yet. Jot something down above.</p>
+        ) : filteredNotes.length === 0 ? (
+          <p className="text-xs text-neutral-600">
+            {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet. Jot something down above." : "No active notes. Jot something down above."}
+          </p>
         ) : (
-          activeNotes.map((note) => renderNote(note))
-        )}
-
-        {/* Resolved log */}
-        {resolvedNotes.length > 0 && (
-          <div className="mt-3 border-t border-[rgba(120,120,120,0.2)] pt-3">
-            <button
-              onClick={() => setShowResolved((v) => !v)}
-              className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-600 hover:text-neutral-400"
-            >
-              <span>Resolved ({resolvedNotes.length})</span>
-              <span>{showResolved ? "▲" : "▼"}</span>
-            </button>
-            {showResolved && (
-              <div className="mt-2 space-y-2">
-                {resolvedNotes.map((note) => renderNote(note))}
-              </div>
-            )}
-          </div>
+          filteredNotes.map((note) => renderNote(note))
         )}
       </div>
     </div>
