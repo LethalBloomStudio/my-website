@@ -496,11 +496,17 @@ const [now] = useState(() => Date.now());
       }
     }
 
-    const res = await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to_user_id: withUser, content: text }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to_user_id: withUser, content: text }),
+      });
+    } catch {
+      setMsg("Message failed to send. Check your connection and try again.");
+      return;
+    }
     const json = (await res.json()) as { error?: string; message?: Msg; triggers?: string[]; consequence?: string };
     if (!res.ok) {
       if (json.triggers && json.consequence) {

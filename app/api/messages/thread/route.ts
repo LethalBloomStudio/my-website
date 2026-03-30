@@ -31,13 +31,20 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Direct messaging between youth and adult profiles is locked for safety." }, { status: 403 });
   }
 
+  // Fetch the most recent 500 messages (descending) then reverse for display.
+  // An explicit limit is required — Supabase silently caps unlimited queries at 1000 rows,
+  // and with ascending order the newest messages would be cut off for active conversations.
   const { data, error } = await supabase
     .from("direct_messages")
     .select("id, sender_id, receiver_id, body, status, created_at")
     .or(`and(sender_id.eq.${userId},receiver_id.eq.${withUser}),and(sender_id.eq.${withUser},receiver_id.eq.${userId})`)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Reverse so the client always receives oldest-first order
+  const messages = (data ?? []).reverse();
 
   await supabase
     .from("direct_messages")
@@ -46,5 +53,5 @@ export async function GET(req: Request) {
     .eq("sender_id", withUser)
     .eq("status", "sent");
 
-  return NextResponse.json({ messages: data ?? [] });
+  return NextResponse.json({ messages });
 }
