@@ -10,6 +10,7 @@ import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
 import ReportModal from "@/components/ReportModal";
+import NotesPanel from "@/components/NotesPanel";
 
 type Msg = {
   id: string;
@@ -115,6 +116,7 @@ const [now] = useState(() => Date.now());
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
   const [sidebarLoading, setSidebarLoading] = useState(true);
+  const [myManuscripts, setMyManuscripts] = useState<{ id: string; title: string }[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef(0);
@@ -351,6 +353,14 @@ const [now] = useState(() => Date.now());
         supabase.from("public_profiles").select("avatar_url").eq("user_id", auth.user.id).maybeSingle(),
       ]);
       setMyAvatarUrl((selfProfile.data as { avatar_url: string | null } | null)?.avatar_url ?? null);
+
+      // Load user's manuscripts for the notes project selector
+      const { data: msData } = await supabase
+        .from("manuscripts")
+        .select("id, title")
+        .eq("owner_id", auth.user.id)
+        .order("created_at", { ascending: false });
+      setMyManuscripts((msData as { id: string; title: string }[] | null) ?? []);
 
       await loadSidebar(auth.user.id);
 
@@ -734,10 +744,10 @@ const [now] = useState(() => Date.now());
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-6xl px-6 py-16">
+      <div className="mx-auto max-w-[1440px] px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_280px]">
           {/* ── Sidebar ── */}
           <aside className="space-y-4">
             {/* Pending requests */}
@@ -1181,6 +1191,11 @@ const [now] = useState(() => Date.now());
               {msg ? <p className="mt-2 shrink-0 text-sm text-red-300">{msg}</p> : null}
             </section>
           )}
+
+          {/* ── Notes panel ── */}
+          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 self-start sticky top-20 max-h-[calc(100vh-6rem)] overflow-hidden">
+            <NotesPanel manuscripts={myManuscripts} />
+          </div>
         </div>
       </div>
       {reportTarget && (
