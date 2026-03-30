@@ -109,6 +109,8 @@ const [now] = useState(() => Date.now());
   const [prAppealSubmitted, setPrAppealSubmitted] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [requestAction, setRequestAction] = useState<string | null>(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
@@ -330,9 +332,10 @@ const [now] = useState(() => Date.now());
     setWithUserLabel(p?.pen_name || (p?.username ? `@${p.username}` : "Selected user"));
     setWithUserAvatar(p?.avatar_url ?? null);
 
-    const json = (await threadRes.json()) as { messages?: Msg[]; error?: string };
+    const json = (await threadRes.json()) as { messages?: Msg[]; error?: string; hasMore?: boolean };
     if (!threadRes.ok) { setMsg(json.error ?? "Failed to load messages."); return; }
     setMessages(json.messages ?? []);
+    setHasMoreMessages(json.hasMore ?? false);
     void markAsRead(targetId);
   }
 
@@ -424,16 +427,56 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scroll to bottom on initial load; don't jump on prepend of older messages
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     if (!initialScrollDoneRef.current) {
       container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
-    } else {
-      container.scrollTop = container.scrollHeight;
     }
   }, [messages]);
+
+  async function loadOlderMessages() {
+    if (!withUser || loadingOlder || !hasMoreMessages) return;
+    const oldest = messages[0];
+    if (!oldest) return;
+    setLoadingOlder(true);
+    try {
+      const res = await fetch(`/api/messages/thread?with=${encodeURIComponent(withUser)}&before=${encodeURIComponent(oldest.created_at)}`);
+      const json = (await res.json()) as { messages?: Msg[]; hasMore?: boolean; error?: string };
+      if (!res.ok || !json.messages) { setLoadingOlder(false); return; }
+      // Preserve scroll position when prepending older messages
+      const container = messagesContainerRef.current;
+      const prevHeight = container?.scrollHeight ?? 0;
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const newOnes = json.messages!.filter((m) => !existingIds.has(m.id));
+        return [...newOnes, ...prev];
+      });
+      setHasMoreMessages(json.hasMore ?? false);
+      // Restore scroll so the view doesn't jump
+      requestAnimationFrame(() => {
+        if (container) container.scrollTop = container.scrollHeight - prevHeight;
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
+
+  // Detect scroll to top → load older messages
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    function onScroll() {
+      if (container!.scrollTop < 80 && hasMoreMessages && !loadingOlder) {
+        void loadOlderMessages();
+      }
+    }
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [withUser, hasMoreMessages, loadingOlder, messages]);
 
   const peerAvatar =
     withUserAvatar ??
@@ -1023,6 +1066,21 @@ const [now] = useState(() => Date.now());
               </div>
 
               <div ref={messagesContainerRef} className="h-[420px] overflow-y-auto space-y-3 pr-1">
+                {/* Load older messages indicator */}
+                {hasMoreMessages && (
+                  <div className="flex justify-center py-2">
+                    {loadingOlder ? (
+                      <span className="text-xs text-neutral-500">Loading older messages…</span>
+                    ) : (
+                      <button
+                        onClick={() => void loadOlderMessages()}
+                        className="text-xs text-neutral-400 hover:text-neutral-200 transition"
+                      >
+                        ↑ Load older messages
+                      </button>
+                    )}
+                  </div>
+                )}
                 {messages.length === 0 ? (
                   <p className="text-sm text-neutral-300">No messages yet.</p>
                 ) : (
