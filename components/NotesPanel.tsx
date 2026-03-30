@@ -180,7 +180,7 @@ export default function NotesPanel({
               )}
               <button
                 onClick={() => setEditingId(null)}
-                className="ml-auto text-[10px] text-neutral-400 hover:text-neutral-200"
+                className="ml-auto rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-400 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200"
               >
                 Done
               </button>
