@@ -1150,13 +1150,13 @@ const [now] = useState(() => Date.now());
                     }
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       if (inputRef.current) inputRef.current.style.height = "auto";
                       void send();
                     }
                   }}
-                  placeholder="Type a message... (Ctrl+Enter to send)"
+                  placeholder="Type a message... (Shift+Enter for new line)"
                   disabled={youthLocked}
                   className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-hidden min-h-[72px] max-h-48"
                   style={{ lineHeight: "1.5" }}
