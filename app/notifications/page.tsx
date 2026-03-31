@@ -104,7 +104,7 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
     // Any discussion board notification (has post_id in metadata) → social
     if (n.metadata?.post_id) return "social";
     // Direct message notifications → social
-    if (title.startsWith("New message from") || n.metadata?.sender_id) return "social";
+    if (title.startsWith("New message from") || (n.metadata as { sender_id?: string } | null)?.sender_id) return "social";
     // Reader-side: accepted into a project, bloom coin reward, book published/unpublished
     if (
       title.includes("Bloom Coin") ||
