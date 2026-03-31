@@ -1144,6 +1144,11 @@ export default function ManuscriptDetailsPage() {
 
   async function addReaderSlot() {
     if (!manuscript) return;
+    if (memberTier === "lethal") {
+      // Lethal Members have unlimited reader slots at no cost
+      setReaderSlots((s) => s + 1);
+      return;
+    }
     setCoinConfirm({ amount: 15, label: "add a reader slot", onConfirm: () => void doAddReaderSlot() });
   }
 
