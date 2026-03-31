@@ -450,21 +450,11 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom when conversation loads or new messages arrive
+  // Always scroll to newest message
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container || messages.length === 0) return;
-    if (!initialScrollDoneRef.current) {
-      // Always scroll to bottom when opening/switching a conversation
-      container.scrollTop = container.scrollHeight;
-      initialScrollDoneRef.current = true;
-    } else {
-      // For incoming realtime messages, only scroll if near bottom
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-      if (distanceFromBottom < 120) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }
+    container.scrollTop = container.scrollHeight;
   }, [messages]);
 
   async function loadOlderMessages() {
