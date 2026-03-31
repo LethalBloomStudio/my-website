@@ -92,6 +92,10 @@ function BetaReadersPageInner() {
     setLoading(true);
     setMsg(null);
 
+    const { data: auth } = await supabase.auth.getSession();
+    const uid = auth.session?.user?.id ?? null;
+    setCurrentUserId(uid);
+
     const [profilesRes, ownerRes] = await Promise.all([
       fetch("/api/beta-reader-profiles"),
       fetch("/api/owner-profiles"),
@@ -117,7 +121,7 @@ function BetaReadersPageInner() {
     }
 
     setLoading(false);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     void load();
