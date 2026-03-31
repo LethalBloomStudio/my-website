@@ -12,7 +12,6 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { useTheme } from "@/components/ThemeProvider";
-import NotesPanel from "@/components/NotesPanel";
 
 type Manuscript = {
   id: string;
@@ -860,7 +859,8 @@ function PageInner() {
           .select("id, title, chapter_order, content, is_private, chapter_type")
           .eq("manuscript_id", manuscriptId)
           .order("chapter_order", { ascending: true });
-        if (!ownerOrParentView && !gRows.some((x) => x.reader_id === uid)) {
+        // Reader view always shows only published chapters — owners see drafts in the workspace
+        if (!localParentView) {
           chapterQuery.eq("is_private", false);
         }
         const { data: c } = await chapterQuery;
@@ -1499,13 +1499,6 @@ function PageInner() {
               </div>
             </section>
           )}
-          {/* Brainstorm Notes — visible to manuscript owner only */}
-          {!activeChapter && isOwner && manuscriptId && (
-            <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
-              <NotesPanel defaultManuscriptId={manuscriptId} />
-            </section>
-          )}
-
           {!activeChapter && (isOwner || isParentView) && (
             <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

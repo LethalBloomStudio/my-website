@@ -147,7 +147,7 @@ export default function NotesPanel({
   function renderNote(note: Note) {
     const isEditing = editingId === note.id;
     return (
-      <div key={note.id} className="group rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3">
+      <div key={note.id} className="rounded-lg border border-[rgba(120,120,120,0.25)] bg-neutral-900/40 p-3">
         {isEditing ? (
           <div className="space-y-2">
             <textarea
@@ -197,7 +197,7 @@ export default function NotesPanel({
               <span className="text-[10px] text-neutral-700">
                 {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               </span>
-              <div className="flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+              <div className="flex items-center gap-2">
                 {!note.resolved && (
                   <button
                     onClick={() => startEdit(note)}
@@ -285,6 +285,7 @@ export default function NotesPanel({
         )}
         {saveError && <p className="text-[11px] text-red-400">{saveError}</p>}
         <button
+          type="button"
           onClick={() => void addNote()}
           disabled={saving || !newContent.trim()}
           className="h-8 w-full rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.14)] text-xs font-medium text-neutral-200 transition hover:bg-[rgba(120,120,120,0.24)] disabled:opacity-40"
