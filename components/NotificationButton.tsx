@@ -125,7 +125,7 @@ export default function NotificationButton() {
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
-          (payload) => { if (mounted && (payload.new as { category?: string })?.category !== "messages") void loadCount(); }
+          (payload: { new: Record<string, unknown> }) => { if (mounted && (payload.new as { category?: string })?.category !== "messages") void loadCount(); }
         )
         .subscribe();
     }
