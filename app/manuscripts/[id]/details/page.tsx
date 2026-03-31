@@ -1890,7 +1890,7 @@ export default function ManuscriptDetailsPage() {
                   Export Manuscript
                 </a>
                 <Link
-                  href={`/beta-readers?level=${encodeURIComponent(requestedFeedback)}${displayCategories.length ? `&genres=${encodeURIComponent(displayCategories[0])}` : ""}`}
+                  href="/beta-readers"
                   className="workspace-btn inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition"
                 >
                   Find beta readers
