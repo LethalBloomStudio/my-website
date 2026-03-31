@@ -454,10 +454,10 @@ const [now] = useState(() => Date.now());
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-    if (!initialScrollDoneRef.current) {
+    if (!initialScrollDoneRef.current && messages.length > 0) {
       container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
-    } else {
+    } else if (initialScrollDoneRef.current) {
       // Auto-scroll only if user is within 120px of the bottom
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
       if (distanceFromBottom < 120) {
