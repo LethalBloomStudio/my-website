@@ -573,7 +573,7 @@ export default function NotificationsPage() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
-        (payload) => { if ((payload.new as { category?: string })?.category !== "messages") void load(); }
+        (payload: { new: Record<string, unknown> }) => { if ((payload.new as { category?: string })?.category !== "messages") void load(); }
       )
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
