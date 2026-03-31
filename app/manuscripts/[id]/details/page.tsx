@@ -42,7 +42,7 @@ type Chapter = {
   content: string;
   is_private: boolean;
   created_at: string;
-  chapter_type: "chapter" | "prologue" | "trigger_page";
+  chapter_type: "chapter" | "prologue" | "epilogue" | "trigger_page";
 };
 
 type AcceptedReader = {
@@ -178,7 +178,7 @@ export default function ManuscriptDetailsPage() {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
   const [chapterEditorContent, setChapterEditorContent] = useState("");
-  const [chapterType, setChapterType] = useState<"chapter" | "prologue" | "trigger_page">("chapter");
+  const [chapterType, setChapterType] = useState<"chapter" | "prologue" | "epilogue" | "trigger_page">("chapter");
   const [dragChapterId, setDragChapterId] = useState<string | null>(null);
   const [dragOverChapterId, setDragOverChapterId] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -190,7 +190,7 @@ export default function ManuscriptDetailsPage() {
   // Track the last content/title/type that was actually saved to DB to avoid unnecessary writes
   const lastSavedContent = useRef<string>("");
   const lastSavedTitle = useRef<string>("");
-  const lastSavedChapterType = useRef<"chapter" | "prologue" | "trigger_page">("chapter");
+  const lastSavedChapterType = useRef<"chapter" | "prologue" | "epilogue" | "trigger_page">("chapter");
   // Track last-saved manuscript info to drive auto-save
   const infoAutoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedInfo = useRef<string>("");
@@ -843,10 +843,10 @@ export default function ManuscriptDetailsPage() {
       const normalized = normalizeChapterText(selected.content);
       setChapterEditorTitle(selected.title);
       setChapterEditorContent(normalized);
-      setChapterType((selected.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
+      setChapterType((selected.chapter_type as "chapter" | "prologue" | "epilogue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = selected.title;
-      lastSavedChapterType.current = (selected.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter";
+      lastSavedChapterType.current = (selected.chapter_type as "chapter" | "prologue" | "epilogue" | "trigger_page") ?? "chapter";
       setAutoSaveStatus("idle");
       return;
     }
@@ -856,10 +856,10 @@ export default function ManuscriptDetailsPage() {
       setSelectedChapterId(fallback.id);
       setChapterEditorTitle(fallback.title);
       setChapterEditorContent(normalized);
-      setChapterType((fallback.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter");
+      setChapterType((fallback.chapter_type as "chapter" | "prologue" | "epilogue" | "trigger_page") ?? "chapter");
       lastSavedContent.current = normalized;
       lastSavedTitle.current = fallback.title;
-      lastSavedChapterType.current = (fallback.chapter_type as "chapter" | "prologue" | "trigger_page") ?? "chapter";
+      lastSavedChapterType.current = (fallback.chapter_type as "chapter" | "prologue" | "epilogue" | "trigger_page") ?? "chapter";
       setAutoSaveStatus("idle");
     }
   }, [chapters, selectedChapterId]);
@@ -1026,7 +1026,7 @@ export default function ManuscriptDetailsPage() {
   }
 
   // 1-based chapter number among chapter_type='chapter' entries, sorted by chapter_order
-  function chapterNumFor(chapterId: string, typeOverride?: "chapter" | "prologue" | "trigger_page"): number {
+  function chapterNumFor(chapterId: string, typeOverride?: "chapter" | "prologue" | "epilogue" | "trigger_page"): number {
     const list = chapters
       .map(c => (c.id === chapterId && typeOverride) ? { ...c, chapter_type: typeOverride } : c)
       .filter(c => c.chapter_type === "chapter")
@@ -1037,6 +1037,7 @@ export default function ManuscriptDetailsPage() {
 
   function chapterDisplayLabel(chapter: Chapter) {
     if (chapter.chapter_type === "prologue") return chapter.title.trim() ? `Prologue: ${chapter.title}` : "Prologue";
+    if (chapter.chapter_type === "epilogue") return chapter.title.trim() ? `Epilogue: ${chapter.title}` : "Epilogue";
     if (chapter.chapter_type === "trigger_page") return chapter.title.trim() ? `Trigger Page: ${chapter.title}` : "Trigger Page";
     const num = chapterNumFor(chapter.id);
     if (!chapter.title.trim() || chapter.title.trim().toLowerCase() === `chapter ${num}`) {
@@ -1687,7 +1688,7 @@ export default function ManuscriptDetailsPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">
-              {chapter.chapter_type === "prologue" ? "Prologue" : chapter.chapter_type === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(chapter.id)}`}
+              {chapter.chapter_type === "prologue" ? "Prologue" : chapter.chapter_type === "epilogue" ? "Epilogue" : chapter.chapter_type === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(chapter.id)}`}
             </span>
             <span
               className={`text-[10px] uppercase tracking-wide ${
@@ -1718,6 +1719,7 @@ export default function ManuscriptDetailsPage() {
       ];
       for (const ch of sorted) {
         const label = ch.chapter_type === "prologue" ? `Prologue: ${ch.title || "Untitled"}` :
+          ch.chapter_type === "epilogue" ? `Epilogue: ${ch.title || "Untitled"}` :
           ch.chapter_type === "trigger_page" ? `Trigger Page: ${ch.title || "Untitled"}` :
           `Chapter ${chapterNumbers.get(ch.id) ?? ""}: ${ch.title || "Untitled"}`;
         children.push(new Paragraph({ text: label, heading: HeadingLevel.HEADING_1 }));
@@ -2390,7 +2392,7 @@ export default function ManuscriptDetailsPage() {
                         <select
                           value={chapterType}
                           onChange={(e) => {
-                            const t = e.target.value as "chapter" | "prologue" | "trigger_page";
+                            const t = e.target.value as "chapter" | "prologue" | "epilogue" | "trigger_page";
                             if (t === "trigger_page" && chapterType !== "trigger_page") {
                               const existingTriggerPages = chapters.filter(c => c.id !== selectedChapter.id && c.chapter_type === "trigger_page").length;
                               if (existingTriggerPages >= 1) {
@@ -2402,6 +2404,7 @@ export default function ManuscriptDetailsPage() {
                             setChapterType(t);
                             setChapterEditorTitle(
                               t === "prologue" ? "Prologue" :
+                              t === "epilogue" ? "Epilogue" :
                               t === "trigger_page" ? "Trigger Page" :
                               `Chapter ${num}`
                             );
@@ -2410,11 +2413,12 @@ export default function ManuscriptDetailsPage() {
                         >
                           <option value="chapter">Chapter</option>
                           <option value="prologue">Prologue</option>
+                          <option value="epilogue">Epilogue</option>
                           <option value="trigger_page">Trigger Page</option>
                         </select>
                       ) : (
                         <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">
-                          {chapterType === "prologue" ? "Prologue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(selectedChapter.id)}`}
+                          {chapterType === "prologue" ? "Prologue" : chapterType === "epilogue" ? "Epilogue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(selectedChapter.id)}`}
                         </p>
                       )}
                       <h2 className="text-lg font-semibold text-white">{chapterEditorTitle || "Untitled"}</h2>

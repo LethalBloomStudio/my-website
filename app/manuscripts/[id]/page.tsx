@@ -31,7 +31,7 @@ type Manuscript = {
   chapter_count?: number | null;
   created_at?: string | null;
 };
-type Chapter = { id: string; title: string; chapter_order: number; content: string; is_private: boolean; chapter_type?: "chapter" | "prologue" | "trigger_page" };
+type Chapter = { id: string; title: string; chapter_order: number; content: string; is_private: boolean; chapter_type?: "chapter" | "prologue" | "epilogue" | "trigger_page" };
 type AccessGrant = { id: string; reader_id: string };
 type LineFeedback = {
   id: string;

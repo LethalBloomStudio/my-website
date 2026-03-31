@@ -412,9 +412,6 @@ function BetaReadersPageInner() {
                         Style: <span className="text-neutral-200">{LEVEL_DESCRIPTIONS[p.beta_reader_level]}</span>
                       </p>
                     )}
-                    {p.feedback_areas && (
-                      <p className="text-xs text-neutral-400 line-clamp-2">Focus: <span className="text-neutral-300">{p.feedback_areas}</span></p>
-                    )}
                     {p.feedback_strengths && (
                       <p className="text-xs text-neutral-400 line-clamp-2">Strengths: <span className="text-neutral-300">{p.feedback_strengths}</span></p>
                     )}
@@ -423,7 +420,7 @@ function BetaReadersPageInner() {
                     <div className="mt-auto flex flex-col gap-1.5">
                       {p.user_id === currentUserId ? (
                         <Link
-                          href="/profile"
+                          href="/account"
                           className="inline-flex h-8 items-center justify-center rounded-lg border border-[rgba(120,120,120,0.6)] bg-[rgba(120,120,120,0.12)] px-3 text-xs font-medium text-white hover:bg-[rgba(120,120,120,0.22)] transition"
                         >
                           View profile
