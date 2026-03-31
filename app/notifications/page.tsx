@@ -564,6 +564,21 @@ export default function NotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Realtime: reload when a new system_notification is inserted for this user
+  useEffect(() => {
+    if (!userId) return;
+    const ch = supabase
+      .channel(`notif-page:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
+        () => { void load(); }
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, supabase]);
+
   useEffect(() => {
     if (!userId) {
       setClientReadKeys([]);

@@ -111,9 +111,29 @@ export default function NotificationButton() {
       if (mounted) setCount(total);
     }
 
-    loadCount();
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    async function init() {
+      await loadCount();
+      const { data: auth } = await supabase.auth.getSession();
+      const userId = auth.session?.user?.id;
+      if (!userId || !mounted) return;
+
+      realtimeChannel = supabase
+        .channel(`notif-badge:${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
+          () => { if (mounted) void loadCount(); }
+        )
+        .subscribe();
+    }
+
+    void init();
+
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      loadCount();
+      if (realtimeChannel) { void supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
+      void init();
     });
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") loadCount();
@@ -132,6 +152,7 @@ export default function NotificationButton() {
       mounted = false;
       clearInterval(timer);
       sub.subscription.unsubscribe();
+      if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
