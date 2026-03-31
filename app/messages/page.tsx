@@ -450,11 +450,10 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Always scroll to newest message
+  // Always scroll to newest message — works consistently across all browsers
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container || messages.length === 0) return;
-    container.scrollTop = container.scrollHeight;
+    if (messages.length === 0) return;
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages]);
 
   async function loadOlderMessages() {
