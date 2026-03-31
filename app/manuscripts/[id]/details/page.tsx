@@ -1145,8 +1145,18 @@ export default function ManuscriptDetailsPage() {
   async function addReaderSlot() {
     if (!manuscript) return;
     if (memberTier === "lethal") {
-      // Lethal Members have unlimited reader slots at no cost
-      setReaderSlots((s) => s + 1);
+      // Lethal Members get slots free — persist a delta-0 ledger entry so the
+      // count survives page reloads and shows correctly on the invite page.
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { error } = await supabase.from("bloom_coin_ledger").insert({
+        user_id: uid,
+        delta: 0,
+        reason: "extra_reader_slot",
+        metadata: { manuscript_id: manuscript.id },
+      });
+      if (!error) setReaderSlots((s) => s + 1);
       return;
     }
     setCoinConfirm({ amount: 15, label: "add a reader slot", onConfirm: () => void doAddReaderSlot() });
@@ -1541,12 +1551,8 @@ export default function ManuscriptDetailsPage() {
     if (!manuscript) return;
     const activeCount = acceptedReaders.filter((r) => !r.disabled && !r.left).length;
     if (activeCount >= readerSlots) {
-      if (memberTier !== "lethal") {
-        setMsg(`All ${readerSlots} reader slots are filled. Add a slot first.`);
-        return;
-      }
-      // Lethal Members: auto-expand slot count instead of blocking
-      setReaderSlots((s) => s + 1);
+      setMsg(`All ${readerSlots} reader slots are filled. Add a slot first.`);
+      return;
     }
     const { error } = await supabase
       .from("manuscript_access_requests")
@@ -1933,7 +1939,7 @@ export default function ManuscriptDetailsPage() {
             <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Accepted readers</h2>
-                <span className="text-xs text-neutral-200">{memberTier === "lethal" ? `${acceptedReaders.length} readers (unlimited)` : `${acceptedReaders.length}/${readerSlots} slots filled`}</span>
+                <span className="text-xs text-neutral-200">{acceptedReaders.length}/{readerSlots} slots filled</span>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <button
@@ -1948,7 +1954,7 @@ export default function ManuscriptDetailsPage() {
                   onScroll={onReaderScroll}
                   className="flex w-0 flex-1 gap-3 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  {Array.from({ length: memberTier === "lethal" ? Math.max(readerSlots, acceptedReaders.length + 1) : readerSlots }).map((_, i) => {
+                  {Array.from({ length: readerSlots }).map((_, i) => {
                     const reader = acceptedReaders[i];
                     return reader ? (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
