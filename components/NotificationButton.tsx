@@ -24,7 +24,18 @@ export default function NotificationButton() {
         .select("id")
         .eq("owner_id", userId);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
-      const readKeys =
+
+      // Fetch read keys from DB so reads on other devices are reflected here
+      let dbReadKeys: string[] = [];
+      try {
+        const rkRes = await fetch("/api/notifications/read-keys");
+        if (rkRes.ok) {
+          const rkData = (await rkRes.json()) as { keys: string[] };
+          dbReadKeys = rkData.keys ?? [];
+        }
+      } catch { /* fall back to localStorage only */ }
+
+      const localReadKeys =
         typeof window === "undefined"
           ? []
           : (() => {
@@ -36,7 +47,7 @@ export default function NotificationButton() {
                 return [];
               }
             })();
-      const readKeySet = new Set(readKeys);
+      const readKeySet = new Set([...dbReadKeys, ...localReadKeys]);
 
       const pendingFriendRequestsPromise = supabase
         .from("profile_friend_requests")
@@ -126,6 +137,11 @@ export default function NotificationButton() {
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
           (payload: { new: Record<string, unknown> }) => { if (mounted && (payload.new as { category?: string })?.category !== "messages") void loadCount(); }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
+          () => { if (mounted) void loadCount(); }
         )
         .subscribe();
     }

@@ -544,8 +544,15 @@ export default function NotificationsPage() {
       .eq("is_read", true)
       .lt("read_at", thirtyDaysAgoAdmin);
 
-    // Hide resolved requests/invitations older than 30 days
+    // Hide resolved requests/invitations older than 30 days, and always strip
+    // any message-category notifications that slipped through (legacy data guard)
     const prunedFeed = feed.filter((item) => {
+      if (item.type === "admin") {
+        const n = item.payload as SystemNotification;
+        if (n.category === "messages") return false;
+        if (n.title?.startsWith("New message from")) return false;
+        if ((n.metadata as { sender_id?: string } | null)?.sender_id) return false;
+      }
       if (item.type === "read_request" && item.payload.status !== "pending") {
         return Date.now() - new Date(item.created_at).getTime() < 30 * 24 * 60 * 60 * 1000;
       }

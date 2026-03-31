@@ -74,6 +74,16 @@ const TRIGGER_LABELS: Record<string, string> = {
   sexual_language: "Sexual or explicit language (youth accounts)",
 };
 
+function Avatar({ name, url, size = 7 }: { name: string; url: string | null; size?: number }) {
+  const cls = `h-${size} w-${size} rounded-full border border-neutral-700 object-cover`;
+  const fallbackCls = `flex h-${size} w-${size} items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-xs text-neutral-300`;
+  return url ? (
+    <Image src={url} alt={`${name} avatar`} width={28} height={28} className={cls} />
+  ) : (
+    <span className={fallbackCls}>{name.charAt(0).toUpperCase()}</span>
+  );
+}
+
 function MessagesPageInner() {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -450,10 +460,12 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Always scroll to newest message — works consistently across all browsers
+  // Scroll messages container to bottom — direct scroll avoids scrollIntoView
+  // scrolling the whole page (visible on mobile as a "jump to top" effect)
   useEffect(() => {
     if (messages.length === 0) return;
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
+    const container = messagesContainerRef.current;
+    if (container) container.scrollTop = container.scrollHeight;
   }, [messages]);
 
   async function loadOlderMessages() {
@@ -743,16 +755,6 @@ const [now] = useState(() => Date.now());
 
     router.push(`/messages?with=${encodeURIComponent(target.user_id)}`);
     setRecipientInput("");
-  }
-
-  function Avatar({ name, url, size = 7 }: { name: string; url: string | null; size?: number }) {
-    const cls = `h-${size} w-${size} rounded-full border border-neutral-700 object-cover`;
-    const fallbackCls = `flex h-${size} w-${size} items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-xs text-neutral-300`;
-    return url ? (
-      <Image src={url} alt={`${name} avatar`} width={28} height={28} className={cls} />
-    ) : (
-      <span className={fallbackCls}>{name.charAt(0).toUpperCase()}</span>
-    );
   }
 
   return (
