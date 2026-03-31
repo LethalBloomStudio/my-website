@@ -103,6 +103,8 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
     if ((n.metadata as { gift_link?: string } | null)?.gift_link) return "social";
     // Any discussion board notification (has post_id in metadata) → social
     if (n.metadata?.post_id) return "social";
+    // Direct message notifications → social
+    if (title.startsWith("New message from") || n.metadata?.sender_id) return "social";
     // Reader-side: accepted into a project, bloom coin reward, book published/unpublished
     if (
       title.includes("Bloom Coin") ||
@@ -1291,6 +1293,15 @@ export default function NotificationsPage() {
             >
               Mark as read
             </button>
+          )}
+          {(n.metadata as { link?: string } | null)?.link && (
+            <Link
+              href={(n.metadata as { link: string }).link}
+              onClick={() => void markOneAsRead(item)}
+              className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition ${CAT_BTN[cat]}`}
+            >
+              View Message →
+            </Link>
           )}
           {n.title === "Someone replied to your comment" && n.metadata?.post_id && (
             <Link

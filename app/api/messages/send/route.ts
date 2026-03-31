@@ -139,5 +139,25 @@ export async function POST(req: Request) {
 
   await supabase.from("accounts").update({ last_active_at: new Date().toISOString() }).eq("user_id", senderId);
 
+  // Notify receiver
+  const { data: senderProfile } = await supabase
+    .from("public_profiles")
+    .select("pen_name, username")
+    .eq("user_id", senderId)
+    .maybeSingle();
+  const senderName = (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.pen_name?.trim()
+    || (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.username
+    || "Someone";
+  const preview = content.length > 80 ? content.slice(0, 80) + "…" : content;
+  await supabase.from("system_notifications").insert({
+    user_id: toUserId,
+    category: "messages",
+    title: `New message from ${senderName}`,
+    body: preview,
+    severity: "info",
+    metadata: { sender_id: senderId, link: `/messages?with=${senderId}` },
+    dedupe_key: `dm-${(inserted as { id: string }).id}`,
+  });
+
   return NextResponse.json({ ok: true, message: inserted });
 }

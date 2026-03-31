@@ -437,13 +437,19 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom on initial load; don't jump on prepend of older messages
+  // Scroll to bottom on initial load and when new messages arrive (if already near bottom)
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     if (!initialScrollDoneRef.current) {
       container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
+    } else {
+      // Auto-scroll only if user is within 120px of the bottom
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom < 120) {
+        container.scrollTop = container.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -579,6 +585,10 @@ const [now] = useState(() => Date.now());
     if (inputRef.current) inputRef.current.style.height = "auto";
     if (json.message) {
       setMessages((prev) => (prev.some((p) => p.id === json.message!.id) ? prev : [...prev, json.message!]));
+      requestAnimationFrame(() => {
+        const container = messagesContainerRef.current;
+        if (container) container.scrollTop = container.scrollHeight;
+      });
     }
   }
 
