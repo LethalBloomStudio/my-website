@@ -1672,9 +1672,6 @@ export default function ManuscriptDetailsPage() {
           setDragOverChapterId(null);
         }}
         onDragEnd={isParentView ? undefined : () => {
-          if (dragChapterId && dragOverChapterId && dragChapterId !== dragOverChapterId) {
-            void moveChapter(dragChapterId, dragOverChapterId);
-          }
           setDragChapterId(null);
           setDragOverChapterId(null);
         }}
