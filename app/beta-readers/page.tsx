@@ -424,7 +424,7 @@ function BetaReadersPageInner() {
                     <div className="mt-auto flex flex-col gap-1.5">
                       {p.user_id === currentUserId ? (
                         <Link
-                          href="/account"
+                          href="/profile"
                           className="inline-flex h-8 items-center justify-center rounded-lg border border-[rgba(120,120,120,0.6)] bg-[rgba(120,120,120,0.12)] px-3 text-xs font-medium text-white hover:bg-[rgba(120,120,120,0.22)] transition"
                         >
                           View profile
