@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
+import { supabaseAdmin } from "@/lib/Supabase/admin";
 import {
   consequenceFromStrike,
   consequenceMessage,
@@ -139,8 +140,9 @@ export async function POST(req: Request) {
 
   await supabase.from("accounts").update({ last_active_at: new Date().toISOString() }).eq("user_id", senderId);
 
-  // Notify receiver
-  const { data: senderProfile } = await supabase
+  // Notify receiver (use admin client to write to another user's row)
+  const admin = supabaseAdmin();
+  const { data: senderProfile } = await admin
     .from("public_profiles")
     .select("pen_name, username")
     .eq("user_id", senderId)
@@ -149,7 +151,7 @@ export async function POST(req: Request) {
     || (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.username
     || "Someone";
   const preview = content.length > 80 ? content.slice(0, 80) + "…" : content;
-  await supabase.from("system_notifications").insert({
+  await admin.from("system_notifications").insert({
     user_id: toUserId,
     category: "messages",
     title: `New message from ${senderName}`,
