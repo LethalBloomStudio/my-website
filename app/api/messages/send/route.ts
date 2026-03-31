@@ -150,16 +150,32 @@ export async function POST(req: Request) {
   const senderName = (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.pen_name?.trim()
     || (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.username
     || "Someone";
+  // One notification per conversation thread — upsert so repeated messages
+  // update the preview instead of stacking separate notifications.
   const preview = content.length > 80 ? content.slice(0, 80) + "…" : content;
-  await admin.from("system_notifications").insert({
-    user_id: toUserId,
-    category: "messages",
-    title: `New message from ${senderName}`,
-    body: preview,
-    severity: "info",
-    metadata: { sender_id: senderId, link: `/messages?with=${senderId}` },
-    dedupe_key: `dm-${(inserted as { id: string }).id}`,
-  });
+  const dedupeKey = `dm-thread-${senderId}-${toUserId}`;
+  const { data: existing } = await admin
+    .from("system_notifications")
+    .select("id")
+    .eq("user_id", toUserId)
+    .eq("dedupe_key", dedupeKey)
+    .maybeSingle();
+  if (existing) {
+    await admin
+      .from("system_notifications")
+      .update({ title: `New message from ${senderName}`, body: preview, is_read: false, read_at: null, created_at: new Date().toISOString() })
+      .eq("id", (existing as { id: string }).id);
+  } else {
+    await admin.from("system_notifications").insert({
+      user_id: toUserId,
+      category: "messages",
+      title: `New message from ${senderName}`,
+      body: preview,
+      severity: "info",
+      metadata: { sender_id: senderId, link: `/messages?with=${senderId}` },
+      dedupe_key: dedupeKey,
+    });
+  }
 
   return NextResponse.json({ ok: true, message: inserted });
 }

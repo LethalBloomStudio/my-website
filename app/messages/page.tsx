@@ -311,6 +311,14 @@ const [now] = useState(() => Date.now());
       .eq("sender_id", senderId)
       .eq("receiver_id", receiverId)
       .eq("status", "sent");
+    // Clear the message system notification for this sender
+    await supabase
+      .from("system_notifications")
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq("user_id", receiverId)
+      .eq("is_read", false)
+      .like("dedupe_key", `dm-thread-${senderId}-%`);
+    window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     // Clear unread badge in sidebar
     setFriends((prev) =>
       prev.map((f) => f.userId === senderId ? { ...f, unreadCount: 0 } : f)
