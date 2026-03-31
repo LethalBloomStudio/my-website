@@ -450,15 +450,16 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom on initial load and when new messages arrive (if already near bottom)
+  // Scroll to bottom when conversation loads or new messages arrive
   useEffect(() => {
     const container = messagesContainerRef.current;
-    if (!container) return;
-    if (!initialScrollDoneRef.current && messages.length > 0) {
+    if (!container || messages.length === 0) return;
+    if (!initialScrollDoneRef.current) {
+      // Always scroll to bottom when opening/switching a conversation
       container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
-    } else if (initialScrollDoneRef.current) {
-      // Auto-scroll only if user is within 120px of the bottom
+    } else {
+      // For incoming realtime messages, only scroll if near bottom
       const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
       if (distanceFromBottom < 120) {
         container.scrollTop = container.scrollHeight;
@@ -847,6 +848,7 @@ const [now] = useState(() => Date.now());
                     >
                       <button
                         onClick={() => {
+                          initialScrollDoneRef.current = false;
                           router.push(`/messages?with=${encodeURIComponent(f.userId)}`);
                           setWithUserLabel(f.penName);
                           setWithUserAvatar(f.avatarUrl);
