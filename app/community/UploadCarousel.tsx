@@ -27,6 +27,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<CoverItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   // Keep allowed owner IDs in a ref so the realtime handler can check them without a re-render
   const allowedOwnerIdsRef = useRef<Set<string>>(new Set());
 
@@ -40,6 +41,9 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   // Initial fetch via API route (uses admin client to bypass RLS on accounts table)
   useEffect(() => {
     (async () => {
+      const { data: auth } = await supabase.auth.getSession();
+      setCurrentUserId(auth.session?.user?.id ?? null);
+
       const res = await fetch(`/api/carousel-manuscripts?audience=${audience}`);
       if (!res.ok) { setLoading(false); return; }
       const data = await res.json() as CoverItem[];
@@ -150,7 +154,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
             {items.map((item) => (
               <Link
                 key={`${copyIdx}-${item.id}`}
-                href={`/manuscripts/${item.id}`}
+                href={item.owner_id === currentUserId ? `/manuscripts/${item.id}/details` : `/manuscripts/${item.id}`}
                 title={item.title}
                 className="group shrink-0"
                 tabIndex={copyIdx === 0 ? 0 : -1}
