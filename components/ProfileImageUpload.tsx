@@ -116,7 +116,7 @@ export default function ProfileImageUpload({
             alt={previewAlt}
             width={64}
             height={64}
-            unoptimized
+           
             className="h-16 w-16 rounded-full border border-neutral-700 object-cover"
           />
         ) : (

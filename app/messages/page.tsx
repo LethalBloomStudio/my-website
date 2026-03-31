@@ -516,7 +516,7 @@ const [now] = useState(() => Date.now());
         alt={label}
         width={32}
         height={32}
-        unoptimized
+       
         className="h-8 w-8 rounded-full border border-neutral-800 object-cover"
       />
     ) : (
@@ -754,7 +754,7 @@ const [now] = useState(() => Date.now());
     const cls = `h-${size} w-${size} rounded-full border border-neutral-700 object-cover`;
     const fallbackCls = `flex h-${size} w-${size} items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-xs text-neutral-300`;
     return url ? (
-      <Image src={url} alt={`${name} avatar`} width={28} height={28} unoptimized className={cls} />
+      <Image src={url} alt={`${name} avatar`} width={28} height={28} className={cls} />
     ) : (
       <span className={fallbackCls}>{name.charAt(0).toUpperCase()}</span>
     );

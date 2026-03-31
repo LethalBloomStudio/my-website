@@ -63,7 +63,7 @@ export default function FollowersPanel({
                   alt={f.name}
                   width={44}
                   height={44}
-                  unoptimized
+                 
                   className="h-11 w-11 rounded-full border border-neutral-700 object-cover"
                 />
               ) : (

@@ -47,7 +47,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
       setItems(data);
       setLoading(false);
     })();
-  }, [supabase, audience]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [supabase, audience]);
 
   // Realtime: filter new/updated manuscripts to only the right audience
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
                       src={item.cover_url}
                       alt={item.title}
                       fill
-                      unoptimized
+                     
                       className="object-cover"
                     />
                   ) : (

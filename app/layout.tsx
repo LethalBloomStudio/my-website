@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+/* eslint-disable @next/next/google-font-display, @next/next/no-page-custom-font */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Link from "next/link";
@@ -10,6 +11,7 @@ import MessagesNavButton from "@/components/MessagesNavButton";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lethalbloomstudio.com"),
@@ -106,18 +108,47 @@ export default function RootLayout({
       {/* Runs before React hydrates to prevent flash of wrong theme */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='day')document.documentElement.setAttribute('data-theme','day');}catch(e){}})();` }} />
-        {/* Merriweather loaded with display=block so it never flashes a fallback font */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&display=block" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#0d0d0f" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/brand/icon-192.png" />
       </head>
       <body>
+        <Script
+          id="lbs-service-worker"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                const isLocalhost = Boolean(
+                  window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1'
+                );
+                const shouldRegister = window.location.protocol === 'https:' || isLocalhost;
+                if (shouldRegister) {
+                  navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+                }
+              }
+            `,
+          }}
+        />
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">
             <div className="flex flex-none items-center gap-3.5">
               <Link href="/" aria-label="Home" className="brand">
-                <Image src="/brand/logo.svg" alt="Logo" width={40} height={40} className="logo" />
+                <Image
+                  src="/brand/logo.svg"
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  className="logo"
+                  loading="eager"
+                />
               </Link>
 
               <nav className="tabs desktopNav">

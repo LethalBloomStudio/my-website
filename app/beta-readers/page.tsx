@@ -1,9 +1,11 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -63,7 +65,7 @@ function BetaReadersPageInner() {
 
   const [profiles, setProfiles] = useState<ReaderProfile[]>([]);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
-  const [isYouth, setIsYouth] = useState(false);
+  const [_isYouth, setIsYouth] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState(initLevel);
@@ -86,12 +88,7 @@ function BetaReadersPageInner() {
     [],
   );
 
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setMsg(null);
 
@@ -120,7 +117,11 @@ function BetaReadersPageInner() {
     }
 
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function openInviteModal(reader: ReaderProfile) {
     setInviteTarget(reader);
@@ -349,7 +350,7 @@ function BetaReadersPageInner() {
                           alt={p.pen_name || p.username || "Reader"}
                           width={44}
                           height={44}
-                          unoptimized
+                         
                           className="h-11 w-11 rounded-full border border-[rgba(120,120,120,0.4)] object-cover shrink-0"
                         />
                       ) : (

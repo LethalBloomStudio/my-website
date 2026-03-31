@@ -120,7 +120,7 @@ function timeAgo(dateStr: string) {
 
 function Avatar({ url, name, size = 28 }: { url: string | null; name: string; size?: number }) {
   return url ? (
-    <Image src={url} alt={name} width={size} height={size} unoptimized
+    <Image src={url} alt={name} width={size} height={size}
       className="rounded-full object-cover shrink-0 border border-[rgba(120,120,120,0.3)]"
       style={{ width: size, height: size }} />
   ) : (

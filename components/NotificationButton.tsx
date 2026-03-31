@@ -48,7 +48,8 @@ export default function NotificationButton() {
         .from("system_notifications")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
-        .eq("is_read", false);
+        .eq("is_read", false)
+        .neq("category", "messages");
 
       const moderationFlagsPromise = supabase
         .from("manuscript_moderation_flags")
@@ -124,7 +125,7 @@ export default function NotificationButton() {
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
-          () => { if (mounted) void loadCount(); }
+          (payload) => { if (mounted && (payload.new as { category?: string })?.category !== "messages") void loadCount(); }
         )
         .subscribe();
     }

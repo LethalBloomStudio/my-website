@@ -240,7 +240,7 @@ export default function DiscoverPage() {
                             alt={`${m.title} cover`}
                             width={80}
                             height={112}
-                            unoptimized
+                           
                             className="h-28 w-20 rounded-lg border border-neutral-700 object-cover"
                           />
                         ) : (

@@ -77,7 +77,7 @@ function timeAgo(dateStr: string) {
 function Avatar({ url, name, size = 22 }: { url: string | null; name: string; size?: number }) {
   if (url) {
     return (
-      <Image src={url} alt={name} width={size} height={size} unoptimized
+      <Image src={url} alt={name} width={size} height={size}
         className="rounded-full object-cover shrink-0 border border-[rgba(120,120,120,0.3)]"
         style={{ width: size, height: size }} />
     );
@@ -157,7 +157,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
       cursorRef.current = rows.length > 0 ? rows[rows.length - 1].created_at : null;
       setLoading(false);
     })();
-  }, [supabase, viewerId, audience]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [supabase, viewerId, audience]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -255,7 +255,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
           const username = item.author?.username;
           const cat = TYPE_LABELS[item.type] ?? TYPE_LABELS.update;
           const badgeClass = TYPE_BADGE[item.type] ?? TYPE_BADGE.update;
-          const borderClass = CARD_BORDER[item.type] ?? CARD_BORDER.update;
+          const _borderClass = CARD_BORDER[item.type] ?? CARD_BORDER.update;
           const preview = item.content ? (item.content.length > 100 ? item.content.slice(0, 100).trimEnd() + "…" : item.content) : null;
 
           return (

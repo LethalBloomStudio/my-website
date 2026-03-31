@@ -72,7 +72,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                   src={m.cover_url}
                   alt={`${m.title} cover`}
                   fill
-                  unoptimized
+                 
                   className="object-cover"
                 />
               ) : (

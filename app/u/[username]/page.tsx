@@ -304,7 +304,7 @@ export default async function PublicProfilePage(props: {
               src={p.banner_url}
               alt="Profile banner"
               fill
-              unoptimized
+             
               className="profile-banner-img absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
             />
           )}
@@ -385,7 +385,7 @@ export default async function PublicProfilePage(props: {
                 alt={`${p.pen_name || p.username || "User"} profile picture`}
                 width={96}
                 height={96}
-                unoptimized
+               
                 className="mx-auto h-24 w-24 rounded-full border border-[rgba(120,120,120,0.65)] object-cover"
               />
             ) : (

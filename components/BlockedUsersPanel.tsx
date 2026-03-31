@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
@@ -103,7 +103,7 @@ export default function BlockedUsersPanel() {
                         alt={displayName}
                         width={32}
                         height={32}
-                        unoptimized
+                       
                         className="h-8 w-8 rounded-full border border-neutral-700 object-cover shrink-0"
                       />
                     ) : (

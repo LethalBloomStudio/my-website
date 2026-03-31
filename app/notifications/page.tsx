@@ -940,7 +940,7 @@ export default function NotificationsPage() {
                     alt={requesterName}
                     width={36}
                     height={36}
-                    unoptimized
+                   
                     className="h-9 w-9 rounded-full border border-neutral-700 object-cover group-hover:border-[rgba(120,120,120,0.7)] transition"
                   />
                 ) : (
@@ -1100,7 +1100,7 @@ export default function NotificationsPage() {
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
           <div className="flex items-center gap-3">
             {f.avatarUrl ? (
-              <Image src={f.avatarUrl} alt={f.name} width={36} height={36} unoptimized className="h-9 w-9 rounded-full border border-neutral-700 object-cover shrink-0" />
+              <Image src={f.avatarUrl} alt={f.name} width={36} height={36} className="h-9 w-9 rounded-full border border-neutral-700 object-cover shrink-0" />
             ) : (
               <span className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-sm font-semibold text-neutral-300 shrink-0">{f.name.charAt(0).toUpperCase()}</span>
             )}
@@ -1127,7 +1127,7 @@ export default function NotificationsPage() {
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
           <div className="flex items-center gap-3">
             {l.likerAvatar ? (
-              <Image src={l.likerAvatar} alt={l.likerName} width={36} height={36} unoptimized className="h-9 w-9 rounded-full border border-neutral-700 object-cover shrink-0" />
+              <Image src={l.likerAvatar} alt={l.likerName} width={36} height={36} className="h-9 w-9 rounded-full border border-neutral-700 object-cover shrink-0" />
             ) : (
               <span className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-sm font-semibold text-neutral-300 shrink-0">{l.likerName.charAt(0).toUpperCase()}</span>
             )}
@@ -1155,7 +1155,7 @@ export default function NotificationsPage() {
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
           <div className="flex items-center gap-2.5 mb-2">
             {a.authorAvatar ? (
-              <Image src={a.authorAvatar} alt={a.authorName} width={28} height={28} unoptimized className="h-7 w-7 rounded-full border border-neutral-700 object-cover shrink-0" />
+              <Image src={a.authorAvatar} alt={a.authorName} width={28} height={28} className="h-7 w-7 rounded-full border border-neutral-700 object-cover shrink-0" />
             ) : (
               <span className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-xs font-semibold text-neutral-300 shrink-0">{a.authorName.charAt(0).toUpperCase()}</span>
             )}
@@ -1196,7 +1196,7 @@ export default function NotificationsPage() {
                 alt={fr.penName}
                 width={36}
                 height={36}
-                unoptimized
+               
                 className="h-9 w-9 shrink-0 rounded-full border border-neutral-700 object-cover"
               />
             ) : (

@@ -352,7 +352,7 @@ export default function FeaturedCarousel() {
                           src={slot.cover_url}
                           alt={slot.title}
                           fill
-                          unoptimized
+                         
                           className="object-cover transition duration-200 group-hover:scale-105"
                         />
                       ) : (
@@ -461,7 +461,7 @@ export default function FeaturedCarousel() {
                             alt={ms.title}
                             width={28}
                             height={40}
-                            unoptimized
+                           
                             className="shrink-0 rounded-lg object-cover"
                           />
                         ) : (

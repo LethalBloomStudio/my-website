@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -126,7 +128,7 @@ function timeAgo(dateStr: string) {
 
 function Avatar({ url, name, size = 28 }: { url: string | null; name: string; size?: number }) {
   return url ? (
-    <Image src={url} alt={name} width={size} height={size} unoptimized
+    <Image src={url} alt={name} width={size} height={size}
       className="rounded-full object-cover shrink-0 border border-[rgba(120,120,120,0.3)]"
       style={{ width: size, height: size }} />
   ) : (
@@ -291,8 +293,6 @@ export default function AnnouncementsSection({
   const [viewerProfile, setViewerProfile] = useState<AuthorInfo | null>(null);
 
   // ── Load posts ──
-  useEffect(() => { void loadPosts(); }, [profileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
-
   async function loadPosts() {
     setLoading(true);
 
@@ -380,6 +380,8 @@ export default function AnnouncementsSection({
     setLoading(false);
   }
 
+  useEffect(() => { void loadPosts(); }, [profileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Load owner's coin balance when opening challenge creator ──
   async function fetchUserCoins() {
     if (!viewerId) return;
@@ -396,14 +398,6 @@ export default function AnnouncementsSection({
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-
-  // ── Auto-draw expired challenges ──
-  useEffect(() => {
-    const expired = announcements.filter(
-      a => a.type === "challenge" && !a.winner_drawn && a.ends_at && new Date(a.ends_at) <= new Date()
-    );
-    for (const a of expired) void drawChallenge(a.id);
-  }, [announcements]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load comments when post expands ──
   useEffect(() => {
@@ -569,6 +563,13 @@ export default function AnnouncementsSection({
         : a));
     }
   }
+
+  useEffect(() => {
+    const expired = announcements.filter(
+      a => a.type === "challenge" && !a.winner_drawn && a.ends_at && new Date(a.ends_at) <= new Date()
+    );
+    for (const a of expired) void drawChallenge(a.id);
+  }, [announcements]);
 
   function openCreator() {
     setCreatorStep("category"); setCreatorType(null);

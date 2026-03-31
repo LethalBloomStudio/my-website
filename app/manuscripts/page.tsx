@@ -42,7 +42,7 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
       alt={`${title} cover`}
       width={64}
       height={96}
-      unoptimized
+     
       className="h-24 w-16 shrink-0 rounded-lg border border-neutral-700 object-cover"
     />
   ) : (
@@ -71,6 +71,7 @@ export default function ManuscriptsPage() {
   const [appealReason, setAppealReason] = useState("");
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
+  const now = Date.now(); // eslint-disable-line react-hooks/purity
 
   useEffect(() => {
     (async () => {
@@ -297,7 +298,7 @@ export default function ManuscriptsPage() {
         {!loading && (() => {
           const isMsBlocked = conduct && (
             conduct.manuscript_blacklisted ||
-            (conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > Date.now())
+            (conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > now)
           );
           return (
             <section className="mt-6 rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(18,18,18,0.9)] p-5">
@@ -371,7 +372,7 @@ export default function ManuscriptsPage() {
               <p className="text-neutral-100">Conduct strikes: {conduct.manuscript_conduct_strikes} / 3</p>
               <p className="text-neutral-200">
                 Status:{" "}
-                {conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > Date.now()
+                {conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > now
                   ? <span className="text-amber-400 font-medium">Suspended until {new Date(conduct.manuscript_suspended_until).toLocaleString()}</span>
                   : conduct.manuscript_blacklisted
                   ? <span className="text-red-400 font-medium">Blacklisted</span>
@@ -381,7 +382,7 @@ export default function ManuscriptsPage() {
             </div>
 
             {/* Appeal — only when suspended or blacklisted */}
-            {(conduct.manuscript_blacklisted || (conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > Date.now())) && (
+            {(conduct.manuscript_blacklisted || (conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > now)) && (
               <div className="mt-4 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] p-4">
                 <p className="text-sm font-semibold text-neutral-100 mb-1">Submit an Appeal</p>
                 <p className="text-xs text-neutral-400 mb-3">If you believe your suspension was issued in error, you may submit a written appeal. An admin will review it and respond via your notifications.</p>

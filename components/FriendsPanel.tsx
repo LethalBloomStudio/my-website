@@ -21,7 +21,7 @@ type Props = {
 function Avatar({ url, name, size = 36 }: { url: string | null; name: string; size?: number }) {
   if (url) {
     return (
-      <Image src={url} alt={name} width={size} height={size} unoptimized
+      <Image src={url} alt={name} width={size} height={size}
         className="rounded-full object-cover border border-[rgba(120,120,120,0.4)]"
         style={{ width: size, height: size }} />
     );
