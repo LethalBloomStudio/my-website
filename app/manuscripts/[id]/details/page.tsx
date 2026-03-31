@@ -1989,10 +1989,13 @@ export default function ManuscriptDetailsPage() {
                   })}
                   {!isParentView && (
                   <div className="flex shrink-0 flex-col items-center gap-1.5">
-                    <button type="button" onClick={() => void addReaderSlot()} className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.08)] text-xl text-[rgba(120,120,120,0.7)] hover:border-[rgba(120,120,120,0.7)] hover:bg-[rgba(120,120,120,0.14)] transition" title="Add a reader slot for 15 Bloom Coins">+</button>
+                    <button type="button" onClick={() => void addReaderSlot()} className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.08)] text-xl text-[rgba(120,120,120,0.7)] hover:border-[rgba(120,120,120,0.7)] hover:bg-[rgba(120,120,120,0.14)] transition" title={memberTier === "lethal" ? "Add a reader slot (free)" : "Add a reader slot for 15 Bloom Coins"}>+</button>
                     <p className="text-[10px] text-neutral-400 flex items-center gap-0.5">
-                      <span style={{ color: "#f59e0b" }}>✿</span>
-                      <span>15 Bloom Coins</span>
+                      {memberTier === "lethal" ? (
+                        <span className="opacity-70">(free)</span>
+                      ) : (
+                        <><span style={{ color: "#f59e0b" }}>✿</span><span>15 Bloom Coins</span></>
+                      )}
                     </p>
                   </div>
                   )}
