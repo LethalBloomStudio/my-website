@@ -167,6 +167,7 @@ const [now] = useState(() => Date.now());
   const sidebarLoadedRef = useRef(false);
   const myIdRef = useRef<string | null>(null);
   const excludedRef = useRef<string[]>([]);
+  const activeTargetRef = useRef<string>("");
 
   async function loadSidebar(signedInUserId: string) {
     const [friendReqRes, pendingReqRes, hiddenReqRes, blockedReqRes, statusRes] = await Promise.all([
@@ -326,17 +327,21 @@ const [now] = useState(() => Date.now());
   }
 
   async function loadChat(targetId: string, currentExcluded: string[]) {
+    activeTargetRef.current = targetId;
     if (currentExcluded.includes(targetId)) {
       setTargetIsYouth(true);
       setMessages([]);
       return;
     }
     setTargetIsYouth(false);
+    setMessages([]);
 
     const [profileRes, threadRes] = await Promise.all([
       supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").eq("user_id", targetId).maybeSingle(),
       fetch(`/api/messages/thread?with=${encodeURIComponent(targetId)}`),
     ]);
+
+    if (activeTargetRef.current !== targetId) return;
 
     const p = (profileRes.data as PublicProfile | null) ?? null;
     setWithUserLabel(p?.pen_name || (p?.username ? `@${p.username}` : "Selected user"));
@@ -841,7 +846,12 @@ const [now] = useState(() => Date.now());
                       }`}
                     >
                       <button
-                        onClick={() => router.push(`/messages?with=${encodeURIComponent(f.userId)}`)}
+                        onClick={() => {
+                          router.push(`/messages?with=${encodeURIComponent(f.userId)}`);
+                          setWithUserLabel(f.penName);
+                          setWithUserAvatar(f.avatarUrl);
+                          void loadChat(f.userId, excludedRef.current);
+                        }}
                         disabled={youthLocked}
                         className="flex flex-1 min-w-0 items-center gap-2 rounded-lg text-left disabled:opacity-50"
                       >
