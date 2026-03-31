@@ -238,8 +238,10 @@ export default function ManuscriptDetailsPage() {
           lastSavedContent.current = chapterEditorContent;
           lastSavedTitle.current = chapterEditorTitle;
           lastSavedChapterType.current = chapterType;
-          // Update local chapters state so sidebar labels reflect the saved type
-          setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType } : c));
+          // Update local chapters state so sidebar labels reflect the saved type.
+          // content must be included so the useEffect([chapters, selectedChapterId])
+          // that re-reads from this array doesn't overwrite the editor with stale DB content.
+          setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType, content: chapterEditorContent } : c));
           setAutoSaveStatus("saved");
           setTimeout(() => setAutoSaveStatus("idle"), 3000);
         }
