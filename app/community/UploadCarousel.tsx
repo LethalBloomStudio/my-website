@@ -99,7 +99,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   useEffect(() => {
     if (!outerRef.current || items.length === 0) return;
     const containerWidth = outerRef.current.offsetWidth;
-    const trackWidth = items.length * 66; // ~62px item + 4px gap
+    const trackWidth = items.length * 100; // ~96px item + 4px gap
     setShouldLoop(trackWidth > containerWidth);
   }, [items]);
 
@@ -159,13 +159,13 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
                 className="group shrink-0"
                 tabIndex={copyIdx === 0 ? 0 : -1}
               >
-                <div className="relative h-[90px] w-[62px] overflow-hidden rounded-lg border border-[rgba(120,120,120,0.3)] bg-neutral-900 transition duration-200 group-hover:border-[rgba(120,120,120,0.7)] group-hover:scale-105 group-hover:shadow-lg">
+                <div className="relative h-[138px] w-[96px] overflow-hidden rounded-lg border border-[rgba(120,120,120,0.3)] bg-neutral-900 transition duration-200 group-hover:border-[rgba(120,120,120,0.7)] group-hover:scale-105 group-hover:shadow-lg">
                   {item.cover_url ? (
                     <Image
                       src={item.cover_url}
                       alt={item.title}
                       fill
-                     
+                      sizes="96px"
                       className="object-cover"
                     />
                   ) : (
