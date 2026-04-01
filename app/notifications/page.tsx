@@ -1353,18 +1353,14 @@ export default function NotificationsPage() {
               Send Coins →
             </Link>
           )}
-          {(canClaim || alreadyClaimed) && (
+          {canClaim && (
             <button
-              onClick={() => canClaim && setClaimConfirm(giveawayPostId ? { giveawayPostId, rewardCoins: rewardCoins! } : { announcementId: announcementId!, rewardCoins: rewardCoins! })}
-              disabled={alreadyClaimed || claimLoading}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-4 text-sm font-medium transition ${
-                alreadyClaimed
-                  ? "cursor-not-allowed border-neutral-700 bg-neutral-800/40 text-neutral-600"
-                  : "border-amber-700/60 bg-amber-950/30 text-amber-400 hover:bg-amber-900/30 disabled:opacity-50"
-              }`}
+              onClick={() => setClaimConfirm(giveawayPostId ? { giveawayPostId, rewardCoins: rewardCoins! } : { announcementId: announcementId!, rewardCoins: rewardCoins! })}
+              disabled={claimLoading}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 text-sm font-medium text-amber-400 hover:bg-amber-900/30 disabled:opacity-50 transition"
             >
-              <span style={{ color: alreadyClaimed ? "rgba(120,120,120,0.4)" : "#f59e0b" }}>✿</span>
-              {alreadyClaimed ? `${rewardCoins} Coins Claimed` : `Claim ${rewardCoins} Bloom Coins`}
+              <span style={{ color: "#f59e0b" }}>✿</span>
+              {`Claim ${rewardCoins} Bloom Coins`}
             </button>
           )}
           {isExpired && !alreadyClaimed && (
