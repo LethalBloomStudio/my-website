@@ -1190,10 +1190,24 @@ function PageInner() {
     },
     ...(manuscript.description ? [{ label: "Description", value: manuscript.description, multiline: true }] : []),
   ];
+  // Compute chapter number among regular chapters only (mirrors workspace logic)
+  const sortedForNum = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
+  const chapterNumMapReader = new Map<string, number>();
+  let _rn = 0;
+  for (const c of sortedForNum) {
+    if (!c.chapter_type || c.chapter_type === "chapter") chapterNumMapReader.set(c.id, ++_rn);
+  }
+  function readerChapterLabel(c: { id: string; chapter_type?: string; chapter_order: number }): string {
+    if (c.chapter_type === "prologue") return "Prologue";
+    if (c.chapter_type === "epilogue") return "Epilogue";
+    if (c.chapter_type === "trigger_page") return "Trigger Page";
+    return `Chapter ${chapterNumMapReader.get(c.id) ?? c.chapter_order}`;
+  }
+
   if (activeChapter) {
     detailItems.push({
       label: "Viewing",
-      value: `Chapter ${activeChapter.chapter_order}: ${activeChapter.title}`,
+      value: `${readerChapterLabel(activeChapter)}: ${activeChapter.title}`,
     });
   }
 
@@ -1800,7 +1814,7 @@ function PageInner() {
               <section ref={chapterSectionRef} className="w-full min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">Chapter {activeChapter.chapter_order}</p>
+                    <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">{readerChapterLabel(activeChapter)}</p>
                     <h2 className="text-lg font-semibold text-neutral-50">{activeChapter.title}</h2>
                   </div>
                   <button

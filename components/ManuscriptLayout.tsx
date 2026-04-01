@@ -9,6 +9,7 @@ export type ChapterNavItem = {
   title: string;
   chapter_order: number;
   is_private?: boolean;
+  chapter_type?: "chapter" | "prologue" | "epilogue" | "trigger_page";
 };
 
 export type DetailItem = {
@@ -73,6 +74,20 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
   completedChapterIds,
 }: ManuscriptLayoutProps<T>) {
   const sortedChapters = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
+
+  // Map chapter IDs to their number among regular chapters only
+  const chapterNumberMap = new Map<string, number>();
+  let chNum = 0;
+  for (const c of sortedChapters) {
+    if (!c.chapter_type || c.chapter_type === "chapter") chapterNumberMap.set(c.id, ++chNum);
+  }
+
+  function chapterNavLabel(c: ChapterNavItem): string {
+    if (c.chapter_type === "prologue") return "Prologue";
+    if (c.chapter_type === "epilogue") return "Epilogue";
+    if (c.chapter_type === "trigger_page") return "Trigger Page";
+    return `Chapter ${chapterNumberMap.get(c.id) ?? c.chapter_order}`;
+  }
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState(title);
@@ -204,7 +219,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="font-semibold">Chapter {c.chapter_order}</span>
+                      <span className="font-semibold">{chapterNavLabel(c)}</span>
                       {completedChapterIds?.has(c.id) && (
                         <span className="shrink-0 text-[10px] text-emerald-400" title="Chapter completed — coins earned">✓</span>
                       )}
