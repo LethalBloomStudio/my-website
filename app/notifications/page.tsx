@@ -605,13 +605,20 @@ export default function NotificationsPage() {
     saveClientReadKeys(userId, merged, existing);
     setClientReadKeys(merged);
 
-    // Exclude admin notifications that have an unclaimed reward — those stay unread until claimed or expired
+    // Exclude admin notifications that have an unclaimed reward still within the 7-day window
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const nowMs = Date.now();
     const unclaimedRewardIds = items
-      .filter(item =>
-        item.type === "admin" &&
-        item.payload.metadata?.announcement_id &&
-        !claimedIds.has(item.payload.metadata.announcement_id)
-      )
+      .filter(item => {
+        if (item.type !== "admin") return false;
+        const meta = item.payload.metadata;
+        const claimId = meta?.announcement_id ?? meta?.giveaway_post_id;
+        if (!claimId || !meta?.reward_coins) return false;
+        if (claimedIds.has(claimId)) return false;
+        // Expired rewards should be marked read — don't protect them
+        const age = nowMs - new Date(item.created_at).getTime();
+        return age <= SEVEN_DAYS_MS;
+      })
       .map(item => (item.payload as { id: string | number }).id);
 
     let query = supabase
