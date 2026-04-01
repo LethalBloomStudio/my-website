@@ -62,7 +62,8 @@ export default function NotificationButton() {
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("is_read", false)
-        .neq("category", "messages");
+        .neq("category", "messages")
+        .not("title", "like", "New message from%");
 
       const moderationFlagsPromise = supabase
         .from("manuscript_moderation_flags")

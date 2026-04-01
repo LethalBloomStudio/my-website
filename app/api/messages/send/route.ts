@@ -163,7 +163,7 @@ export async function POST(req: Request) {
   if (existing) {
     await admin
       .from("system_notifications")
-      .update({ title: `New message from ${senderName}`, body: preview, is_read: false, read_at: null, created_at: new Date().toISOString() })
+      .update({ title: `New message from ${senderName}`, body: preview, is_read: false, read_at: null, created_at: new Date().toISOString(), category: "messages" })
       .eq("id", (existing as { id: string }).id);
   } else {
     await admin.from("system_notifications").insert({
