@@ -720,29 +720,52 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       setPosts(prev => [newPost, ...prev]);
       setShowCreator(false);
 
-      // Notify followers about the new post (fire-and-forget)
+      // Notify about the new post (fire-and-forget)
       void (async () => {
         const authorName = (prof as { pen_name?: string | null; username?: string | null } | null)?.pen_name
           || (prof as { username?: string | null } | null)?.username
           || "Someone";
-        const { data: followers } = await supabase
-          .from("profile_follows")
-          .select("follower_id")
-          .eq("following_id", currentUserId);
-        const followerIds = ((followers ?? []) as { follower_id: string }[])
-          .map((f) => f.follower_id)
-          .filter((id) => id !== currentUserId);
-        if (followerIds.length === 0) return;
-        const notifications = followerIds.map((followerId) => ({
-          user_id: followerId,
-          category: "socials",
-          title: `${authorName} posted in the community`,
-          body: row.title,
-          severity: "info",
-          metadata: { post_id: row.id, community },
-          dedupe_key: `community-post-${row.id}-${followerId}`,
-        }));
-        await supabase.from("system_notifications").insert(notifications);
+
+        let recipientIds: string[] = [];
+
+        if (isAdmin) {
+          // Admin posts go to every user in this audience
+          const audienceParam = community === "youth" ? "youth" : "adult";
+          const res = await fetch(`/api/audience-user-ids?audience=${audienceParam}`);
+          if (res.ok) {
+            const allIds = (await res.json()) as string[];
+            recipientIds = allIds.filter((id) => id !== currentUserId);
+          }
+        } else {
+          // Regular users only notify their followers
+          const { data: followers } = await supabase
+            .from("profile_follows")
+            .select("follower_id")
+            .eq("following_id", currentUserId);
+          recipientIds = ((followers ?? []) as { follower_id: string }[])
+            .map((f) => f.follower_id)
+            .filter((id) => id !== currentUserId);
+        }
+
+        if (recipientIds.length === 0) return;
+
+        const title = isAdmin
+          ? `📢 New discussion post: ${row.title}`
+          : `${authorName} posted in the community`;
+
+        // Insert in batches of 500
+        for (let i = 0; i < recipientIds.length; i += 500) {
+          const batch = recipientIds.slice(i, i + 500).map((uid) => ({
+            user_id: uid,
+            category: "social",
+            title,
+            body: row.title,
+            severity: "info",
+            metadata: { post_id: row.id, community },
+            dedupe_key: `community-post-${row.id}-${uid}`,
+          }));
+          await supabase.from("system_notifications").insert(batch);
+        }
       })();
     }
     setSubmittingPost(false);

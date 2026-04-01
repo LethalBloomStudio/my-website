@@ -49,6 +49,8 @@ export default function NotificationButton() {
             })();
       const readKeySet = new Set([...dbReadKeys, ...localReadKeys]);
 
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
       const pendingFriendRequestsPromise = supabase
         .from("profile_friend_requests")
         .select("*", { count: "exact", head: true })
@@ -69,9 +71,9 @@ export default function NotificationButton() {
 
       const ownerFeedbackPromise =
         manuscriptIds.length > 0
-          ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds)
+          ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds).gte("created_at", thirtyDaysAgo)
           : Promise.resolve({ data: [] as Array<{ id: string }>, error: null });
-      const myFeedbackPromise = supabase.from("line_feedback").select("id").eq("reader_id", userId);
+      const myFeedbackPromise = supabase.from("line_feedback").select("id").eq("reader_id", userId).gte("created_at", thirtyDaysAgo);
       const accessRequestsPromise =
         manuscriptIds.length > 0
           ? supabase
