@@ -220,11 +220,6 @@ function BetaReadersPageInner() {
     }
 
     const readerLabel = inviteTarget.pen_name || (inviteTarget.username ? `@${inviteTarget.username}` : "Reader");
-    await supabase.from("system_notifications").insert({
-      user_id: inviteTarget.user_id,
-      title: "Beta reader invitation",
-      body: `You've been invited to beta read "${manuscript.title}". Check your notifications to accept or decline.`,
-    });
 
     setMyManuscripts((prev) =>
       prev.map((m) =>

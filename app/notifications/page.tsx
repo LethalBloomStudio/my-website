@@ -46,7 +46,7 @@ type SystemNotification = {
   body: string;
   is_read: boolean;
   created_at: string;
-  metadata?: { announcement_id?: string; reward_coins?: number; giveaway_post_id?: string; post_id?: string; community?: string } | null;
+  metadata?: { announcement_id?: string; reward_coins?: number; giveaway_post_id?: string; post_id?: string; community?: string; profile_username?: string } | null;
 };
 type ManuscriptInvitation = {
   id: string;
@@ -103,6 +103,8 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
     if ((n.metadata as { gift_link?: string } | null)?.gift_link) return "social";
     // Any discussion board notification (has post_id in metadata) → social
     if (n.metadata?.post_id) return "social";
+    // Friend announcement notifications → social
+    if (n.metadata?.profile_username) return "social";
     // Direct message notifications → social
     if (title.startsWith("New message from") || (n.metadata as { sender_id?: string } | null)?.sender_id) return "social";
     // Reader-side: accepted into a project, bloom coin reward, book published/unpublished
@@ -1358,6 +1360,15 @@ export default function NotificationsPage() {
               className="inline-flex h-8 items-center rounded-lg border border-violet-700/50 bg-violet-950/20 px-3 text-xs text-violet-700 dark:text-violet-300 hover:bg-violet-900/30 transition"
             >
               Send Coins →
+            </Link>
+          )}
+          {n.metadata?.profile_username && !rewardCoins && (
+            <Link
+              href={`/u/${n.metadata.profile_username}`}
+              onClick={() => void markOneAsRead(item)}
+              className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition ${CAT_BTN[cat]}`}
+            >
+              View Announcement →
             </Link>
           )}
           {canClaim && (

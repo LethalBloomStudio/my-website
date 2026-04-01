@@ -637,6 +637,34 @@ export default function AnnouncementsSection({
       };
       setAnnouncements(prev => [newPost, ...prev]);
       setShowCreator(false);
+
+      // Notify friends about the new announcement (fire-and-forget)
+      void (async () => {
+        const [{ data: sent }, { data: received }] = await Promise.all([
+          supabase.from("profile_friend_requests").select("receiver_id").eq("sender_id", viewerId).eq("status", "accepted"),
+          supabase.from("profile_friend_requests").select("sender_id").eq("receiver_id", viewerId).eq("status", "accepted"),
+        ]);
+        const friendIds = [
+          ...((sent ?? []) as { receiver_id: string }[]).map(r => r.receiver_id),
+          ...((received ?? []) as { sender_id: string }[]).map(r => r.sender_id),
+        ].filter(id => id !== viewerId);
+        if (friendIds.length === 0) return;
+        const posterName = viewerProfile?.pen_name || viewerProfile?.username || "A friend";
+        const profileUsername = ownerUsername || viewerProfile?.username;
+        if (!profileUsername) return;
+        for (let i = 0; i < friendIds.length; i += 500) {
+          await supabase.from("system_notifications").insert(
+            friendIds.slice(i, i + 500).map(uid => ({
+              user_id: uid,
+              category: "social",
+              title: `${posterName} posted a new announcement`,
+              body: row.title || row.content || "New announcement",
+              severity: "info",
+              metadata: { announcement_id: row.id, profile_username: profileUsername },
+            }))
+          );
+        }
+      })();
     }
     setSubmittingPost(false);
   }

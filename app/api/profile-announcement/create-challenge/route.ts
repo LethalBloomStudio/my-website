@@ -92,5 +92,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const ann = data as { id: string };
+
+  // Notify friends about the new challenge announcement (fire-and-forget)
+  void (async () => {
+    const [{ data: sent }, { data: received }, { data: prof }] = await Promise.all([
+      supabase.from("profile_friend_requests").select("receiver_id").eq("sender_id", userId).eq("status", "accepted"),
+      supabase.from("profile_friend_requests").select("sender_id").eq("receiver_id", userId).eq("status", "accepted"),
+      supabase.from("public_profiles").select("pen_name, username").eq("user_id", userId).maybeSingle(),
+    ]);
+    const friendIds = [
+      ...((sent ?? []) as { receiver_id: string }[]).map(r => r.receiver_id),
+      ...((received ?? []) as { sender_id: string }[]).map(r => r.sender_id),
+    ].filter(id => id !== userId);
+    if (friendIds.length === 0) return;
+    const profRow = prof as { pen_name: string | null; username: string | null } | null;
+    const posterName = profRow?.pen_name || profRow?.username || "A friend";
+    const profileUsername = profRow?.username;
+    if (!profileUsername) return;
+    for (let i = 0; i < friendIds.length; i += 500) {
+      await supabase.from("system_notifications").insert(
+        friendIds.slice(i, i + 500).map(uid => ({
+          user_id: uid,
+          category: "social",
+          title: `${posterName} posted a new announcement`,
+          body: title.trim(),
+          severity: "info",
+          metadata: { announcement_id: ann.id, profile_username: profileUsername },
+        }))
+      );
+    }
+  })();
+
   return NextResponse.json({ ok: true, announcement: data });
 }
