@@ -604,6 +604,16 @@ const [now] = useState(() => Date.now());
         const container = messagesContainerRef.current;
         if (container) container.scrollTop = container.scrollHeight;
       });
+      // Keep sidebar in sync — bump existing entry or add new conversation
+      const sentAt = Date.now();
+      setFriends((prev) => {
+        const exists = prev.find((f) => f.userId === withUser);
+        if (exists) {
+          return [{ ...exists, lastMessageAt: sentAt }, ...prev.filter((f) => f.userId !== withUser)];
+        }
+        // New conversation — add from currently loaded label/avatar
+        return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
+      });
     }
   }
 
