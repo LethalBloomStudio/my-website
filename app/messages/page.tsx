@@ -460,12 +460,22 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll messages container to bottom — direct scroll avoids scrollIntoView
-  // scrolling the whole page (visible on mobile as a "jump to top" effect)
+  // Scroll to bottom on initial load; for subsequent updates (realtime) only
+  // scroll if the user is already near the bottom so scrolling up through
+  // history doesn't get interrupted.
   useEffect(() => {
     if (messages.length === 0) return;
     const container = messagesContainerRef.current;
-    if (container) container.scrollTop = container.scrollHeight;
+    if (!container) return;
+    if (!initialScrollDoneRef.current) {
+      container.scrollTop = container.scrollHeight;
+      initialScrollDoneRef.current = true;
+      return;
+    }
+    const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distFromBottom < 150) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   async function loadOlderMessages() {
