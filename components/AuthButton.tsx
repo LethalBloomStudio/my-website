@@ -100,9 +100,20 @@ export default function AuthButton() {
       load();
     });
 
+    // Re-fetch label whenever the user saves profile changes (e.g. pen name)
+    const profileChannel = supabase
+      .channel("authbutton-profile")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "public_profiles" },
+        () => { load(); }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
+      void supabase.removeChannel(profileChannel);
     };
   }, [supabase]);
 
