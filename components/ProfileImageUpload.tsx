@@ -37,6 +37,21 @@ export default function ProfileImageUpload({
     });
   }
 
+  async function removeImage() {
+    setMsg(null);
+    setPreviewUrl("");
+    setUploadedUrl("");
+    setFile(null);
+    if (onUploadedUrl) onUploadedUrl("");
+    if (autoSave) {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user?.id) {
+        await supabase.from("public_profiles").update({ avatar_url: null }).eq("user_id", auth.user.id);
+        setMsg("Profile picture removed.");
+      }
+    }
+  }
+
   async function uploadFile() {
     if (!file) return;
     setUploading(true);
@@ -140,14 +155,26 @@ export default function ProfileImageUpload({
         className="block w-full text-sm"
       />
 
-      <button
-        type="button"
-        onClick={uploadFile}
-        disabled={!file || uploading}
-        className="inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm disabled:opacity-60"
-      >
-        {uploading ? "Uploading..." : uploadButtonLabel}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={uploadFile}
+          disabled={!file || uploading}
+          className="inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm disabled:opacity-60"
+        >
+          {uploading ? "Uploading..." : uploadButtonLabel}
+        </button>
+        {previewUrl && (
+          <button
+            type="button"
+            onClick={removeImage}
+            disabled={uploading}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-red-800/50 bg-red-950/30 px-4 text-sm text-red-400 hover:bg-red-950/50 disabled:opacity-60 transition"
+          >
+            Remove picture
+          </button>
+        )}
+      </div>
 
       {msg ? <p className="text-xs text-neutral-300">{msg}</p> : null}
     </div>
