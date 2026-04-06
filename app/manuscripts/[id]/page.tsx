@@ -11,6 +11,7 @@ import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/Manuscri
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -30,6 +31,7 @@ type Manuscript = {
   word_count?: number | null;
   chapter_count?: number | null;
   created_at?: string | null;
+  format_id?: string | null;
 };
 type Chapter = { id: string; title: string; chapter_order: number; content: string; is_private: boolean; chapter_type?: "chapter" | "prologue" | "epilogue" | "trigger_page" };
 type AccessGrant = { id: string; reader_id: string };
@@ -615,6 +617,10 @@ function PageInner() {
         .filter(Boolean),
     [activeText],
   );
+  const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
+    ? FORMATS[manuscript.format_id as FormatId]
+    : null;
+
   const _feedbackByParagraph = useMemo(() => {
     const map: Record<number, LineFeedback[]> = {};
     for (const f of feedback) {
@@ -738,7 +744,7 @@ function PageInner() {
       const { data: m, error: me } = await supabase
         .from("manuscripts")
         .select(
-          "id, owner_id, title, genre, categories, age_rating, content, cover_url, description, requested_feedback, potential_triggers, copyright_info, visibility, word_count, chapter_count, created_at",
+          "id, owner_id, title, genre, categories, age_rating, content, cover_url, description, requested_feedback, potential_triggers, copyright_info, visibility, word_count, chapter_count, created_at, format_id",
         )
         .eq("id", manuscriptId)
         .single();
@@ -1852,7 +1858,13 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`chapter-ms-font relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-[17px] leading-[1.9] text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  style={readerFormat ? {
+                    fontFamily: readerFormat.editorFont,
+                    fontSize: readerFormat.editorSize,
+                    lineHeight: readerFormat.lineHeight,
+                    letterSpacing: readerFormat.letterSpacing,
+                  } : { fontFamily: "'Merriweather', Georgia, serif", fontSize: "1.0625rem", lineHeight: "1.9" }}
                 >
                   {/* Watermark overlay — non-owners only */}
                   {!isOwner && (
@@ -1900,8 +1912,11 @@ function PageInner() {
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
                               <p
-                                className="chapter-ms-font whitespace-pre-line [text-indent:1.5rem] m-0 mb-3"
-                                style={{ letterSpacing: "0.01em" }}
+                                className="whitespace-pre-line m-0 mb-3"
+                                style={readerFormat ? {
+                                  textIndent: readerFormat.paragraphIndent ? (idx === 0 ? "0" : "2.5em") : "0",
+                                  textAlign: readerFormat.textAlign,
+                                } : { textIndent: idx === 0 ? "0" : "1.5rem" }}
                               >
                                 {paraFeedbacks.length > 0
                                   ? renderParagraphContent(para, paraFeedbacks)

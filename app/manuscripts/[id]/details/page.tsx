@@ -35,6 +35,7 @@ type Manuscript = {
   requested_feedback: string | null;
   potential_triggers: string | null;
   copyright_info: string | null;
+  format_id: string | null;
 };
 
 type Chapter = {
@@ -499,7 +500,7 @@ export default function ManuscriptDetailsPage() {
     const { data, error } = await supabase
       .from("manuscripts")
       .select(
-        "id, owner_id, created_at, title, visibility, genre, categories, age_rating, cover_url, description, requested_feedback, potential_triggers, copyright_info",
+        "id, owner_id, created_at, title, visibility, genre, categories, age_rating, cover_url, description, requested_feedback, potential_triggers, copyright_info, format_id",
       )
       .eq("id", manuscriptId)
       .single();
@@ -697,6 +698,12 @@ export default function ManuscriptDetailsPage() {
     );
     setPotentialTriggers(row.potential_triggers ?? "");
     setCopyrightInfo(row.copyright_info ?? "");
+    if (row.format_id && row.format_id in FORMATS) {
+      setFormatId(row.format_id as FormatId);
+    } else if (manuscriptId) {
+      const saved = localStorage.getItem(`lbs-format-${manuscriptId}`);
+      if (saved && saved in FORMATS) setFormatId(saved as FormatId);
+    }
     const rawCats2 = row.categories && row.categories.length > 0 ? row.categories : row.genre ? [row.genre] : [];
     setIsMatureContent(rawCats2.includes("Mature Content"));
     setIsPotentiallyTriggering(rawCats2.includes("Potentially Triggering Content"));
@@ -727,11 +734,6 @@ export default function ManuscriptDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscriptId]);
 
-  useEffect(() => {
-    if (!manuscriptId) return;
-    const saved = localStorage.getItem(`lbs-format-${manuscriptId}`);
-    if (saved && saved in FORMATS) setFormatId(saved as FormatId);
-  }, [manuscriptId]);
 
   // Apply ?chapter=&feedback= URL params once after initial load
   useEffect(() => {
@@ -2451,7 +2453,10 @@ export default function ManuscriptDetailsPage() {
                         value={formatId}
                         onChange={(id) => {
                           setFormatId(id);
-                          if (manuscriptId) localStorage.setItem(`lbs-format-${manuscriptId}`, id);
+                          if (manuscriptId) {
+                            localStorage.setItem(`lbs-format-${manuscriptId}`, id);
+                            void supabase.from("manuscripts").update({ format_id: id }).eq("id", manuscriptId);
+                          }
                         }}
                       />
                     )}
