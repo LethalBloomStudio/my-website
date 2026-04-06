@@ -1145,7 +1145,7 @@ const [now] = useState(() => Date.now());
                             : "mr-auto max-w-[75%] border border-neutral-800 bg-neutral-900/40"
                         }`}
                       >
-                        <p className="break-all">{m.body}</p>
+                        <p className="break-words hyphens-auto">{m.body}</p>
                         <p className="mt-1 text-xs text-neutral-400">{new Date(m.created_at).toLocaleString()}</p>
                       </div>
                       {m.sender_id === myId && renderAvatar(myAvatarUrl, "You")}
