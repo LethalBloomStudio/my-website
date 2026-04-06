@@ -408,7 +408,7 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     : {};
 
   return (
-    <div className="flex flex-col gap-0" style={format ? { maxWidth: format.maxWidth, marginLeft: 'auto', marginRight: 'auto' } : {}}>
+    <div className="flex flex-col gap-0">
       {/* Formatting toolbar */}
       <div className="flex flex-wrap gap-1 rounded-t-xl border border-b-0 border-neutral-700 bg-neutral-900/80 px-3 py-2">
         {/* Undo / Redo */}
