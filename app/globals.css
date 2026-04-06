@@ -489,7 +489,8 @@ select optgroup {
 
 .chapter-editor p {
   margin: 0 0 0.55em 0;        /* small gap between paragraphs */
-  text-indent: 2.5em;
+  text-indent: var(--ms-para-indent, 2.5em);
+  text-align: var(--ms-text-align, left);
   white-space: pre-wrap;       /* preserve Shift+Enter soft breaks */
 }
 

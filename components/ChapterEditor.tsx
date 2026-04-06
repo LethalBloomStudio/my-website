@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { normalizeChapterText, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import type { ManuscriptFormat } from "@/lib/format/manuscriptFormats";
 
 type Props = {
   value: string;
@@ -10,6 +11,7 @@ type Props = {
   className?: string;
   style?: React.CSSProperties;
   normalize?: (raw: string) => string;
+  format?: ManuscriptFormat;
 };
 
 // ── Text ↔ DOM helpers ────────────────────────────────────────────────────────
@@ -200,7 +202,7 @@ function ensureParagraphWrap(el: HTMLElement) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ChapterEditor({ value, onChange, placeholder, className, style, normalize }: Props) {
+export default function ChapterEditor({ value, onChange, placeholder, className, style, normalize, format }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const lastEmitted = useRef<string>("");
   const applyNorm = normalize ?? normalizeChapterText;
@@ -394,8 +396,19 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
 
   const btnBase = "px-2 py-0.5 rounded text-sm border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700 hover:border-neutral-500 transition select-none";
 
+  const formatStyle = format
+    ? ({
+        fontFamily: format.editorFont,
+        fontSize: format.editorSize,
+        lineHeight: format.lineHeight,
+        letterSpacing: format.letterSpacing,
+        '--ms-para-indent': format.paragraphIndent ? '2.5em' : '0',
+        '--ms-text-align': format.textAlign,
+      } as React.CSSProperties)
+    : {};
+
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col gap-0" style={format ? { maxWidth: format.maxWidth, marginLeft: 'auto', marginRight: 'auto' } : {}}>
       {/* Formatting toolbar */}
       <div className="flex flex-wrap gap-1 rounded-t-xl border border-b-0 border-neutral-700 bg-neutral-900/80 px-3 py-2">
         {/* Undo / Redo */}
@@ -433,7 +446,7 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
         onInput={handleInput}
         data-placeholder={placeholder ?? ""}
         className={`chapter-editor rounded-t-none ${className ?? ""}`}
-        style={style}
+        style={{ ...formatStyle, ...style }}
       />
     </div>
   );

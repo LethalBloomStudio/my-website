@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import ChapterEditor from "@/components/ChapterEditor";
+import FormatPicker from "@/components/FormatPicker";
+import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { normalizeChapterText } from "@/lib/format/chapterNormalize";
 
 type Manuscript = {
@@ -33,6 +35,7 @@ export default function NewChapterPage() {
   const [freeChapterLimit, setFreeChapterLimit] = useState(3);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [formatId, setFormatId] = useState<FormatId>("minimal");
 
   async function load() {
     if (!manuscriptId) {
@@ -108,6 +111,12 @@ export default function NewChapterPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manuscriptId]);
+
+  useEffect(() => {
+    if (!manuscriptId) return;
+    const saved = localStorage.getItem(`lbs-format-${manuscriptId}`);
+    if (saved && saved in FORMATS) setFormatId(saved as FormatId);
   }, [manuscriptId]);
 
   async function spendBloomCoins(amount: number, reason: string, metadata: Record<string, unknown>) {
@@ -223,13 +232,24 @@ export default function NewChapterPage() {
             />
           </label>
 
+          <div className="mt-4">
+            <FormatPicker
+              value={formatId}
+              onChange={(id) => {
+                setFormatId(id);
+                if (manuscriptId) localStorage.setItem(`lbs-format-${manuscriptId}`, id);
+              }}
+            />
+          </div>
+
           <label className="mt-4 block">
             <div className="text-sm text-neutral-300">Chapter content</div>
             <ChapterEditor
               value={content}
               onChange={setContent}
               normalize={normalizeChapterText}
-              className="chapter-ms-font mt-2 w-full min-h-[22rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-6 text-[16px] leading-[2] text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
+              format={FORMATS[formatId]}
+              className="mt-2 w-full min-h-[22rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-6 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
               placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
             />
           </label>

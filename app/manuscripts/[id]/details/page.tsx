@@ -12,6 +12,8 @@ import OutOfCoinsModal from "@/components/OutOfCoinsModal";
 import ProfileImageUpload from "@/components/ProfileImageUpload";
 import ProseTextarea from "@/components/ProseTextarea";
 import ChapterEditor from "@/components/ChapterEditor";
+import FormatPicker from "@/components/FormatPicker";
+import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
@@ -179,6 +181,7 @@ export default function ManuscriptDetailsPage() {
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
   const [chapterEditorContent, setChapterEditorContent] = useState("");
   const [chapterType, setChapterType] = useState<"chapter" | "prologue" | "epilogue" | "trigger_page">("chapter");
+  const [formatId, setFormatId] = useState<FormatId>("minimal");
   const [dragChapterId, setDragChapterId] = useState<string | null>(null);
   const [dragOverChapterId, setDragOverChapterId] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -722,6 +725,12 @@ export default function ManuscriptDetailsPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manuscriptId]);
+
+  useEffect(() => {
+    if (!manuscriptId) return;
+    const saved = localStorage.getItem(`lbs-format-${manuscriptId}`);
+    if (saved && saved in FORMATS) setFormatId(saved as FormatId);
   }, [manuscriptId]);
 
   // Apply ?chapter=&feedback= URL params once after initial load
@@ -2438,6 +2447,15 @@ export default function ManuscriptDetailsPage() {
 
                   <div className="space-y-4">
                     {!previewMode && (
+                      <FormatPicker
+                        value={formatId}
+                        onChange={(id) => {
+                          setFormatId(id);
+                          if (manuscriptId) localStorage.setItem(`lbs-format-${manuscriptId}`, id);
+                        }}
+                      />
+                    )}
+                    {!previewMode && (
                       <div className="flex flex-wrap items-end gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="text-sm text-neutral-300">{chapterType === "prologue" ? "Prologue title" : chapterType === "trigger_page" ? "Trigger page title" : "Chapter title"}</div>
@@ -2525,6 +2543,7 @@ export default function ManuscriptDetailsPage() {
                             value={chapterEditorContent}
                             onChange={setChapterEditorContent}
                             normalize={normalizeChapterText}
+                            format={FORMATS[formatId]}
                             placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
                             className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
                           />
