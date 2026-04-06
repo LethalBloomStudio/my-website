@@ -9,7 +9,7 @@ export default function Home() {
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Lethal Bloom Studio</h1>
           <p className="mt-4 text-xl leading-8 text-neutral-200">Writing is solitary. Revision shouldn&apos;t be.</p>
           <p className="mt-4 max-w-4xl text-base leading-8 text-neutral-300">
-            Lethal Bloom Studio offers a secure, structured space where writers share chapters, receive meaningful critique, and develop their work with intention. It&apos;s a place for honest feedback, steady growth, and manuscripts moving steadily toward publication through Lethal Bloom Publishing.
+            Lethal Bloom Studio offers a secure, structured space where writers share chapters, receive meaningful critique, and develop their work with intention. It&apos;s a place for honest feedback, steady growth, and manuscripts moving steadily toward publication.
           </p>
         </section>
 
