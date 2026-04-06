@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://lethalbloomstudio.com",
     siteName: "Lethal Bloom Studio",
-    title: "Lethal Bloom Studio — Where Dark Stories Take Root",
+    title: "Lethal Bloom Studio — Where Writers Sharpen Their Craft Together",
     description:
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously. Lethal Bloom Studio is the creative platform for writers who mean it.",
     images: [
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Lethal Bloom Studio — Where Dark Stories Take Root",
+    title: "Lethal Bloom Studio — Where Writers Sharpen Their Craft Together",
     description:
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously.",
     images: ["/Website Logo.png"],
