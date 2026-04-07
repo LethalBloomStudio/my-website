@@ -46,7 +46,7 @@ type SystemNotification = {
   body: string;
   is_read: boolean;
   created_at: string;
-  metadata?: { announcement_id?: string; reward_coins?: number; giveaway_post_id?: string; post_id?: string; community?: string; profile_username?: string } | null;
+  metadata?: { announcement_id?: string; reward_coins?: number; giveaway_post_id?: string; post_id?: string; community?: string; profile_username?: string; manuscript_id?: string; chapter_id?: string; feedback_id?: string } | null;
 };
 type ManuscriptInvitation = {
   id: string;
