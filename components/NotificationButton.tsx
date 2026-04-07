@@ -74,7 +74,6 @@ export default function NotificationButton() {
         manuscriptIds.length > 0
           ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds).gte("created_at", thirtyDaysAgo)
           : Promise.resolve({ data: [] as Array<{ id: string }>, error: null });
-      const myFeedbackPromise = supabase.from("line_feedback").select("id").eq("reader_id", userId).gte("created_at", thirtyDaysAgo);
       const accessRequestsPromise =
         manuscriptIds.length > 0
           ? supabase
@@ -89,33 +88,19 @@ export default function NotificationButton() {
         .eq("reader_id", userId)
         .eq("status", "pending");
 
-      const [moderationFlags, systemUpdates, ownerFeedback, myFeedback, accessRequests, pendingInvitations, pendingFriendRequests] = await Promise.all([
+      const [moderationFlags, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, pendingFriendRequests] = await Promise.all([
         moderationFlagsPromise,
         systemUpdatesPromise,
         ownerFeedbackPromise,
-        myFeedbackPromise,
         accessRequestsPromise,
         pendingInvitationsPromise,
         pendingFriendRequestsPromise,
       ]);
 
       const ownerFeedbackIds = ((ownerFeedback.data as Array<{ id: string }> | null) ?? []).map((f) => f.id);
-      const myFeedbackIds = ((myFeedback.data as Array<{ id: string }> | null) ?? []).map((f) => f.id);
-      const allFeedbackIds = Array.from(new Set([...ownerFeedbackIds, ...myFeedbackIds]));
-
-      let replyIds: string[] = [];
-      if (allFeedbackIds.length > 0) {
-        const replies = await supabase
-          .from("line_feedback_replies")
-          .select("id")
-          .in("feedback_id", allFeedbackIds)
-          .neq("replier_id", userId);
-        replyIds = ((replies.data as Array<{ id: string }> | null) ?? []).map((r) => r.id);
-      }
 
       const localKeys: string[] = [
         ...ownerFeedbackIds.map((id) => `feedback-${id}`),
-        ...replyIds.map((id) => `reply-${id}`),
         ...(((accessRequests.data as Array<{ id: string }> | null) ?? []).map((r) => `request-${r.id}`)),
         ...(((moderationFlags.data as Array<{ id: string }> | null) ?? []).map((m) => `mod-${m.id}`)),
       ];
