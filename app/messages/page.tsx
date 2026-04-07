@@ -134,6 +134,7 @@ const [now] = useState(() => Date.now());
   const [showEmojis, setShowEmojis] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sendingRef = useRef(false);
 
   const EMOJIS = [
     "😀","😂","😍","🥰","😎","😢","😡","🤔","😴","🤯",
@@ -567,15 +568,18 @@ const [now] = useState(() => Date.now());
   }
 
   async function send() {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setMsg(null);
-    if (youthLocked) return setMsg("Messaging is unavailable for youth profiles.");
-    if (!withUser) return setMsg("No recipient selected.");
-    if (text.trim().length < 1) return;
-    if (status?.blacklisted) return setMsg("Messaging is blocked while your account is blacklisted.");
+    if (youthLocked) { sendingRef.current = false; return setMsg("Messaging is unavailable for youth profiles."); }
+    if (!withUser) { sendingRef.current = false; return setMsg("No recipient selected."); }
+    if (text.trim().length < 1) { sendingRef.current = false; return; }
+    if (status?.blacklisted) { sendingRef.current = false; return setMsg("Messaging is blocked while your account is blacklisted."); }
 
     if (status?.messaging_suspended_until) {
       const until = new Date(status.messaging_suspended_until);
       if (until.getTime() > now) {
+        sendingRef.current = false;
         return setMsg(`Messaging is suspended until ${until.toLocaleString()}.`);
       }
     }
@@ -589,6 +593,7 @@ const [now] = useState(() => Date.now());
       });
     } catch {
       setMsg("Message failed to send. Check your connection and try again.");
+      sendingRef.current = false;
       return;
     }
     const json = (await res.json()) as { error?: string; message?: Msg; triggers?: string[]; consequence?: string };
@@ -604,6 +609,7 @@ const [now] = useState(() => Date.now());
       } else {
         setMsg(json.error ?? "Message blocked.");
       }
+      sendingRef.current = false;
       return;
     }
     setText("");
@@ -625,6 +631,7 @@ const [now] = useState(() => Date.now());
         return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
       });
     }
+    sendingRef.current = false;
   }
 
   async function submitAppeal() {
