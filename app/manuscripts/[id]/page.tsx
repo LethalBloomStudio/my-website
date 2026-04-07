@@ -82,7 +82,6 @@ function PageInner() {
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
-  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "unresolved" | "resolved">("unresolved");
   const [ownerFeedbackFilter, setOwnerFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
   const [names, setNames] = useState<Record<string, string>>({});
   const [usernames, setUsernames] = useState<Record<string, string>>({});
@@ -1121,6 +1120,12 @@ function PageInner() {
         const r = payload.new as FeedbackReply;
         setReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
       })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "line_feedback" }, (payload: { new: Record<string, unknown> }) => {
+        const updated = payload.new as LineFeedback;
+        setMyAllFeedback((prev) => prev.map((f) => f.id === updated.id ? { ...f, resolved: updated.resolved, author_response: updated.author_response } : f));
+        setMyChapterFeedback((prev) => prev.map((f) => f.id === updated.id ? { ...f, resolved: updated.resolved, author_response: updated.author_response } : f));
+        setFeedback((prev) => prev.map((f) => f.id === updated.id ? { ...f, resolved: updated.resolved, author_response: updated.author_response } : f));
+      })
       .subscribe();
     replyChannelRef.current = ch;
 
@@ -1694,36 +1699,16 @@ function PageInner() {
               })()}
             </section>
           )}
-          {!activeChapter && myAllFeedback.length > 0 && (
+          {!activeChapter && myAllFeedback.some((f) => !f.resolved && !f.author_response) && (
             <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
                   Your Feedback
-                  <span className="ml-2 rounded-full bg-[rgba(120,120,120,0.2)] px-2 py-0.5 text-[10px] font-normal text-[rgba(210,210,210,0.8)]">{myAllFeedback.length}</span>
+                  <span className="ml-2 rounded-full bg-[rgba(120,120,120,0.2)] px-2 py-0.5 text-[10px] font-normal text-[rgba(210,210,210,0.8)]">{myAllFeedback.filter((f) => !f.resolved && !f.author_response).length}</span>
                 </h2>
-                <div className="flex gap-1.5">
-                  {(["unresolved", "resolved", "all"] as const).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFeedbackFilter(f)}
-                      className={`rounded-lg border px-3 py-1 text-[10px] font-medium transition ${
-                        feedbackFilter === f
-                          ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.22)] text-neutral-100"
-                          : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.07)] text-neutral-400 hover:bg-[rgba(120,120,120,0.14)] hover:text-neutral-200"
-                      }`}
-                    >
-                      {f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                  ))}
-                </div>
               </div>
               <div className="max-h-[480px] overflow-y-auto pr-1 space-y-4">
-                {myAllFeedback.filter((f) =>
-                  feedbackFilter === "all" ? true :
-                  feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
-                  !f.resolved && !f.author_response
-                ).map((f) => {
+                {myAllFeedback.filter((f) => !f.resolved && !f.author_response).map((f) => {
                   const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                   const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                   const fReplies = replies.filter((r) => r.feedback_id === f.id);
