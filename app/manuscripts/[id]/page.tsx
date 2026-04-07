@@ -1578,7 +1578,7 @@ function PageInner() {
                   <div className={`${selectedOwnerFeedback ? "w-2/5 shrink-0" : "w-full"} max-h-[560px] overflow-y-auto pr-1 space-y-2`}>
                     {ownerFiltered.map((f) => {
                       const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
-                      const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
+                      const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                       const isSelected = selectedOwnerFeedbackId === f.id;
                       return (
                         <button
@@ -1615,7 +1615,7 @@ function PageInner() {
                     const f = selectedOwnerFeedback;
                     const feedbackReplies = replies.filter((r) => r.feedback_id === f.id);
                     const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
-                    const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
+                    const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                     return (
                       <div className="flex-1 min-w-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.1)] p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
@@ -1725,7 +1725,7 @@ function PageInner() {
                   !f.resolved && !f.author_response
                 ).map((f) => {
                   const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
-                  const chapterLabel = chapterObj ? `Ch. ${chapterObj.chapter_order}: ${chapterObj.title || "Untitled"}` : null;
+                  const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                   const fReplies = replies.filter((r) => r.feedback_id === f.id);
                   const isExpanded = expandedFeedbackIds.has(f.id);
                   const canReply = !f.resolved && !f.author_response;
