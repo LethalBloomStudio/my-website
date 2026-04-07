@@ -329,24 +329,13 @@ export default function NotificationsPage() {
     });
     setFeedbackMap(feedbackLookup);
 
-    const repliesRes =
-      feedbackIds.length > 0
-        ? await supabase
-            .from("line_feedback_replies")
-            .select("id, feedback_id, replier_id, body, created_at")
-            .in("feedback_id", feedbackIds)
-            .neq("replier_id", signedInUserId)
-            .order("created_at", { ascending: false })
-        : { data: [], error: null };
-
-    if (systemRes.error || modRes.error || feedbackRes.error || myFeedbackRes.error || accessRes.error || repliesRes.error) {
+    if (systemRes.error || modRes.error || feedbackRes.error || myFeedbackRes.error || accessRes.error) {
       setMsg(
         systemRes.error?.message ||
           modRes.error?.message ||
           feedbackRes.error?.message ||
           myFeedbackRes.error?.message ||
           accessRes.error?.message ||
-          repliesRes.error?.message ||
           "Failed to load notifications."
       );
       setLoading(false);
@@ -380,7 +369,6 @@ export default function NotificationsPage() {
     const allUserIds = new Set<string>();
     if (signedInUserId) allUserIds.add(signedInUserId);
     feedbackRows.forEach((f) => allUserIds.add(f.reader_id));
-    ((repliesRes.data as FeedbackReply[] | null) ?? []).forEach((r) => allUserIds.add(r.replier_id));
     ((accessRes.data as AccessRequest[] | null) ?? []).forEach((r) => allUserIds.add(r.requester_id));
     if (!invitationsRes.error) {
       ((invitationsRes.data as ManuscriptInvitation[] | null) ?? []).forEach((inv) => allUserIds.add(inv.invited_by));
@@ -417,12 +405,6 @@ export default function NotificationsPage() {
     const feedbackItems = (feedbackRowsRaw ?? []).map((payload) => ({
       key: `feedback-${payload.id}`,
       type: "feedback" as const,
-      created_at: payload.created_at,
-      payload,
-    }));
-    const replyItems = ((repliesRes.data as FeedbackReply[] | null) ?? []).map((payload) => ({
-      key: `reply-${payload.id}`,
-      type: "reply" as const,
       created_at: payload.created_at,
       payload,
     }));

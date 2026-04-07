@@ -80,6 +80,7 @@ function PageInner() {
   const [replies, setReplies] = useState<FeedbackReply[]>([]);
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  const replyingRef = useRef<Set<string>>(new Set());
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "unresolved" | "resolved">("unresolved");
   const [ownerFeedbackFilter, setOwnerFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
@@ -436,15 +437,18 @@ function PageInner() {
   }
 
   async function replyToFeedback(f: LineFeedback) {
+    if (replyingRef.current.has(f.id)) return;
+    replyingRef.current.add(f.id);
     const body = (replyDrafts[f.id] ?? "").trim();
-    if (!body || !userId || !manuscript) return;
-    if (adultReplyBlockedForFeedback(f.reader_id)) return;
+    if (!body || !userId || !manuscript) { replyingRef.current.delete(f.id); return; }
+    if (adultReplyBlockedForFeedback(f.reader_id)) { replyingRef.current.delete(f.id); return; }
     const res = await fetch("/api/manuscript/feedback/reply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feedback_id: f.id, body }),
     });
     const json = (await res.json()) as { ok?: boolean; reply?: FeedbackReply; error?: string };
+    replyingRef.current.delete(f.id);
     if (!res.ok || json.error) return setMsg(json.error ?? "Failed to submit reply.");
     setReplyDrafts((p) => ({ ...p, [f.id]: "" }));
     const ta = replyTextareaRefs.current.get(f.id);
