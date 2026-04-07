@@ -70,6 +70,7 @@ function PageInner() {
   const [myAge, setMyAge] = useState<string | null>(null);
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [allChapterMeta, setAllChapterMeta] = useState<{ id: string; chapter_order: number; chapter_type?: string }[]>([]);
   const [chapterId, setChapterId] = useState<string | null>(chapterParam);
   const [grants, setGrants] = useState<AccessGrant[]>([]);
   const [feedback, setFeedback] = useState<LineFeedback[]>([]);
@@ -691,6 +692,7 @@ function PageInner() {
         const data = await res.json() as WsData;
         setManuscript(data.manuscript);
         setChapters(data.chapters);
+        setAllChapterMeta(data.chapters.map((c: Chapter) => ({ id: c.id, chapter_order: c.chapter_order, chapter_type: c.chapter_type })));
         setGrants(data.grants);
         setFeedback(data.chapterFeedback);
         setOwnerAllFeedback(data.ownerAllFeedback);
@@ -869,11 +871,22 @@ function PageInner() {
         if (!localParentView) {
           chapterQuery.eq("is_private", false);
         }
-        const { data: c } = await chapterQuery;
+        // Fetch all chapter metadata (no content) for correct chapter numbering
+        // so "Chapter 4" stays "Chapter 4" even when chapters 1-3 are drafts
+        const [{ data: c }, { data: allMeta }] = await Promise.all([
+          chapterQuery,
+          supabase
+            .from("manuscript_chapters")
+            .select("id, chapter_order, chapter_type")
+            .eq("manuscript_id", manuscriptId)
+            .order("chapter_order", { ascending: true }),
+        ]);
         const cRows = (c as Chapter[]) ?? [];
         setChapters(cRows);
+        setAllChapterMeta((allMeta as { id: string; chapter_order: number; chapter_type?: string }[]) ?? []);
       } else {
         setChapters([]);
+        setAllChapterMeta([]);
       }
 
       if (viewerCanRead || ownerView) {
@@ -1196,8 +1209,9 @@ function PageInner() {
     },
     ...(manuscript.description ? [{ label: "Description", value: manuscript.description, multiline: true }] : []),
   ];
-  // Compute chapter number among regular chapters only (mirrors workspace logic)
-  const sortedForNum = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
+  // Compute chapter number from ALL chapters (including drafts) so published chapters
+  // keep their original numbers — e.g. chapter 4 stays "Chapter 4" even if 1–3 are drafts
+  const sortedForNum = [...allChapterMeta].sort((a, b) => a.chapter_order - b.chapter_order);
   const chapterNumMapReader = new Map<string, number>();
   let _rn = 0;
   for (const c of sortedForNum) {
