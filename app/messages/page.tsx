@@ -1188,7 +1188,7 @@ const [now] = useState(() => Date.now());
                   }}
                   placeholder="Type a message... (Shift+Enter for new line)"
                   disabled={youthLocked}
-                  className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-hidden min-h-[72px] max-h-48"
+                  className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-y-auto min-h-[72px] max-h-48"
                   style={{ lineHeight: "1.5" }}
                 />
                 <div ref={emojiPickerRef} className="relative">
