@@ -57,12 +57,13 @@ export async function POST(req: Request) {
     // Look up the parent feedback to get reader_id and manuscript info
     const { data: feedbackRow } = await supabase
       .from("line_feedback")
-      .select("manuscript_id, reader_id")
+      .select("manuscript_id, reader_id, chapter_id")
       .eq("id", feedbackId)
       .maybeSingle();
-    const feedbackRowTyped = feedbackRow as { manuscript_id?: string; reader_id?: string } | null;
+    const feedbackRowTyped = feedbackRow as { manuscript_id?: string; reader_id?: string; chapter_id?: string | null } | null;
     const manuscriptId = feedbackRowTyped?.manuscript_id ?? null;
     const feedbackReaderId = feedbackRowTyped?.reader_id ?? null;
+    const feedbackChapterId = feedbackRowTyped?.chapter_id ?? null;
 
     // Fetch reader's age_category via admin (bypasses RLS — anon client can't read other users' accounts)
     let readerAgeCategory: string | null = null;
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
         category: "feedback_reply",
         title: titleText,
         body: bodyText,
-        metadata: { feedback_id: feedbackId, manuscript_id: manuscriptId },
+        metadata: { feedback_id: feedbackId, manuscript_id: manuscriptId, chapter_id: feedbackChapterId },
       });
     }
 

@@ -90,7 +90,7 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
   if (type === "read_request" || type === "moderation") return "manuscript";
 
   // Beta reading notifications
-  if (type === "reply" || type === "invitation") return "beta_reading";
+  if (type === "invitation") return "beta_reading";
 
   // Social: followers, likes, announcements from followed users, friend requests
   if (type === "new_follower" || type === "ann_like" || type === "followed_ann" || type === "friend_request") return "social";
@@ -99,6 +99,8 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
   if (type === "admin") {
     const n = item.payload as SystemNotification;
     const title = n.title ?? "";
+    // Feedback reply notifications → beta_reading
+    if (n.category === "feedback_reply") return "beta_reading";
     // Coin request from a linked youth account → social
     if ((n.metadata as { gift_link?: string } | null)?.gift_link) return "social";
     // Any discussion board notification (has post_id in metadata) → social
@@ -514,7 +516,8 @@ export default function NotificationsPage() {
       // non-fatal
     }
 
-    const feed: FeedItem[] = [...feedbackItems, ...replyItems, ...requestItems, ...moderationItems, ...adminItems, ...invitationItems, ...followerItems, ...annLikeItems, ...followedAnnItems, ...friendRequestItems].sort(
+    // replyItems removed — feedback replies are now delivered via system_notifications (category: feedback_reply)
+    const feed: FeedItem[] = [...feedbackItems, ...requestItems, ...moderationItems, ...adminItems, ...invitationItems, ...followerItems, ...annLikeItems, ...followedAnnItems, ...friendRequestItems].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
@@ -1253,6 +1256,42 @@ export default function NotificationsPage() {
               >
                 Mark as read
               </button>
+            )}
+          </div>
+        </li>
+      );
+    }
+
+    // Feedback reply notification — author replied to beta reader's feedback
+    if (item.type === "admin" && item.payload.category === "feedback_reply") {
+      const n = item.payload;
+      const manuscriptId = n.metadata?.manuscript_id as string | undefined;
+      const chapterId = n.metadata?.chapter_id as string | undefined;
+      const viewHref = manuscriptId
+        ? `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}` : ""}`
+        : null;
+      return (
+        <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+          <p className="text-sm font-medium text-neutral-100">{n.title}</p>
+          {n.body && <p className="mt-1 text-sm text-neutral-300">{n.body}</p>}
+          <p className="mt-2 text-xs text-neutral-500">{new Date(n.created_at).toLocaleString()}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {!isItemRead(item) && (
+              <button
+                onClick={() => void markOneAsRead(item)}
+                className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs transition ${CAT_MARK_READ[cat]}`}
+              >
+                Mark as read
+              </button>
+            )}
+            {viewHref && (
+              <Link
+                href={viewHref}
+                onClick={() => void markOneAsRead(item)}
+                className={`inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition ${CAT_BTN[cat]}`}
+              >
+                View Comment →
+              </Link>
             )}
           </div>
         </li>
