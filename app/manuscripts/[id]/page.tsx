@@ -1996,7 +1996,7 @@ function PageInner() {
                   style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}
                 >
                   {/* Total word count for this reader's feedback + coin progress */}
-                  {canLeaveLineEdits && !isOwner && (
+                  {canLeaveLineEdits && !isOwner && activeChapter?.chapter_type !== "trigger_page" && (
                     <div className="shrink-0 px-3 py-2 border-b border-[rgba(120,120,120,0.2)]">
                       {(() => {
                         const totalWords = myChapterFeedback.reduce((sum, f) => sum + (f.word_count ?? 0), 0);
