@@ -241,8 +241,10 @@ const [now] = useState(() => Date.now());
     const blockedIds = Array.from(new Set(blockedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
     const senderIds = pending.map((r) => r.sender_id);
 
-    // Fetch message history + supporting data in parallel (not gated on friend status)
-    const [hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, recentRes, unreadRes] = await Promise.all([
+    // Fetch conversation partners + supporting data in parallel
+    // Uses an RPC to get distinct partners — avoids the PostgREST 1000-row cap
+    // that caused old conversations to disappear.
+    const [hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, partnersRes] = await Promise.all([
       hiddenIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", hiddenIds)
         : Promise.resolve({ data: [] }),
@@ -252,26 +254,19 @@ const [now] = useState(() => Date.now());
       senderIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", senderIds)
         : Promise.resolve({ data: [] }),
-      supabase.from("direct_messages").select("sender_id, receiver_id, created_at")
-        .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
-        .order("created_at", { ascending: false }),
-      supabase.from("direct_messages").select("sender_id")
-        .eq("receiver_id", signedInUserId).eq("status", "sent"),
+      supabase.rpc("get_conversation_partners", { p_user_id: signedInUserId }),
     ]);
 
-    // Build message stats and derive conversation partner IDs from actual message history
+    type PartnerRow = { partner_id: string; last_message_at: string; unread_count: number };
+    const partnerRows = (partnersRes.data as PartnerRow[] | null) ?? [];
+
     const lastMsgMap = new Map<string, number>();
     const unreadMap = new Map<string, number>();
     const conversationPartnerIds: string[] = [];
-    for (const m of (recentRes.data ?? []) as { sender_id: string; receiver_id: string; created_at: string }[]) {
-      const otherId = m.sender_id === signedInUserId ? m.receiver_id : m.sender_id;
-      if (!lastMsgMap.has(otherId)) {
-        lastMsgMap.set(otherId, new Date(m.created_at).getTime());
-        conversationPartnerIds.push(otherId);
-      }
-    }
-    for (const m of (unreadRes.data ?? []) as { sender_id: string }[]) {
-      unreadMap.set(m.sender_id, (unreadMap.get(m.sender_id) ?? 0) + 1);
+    for (const row of partnerRows) {
+      lastMsgMap.set(row.partner_id, new Date(row.last_message_at).getTime());
+      unreadMap.set(row.partner_id, row.unread_count);
+      conversationPartnerIds.push(row.partner_id);
     }
 
     // Filter out blocked and age-restricted users from conversation list
