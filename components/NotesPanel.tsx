@@ -153,9 +153,9 @@ export default function NotesPanel({
             <textarea
               value={editContent}
               onChange={(e) => onEditChange(e.target.value, editManuscriptId)}
-              rows={3}
+              rows={5}
               autoFocus
-              className="w-full resize-none rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 focus:outline-none"
+              className="w-full resize-none overflow-y-auto rounded border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1.5 text-xs text-neutral-100 focus:outline-none"
             />
             {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
               <select
@@ -184,7 +184,7 @@ export default function NotesPanel({
         ) : (
           <>
             <p
-              className={`whitespace-pre-wrap text-xs leading-relaxed ${
+              className={`max-h-40 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed ${
                 note.resolved ? "text-neutral-500 line-through" : "text-neutral-300"
               }`}
             >
@@ -268,8 +268,8 @@ export default function NotesPanel({
           onChange={(e) => { setNewContent(e.target.value); setSaveError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void addNote(); }}
           placeholder="Jot down an idea… (Ctrl+Enter to save)"
-          rows={3}
-          className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/50 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.8)] focus:outline-none"
+          rows={4}
+          className="w-full resize-none overflow-y-auto rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/50 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.8)] focus:outline-none"
         />
         {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
           <select
