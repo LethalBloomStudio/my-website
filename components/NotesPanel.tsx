@@ -261,8 +261,25 @@ export default function NotesPanel({
         </div>
       </div>
 
-      {/* New note form */}
-      <div className="space-y-2">
+      {/* Notes list */}
+      <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}
+          </div>
+        ) : error ? (
+          <p className="text-xs text-red-400">{error}</p>
+        ) : filteredNotes.length === 0 ? (
+          <p className="text-xs text-neutral-600">
+            {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet. Jot something down above." : "No active notes. Jot something down above."}
+          </p>
+        ) : (
+          filteredNotes.map((note) => renderNote(note))
+        )}
+      </div>
+
+      {/* New note form — pinned to bottom */}
+      <div className="mt-auto space-y-2">
         <textarea
           value={newContent}
           onChange={(e) => { setNewContent(e.target.value); setSaveError(null); }}
@@ -292,23 +309,6 @@ export default function NotesPanel({
         >
           {saving ? "Saving…" : "Add Note"}
         </button>
-      </div>
-
-      {/* Notes list */}
-      <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}
-          </div>
-        ) : error ? (
-          <p className="text-xs text-red-400">{error}</p>
-        ) : filteredNotes.length === 0 ? (
-          <p className="text-xs text-neutral-600">
-            {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet. Jot something down above." : "No active notes. Jot something down above."}
-          </p>
-        ) : (
-          filteredNotes.map((note) => renderNote(note))
-        )}
       </div>
     </div>
   );
