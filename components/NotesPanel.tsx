@@ -295,7 +295,7 @@ export default function NotesPanel({
       </div>
 
       {/* Notes list */}
-      <div className="flex-1 space-y-2 overflow-y-auto">
+      <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
         {loading ? (
           <div className="space-y-2">
             {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}

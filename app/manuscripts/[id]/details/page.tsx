@@ -2164,9 +2164,7 @@ export default function ManuscriptDetailsPage() {
               {/* Brainstorm Notes */}
               {manuscriptId && (
                 <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
-                  <div className="flex flex-col" style={{ minHeight: "420px", maxHeight: "600px" }}>
-                    <NotesPanel defaultManuscriptId={manuscriptId} />
-                  </div>
+                  <NotesPanel defaultManuscriptId={manuscriptId} />
                 </section>
               )}
 
