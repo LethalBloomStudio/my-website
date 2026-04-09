@@ -25,7 +25,7 @@ export async function GET() {
   // Fetch all public manuscripts
   const { data, error } = await admin
     .from("manuscripts")
-    .select("id, owner_id, title, genre, categories, word_count, requested_feedback, age_rating, created_at, cover_url, description")
+    .select("id, owner_id, title, genre, categories, word_count, requested_feedback, age_rating, created_at, cover_url, description, stage")
     .eq("visibility", "public")
     .order("created_at", { ascending: false })
     .limit(200);

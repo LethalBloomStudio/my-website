@@ -23,6 +23,7 @@ type Manuscript = {
   created_at: string;
   cover_url?: string | null;
   description?: string | null;
+  stage?: "alpha" | "beta" | null;
 };
 
 type Profile = {
@@ -249,9 +250,20 @@ export default function DiscoverPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <Link href={m.owner_id === userId ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}?from=discover`} className="text-lg font-medium text-white hover:underline">
-                            {m.title}
-                          </Link>
+                          <div className="flex flex-wrap items-baseline gap-2">
+                            <Link href={m.owner_id === userId ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}?from=discover`} className="text-lg font-medium text-white hover:underline">
+                              {m.title}
+                            </Link>
+                            {m.stage && (
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                m.stage === "alpha"
+                                  ? "bg-amber-950/50 text-amber-300 border border-amber-600/40"
+                                  : "bg-emerald-950/50 text-emerald-300 border border-emerald-600/40"
+                              }`}>
+                                {m.stage}
+                              </span>
+                            )}
+                          </div>
                           <p className="mt-1 text-sm text-neutral-300">by {writerName}</p>
                           <p className="mt-1 text-xs text-neutral-400">
                             {(categories.length > 0 ? categories.join(", ") : "Uncategorized")}

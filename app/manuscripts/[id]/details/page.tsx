@@ -35,6 +35,7 @@ type Manuscript = {
   requested_feedback: string | null;
   potential_triggers: string | null;
   copyright_info: string | null;
+  stage: "alpha" | "beta" | null;
   format_id: string | null;
 };
 
@@ -118,6 +119,7 @@ export default function ManuscriptDetailsPage() {
   const [manuscriptTitle, setManuscriptTitle] = useState("");
   const [description, setDescription] = useState("");
   const [requestedFeedback, setRequestedFeedback] = useState<"bloom" | "forge" | "lethal">("bloom");
+  const [stage, setStage] = useState<"alpha" | "beta">("beta");
   const [profileFeedbackPreference, setProfileFeedbackPreference] = useState<string>("gentle");
   const [potentialTriggers, setPotentialTriggers] = useState("");
   const [copyrightInfo, setCopyrightInfo] = useState("");
@@ -278,6 +280,7 @@ export default function ManuscriptDetailsPage() {
         const payload = {
           title: manuscriptTitle.trim(),
           description: description.trim(),
+          stage,
           requested_feedback: requestedFeedback,
           potential_triggers: potentialTriggers.trim(),
           copyright_info: copyrightInfo.trim(),
@@ -439,6 +442,7 @@ export default function ManuscriptDetailsPage() {
           ms.requested_feedback === "forge" || ms.requested_feedback === "lethal" || ms.requested_feedback === "bloom"
             ? ms.requested_feedback : "bloom"
         );
+        setStage(ms.stage === "alpha" ? "alpha" : "beta");
         setPotentialTriggers(ms.potential_triggers ?? "");
         setCopyrightInfo(ms.copyright_info ?? "");
         const rawCats = ms.categories && ms.categories.length > 0 ? ms.categories : ms.genre ? [ms.genre] : [];
@@ -504,7 +508,7 @@ export default function ManuscriptDetailsPage() {
     const { data, error } = await supabase
       .from("manuscripts")
       .select(
-        "id, owner_id, created_at, title, visibility, genre, categories, age_rating, cover_url, description, requested_feedback, potential_triggers, copyright_info, format_id",
+        "id, owner_id, created_at, title, visibility, genre, categories, age_rating, cover_url, description, requested_feedback, potential_triggers, copyright_info, format_id, stage",
       )
       .eq("id", manuscriptId)
       .single();
@@ -2037,6 +2041,31 @@ export default function ManuscriptDetailsPage() {
                   {detailItems.map((d, idx) => (
                     <DetailRow key={`${d.label}-${idx}`} label={d.label} value={d.value} />
                   ))}
+                </div>
+
+                {/* Manuscript Stage */}
+                <div className="flex gap-2 items-center">
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500">Manuscript Stage</p>
+                  {(["alpha", "beta"] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={isParentView}
+                      onClick={() => !isParentView && setStage(s)}
+                      className={`rounded-lg border px-3 py-1 text-xs font-medium transition ${
+                        stage === s
+                          ? s === "alpha"
+                            ? "border-amber-600/60 bg-amber-950/30 text-amber-300"
+                            : "border-emerald-600/60 bg-emerald-950/30 text-emerald-300"
+                          : "border-neutral-700 bg-neutral-950/30 text-neutral-500 hover:text-neutral-300"
+                      }`}
+                    >
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                  <p className="text-[10px] text-neutral-600">
+                    {stage === "alpha" ? "Early draft — rough and unpolished" : "Polished draft — ready for feedback"}
+                  </p>
                 </div>
 
                 {/* Feedback & Content — 3 boxes side by side */}
