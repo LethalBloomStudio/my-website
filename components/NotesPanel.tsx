@@ -261,31 +261,14 @@ export default function NotesPanel({
         </div>
       </div>
 
-      {/* Notes list */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}
-          </div>
-        ) : error ? (
-          <p className="text-xs text-red-400">{error}</p>
-        ) : filteredNotes.length === 0 ? (
-          <p className="text-xs text-neutral-600">
-            {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet. Jot something down below." : "No active notes. Jot something down below."}
-          </p>
-        ) : (
-          filteredNotes.map((note) => renderNote(note))
-        )}
-      </div>
-
       {/* New note form */}
-      <div className="shrink-0 space-y-2 border-t border-[rgba(120,120,120,0.2)] pt-3">
+      <div className="shrink-0 space-y-2">
         <textarea
           value={newContent}
           onChange={(e) => { setNewContent(e.target.value); setSaveError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void addNote(); }}
           placeholder="Jot down an idea… (Ctrl+Enter to save)"
-          rows={4}
+          rows={3}
           className="w-full resize-none overflow-y-auto rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/50 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.8)] focus:outline-none"
         />
         {manuscripts && manuscripts.length > 0 && !defaultManuscriptId && (
@@ -309,6 +292,23 @@ export default function NotesPanel({
         >
           {saving ? "Saving…" : "Add Note"}
         </button>
+      </div>
+
+      {/* Notes list */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 border-t border-[rgba(120,120,120,0.2)] pt-3">
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => <div key={i} className="h-16 rounded-lg bg-neutral-800/40 animate-pulse" />)}
+          </div>
+        ) : error ? (
+          <p className="text-xs text-red-400">{error}</p>
+        ) : filteredNotes.length === 0 ? (
+          <p className="text-xs text-neutral-600">
+            {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet." : "No active notes."}
+          </p>
+        ) : (
+          filteredNotes.map((note) => renderNote(note))
+        )}
       </div>
     </div>
   );
