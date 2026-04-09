@@ -140,10 +140,6 @@ export default function NotificationButton() {
       if (realtimeChannel) { void supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
       void init();
     });
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") loadCount();
-    }, 90000);
-
     function onStorage(ev: StorageEvent) {
       if (ev.key && ev.key.startsWith("notif_read_keys_")) {
         loadCount();
@@ -155,7 +151,6 @@ export default function NotificationButton() {
 
     return () => {
       mounted = false;
-      clearInterval(timer);
       sub.subscription.unsubscribe();
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
       window.removeEventListener("storage", onStorage);

@@ -802,19 +802,10 @@ export default function ManuscriptDetailsPage() {
     setTimeout(() => onReaderScroll(), 50);
   }, [readerSlots, acceptedReaders.length]);
 
-  // Realtime + polling — live feedback replies
+  // Realtime — live feedback replies
+  // No polling: realtime INSERT events handle all live updates
   useEffect(() => {
     if (!authorUserId || !manuscriptId) return;
-
-    async function refreshReplies() {
-      const ids = feedbackItems.map((f) => f.id);
-      if (ids.length === 0) return;
-      const { data } = await supabase
-        .from("line_feedback_replies")
-        .select("id, feedback_id, replier_id, body, created_at")
-        .in("feedback_id", ids);
-      if (data) setFeedbackReplies(data as FeedbackReply[]);
-    }
 
     if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     const ch = supabase
@@ -826,16 +817,10 @@ export default function ManuscriptDetailsPage() {
       .subscribe();
     replyChannelRef.current = ch;
 
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") void refreshReplies();
-    }, 10000);
-
     return () => {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
-      clearInterval(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authorUserId, manuscriptId, supabase, feedbackItems.length]);
+  }, [authorUserId, manuscriptId, supabase]);
 
   // Realtime subscription — keep coin balance live as coins are earned/spent anywhere
   useEffect(() => {

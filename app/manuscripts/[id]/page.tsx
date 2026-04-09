@@ -1099,20 +1099,17 @@ function PageInner() {
     return () => clearTimeout(t);
   }, [coinToast]);
 
-  // Realtime + polling — live feedback replies
+  // Keep a stable ref to feedback IDs so the realtime effect doesn't re-run on every feedback update
+  const feedbackIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    const allIds = [...feedback.map((f) => f.id), ...myAllFeedback.map((f) => f.id)];
+    feedbackIdsRef.current = Array.from(new Set(allIds));
+  }, [feedback, myAllFeedback]);
+
+  // Realtime — live feedback replies and resolution updates
+  // No polling: realtime INSERT/UPDATE events handle all live updates
   useEffect(() => {
     if (!userId || !manuscriptId) return;
-
-    async function refreshReplies() {
-      const allIds = [...feedback.map((f) => f.id), ...myAllFeedback.map((f) => f.id)];
-      const ids = Array.from(new Set(allIds));
-      if (ids.length === 0) return;
-      const { data } = await supabase
-        .from("line_feedback_replies")
-        .select("id, feedback_id, replier_id, body, created_at")
-        .in("feedback_id", ids);
-      if (data) setReplies(data as FeedbackReply[]);
-    }
 
     if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     const ch = supabase
@@ -1130,16 +1127,10 @@ function PageInner() {
       .subscribe();
     replyChannelRef.current = ch;
 
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") void refreshReplies();
-    }, 10000);
-
     return () => {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
-      clearInterval(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, manuscriptId, supabase, feedback.length, myAllFeedback.length]);
+  }, [userId, manuscriptId, supabase]);
 
   // Click anywhere outside the feedback column (and not on a marker bubble) to deselect
   useEffect(() => {

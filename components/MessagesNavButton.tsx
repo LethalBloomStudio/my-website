@@ -24,11 +24,16 @@ export default function MessagesNavButton() {
 
       const { data: account } = await supabase
         .from("accounts")
-        .select("age_category, is_deactivated")
+        .select("age_category, is_deactivated, unread_message_count")
         .eq("user_id", userId)
         .maybeSingle();
 
-      const acc = account as { age_category?: string | null; is_deactivated?: boolean } | null;
+      const acc = account as {
+        age_category?: string | null;
+        is_deactivated?: boolean;
+        unread_message_count?: number | null;
+      } | null;
+
       if (acc?.age_category === "youth_13_17" || acc?.is_deactivated) {
         if (mounted) {
           setVisible(false);
@@ -37,76 +42,69 @@ export default function MessagesNavButton() {
         return;
       }
 
-      const [friendReq, contactReq, unreadMessages] = await Promise.all([
-        supabase
-          .from("profile_friend_requests")
-          .select("*", { count: "exact", head: true })
-          .eq("receiver_id", userId)
-          .eq("status", "pending"),
-        supabase
-          .from("profile_contact_requests")
-          .select("*", { count: "exact", head: true })
-          .eq("receiver_id", userId)
-          .eq("status", "pending"),
-        supabase
-          .from("direct_messages")
-          .select("*", { count: "exact", head: true })
-          .eq("receiver_id", userId)
-          .eq("status", "sent"),
-      ]);
-
-      const total = (friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0);
       if (mounted) {
         setVisible(true);
-        setCount(total);
+        setCount(acc?.unread_message_count ?? 0);
       }
 
-      // Set up realtime after we know the userId
       if (realtimeChannel) {
         void supabase.removeChannel(realtimeChannel);
         realtimeChannel = null;
       }
+
       if (userId && mounted) {
         realtimeChannel = supabase
           .channel(`msg-badge-${userId}`)
           .on(
             "postgres_changes",
-            { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${userId}` },
-            () => { if (mounted) void refreshCount(userId!); }
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "direct_messages",
+              filter: `receiver_id=eq.${userId}`,
+            },
+            () => {
+              if (mounted) void refreshCount(userId!);
+            }
           )
           .on(
             "postgres_changes",
-            { event: "UPDATE", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${userId}` },
-            () => { if (mounted) void refreshCount(userId!); }
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "direct_messages",
+              filter: `receiver_id=eq.${userId}`,
+            },
+            () => {
+              if (mounted) void refreshCount(userId!);
+            }
           )
           .subscribe();
       }
     }
 
     async function refreshCount(uid: string) {
-      const [friendReq, contactReq, unreadMessages] = await Promise.all([
-        supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
-        supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
-        supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
-      ]);
-      if (mounted) setCount((friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0));
+      const { data: account } = await supabase
+        .from("accounts")
+        .select("unread_message_count")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      const acc = account as {
+        unread_message_count?: number | null;
+      } | null;
+
+      if (mounted) setCount(acc?.unread_message_count ?? 0);
     }
 
-    load();
+    void load();
 
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      load();
+      void load();
     });
-
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible" && userId) {
-        void refreshCount(userId);
-      }
-    }, 30000);
 
     return () => {
       mounted = false;
-      clearInterval(timer);
       sub.subscription.unsubscribe();
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
     };
@@ -115,9 +113,28 @@ export default function MessagesNavButton() {
   if (!visible) return null;
 
   return (
-    <Link href="/messages" className="iconTab" aria-label="Messages" title="Messages" data-tip="Messages">
-      {count > 0 ? <span className="notifBadge">{count > 99 ? "99+" : count}</span> : null}
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <Link
+      href="/messages"
+      className="iconTab"
+      aria-label="Messages"
+      title="Messages"
+      data-tip="Messages"
+    >
+      {count > 0 ? (
+        <span className="notifBadge">{count > 99 ? "99+" : count}</span>
+      ) : null}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
     </Link>
