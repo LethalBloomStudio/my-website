@@ -24,14 +24,13 @@ export default function MessagesNavButton() {
 
       const { data: account } = await supabase
         .from("accounts")
-        .select("age_category, is_deactivated, unread_message_count")
+        .select("age_category, is_deactivated")
         .eq("user_id", userId)
         .maybeSingle();
 
       const acc = account as {
         age_category?: string | null;
         is_deactivated?: boolean;
-        unread_message_count?: number | null;
       } | null;
 
       if (acc?.age_category === "youth_13_17" || acc?.is_deactivated) {
@@ -42,10 +41,8 @@ export default function MessagesNavButton() {
         return;
       }
 
-      if (mounted) {
-        setVisible(true);
-        setCount(acc?.unread_message_count ?? 0);
-      }
+      if (mounted) setVisible(true);
+      await refreshCount(userId);
 
       if (realtimeChannel) {
         void supabase.removeChannel(realtimeChannel);
@@ -84,17 +81,13 @@ export default function MessagesNavButton() {
     }
 
     async function refreshCount(uid: string) {
-      const { data: account } = await supabase
-        .from("accounts")
-        .select("unread_message_count")
-        .eq("user_id", uid)
-        .maybeSingle();
+      const { count } = await supabase
+        .from("direct_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("receiver_id", uid)
+        .eq("status", "sent");
 
-      const acc = account as {
-        unread_message_count?: number | null;
-      } | null;
-
-      if (mounted) setCount(acc?.unread_message_count ?? 0);
+      if (mounted) setCount(count ?? 0);
     }
 
     void load();
