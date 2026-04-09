@@ -1132,7 +1132,7 @@ const [now] = useState(() => Date.now());
               )}
             </section>
           ) : (
-            <section className="flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
+            <section className="flex flex-col self-start w-full rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <p className="flex-1 text-sm text-neutral-300">Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span></p>
                 <button
