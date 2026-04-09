@@ -708,6 +708,7 @@ export default function ManuscriptDetailsPage() {
         ? row.requested_feedback
         : "bloom",
     );
+    setStage(row.stage === "alpha" ? "alpha" : "beta");
     setPotentialTriggers(row.potential_triggers ?? "");
     setCopyrightInfo(row.copyright_info ?? "");
     if (row.format_id && row.format_id in FORMATS) {
