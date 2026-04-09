@@ -1143,7 +1143,7 @@ const [now] = useState(() => Date.now());
                 </button>
               </div>
 
-              <div ref={messagesContainerRef} className="flex-1 min-h-[300px] overflow-y-auto space-y-3 pr-1">
+              <div ref={messagesContainerRef} className="h-[420px] overflow-y-auto space-y-3 pr-1">
                 {/* Load older messages indicator */}
                 {hasMoreMessages && (
                   <div className="flex justify-center py-2">
@@ -1182,7 +1182,7 @@ const [now] = useState(() => Date.now());
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="mt-4 shrink-0 flex gap-2 relative">
+              <div className="mt-auto pt-4 shrink-0 flex gap-2 relative">
                 <textarea
                   ref={inputRef}
                   value={text}
