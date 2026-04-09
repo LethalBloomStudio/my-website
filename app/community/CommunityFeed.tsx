@@ -130,6 +130,8 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
   const sentinelRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<string | null>(null);
   const allowedUserIdsRef = useRef<string[] | null>(null);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
 
   useEffect(() => {
     (async () => {
@@ -153,21 +155,25 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
       const rows = (data as { id: string; user_id: string; type: string | null; title: string | null; content: string | null; created_at: string }[] | null) ?? [];
       const built = await buildItems(supabase, rows, viewerId);
       setItems(built);
+      hasMoreRef.current = rows.length === PAGE_SIZE;
       setHasMore(rows.length === PAGE_SIZE);
       cursorRef.current = rows.length > 0 ? rows[rows.length - 1].created_at : null;
       setLoading(false);
     })();
   }, [supabase, viewerId, audience]);
 
+  // IntersectionObserver uses refs for loadingMore/hasMore so it never needs
+  // to be rebuilt when those values change — no cascade re-triggering.
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       async ([entry]) => {
-        if (!entry.isIntersecting || loadingMore || !hasMore || !cursorRef.current) return;
+        if (!entry.isIntersecting || loadingMoreRef.current || !hasMoreRef.current || !cursorRef.current) return;
         const allowedIds = allowedUserIdsRef.current;
         if (!allowedIds || allowedIds.length === 0) return;
+        loadingMoreRef.current = true;
         setLoadingMore(true);
 
         const { data } = await supabase
@@ -181,8 +187,10 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
         const rows = (data as { id: string; user_id: string; type: string | null; title: string | null; content: string | null; created_at: string }[] | null) ?? [];
         const built = await buildItems(supabase, rows, viewerId);
         setItems((prev) => [...prev, ...built]);
+        hasMoreRef.current = rows.length === PAGE_SIZE;
         setHasMore(rows.length === PAGE_SIZE);
         cursorRef.current = rows.length > 0 ? rows[rows.length - 1].created_at : null;
+        loadingMoreRef.current = false;
         setLoadingMore(false);
       },
       { threshold: 0.1 }
@@ -190,7 +198,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [supabase, viewerId, loadingMore, hasMore]);
+  }, [supabase, viewerId]);
 
   // Realtime: new announcement → prepend
   useEffect(() => {

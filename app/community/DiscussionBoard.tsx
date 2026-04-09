@@ -234,6 +234,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
   const [posts, setPosts] = useState<DiscussionPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const drawnGiveawayIds = useRef<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isAdmin, setIsAdmin] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -366,10 +367,19 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     }
   }
 
-  // Auto-draw expired giveaways whenever posts load
+  // Auto-draw expired giveaways — only once per post ID to prevent loop
   useEffect(() => {
-    const expired = posts.filter(p => p.type === "giveaway" && !p.winner_drawn && p.ends_at && new Date(p.ends_at) <= new Date());
-    for (const p of expired) void drawGiveaway(p.id);
+    const expired = posts.filter(p =>
+      p.type === "giveaway" &&
+      !p.winner_drawn &&
+      p.ends_at &&
+      new Date(p.ends_at) <= new Date() &&
+      !drawnGiveawayIds.current.has(p.id)
+    );
+    for (const p of expired) {
+      drawnGiveawayIds.current.add(p.id);
+      void drawGiveaway(p.id);
+    }
   }, [posts]);
 
   // ── Infinite scroll ──

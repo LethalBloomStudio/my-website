@@ -185,14 +185,18 @@ export default function FeaturedCarousel() {
     })();
   }, [supabase]);
 
-  // Load slots once audience is known, and refresh every 60s
+  // Load slots once audience is known, then keep live via realtime
   useEffect(() => {
     if (!audience) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSlots();
-    const id = setInterval(() => void loadSlots(), 60_000);
-    return () => clearInterval(id);
-  }, [audience, loadSlots]);
+    const ch = supabase
+      .channel(`featured-carousel-${audience}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "featured_manuscripts" }, () => {
+        void loadSlots();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [audience, loadSlots, supabase]);
 
   // After slots render, initialise scroll to the middle copy so both arrows have room
   useEffect(() => {
