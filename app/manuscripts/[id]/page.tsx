@@ -1837,6 +1837,9 @@ function PageInner() {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-[rgba(210,210,210,0.6)]">{readerChapterLabel(activeChapter)}</p>
                     <h2 className="text-lg font-semibold text-neutral-50">{activeChapter.title}</h2>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
+                      {activeText.replace(/<[^>]+>/g, "").trim().split(/\s+/).filter(Boolean).length.toLocaleString()} words
+                    </p>
                   </div>
                   <button
                     onClick={() => setChapterId(null)}
