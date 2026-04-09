@@ -1246,22 +1246,20 @@ const [now] = useState(() => Date.now());
                   Send
                 </button>
               </div>
-              {otherTyping && (
-                <p className="mt-1 shrink-0 text-xs text-neutral-400 italic flex items-center gap-1">
-                  {withUserLabel} is typing
-                  <span className="flex items-center gap-[3px] ml-0.5">
-                    <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:0ms]" />
-                    <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:150ms]" />
-                    <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:300ms]" />
-                  </span>
-                </p>
-              )}
+              <p className={`mt-1 shrink-0 text-xs text-neutral-400 italic flex items-center gap-1 transition-opacity duration-200 ${otherTyping ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                {withUserLabel} is typing
+                <span className="flex items-center gap-[3px] ml-0.5">
+                  <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1 w-1 rounded-full bg-neutral-400 animate-bounce [animation-delay:300ms]" />
+                </span>
+              </p>
               {msg ? <p className="mt-2 shrink-0 text-sm text-red-300">{msg}</p> : null}
             </section>
           )}
 
           {/* ── Notes panel ── */}
-          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[614px] overflow-hidden">
+          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[634px] overflow-hidden">
             <NotesPanel manuscripts={myManuscripts} />
           </div>
         </div>
