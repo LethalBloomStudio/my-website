@@ -1182,7 +1182,7 @@ const [now] = useState(() => Date.now());
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="mt-auto pt-4 shrink-0 flex gap-2 relative">
+              <div className="mt-4 shrink-0 flex gap-2 relative">
                 <textarea
                   ref={inputRef}
                   value={text}
