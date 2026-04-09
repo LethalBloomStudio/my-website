@@ -128,6 +128,7 @@ const [now] = useState(() => Date.now());
   const [sidebarLoading, setSidebarLoading] = useState(true);
   const [myManuscripts, setMyManuscripts] = useState<{ id: string; title: string }[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const inboxChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef(0);
   const [otherTyping, setOtherTyping] = useState(false);
@@ -394,6 +395,30 @@ const [now] = useState(() => Date.now());
     }
     void init();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Inbox watcher — updates sidebar unread badge when a message arrives from
+  // someone other than the currently open conversation
+  useEffect(() => {
+    if (!myId) return;
+    if (inboxChannelRef.current) void supabase.removeChannel(inboxChannelRef.current);
+    inboxChannelRef.current = supabase
+      .channel(`inbox-badge-${myId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${myId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const m = payload.new as { sender_id: string; receiver_id: string; status: string };
+          // If the message is from someone other than the open chat, bump their badge
+          if (m.sender_id !== withUser) {
+            setFriends((prev) => prev.map((f) =>
+              f.userId === m.sender_id ? { ...f, unreadCount: f.unreadCount + 1 } : f
+            ));
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      if (inboxChannelRef.current) void supabase.removeChannel(inboxChannelRef.current);
+    };
+  }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When switching chats, only reload the messages — sidebar stays cached
   useEffect(() => {
