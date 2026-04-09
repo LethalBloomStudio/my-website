@@ -270,6 +270,8 @@ export default function ManuscriptDetailsPage() {
       categories: allCats,
       potentialTriggers: potentialTriggers.trim(),
       copyrightInfo: copyrightInfo.trim(),
+      stage,
+      requestedFeedback,
     });
     if (current === lastSavedInfo.current) return;
     if (!manuscriptTitle.trim() || selectedCategories.length === 0) return;
@@ -296,7 +298,7 @@ export default function ManuscriptDetailsPage() {
     }, 1500);
     return () => { if (infoAutoSaveTimer.current) clearTimeout(infoAutoSaveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscriptTitle, description, selectedCategories, isMatureContent, isPotentiallyTriggering, potentialTriggers, copyrightInfo, manuscript]);
+  }, [manuscriptTitle, description, selectedCategories, isMatureContent, isPotentiallyTriggering, potentialTriggers, copyrightInfo, stage, requestedFeedback, manuscript]);
 
   function friendlyDbError(message: string) {
     const m = message.toLowerCase();
@@ -456,6 +458,8 @@ export default function ManuscriptDetailsPage() {
           categories: rawCats,
           potentialTriggers: (ms.potential_triggers ?? "").trim(),
           copyrightInfo: (ms.copyright_info ?? "").trim(),
+          stage: ms.stage === "alpha" ? "alpha" : "beta",
+          requestedFeedback: ms.requested_feedback === "forge" || ms.requested_feedback === "lethal" || ms.requested_feedback === "bloom" ? ms.requested_feedback : "bloom",
         });
         setChapters(d.chapters);
         setAcceptedReaders(d.acceptedReaders);
@@ -723,6 +727,8 @@ export default function ManuscriptDetailsPage() {
       categories: rawCats2,
       potentialTriggers: (row.potential_triggers ?? "").trim(),
       copyrightInfo: (row.copyright_info ?? "").trim(),
+      stage: row.stage === "alpha" ? "alpha" : "beta",
+      requestedFeedback: row.requested_feedback === "forge" || row.requested_feedback === "lethal" || row.requested_feedback === "bloom" ? row.requested_feedback : "bloom",
     });
     const chapterRows = (chapterData as Chapter[]) ?? [];
     setChapters(chapterRows);
