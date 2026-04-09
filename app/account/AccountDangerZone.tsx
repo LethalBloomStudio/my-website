@@ -22,7 +22,7 @@ type Props = {
   linkedYouthCount: number;
 };
 
-export default function AccountDangerZone({ isDeactivated, isYouth, linkedYouthCount }: Props) {
+export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, linkedYouthCount }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
 

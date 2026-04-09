@@ -20,6 +20,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       const saved = localStorage.getItem("theme") as Theme | null;
       const t: Theme = saved === "day" ? "day" : "night";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(t);
       document.documentElement.setAttribute("data-theme", t);
     } catch {

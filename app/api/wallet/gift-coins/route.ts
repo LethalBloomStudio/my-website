@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
   if (!link) return NextResponse.json({ error: "No active link found for this child." }, { status: 403 });
 
-  const row = link as { id: string; child_name: string };
+  const _row = link as { id: string; child_name: string };
 
   // Credit coins to child's account
   const { data: childAcct } = await admin

@@ -53,7 +53,7 @@ export default function WalletTabs({
   linkedChildren = [],
   defaultChildId,
 }: WalletTabsProps) {
-  const router = useRouter();
+  const _router = useRouter();
   const [tab, setTab] = useState<WalletTab>("purchases");
 
   // Purchase (self) state

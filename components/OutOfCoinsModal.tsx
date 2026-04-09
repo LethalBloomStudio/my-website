@@ -23,10 +23,10 @@ export default function OutOfCoinsModal({ onClose }: Props) {
       >
         <div className="mb-1 flex items-center gap-2">
           <span className="text-xl leading-none" style={{ color: "#f59e0b" }}>✿</span>
-          <h2 className="text-base font-semibold text-white">You're out of Bloom Coins</h2>
+          <h2 className="text-base font-semibold text-white">You&apos;re out of Bloom Coins</h2>
         </div>
         <p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-          You don't have enough Bloom Coins to complete this action. Find new projects to beta read and earn coins, or purchase a pack to top up your balance.
+          You don&apos;t have enough Bloom Coins to complete this action. Find new projects to beta read and earn coins, or purchase a pack to top up your balance.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <button

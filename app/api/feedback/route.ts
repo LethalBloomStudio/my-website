@@ -64,7 +64,7 @@ export async function GET() {
 
   // Enrich with username for logged-in submitters
   const userIds = [...new Set((data ?? []).map((r) => r.user_id).filter(Boolean) as string[])];
-  let usernameMap: Record<string, string> = {};
+  const usernameMap: Record<string, string> = {};
   if (userIds.length > 0) {
     const { data: profiles } = await admin
       .from("profiles")

@@ -70,8 +70,8 @@ export default function ManageYouthPage() {
   const [childDob, setChildDob] = useState("");
   const [tier, setTier] = useState<"free" | "unlimited">("free");
 
-  useEffect(() => {
-    async function init() {
+useEffect(() => {
+  async function init() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -103,7 +103,7 @@ export default function ManageYouthPage() {
     }
 
     void init();
-  }, [supabase]);
+  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadLinks(uid: string) {
     const { data } = await supabase
