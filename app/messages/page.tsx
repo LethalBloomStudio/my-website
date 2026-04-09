@@ -809,7 +809,7 @@ const [now] = useState(() => Date.now());
       <div className="mx-auto max-w-[1440px] px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_280px]">
+        <div className="mt-6 grid items-start gap-4 lg:grid-cols-[290px_minmax(0,1fr)_280px]">
           {/* ── Sidebar ── */}
           <aside className="space-y-4">
             {/* Pending requests */}
@@ -1132,7 +1132,7 @@ const [now] = useState(() => Date.now());
               )}
             </section>
           ) : (
-            <section className="flex flex-col self-start w-full rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
+            <section className="flex flex-col w-full rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <p className="flex-1 text-sm text-neutral-300">Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span></p>
                 <button
@@ -1261,7 +1261,7 @@ const [now] = useState(() => Date.now());
           )}
 
           {/* ── Notes panel ── */}
-          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 self-start sticky top-20 h-[580px] overflow-hidden">
+          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[614px] overflow-hidden">
             <NotesPanel manuscripts={myManuscripts} />
           </div>
         </div>
