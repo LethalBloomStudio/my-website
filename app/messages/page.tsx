@@ -1143,7 +1143,7 @@ const [now] = useState(() => Date.now());
                 </button>
               </div>
 
-              <div ref={messagesContainerRef} className="h-[260px] overflow-y-auto space-y-3 pr-1">
+              <div ref={messagesContainerRef} className="h-[340px] overflow-y-auto space-y-3 pr-1">
                 {/* Load older messages indicator */}
                 {hasMoreMessages && (
                   <div className="flex justify-center py-2">
@@ -1261,7 +1261,7 @@ const [now] = useState(() => Date.now());
           )}
 
           {/* ── Notes panel ── */}
-          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 self-start sticky top-20 h-[480px] overflow-hidden">
+          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 self-start sticky top-20 h-[580px] overflow-hidden">
             <NotesPanel manuscripts={myManuscripts} />
           </div>
         </div>
