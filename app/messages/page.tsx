@@ -1143,7 +1143,7 @@ const [now] = useState(() => Date.now());
                 </button>
               </div>
 
-              <div ref={messagesContainerRef} className="h-[420px] overflow-y-auto space-y-3 pr-1">
+              <div ref={messagesContainerRef} className="flex-1 min-h-[300px] overflow-y-auto space-y-3 pr-1">
                 {/* Load older messages indicator */}
                 {hasMoreMessages && (
                   <div className="flex justify-center py-2">
