@@ -365,15 +365,9 @@ function BetaReadersPageInner() {
                           <p className="text-xs text-neutral-500">@{p.username}</p>
                         )}
                       </div>
-                      {adminUserIds.has(p.user_id) ? (
-                        <span className="ml-auto shrink-0 rounded-lg border border-emerald-700/60 bg-emerald-950/30 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-400">
-                          Owner
-                        </span>
-                      ) : (
-                        <span className={`ml-auto shrink-0 rounded-lg border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${levelColor(p.beta_reader_level)}`}>
-                          {p.beta_reader_level}
-                        </span>
-                      )}
+                      <span className={`ml-auto shrink-0 rounded-lg border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${levelColor(p.beta_reader_level)}`}>
+                        {p.beta_reader_level}
+                      </span>
                     </div>
 
                     {/* Bio */}
