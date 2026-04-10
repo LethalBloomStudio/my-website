@@ -2,7 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 // Called after new user signup and after admin promotion.
-// Creates accepted friend_requests between the user and all admins (or vice versa).
+// Only auto-friends with lethalbloom_owner — other admins are not auto-friended.
+
+const AUTO_FRIEND_USERNAME = "lethalbloom_owner";
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,12 +12,26 @@ function adminClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+async function getAutoFriendAdminId(supabase: ReturnType<typeof adminClient>): Promise<string | null> {
+  const { data } = await supabase
+    .from("public_profiles")
+    .select("user_id")
+    .eq("username", AUTO_FRIEND_USERNAME)
+    .maybeSingle();
+  return (data as { user_id: string } | null)?.user_id ?? null;
+}
+
 export async function POST(req: Request) {
   const supabase = adminClient();
   const body = await req.json() as { user_id?: string; admin_id?: string };
 
   if (body.admin_id) {
-    // An admin was just promoted — friend them with every existing user
+    // An admin was just promoted — only auto-friend if it's lethalbloom_owner
+    const autoId = await getAutoFriendAdminId(supabase);
+    if (!autoId || body.admin_id !== autoId) {
+      return NextResponse.json({ ok: true, count: 0, skipped: true });
+    }
+
     const { data: users } = await supabase
       .from("accounts")
       .select("user_id")
@@ -36,33 +52,27 @@ export async function POST(req: Request) {
   }
 
   if (body.user_id) {
-    // A new user signed up — friend them with all current admins
-    const { data: admins } = await supabase
-      .from("accounts")
-      .select("user_id")
-      .eq("is_admin", true)
-      .neq("user_id", body.user_id);
-
-    const rows = ((admins ?? []) as { user_id: string }[]).map(a => ({
-      sender_id: body.user_id!,
-      receiver_id: a.user_id,
-      status: "accepted",
-    }));
-
-    if (rows.length > 0) {
-      await supabase
-        .from("profile_friend_requests")
-        .upsert(rows, { onConflict: "sender_id,receiver_id" });
+    // A new user signed up — only friend them with lethalbloom_owner
+    const autoId = await getAutoFriendAdminId(supabase);
+    if (!autoId || autoId === body.user_id) {
+      return NextResponse.json({ ok: true, count: 0 });
     }
-    return NextResponse.json({ ok: true, count: rows.length });
+
+    await supabase
+      .from("profile_friend_requests")
+      .upsert(
+        [{ sender_id: body.user_id, receiver_id: autoId, status: "accepted" }],
+        { onConflict: "sender_id,receiver_id" }
+      );
+
+    return NextResponse.json({ ok: true, count: 1 });
   }
 
   return NextResponse.json({ error: "Provide user_id or admin_id" }, { status: 400 });
 }
 
-// GET — backfill all existing users with all admins (run once from admin dashboard)
+// GET — backfill all existing users with lethalbloom_owner only
 export async function GET(req: Request) {
-  // Only allow admins to trigger the backfill
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -73,25 +83,17 @@ export async function GET(req: Request) {
   const { data: acc } = await supabase.from("accounts").select("is_admin").eq("user_id", user.id).maybeSingle();
   if (!(acc as { is_admin?: boolean } | null)?.is_admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [{ data: admins }, { data: allUsers }] = await Promise.all([
-    supabase.from("accounts").select("user_id").eq("is_admin", true),
-    supabase.from("accounts").select("user_id"),
-  ]);
+  const autoId = await getAutoFriendAdminId(supabase);
+  if (!autoId) return NextResponse.json({ error: "lethalbloom_owner not found" }, { status: 404 });
 
-  const adminIds = new Set(((admins ?? []) as { user_id: string }[]).map(a => a.user_id));
+  const { data: allUsers } = await supabase.from("accounts").select("user_id");
   const allUserIds = ((allUsers ?? []) as { user_id: string }[]).map(u => u.user_id);
 
-  const rows: { sender_id: string; receiver_id: string; status: string }[] = [];
-  for (const adminId of adminIds) {
-    for (const userId of allUserIds) {
-      if (adminId !== userId) {
-        rows.push({ sender_id: adminId, receiver_id: userId, status: "accepted" });
-      }
-    }
-  }
+  const rows = allUserIds
+    .filter(uid => uid !== autoId)
+    .map(uid => ({ sender_id: autoId, receiver_id: uid, status: "accepted" }));
 
   if (rows.length > 0) {
-    // Upsert in batches of 500
     for (let i = 0; i < rows.length; i += 500) {
       await supabase
         .from("profile_friend_requests")
