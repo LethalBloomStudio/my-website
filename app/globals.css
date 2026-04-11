@@ -1201,6 +1201,27 @@ a.pricing-btn:link {
   color: #1a1a1a;
 }
 
+/* ── Homepage: Bloom Member features grid → white in day mode ── */
+[data-theme="day"] .day-white-bg { background-color: #ffffff !important; }
+
+/* ── Homepage: CTA banner → white in day mode ── */
+[data-theme="day"] .cta-section {
+  background-color: #ffffff !important;
+  border-top: 1px solid rgba(80, 80, 80, 0.2);
+  border-bottom: 1px solid rgba(80, 80, 80, 0.2);
+}
+[data-theme="day"] .cta-section h2,
+[data-theme="day"] .cta-section p { color: #1a1a1a !important; }
+[data-theme="day"] .cta-section > * > p { color: rgba(26, 26, 26, 0.6) !important; }
+[data-theme="day"] .cta-section a {
+  background-color: #3d3d3d !important;
+  border-color: rgba(80, 80, 80, 0.5) !important;
+  color: #ffffff !important;
+}
+[data-theme="day"] .cta-section a:hover { background-color: #333333 !important; }
+[data-theme="day"] .cta-section .text-white\/30,
+[data-theme="day"] .cta-section [class*="text-white/"] { color: rgba(26, 26, 26, 0.4) !important; }
+
 /* ── Community upload carousel marquee ── */
 @keyframes upload-carousel-scroll {
   from { transform: translateX(0); }

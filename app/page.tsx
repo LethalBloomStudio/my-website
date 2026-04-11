@@ -153,7 +153,7 @@ export default function Home() {
               Always free
             </span>
           </div>
-          <div className="grid gap-3 bg-[rgba(120,120,120,0.04)] p-6 sm:grid-cols-2">
+          <div className="grid gap-3 bg-[rgba(120,120,120,0.04)] p-6 sm:grid-cols-2 day-white-bg">
             {[
               "Upload 1 manuscript free",
               "First 3 chapters free",
@@ -242,7 +242,7 @@ export default function Home() {
             { q: "Are there hidden fees?", a: "No. The only costs are the optional Lethal Member subscription and any Bloom Coins you choose to purchase. Everything else is free." },
           ].map(({ q, a }) => (
             <div key={q}>
-              <h4 className="mb-1 text-sm font-medium text-neutral-100">{q}</h4>
+              <h4 className="mb-1 text-sm font-bold text-neutral-100">{q}</h4>
               <p className="text-sm font-light leading-6 text-neutral-500">{a}</p>
             </div>
           ))}
@@ -251,7 +251,7 @@ export default function Home() {
 
       {/* ── CTA Banner ── */}
       <section
-        className="bg-[#2f3545] px-6 py-24 text-center"
+        className="cta-section bg-[#2f3545] px-6 py-24 text-center"
         aria-labelledby="cta-heading"
       >
         <h2
