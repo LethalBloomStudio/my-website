@@ -40,8 +40,13 @@ export default function ReportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl">
-        <h2 className="text-lg font-semibold text-white">Report User</h2>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+        className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl"
+      >
+        <h2 id="report-modal-title" className="text-lg font-semibold text-white">Report User</h2>
         <p className="mt-1 text-sm text-neutral-400">
           Reporting <span className="text-neutral-200">{targetName}</span>. Select all that apply.
         </p>
@@ -76,13 +81,16 @@ export default function ReportModal({
           </label>
 
           {showOther && (
-            <textarea
-              value={other}
-              onChange={(e) => setOther(e.target.value)}
-              placeholder="Describe the issue..."
-              rows={3}
-              className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
-            />
+            <label className="block space-y-1">
+              <span className="sr-only">Additional details</span>
+              <textarea
+                value={other}
+                onChange={(e) => setOther(e.target.value)}
+                placeholder="Describe the issue..."
+                rows={3}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
+              />
+            </label>
           )}
         </div>
 

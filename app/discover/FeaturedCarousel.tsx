@@ -310,6 +310,7 @@ export default function FeaturedCarousel() {
     <div className="mt-8">
       <section
         className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+        aria-labelledby="featured-carousel-heading"
         onMouseEnter={() => { isHoveredRef.current = true; }}
         onMouseLeave={() => { isHoveredRef.current = false; }}
         onTouchStart={() => { isHoveredRef.current = true; }}
@@ -317,7 +318,7 @@ export default function FeaturedCarousel() {
         onTouchCancel={() => { isHoveredRef.current = false; }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Featured</h2>
+          <h2 id="featured-carousel-heading" className="text-lg font-semibold text-white">Featured</h2>
           <span className="text-xs text-neutral-200">
             {loading ? "Loading…" : `${dedupedSlots.length}/${MAX_SLOTS} slots filled`}
           </span>
@@ -328,9 +329,10 @@ export default function FeaturedCarousel() {
           <button
             type="button"
             onClick={() => scroll("left")}
+            aria-label="Scroll featured manuscripts left"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] text-neutral-300 transition hover:bg-[rgba(120,120,120,0.18)]"
           >
-            ‹
+            <span aria-hidden="true">‹</span>
           </button>
 
           {/* Scroll track */}
@@ -407,9 +409,10 @@ export default function FeaturedCarousel() {
           <button
             type="button"
             onClick={() => scroll("right")}
+            aria-label="Scroll featured manuscripts right"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] text-neutral-300 transition hover:bg-[rgba(120,120,120,0.18)]"
           >
-            ›
+            <span aria-hidden="true">›</span>
           </button>
         </div>
 
@@ -426,11 +429,12 @@ export default function FeaturedCarousel() {
           <div
             role="dialog"
             aria-modal="true"
+            aria-labelledby="feature-modal-title"
             className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl"
           >
             {step === "select" ? (
               <>
-                <h2 className="text-lg font-semibold text-white">Feature Your Book</h2>
+                <h2 id="feature-modal-title" className="text-lg font-semibold text-white">Feature Your Book</h2>
                 <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
                   Choose a public manuscript to feature for{" "}
                   <span className="font-semibold text-neutral-200">3 days</span>. Cost:{" "}
@@ -477,7 +481,7 @@ export default function FeaturedCarousel() {
                   </div>
                 )}
 
-                {buyMsg && <p className="mt-3 text-sm text-red-400">{buyMsg}</p>}
+                {buyMsg && <p role="alert" className="mt-3 text-sm text-red-400">{buyMsg}</p>}
 
                 <div className="mt-5 flex justify-end gap-2">
                   <button
@@ -497,7 +501,7 @@ export default function FeaturedCarousel() {
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-white">Confirm Purchase</h2>
+                <h2 id="feature-modal-title" className="text-lg font-semibold text-white">Confirm Purchase</h2>
                 <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
                   <span className="font-semibold text-neutral-200">{selectedTitle}</span> will
                   appear in the Featured section for{" "}
@@ -513,7 +517,7 @@ export default function FeaturedCarousel() {
                   Balance after purchase: <span style={{ color: "#f59e0b" }}>✿</span> {coins - COST} coins
                 </p>
 
-                {buyMsg && <p className="mt-3 text-sm text-red-400">{buyMsg}</p>}
+                {buyMsg && <p role="alert" className="mt-3 text-sm text-red-400">{buyMsg}</p>}
 
                 <div className="mt-5 flex justify-end gap-2">
                   <button

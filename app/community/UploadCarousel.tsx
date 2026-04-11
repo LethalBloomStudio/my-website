@@ -37,6 +37,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   const rafRef = useRef<number | null>(null);
   const offsetRef = useRef(0);
   const [shouldLoop, setShouldLoop] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   // Initial fetch via API route (uses admin client to bypass RLS on accounts table)
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
 
     function tick(ts: number) {
       const track = trackRef.current;
-      if (track && last !== null && !isHoveredRef.current) {
+      if (track && last !== null && !isHoveredRef.current && !paused) {
         const copyWidth = track.scrollWidth / 2;
         if (copyWidth > 0) {
           offsetRef.current += SPEED * ((ts - last) / 1000);
@@ -127,7 +128,7 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [loading, shouldLoop]);
+  }, [loading, shouldLoop, paused]);
 
   if (loading) {
     return (
@@ -140,10 +141,23 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
   return (
     <div
       ref={outerRef}
+      role="region"
+      aria-label="Manuscripts carousel"
       className="overflow-hidden rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)]"
       onMouseEnter={() => { isHoveredRef.current = true; }}
       onMouseLeave={() => { isHoveredRef.current = false; }}
     >
+      <div className="flex justify-end px-3 pt-2">
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-label={paused ? "Play manuscript carousel" : "Pause manuscript carousel"}
+          aria-pressed={paused}
+          className="rounded px-2 py-0.5 text-[10px] text-neutral-500 hover:text-neutral-300 transition"
+        >
+          {paused ? "▶ Play" : "⏸ Pause"}
+        </button>
+      </div>
       <div
         ref={trackRef}
         className="flex gap-2 py-3 px-3 will-change-transform"

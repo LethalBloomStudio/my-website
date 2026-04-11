@@ -186,32 +186,45 @@ export default function DiscoverPage() {
         <FeaturedCarousel />
 
         <div className="mt-6 grid gap-3 md:grid-cols-5">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search title/author..."
-            className="h-11 rounded-lg border border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.14)] px-4 text-sm text-white md:col-span-2"
-          />
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="h-11 rounded-lg px-3 text-sm">
-            <option value="">All categories</option>
-            {sortedCategoryOptions.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <select value={writerLevelFilter} onChange={(e) => setWriterLevelFilter(e.target.value)} className="h-11 rounded-lg px-3 text-sm">
-            <option value="">Writer lvl</option>
-            <option value="bloom">Bloom</option>
-            <option value="forge">Forge</option>
-            <option value="lethal">Lethal</option>
-          </select>
-          <select value={feedbackFilter} onChange={(e) => setFeedbackFilter(e.target.value)} className="h-11 rounded-lg px-3 text-sm">
-            <option value="">Desired feedback</option>
-            <option value="bloom">Bloom</option>
-            <option value="forge">Forge</option>
-            <option value="lethal">Lethal</option>
-          </select>
+          <label className="md:col-span-2 flex flex-col gap-1">
+            <span className="sr-only">Search by title or author</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search title/author..."
+              aria-label="Search by title or author"
+              className="h-11 rounded-lg border border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.14)] px-4 text-sm text-white"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="sr-only">Filter by category</span>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Filter by category" className="h-11 rounded-lg px-3 text-sm">
+              <option value="">All categories</option>
+              {sortedCategoryOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="sr-only">Filter by writer level</span>
+            <select value={writerLevelFilter} onChange={(e) => setWriterLevelFilter(e.target.value)} aria-label="Filter by writer level" className="h-11 rounded-lg px-3 text-sm">
+              <option value="">Writer lvl</option>
+              <option value="bloom">Bloom</option>
+              <option value="forge">Forge</option>
+              <option value="lethal">Lethal</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="sr-only">Filter by desired feedback type</span>
+            <select value={feedbackFilter} onChange={(e) => setFeedbackFilter(e.target.value)} aria-label="Filter by desired feedback type" className="h-11 rounded-lg px-3 text-sm">
+              <option value="">Desired feedback</option>
+              <option value="bloom">Bloom</option>
+              <option value="forge">Forge</option>
+              <option value="lethal">Lethal</option>
+            </select>
+          </label>
         </div>
 
         {msg ? (
@@ -298,7 +311,7 @@ export default function DiscoverPage() {
         {/* Sentinel for infinite scroll */}
         {!loading && filtered.length > visibleCount && (
           <div ref={sentinelRef} className="py-6 text-center">
-            <span className="text-xs text-neutral-600">Loading more…</span>
+            <span role="status" className="text-xs text-neutral-600">Loading more…</span>
           </div>
         )}
         {!loading && filtered.length > 0 && filtered.length <= visibleCount && (

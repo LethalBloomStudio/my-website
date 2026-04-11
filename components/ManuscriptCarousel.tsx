@@ -131,23 +131,33 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                   <div>
                     {m.description ? (
                       <>
-                        <div
-                          onClick={isOwner ? startEditBlurb : undefined}
-                          className={isOwner ? "cursor-pointer group" : ""}
-                        >
-                          <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed ${isOwner ? "group-hover:text-white transition" : ""}`}>
+                        {isOwner ? (
+                          <button
+                            type="button"
+                            onClick={startEditBlurb}
+                            aria-label="Edit blurb"
+                            className="w-full text-left cursor-pointer group"
+                          >
+                            <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition">
+                              {m.description}
+                            </p>
+                          </button>
+                        ) : (
+                          <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
                             {m.description}
                           </p>
-                        </div>
+                        )}
                       </>
                     ) : (
                       isOwner ? (
-                        <div
+                        <button
+                          type="button"
                           onClick={startEditBlurb}
-                          className="cursor-pointer group"
+                          aria-label="Add a blurb"
+                          className="w-full text-left cursor-pointer group"
                         >
                           <p className="text-xs text-neutral-500 italic border border-dashed border-neutral-700 rounded px-2 py-1.5 group-hover:border-neutral-500 group-hover:text-neutral-300 transition">Click to add a blurb…</p>
-                        </div>
+                        </button>
                       ) : (
                         <p className="text-xs text-neutral-600 italic">No blurb yet.</p>
                       )

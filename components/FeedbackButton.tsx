@@ -81,6 +81,7 @@ export default function FeedbackButton() {
           <div
             role="dialog"
             aria-modal="true"
+            aria-labelledby="feedback-modal-title"
             className="w-full max-w-lg rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl"
           >
             {done ? (
@@ -96,7 +97,7 @@ export default function FeedbackButton() {
               </div>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-neutral-100">Help us improve</h2>
+                <h2 id="feedback-modal-title" className="text-lg font-semibold text-neutral-100">Help us improve</h2>
                 <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
                   What would make Lethal Bloom Studio better for you? Select all that apply.
                 </p>
@@ -124,16 +125,19 @@ export default function FeedbackButton() {
                 </ul>
 
                 <div className="mt-4">
-                  <textarea
-                    rows={3}
-                    placeholder="Anything else on your mind? (optional)"
-                    value={customText}
-                    onChange={(e) => setCustomText(e.target.value)}
-                    className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none resize-none"
-                  />
+                  <label className="block space-y-1">
+                    <span className="sr-only">Additional feedback (optional)</span>
+                    <textarea
+                      rows={3}
+                      placeholder="Anything else on your mind? (optional)"
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none resize-none"
+                    />
+                  </label>
                 </div>
 
-                {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+                {error && <p role="alert" className="mt-2 text-sm text-red-400">{error}</p>}
 
                 <div className="mt-5 flex justify-end gap-2">
                   <button
