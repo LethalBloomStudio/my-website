@@ -147,6 +147,10 @@ select:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.profile-edit-btn svg {
+  fill: #ffffff;
+}
+
 .profile-edit-btn:hover {
   background: rgba(56, 56, 56, 0.92);
 }
@@ -176,6 +180,10 @@ select:focus-visible {
     radial-gradient(circle at 30% 30%, rgba(37, 244, 238, 0.22), transparent 40%),
     radial-gradient(circle at 70% 70%, rgba(254, 44, 85, 0.22), transparent 42%),
     #0a0a0a;
+}
+
+.social-badge--tiktok svg {
+  fill: #ffffff;
 }
 
 .social-badge--instagram {
