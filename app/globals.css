@@ -162,6 +162,10 @@ select:focus-visible {
   border-color: rgba(80, 80, 80, 0.28);
 }
 
+[data-theme="day"] .profile-edit-btn svg {
+  fill: #1a1a1a;
+}
+
 .social-badge {
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
