@@ -962,6 +962,16 @@ a.pricing-btn:link {
 [data-theme="day"] [class*="bg-neutral-800"] { background-color: #f5f5f5 !important; }
 [data-theme="day"] [class*="bg-neutral-700"] { background-color: #e8e8e8 !important; }
 
+/* ── Input / textarea specific overrides (beats Tailwind's generated rules) ── */
+[data-theme="day"] input[class*="bg-neutral"],
+[data-theme="day"] textarea[class*="bg-neutral"],
+[data-theme="day"] input[class*="bg-\[rgba"],
+[data-theme="day"] textarea[class*="bg-\[rgba"] {
+  background-color: #ffffff !important;
+  color: #101420 !important;
+  border-color: rgba(47, 53, 69, 0.22) !important;
+}
+
 /* ── Arbitrary dark card / section backgrounds → white cards ── */
 [data-theme="day"] [class*="bg-[rgba(20,20,20"]    { background-color: #ffffff !important; }
 [data-theme="day"] [class*="bg-[rgba(18,18,18"]    { background-color: #ffffff !important; }
