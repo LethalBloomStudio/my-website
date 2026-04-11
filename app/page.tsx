@@ -249,7 +249,7 @@ export default function Home() {
 
       {/* ── CTA Banner ── */}
       <section
-        className="cta-section bg-[#2f3545] px-6 py-24 text-center"
+        className="cta-section border-y border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.08)] px-6 py-24 text-center"
         aria-labelledby="cta-heading"
       >
         <h2
@@ -264,7 +264,7 @@ export default function Home() {
         </p>
         <a
           href="/sign-up"
-          className="inline-flex items-center rounded-lg border border-white/20 bg-white px-8 py-3 text-sm font-semibold text-[#2f3545] transition hover:bg-[#f0f3fa]"
+          className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-8 py-3 text-sm font-semibold text-white transition hover:border-[rgba(120,120,120,0.9)] hover:bg-[rgba(120,120,120,0.3)]"
         >
           Create Free Account
         </a>
