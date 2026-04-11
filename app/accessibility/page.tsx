@@ -34,7 +34,7 @@ export default function AccessibilityPage() {
         <h2 id="measures-heading" className="text-lg font-semibold text-neutral-100">Measures We Take</h2>
         <ul className="list-inside list-disc space-y-2 text-neutral-400">
           <li>All pages include a skip-to-main-content link for keyboard users</li>
-          <li>All form inputs have visible labels — not just placeholder text</li>
+          <li>All form inputs have visible labels, not just placeholder text</li>
           <li>Error messages are announced immediately to screen readers via live regions</li>
           <li>All images include meaningful alternative text</li>
           <li>All interactive elements have visible focus indicators</li>
@@ -49,7 +49,7 @@ export default function AccessibilityPage() {
         <h2 id="known-heading" className="text-lg font-semibold text-neutral-100">Known Limitations</h2>
         <p>
           We are actively working to improve accessibility across all pages. Some areas of the
-          platform — particularly user-generated content and third-party embeds — may not yet
+          platform (particularly user-generated content and third-party embeds) may not yet
           fully meet our accessibility goals. We are committed to addressing these gaps over time.
         </p>
       </section>
