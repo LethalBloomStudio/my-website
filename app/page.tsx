@@ -13,7 +13,7 @@ export default function Home() {
         className="night-hero-bg bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_60%),#0a0814] px-6 py-24 text-center sm:py-32"
         aria-labelledby="hero-heading"
       >
-        <span className="mb-6 inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-500">
+        <span className="mb-6 inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">
           Now open to writers
         </span>
         <h1
@@ -41,7 +41,7 @@ export default function Home() {
             See how it works
           </a>
         </div>
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-neutral-600">
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-neutral-400">
           <span className="font-bold text-emerald-500" aria-hidden="true">✓</span>
           No credit card required
         </p>
@@ -60,7 +60,7 @@ export default function Home() {
           "Earn coins by giving feedback",
           "No credit card required",
         ].map((item) => (
-          <span key={item} className="flex items-center gap-1.5 text-xs text-neutral-500">
+          <span key={item} className="flex items-center gap-1.5 text-xs text-neutral-400">
             <span className="font-bold text-emerald-500" aria-hidden="true">✓</span>
             {item}
           </span>
@@ -73,7 +73,7 @@ export default function Home() {
         aria-labelledby="founder-heading"
       >
         <div className="mx-auto max-w-2xl">
-          <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-600">Why we built this</p>
+          <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">Why we built this</p>
           <h2
             id="founder-heading"
             className="mb-8 text-3xl font-light text-neutral-100"
@@ -103,7 +103,7 @@ export default function Home() {
         className="mx-auto max-w-5xl px-6 py-20"
         aria-labelledby="how-heading"
       >
-        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-600">Simple process</p>
+        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">Simple process</p>
         <h2
           id="how-heading"
           className="mb-8 text-3xl font-light text-neutral-100"
@@ -122,9 +122,9 @@ export default function Home() {
             { num: "04", title: "Grow without limits", body: "Subscribe for $10/mo or $100/yr for unlimited uploads, chapters, and reader slots." },
           ].map(({ num, title, body }) => (
             <div key={num} className="bg-[rgba(120,120,120,0.06)] px-7 py-8" role="listitem">
-              <span className="mb-3 block text-[0.7rem] font-medium tracking-widest text-neutral-600">{num}</span>
+              <span className="mb-3 block text-[0.7rem] font-medium tracking-widest text-neutral-400">{num}</span>
               <h3 className="mb-2 text-sm font-medium text-neutral-100">{title}</h3>
-              <p className="text-xs font-light leading-6 text-neutral-500">{body}</p>
+              <p className="text-xs font-light leading-6 text-neutral-400">{body}</p>
             </div>
           ))}
         </div>
@@ -135,7 +135,7 @@ export default function Home() {
         className="mx-auto max-w-5xl px-6 pb-20"
         aria-labelledby="free-heading"
       >
-        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-600">Free tier</p>
+        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">Free tier</p>
         <h2
           id="free-heading"
           className="mb-8 text-3xl font-light text-neutral-100"
@@ -174,9 +174,9 @@ export default function Home() {
           >
             Create Free Account
           </a>
-          <p className="mt-3 text-xs text-neutral-600">
+          <p className="mt-3 text-xs text-neutral-400">
             Want unlimited?{" "}
-            <a href="/pricing" className="text-neutral-400 underline underline-offset-2 transition hover:text-neutral-200">
+            <a href="/pricing" className="text-neutral-200 underline underline-offset-2 transition hover:text-white">
               See Lethal Member at $10/mo
             </a>
           </p>
@@ -190,7 +190,7 @@ export default function Home() {
       >
         <div className="mx-auto max-w-5xl">
           <span className="bloom-coin-icon mb-2 block text-2xl" aria-hidden="true">✿</span>
-          <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-600">Bloom Coins</p>
+          <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">Bloom Coins</p>
           <h2
             id="coins-heading"
             className="mb-4 text-3xl font-light text-neutral-100"
@@ -198,7 +198,7 @@ export default function Home() {
           >
             The community <strong className="font-semibold text-white">credit system.</strong>
           </h2>
-          <p className="mb-8 max-w-lg text-sm font-light leading-7 text-neutral-500">
+          <p className="mb-8 max-w-lg text-sm font-light leading-7 text-neutral-400">
             Earn coins by leaving meaningful feedback on other writers&apos; work. Spend them to upload additional chapters, open extra manuscript slots, or add more beta reader seats. The more you engage, the more you earn.
           </p>
           <div className="grid divide-y divide-[rgba(120,120,120,0.2)] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.25)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r lg:[&>*:not(:last-child)]:border-[rgba(120,120,120,0.2)]">
@@ -210,7 +210,7 @@ export default function Home() {
             ].map(({ val, label }) => (
               <div key={val} className="bg-[rgba(120,120,120,0.08)] px-7 py-8">
                 <div className="mb-1 text-2xl font-light tracking-tight text-neutral-100">{val}</div>
-                <div className="text-xs font-light leading-5 text-neutral-500">{label}</div>
+                <div className="text-xs font-light leading-5 text-neutral-400">{label}</div>
               </div>
             ))}
           </div>
@@ -222,7 +222,7 @@ export default function Home() {
         className="mx-auto max-w-5xl px-6 py-20"
         aria-labelledby="faq-heading"
       >
-        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-600">Questions</p>
+        <p className="mb-2 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">Questions</p>
         <h2
           id="faq-heading"
           className="mb-8 text-3xl font-light text-neutral-100"
@@ -241,7 +241,7 @@ export default function Home() {
           ].map(({ q, a }) => (
             <div key={q}>
               <h4 className="mb-1 text-sm font-bold text-neutral-100">{q}</h4>
-              <p className="text-sm font-light leading-6 text-neutral-500">{a}</p>
+              <p className="text-sm font-light leading-6 text-neutral-400">{a}</p>
             </div>
           ))}
         </div>
@@ -268,7 +268,7 @@ export default function Home() {
         >
           Create Free Account
         </a>
-        <p className="mt-3 text-xs text-white/30">Start in under 2 minutes</p>
+        <p className="mt-3 text-xs text-white/60">Start in under 2 minutes</p>
       </section>
 
       {/* ── Newsletter (hidden) ── */}
@@ -277,14 +277,14 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(120,120,120,0.15)] bg-[rgba(120,120,120,0.04)] px-6 py-5">
-        <p className="text-xs text-neutral-600">&copy; {new Date().getFullYear()} Lethal Bloom Studio. All rights reserved.</p>
+        <p className="text-xs text-neutral-400">&copy; {new Date().getFullYear()} Lethal Bloom Studio. All rights reserved.</p>
         <nav className="flex flex-wrap gap-5" aria-label="Footer navigation">
           {[
             { label: "Pricing", href: "/pricing" },
             { label: "Help", href: "/help" },
             { label: "Accessibility", href: "/accessibility" },
           ].map(({ label, href }) => (
-            <a key={href} href={href} className="text-xs text-neutral-600 transition hover:text-neutral-300">
+            <a key={href} href={href} className="text-xs text-neutral-400 transition hover:text-neutral-200">
               {label}
             </a>
           ))}

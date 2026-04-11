@@ -118,14 +118,17 @@ select:focus-visible {
   outline-color: #111111;
 }
 
-button {
-  border: 1px solid rgba(120, 120, 120, 0.9);
-  background: var(--brand);
-  color: #ffffff;
-}
+/* In @layer base so Tailwind utility classes (text-*, bg-*) take precedence */
+@layer base {
+  button {
+    border: 1px solid rgba(120, 120, 120, 0.9);
+    background: var(--brand);
+    color: #ffffff;
+  }
 
-button:hover {
-  background: var(--brand-strong);
+  button:hover {
+    background: var(--brand-strong);
+  }
 }
 
 /* ── Workspace button — black outline, white fill, black text on all themes ── */
@@ -334,7 +337,7 @@ button:hover {
 /* ---------- Button Tabs ---------- */
 .tab {
   text-decoration: none;
-  color: #111111;
+  color: #000000;
   padding: 10px 12px;
   border-radius: 12px;
   font-weight: 800;
@@ -351,25 +354,25 @@ button.tab {
 .tab:hover {
   background: var(--brand-strong);
   border-color: rgba(120, 120, 120, 1);
-  color: #111111;
+  color: #000000;
 }
 
 .tabActive {
   background: rgba(120, 120, 120, 0.12);
   border-color: rgba(120, 120, 120, 0.55);
-  color: #111111;
+  color: #000000;
 }
 
 .tabCta {
   background: var(--brand);
   border-color: rgba(120, 120, 120, 0.9);
-  color: #111111;
+  color: #000000;
 }
 
 .tabCta:hover {
   background: var(--brand-strong);
   border-color: rgba(120, 120, 120, 1);
-  color: #111111;
+  color: #000000;
 }
 
 .iconTab {
@@ -707,9 +710,9 @@ select optgroup {
 [data-theme="day"] .text-neutral-100 { color: #1a1a1a !important; }
 [data-theme="day"] .text-neutral-200 { color: #2a2a2a !important; }
 [data-theme="day"] .text-neutral-300 { color: rgba(26, 26, 26, 0.72) !important; }
-[data-theme="day"] .text-neutral-400 { color: rgba(26, 26, 26, 0.55) !important; }
-[data-theme="day"] .text-neutral-500 { color: rgba(26, 26, 26, 0.42) !important; }
-[data-theme="day"] .text-neutral-600 { color: rgba(26, 26, 26, 0.35) !important; }
+[data-theme="day"] .text-neutral-400 { color: #555555 !important; } /* 6.25:1 on #ebebeb ✓ */
+[data-theme="day"] .text-neutral-500 { color: #606060 !important; } /* 5.28:1 on #ebebeb ✓ */
+[data-theme="day"] .text-neutral-600 { color: #666666 !important; } /* 4.84:1 on #ebebeb ✓ */
 [data-theme="day"] .text-white       { color: #1a1a1a !important; }
 
 /* ── Border colours ── */
