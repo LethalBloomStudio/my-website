@@ -157,9 +157,9 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_50%),#0a0814] text-neutral-100">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_50%),#0a0a0a] text-neutral-100">
       <div className="mx-auto max-w-2xl px-6 py-14">
-        <section className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[rgba(20,20,20,0.92)] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
+        <section className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[#161616] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
           <h1 className="text-3xl font-semibold tracking-tight">Join Now</h1>
 
           <p className="mt-2 text-sm text-neutral-300">
@@ -182,7 +182,7 @@ export default function SignUpPage() {
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Name <span className="text-neutral-500 text-xs">(private, not shown publicly)</span></span>
               <input
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                 type="text"
                 placeholder="Your real name"
                 value={fullName}
@@ -195,7 +195,7 @@ export default function SignUpPage() {
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Display name / Pen name <span className="text-neutral-500 text-xs">(optional, shown publicly)</span></span>
               <input
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                 type="text"
                 placeholder="e.g. J. Doe or your pen name"
                 value={penName}
@@ -210,10 +210,10 @@ export default function SignUpPage() {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 select-none">@</span>
                 <input
-                  className={`w-full rounded-lg border px-3 py-2 pl-7 bg-neutral-900 ${
+                  className={`w-full rounded-lg border px-3 py-2 pl-7 bg-[#1c1c1c] ${
                     usernameStatus === "available" ? "border-emerald-700" :
                     usernameStatus === "taken" || usernameStatus === "invalid" ? "border-red-700" :
-                    "border-neutral-800"
+                    "border-[rgba(120,120,120,0.35)]"
                   }`}
                   type="text"
                   placeholder="yourhandle"
@@ -233,7 +233,7 @@ export default function SignUpPage() {
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Email</span>
               <input
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -246,7 +246,7 @@ export default function SignUpPage() {
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Date of birth (private)</span>
               <input
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                 type="date"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
@@ -258,7 +258,7 @@ export default function SignUpPage() {
               <label className="block space-y-1">
                 <span className="text-sm text-neutral-300">Parent/guardian email</span>
                 <input
-                  className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                  className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                   type="email"
                   placeholder="parent@example.com"
                   value={parentEmail}
@@ -276,7 +276,7 @@ export default function SignUpPage() {
               <span className="text-sm text-neutral-300">Password</span>
               <div className="flex gap-2">
                 <input
-                  className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                  className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                   type={showPassword ? "text" : "password"}
                   placeholder="At least 6 characters"
                   value={password}
@@ -288,7 +288,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="h-[42px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-xs text-neutral-200 hover:bg-neutral-800"
+                  className="h-[42px] shrink-0 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(28,28,28,0.8)] px-3 text-xs text-neutral-200 hover:bg-[#252525]"
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -305,7 +305,7 @@ export default function SignUpPage() {
           </form>
 
           {msg ? (
-            <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
+            <p className="mt-4 rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(28,28,28,0.8)] p-3 text-sm text-neutral-200">{msg}</p>
           ) : null}
 
 

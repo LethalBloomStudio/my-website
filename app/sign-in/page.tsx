@@ -96,9 +96,9 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_50%),#0a0814] text-neutral-100">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_50%),#0a0a0a] text-neutral-100">
       <div className="mx-auto grid max-w-5xl gap-6 px-6 py-14 md:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[rgba(20,20,20,0.92)] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
+        <section className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[#161616] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
           <h1 className="text-3xl font-semibold tracking-tight">Sign In</h1>
           <p className="mt-2 text-sm text-neutral-300">
             Welcome back. Access your writing workspace and public profile.
@@ -109,7 +109,7 @@ export default function SignInPage() {
             onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
           >
             <input
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+              className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -119,7 +119,7 @@ export default function SignInPage() {
 
             <div className="flex gap-2">
               <input
-                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                className="w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[#1c1c1c] px-3 py-2"
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
@@ -129,7 +129,7 @@ export default function SignInPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="h-[42px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-xs text-neutral-200 hover:bg-neutral-800"
+                className="h-[42px] shrink-0 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(28,28,28,0.8)] px-3 text-xs text-neutral-200 hover:bg-[#252525]"
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -151,18 +151,18 @@ export default function SignInPage() {
               type="button"
               onClick={() => void handleMagicLink()}
               disabled={sendingLink}
-              className="h-11 w-full rounded-lg border border-neutral-700 bg-neutral-900/60 font-medium text-neutral-100 hover:bg-neutral-800 disabled:opacity-70"
+              className="h-11 w-full rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(28,28,28,0.8)] font-medium text-neutral-100 hover:bg-[#252525] disabled:opacity-70"
             >
               {sendingLink ? "Sending link..." : "Email me a sign-in link"}
             </button>
           </form>
 
           {msg ? (
-            <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
+            <p className="mt-4 rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(28,28,28,0.8)] p-3 text-sm text-neutral-200">{msg}</p>
           ) : null}
         </section>
 
-        <aside className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[rgba(20,20,20,0.92)] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
+        <aside className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[#161616] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
           <h2 className="text-xl font-semibold">New here?</h2>
           <p className="mt-2 text-sm text-neutral-300">
             Create an account to publish drafts, request feedback, and manage Bloom Coins.
