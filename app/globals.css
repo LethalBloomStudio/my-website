@@ -554,11 +554,11 @@ select optgroup {
 /* ═══════════════════════════════════════════════════════════════════
    DAY SHIFT THEME OVERRIDES
    Applied when <html data-theme="day"> is set by ThemeToggle.
-   Accent: dark navy (#2f3545). Backgrounds: soft white/blue-gray. Text: near-black.
+   Accent: dark navy (#2f3545). Backgrounds: neutral light grey. Text: near-black.
    ═══════════════════════════════════════════════════════════════════ */
 
 [data-theme="day"] {
-  --background: #d5d9e2;
+  --background: #ebebeb;
   --foreground: #101420;
   --brand: #2f3545;
   --brand-strong: #232938;
@@ -567,7 +567,7 @@ select optgroup {
 }
 
 [data-theme="day"] body {
-  background-color: #d5d9e2;
+  background-color: #ebebeb;
   color: #101420;
 }
 
@@ -575,7 +575,7 @@ select optgroup {
 [data-theme="day"] button,
 [data-theme="day"] .tab,
 [data-theme="day"] .iconTab {
-  background: #cdd4e0 !important;
+  background: #d8d8d8 !important;
   border-color: rgba(47, 53, 69, 0.28) !important;
   color: #101420 !important;
   box-shadow: none !important;
@@ -584,7 +584,7 @@ select optgroup {
 [data-theme="day"] button:hover,
 [data-theme="day"] .tab:hover,
 [data-theme="day"] .iconTab:hover {
-  background: #b8c1d0 !important;
+  background: #c2c2c2 !important;
   border-color: rgba(47, 53, 69, 0.45) !important;
   color: #101420 !important;
 }
@@ -659,19 +659,19 @@ button.btn-success:hover {
 }
 
 [data-theme="day"] .chapter-btn:hover {
-  background: #f0f3fa !important;
+  background: #f0f0f0 !important;
   border-color: #2f3545 !important;
   color: #0a0d16 !important;
 }
 
 [data-theme="day"] .chapter-btn.active-chapter {
-  background: #cdd4e0 !important;
+  background: #d8d8d8 !important;
   border-color: rgba(47, 53, 69, 0.35) !important;
   color: #101420 !important;
 }
 
 [data-theme="day"] .chapter-btn.active-chapter:hover {
-  background: #b8c1d0 !important;
+  background: #c2c2c2 !important;
   border-color: rgba(47, 53, 69, 0.5) !important;
 }
 
@@ -693,7 +693,7 @@ button.btn-success:hover {
 }
 
 [data-theme="day"] .tabActive {
-  background: #cdd4e0 !important;
+  background: #d8d8d8 !important;
   border-color: rgba(47, 53, 69, 0.35) !important;
   color: #101420 !important;
 }
@@ -864,7 +864,7 @@ a.pricing-btn:link {
 
 [data-theme="day"] .pricing-pill {
   border-color: #2f3545;
-  background: #f0f3fa;
+  background: #f0f0f0;
   color: #1f2533;
 }
 
