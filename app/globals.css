@@ -781,13 +781,13 @@ button.btn-success:hover {
 [data-theme="day"] textarea {
   background: #ffffff !important;
   color: #1a1a1a !important;
-  border-color: rgba(80, 80, 80, 0.22) !important;
+  border-color: rgba(80, 80, 80, 0.5) !important;
 }
 
 [data-theme="day"] input:focus,
 [data-theme="day"] textarea:focus,
 [data-theme="day"] select:focus {
-  border-color: rgba(80, 80, 80, 0.55);
+  border-color: rgba(80, 80, 80, 0.75);
   box-shadow: 0 0 0 3px rgba(80, 80, 80, 0.12);
 }
 
@@ -969,7 +969,14 @@ a.pricing-btn:link {
 [data-theme="day"] textarea[class*="bg-\[rgba"] {
   background-color: #ffffff !important;
   color: #1a1a1a !important;
-  border-color: rgba(80, 80, 80, 0.22) !important;
+  border-color: rgba(80, 80, 80, 0.5) !important;
+}
+
+/* ── Nuclear fallback: force white bg + visible border on ALL inputs in day mode ── */
+html[data-theme="day"] input[class],
+html[data-theme="day"] textarea[class] {
+  background-color: #ffffff !important;
+  border-color: rgba(80, 80, 80, 0.5) !important;
 }
 
 /* ── Arbitrary dark card / section backgrounds → white cards ── */
