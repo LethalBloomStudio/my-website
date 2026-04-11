@@ -571,6 +571,58 @@ select optgroup {
   color: #101420;
 }
 
+/* ── Page-level background overrides — dark Tailwind bg classes → light grey ── */
+[data-theme="day"] .bg-neutral-950,
+[data-theme="day"] .bg-neutral-900 {
+  background-color: #ebebeb !important;
+}
+
+[data-theme="day"] .bg-neutral-800 {
+  background-color: #e0e0e0 !important;
+}
+
+/* ── Homepage hero dark gradient and similar full-page gradients ── */
+[data-theme="day"] .night-hero-bg {
+  background: #ebebeb !important;
+}
+
+/* ── Text color overrides — light text → dark text ── */
+[data-theme="day"] .text-neutral-100 {
+  color: #101420 !important;
+}
+[data-theme="day"] .text-neutral-200 {
+  color: #1f252e !important;
+}
+[data-theme="day"] .text-neutral-300 {
+  color: rgba(16, 20, 32, 0.72) !important;
+}
+[data-theme="day"] .text-neutral-400 {
+  color: rgba(16, 20, 32, 0.55) !important;
+}
+[data-theme="day"] .text-neutral-500 {
+  color: rgba(16, 20, 32, 0.42) !important;
+}
+[data-theme="day"] .text-neutral-600 {
+  color: rgba(16, 20, 32, 0.35) !important;
+}
+[data-theme="day"] .text-white {
+  color: #101420 !important;
+}
+
+/* ── Border overrides — dark borders → light grey ── */
+[data-theme="day"] .border-neutral-800 {
+  border-color: rgba(16, 20, 32, 0.14) !important;
+}
+[data-theme="day"] .border-neutral-700 {
+  border-color: rgba(16, 20, 32, 0.2) !important;
+}
+
+/* ── Card / panel backgrounds — dark rgba panels → light ── */
+[data-theme="day"] .bg-neutral-950\/30,
+[data-theme="day"] .bg-neutral-950\/20 {
+  background-color: rgba(200, 200, 200, 0.35) !important;
+}
+
 /* ── Buttons & tabs → soft grey, darker than page bg, dark text ── */
 [data-theme="day"] button,
 [data-theme="day"] .tab,

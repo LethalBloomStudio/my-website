@@ -12,7 +12,7 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <section
-        className="bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_60%),#0a0814] px-6 py-24 text-center sm:py-32"
+        className="night-hero-bg bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_60%),#0a0814] px-6 py-24 text-center sm:py-32"
         aria-labelledby="hero-heading"
       >
         <span className="mb-6 inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-500">
