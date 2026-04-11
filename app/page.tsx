@@ -4,8 +4,6 @@ import { useState } from "react";
 import FeedbackButton from "@/components/FeedbackButton";
 
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [nlStatus, setNlStatus] = useState<"idle" | "subscribed">("idle");
 
   return (
     <main id="main" className="min-h-screen">
@@ -273,42 +271,7 @@ export default function Home() {
         <p className="mt-3 text-xs text-white/30">Start in under 2 minutes</p>
       </section>
 
-      {/* ── Newsletter ── */}
-      <section
-        className="border-b border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.04)] px-6 py-14 text-center"
-        aria-labelledby="newsletter-heading"
-      >
-        <div className="mx-auto max-w-sm">
-          <h3 id="newsletter-heading" className="mb-1 text-base font-medium text-neutral-100">Stay connected</h3>
-          <p className="mb-5 text-xs font-light leading-5 text-neutral-500">
-            Get occasional updates, featured stories, and highlights from your Lethal Bloom community.
-          </p>
-          {nlStatus === "subscribed" ? (
-            <p className="text-sm text-emerald-400">You&apos;re subscribed — thank you!</p>
-          ) : (
-            <div className="flex gap-2" role="form" aria-label="Newsletter signup">
-              <label htmlFor="nl-email" className="sr-only">Email address</label>
-              <input
-                id="nl-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setNlStatus("subscribed"); }}
-                placeholder="your@email.com"
-                autoComplete="email"
-                className="min-w-0 flex-1 rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.1)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.7)] focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => { if (email.trim()) setNlStatus("subscribed"); }}
-                className="shrink-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.18)] px-4 py-2 text-sm font-medium text-neutral-200 transition hover:bg-[rgba(120,120,120,0.28)]"
-              >
-                Subscribe
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* ── Newsletter (hidden) ── */}
 
       <FeedbackButton />
 
