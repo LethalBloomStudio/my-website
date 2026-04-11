@@ -554,21 +554,21 @@ select optgroup {
 /* ═══════════════════════════════════════════════════════════════════
    DAY SHIFT THEME OVERRIDES
    Applied when <html data-theme="day"> is set by ThemeToggle.
-   Accent: dark navy (#2f3545). Backgrounds: neutral light grey. Text: near-black.
+   Accent: dark grey (#3d3d3d). Backgrounds: neutral light grey. Text: near-black.
    ═══════════════════════════════════════════════════════════════════ */
 
 [data-theme="day"] {
   --background: #ebebeb;
-  --foreground: #101420;
-  --brand: #2f3545;
-  --brand-strong: #232938;
-  --brand-soft: rgba(47, 53, 69, 0.10);
-  --brand-border: rgba(47, 53, 69, 0.55);
+  --foreground: #1a1a1a;
+  --brand: #3d3d3d;
+  --brand-strong: #333333;
+  --brand-soft: rgba(80, 80, 80, 0.10);
+  --brand-border: rgba(80, 80, 80, 0.55);
 }
 
 [data-theme="day"] body {
   background-color: #ebebeb;
-  color: #101420;
+  color: #1a1a1a;
 }
 
 /* ── Override Tailwind v4 CSS custom properties for neutral colours ── */
@@ -579,7 +579,7 @@ select optgroup {
   --color-neutral-800: #e0e0e0;
   --color-neutral-700: #d8d8d8;
   --color-neutral-600: #cccccc;
-  --color-white: #101420;
+  --color-white: #1a1a1a;
 }
 
 /* ── All page/main wrappers → light grey background ── */
@@ -624,25 +624,25 @@ select optgroup {
 [data-theme="day"] [class~="bg-[rgba(18,18,18,0.95)]"] { background-color: #ffffff !important; }
 
 /* ── Text colours ── */
-[data-theme="day"] .text-neutral-100 { color: #101420 !important; }
-[data-theme="day"] .text-neutral-200 { color: #1f252e !important; }
-[data-theme="day"] .text-neutral-300 { color: rgba(16, 20, 32, 0.72) !important; }
-[data-theme="day"] .text-neutral-400 { color: rgba(16, 20, 32, 0.55) !important; }
-[data-theme="day"] .text-neutral-500 { color: rgba(16, 20, 32, 0.42) !important; }
-[data-theme="day"] .text-neutral-600 { color: rgba(16, 20, 32, 0.35) !important; }
-[data-theme="day"] .text-white       { color: #101420 !important; }
+[data-theme="day"] .text-neutral-100 { color: #1a1a1a !important; }
+[data-theme="day"] .text-neutral-200 { color: #2a2a2a !important; }
+[data-theme="day"] .text-neutral-300 { color: rgba(26, 26, 26, 0.72) !important; }
+[data-theme="day"] .text-neutral-400 { color: rgba(26, 26, 26, 0.55) !important; }
+[data-theme="day"] .text-neutral-500 { color: rgba(26, 26, 26, 0.42) !important; }
+[data-theme="day"] .text-neutral-600 { color: rgba(26, 26, 26, 0.35) !important; }
+[data-theme="day"] .text-white       { color: #1a1a1a !important; }
 
 /* ── Border colours ── */
-[data-theme="day"] .border-neutral-800 { border-color: rgba(16, 20, 32, 0.14) !important; }
-[data-theme="day"] .border-neutral-700 { border-color: rgba(16, 20, 32, 0.2) !important; }
+[data-theme="day"] .border-neutral-800 { border-color: rgba(26, 26, 26, 0.14) !important; }
+[data-theme="day"] .border-neutral-700 { border-color: rgba(26, 26, 26, 0.2) !important; }
 
 /* ── Buttons & tabs → soft grey, darker than page bg, dark text ── */
 [data-theme="day"] button,
 [data-theme="day"] .tab,
 [data-theme="day"] .iconTab {
   background: #d8d8d8 !important;
-  border-color: rgba(47, 53, 69, 0.28) !important;
-  color: #101420 !important;
+  border-color: rgba(80, 80, 80, 0.28) !important;
+  color: #1a1a1a !important;
   box-shadow: none !important;
 }
 
@@ -650,8 +650,8 @@ select optgroup {
 [data-theme="day"] .tab:hover,
 [data-theme="day"] .iconTab:hover {
   background: #c2c2c2 !important;
-  border-color: rgba(47, 53, 69, 0.45) !important;
-  color: #101420 !important;
+  border-color: rgba(80, 80, 80, 0.45) !important;
+  color: #1a1a1a !important;
 }
 
 /* ── White link-style buttons — match <a> appearance on both themes ── */
@@ -714,30 +714,30 @@ button.btn-success:hover {
 /* ── Chapter sidebar buttons — day shift ── */
 [data-theme="day"] .chapter-btn {
   background: #ffffff !important;
-  border-color: #2f3545 !important;
-  color: #101420 !important;
+  border-color: #3d3d3d !important;
+  color: #1a1a1a !important;
 }
 
 [data-theme="day"] .chapter-btn span:not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-rose"]),
 [data-theme="day"] .chapter-btn p {
-  color: #101420 !important;
+  color: #1a1a1a !important;
 }
 
 [data-theme="day"] .chapter-btn:hover {
   background: #f0f0f0 !important;
-  border-color: #2f3545 !important;
-  color: #0a0d16 !important;
+  border-color: #3d3d3d !important;
+  color: #0a0a0a !important;
 }
 
 [data-theme="day"] .chapter-btn.active-chapter {
   background: #d8d8d8 !important;
-  border-color: rgba(47, 53, 69, 0.35) !important;
-  color: #101420 !important;
+  border-color: rgba(80, 80, 80, 0.35) !important;
+  color: #1a1a1a !important;
 }
 
 [data-theme="day"] .chapter-btn.active-chapter:hover {
   background: #c2c2c2 !important;
-  border-color: rgba(47, 53, 69, 0.5) !important;
+  border-color: rgba(80, 80, 80, 0.5) !important;
 }
 
 [data-theme="day"] .badge-violet {
@@ -759,64 +759,64 @@ button.btn-success:hover {
 
 [data-theme="day"] .tabActive {
   background: #d8d8d8 !important;
-  border-color: rgba(47, 53, 69, 0.35) !important;
-  color: #101420 !important;
+  border-color: rgba(80, 80, 80, 0.35) !important;
+  color: #1a1a1a !important;
 }
 
 /* ── Select → light, crisp ── */
 [data-theme="day"] select {
   background-color: #ffffff !important;
-  border-color: rgba(47, 53, 69, 0.22) !important;
-  color: #101420 !important;
+  border-color: rgba(80, 80, 80, 0.22) !important;
+  color: #1a1a1a !important;
 }
 
 [data-theme="day"] select option,
 [data-theme="day"] select optgroup {
   background-color: #ffffff;
-  color: #101420;
+  color: #1a1a1a;
 }
 
 /* ── Inputs & textareas ── */
 [data-theme="day"] input,
 [data-theme="day"] textarea {
   background: #ffffff !important;
-  color: #101420 !important;
-  border-color: rgba(47, 53, 69, 0.22) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(80, 80, 80, 0.22) !important;
 }
 
 [data-theme="day"] input:focus,
 [data-theme="day"] textarea:focus,
 [data-theme="day"] select:focus {
-  border-color: rgba(47, 53, 69, 0.55);
-  box-shadow: 0 0 0 3px rgba(47, 53, 69, 0.12);
+  border-color: rgba(80, 80, 80, 0.55);
+  box-shadow: 0 0 0 3px rgba(80, 80, 80, 0.12);
 }
 
 [data-theme="day"] input::placeholder,
 [data-theme="day"] textarea::placeholder {
-  color: rgba(16, 20, 32, 0.45);
+  color: rgba(26, 26, 26, 0.45);
 }
 
 /* ── Navbar ── */
 [data-theme="day"] .navWrap {
   background: #ffffff;
-  border-bottom-color: rgba(16, 20, 32, 0.08);
+  border-bottom-color: rgba(26, 26, 26, 0.08);
 }
 
 /* ── Dropdown menus ── */
 [data-theme="day"] .msdMenu {
   background: #ffffff;
-  border-color: rgba(16, 20, 32, 0.1);
-  box-shadow: 0 10px 30px rgba(16, 20, 32, 0.12);
+  border-color: rgba(26, 26, 26, 0.1);
+  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.12);
 }
 
-[data-theme="day"] .msdItem { color: #101420; }
-[data-theme="day"] .msdTrigger { color: #101420; }
+[data-theme="day"] .msdItem { color: #1a1a1a; }
+[data-theme="day"] .msdTrigger { color: #1a1a1a; }
 
 /* ── Tooltip ── */
 [data-theme="day"] .iconTab[data-tip]::after {
   background: #ffffff;
-  color: #101420;
-  border-color: rgba(16, 20, 32, 0.14);
+  color: #1a1a1a;
+  border-color: rgba(26, 26, 26, 0.14);
 }
 
 /* ── Profile banner ── */
@@ -907,46 +907,46 @@ a.pricing-btn:link {
 
 /* ── Day mode: pricing ── */
 [data-theme="day"] .pricing-card {
-  border-color: #2f3545;
+  border-color: #3d3d3d;
   background: #ffffff;
-  color: #1a1f2b;
-  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
+  color: #1a1a1a;
+  box-shadow: 0 16px 38px rgba(26, 26, 26, 0.12);
 }
 
 [data-theme="day"] .pricing-banner {
-  border-color: #2f3545;
+  border-color: #3d3d3d;
   background: #ffffff;
-  color: #1a1f2b;
-  box-shadow: 0 12px 28px rgba(16, 20, 32, 0.10);
+  color: #1a1a1a;
+  box-shadow: 0 12px 28px rgba(26, 26, 26, 0.10);
 }
 
 [data-theme="day"] .pricing-banner--brand {
   background: #ffffff;
-  border-color: #232938;
-  color: #1a1f2b;
+  border-color: #333333;
+  color: #1a1a1a;
   box-shadow: none;
 }
 
 [data-theme="day"] .pricing-pill {
-  border-color: #2f3545;
+  border-color: #3d3d3d;
   background: #f0f0f0;
-  color: #1f2533;
+  color: #2a2a2a;
 }
 
 [data-theme="day"] .pricing-details {
-  border-color: #2f3545;
+  border-color: #3d3d3d;
   background: #ffffff;
-  color: #1a1f2b;
+  color: #1a1a1a;
 }
 
 [data-theme="day"] .pricing-btn {
-  border-color: #232938;
-  background: #2f3545;
+  border-color: #333333;
+  background: #3d3d3d;
   color: #ffffff;
 }
 
 [data-theme="day"] .pricing-btn:hover {
-  background: #232938;
+  background: #333333;
 }
 
 /* ── Chapter editor ── */
@@ -968,8 +968,8 @@ a.pricing-btn:link {
 [data-theme="day"] input[class*="bg-\[rgba"],
 [data-theme="day"] textarea[class*="bg-\[rgba"] {
   background-color: #ffffff !important;
-  color: #101420 !important;
-  border-color: rgba(47, 53, 69, 0.22) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(80, 80, 80, 0.22) !important;
 }
 
 /* ── Arbitrary dark card / section backgrounds → white cards ── */
@@ -1003,14 +1003,14 @@ a.pricing-btn:link {
 [data-theme="day"] [class*="bg-[rgba(120,120,120,0.32"] { background-color: #ffffff !important; }
 
 /* ── Brand soft overlay backgrounds → red-tinted ── */
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.07"] { background-color: rgba(47,53,69,0.06) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.08"] { background-color: rgba(47,53,69,0.07) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.12"] { background-color: rgba(47,53,69,0.09) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.14"] { background-color: rgba(47,53,69,0.10) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.16"] { background-color: rgba(47,53,69,0.12) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.1"]  { background-color: rgba(47,53,69,0.08) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.2"]  { background-color: rgba(47,53,69,0.14) !important; }
-[data-theme="day"] [class*="bg-[rgba(124,92,255,0.3"]  { background-color: rgba(47,53,69,0.2) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.07"] { background-color: rgba(80,80,80,0.06) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.08"] { background-color: rgba(80,80,80,0.07) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.12"] { background-color: rgba(80,80,80,0.09) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.14"] { background-color: rgba(80,80,80,0.10) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.16"] { background-color: rgba(80,80,80,0.12) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.1"]  { background-color: rgba(80,80,80,0.08) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.2"]  { background-color: rgba(80,80,80,0.14) !important; }
+[data-theme="day"] [class*="bg-[rgba(124,92,255,0.3"]  { background-color: rgba(80,80,80,0.2) !important; }
 
 /* ── White & light text → dark gray ── */
 [data-theme="day"] .text-white         { color: #1a1a1a !important; }
@@ -1020,9 +1020,9 @@ a.pricing-btn:link {
 [data-theme="day"] .text-neutral-100  { color: #1a1a1a !important; }
 [data-theme="day"] .text-neutral-200  { color: #2a2a2a !important; }
 [data-theme="day"] .text-neutral-300  { color: #3d3d3d !important; }
-[data-theme="day"] .text-neutral-400  { color: #3a3f4a !important; }
-[data-theme="day"] .text-neutral-500  { color: #2f3542 !important; }
-[data-theme="day"] .text-neutral-600  { color: #263040 !important; }
+[data-theme="day"] .text-neutral-400  { color: #3a3a3a !important; }
+[data-theme="day"] .text-neutral-500  { color: #333333 !important; }
+[data-theme="day"] .text-neutral-600  { color: #303030 !important; }
 
 /* ── Arbitrary light / red-tinted text → dark gray ── */
 [data-theme="day"] [class*="text-[#e9"]              { color: #1a1a1a !important; }
@@ -1030,7 +1030,7 @@ a.pricing-btn:link {
 [data-theme="day"] [class*="text-[#ededed"]          { color: #1a1a1a !important; }
 [data-theme="day"] [class*="text-[#ffe"]             { color: #1a1a1a !important; }
 [data-theme="day"] [class*="text-[rgba(210,210,210"] { color: #2a2a2a !important; }
-[data-theme="day"] .help-admin-emails a             { color: #5a6782 !important; }
+[data-theme="day"] .help-admin-emails a             { color: #5a5a5a !important; }
 
 /* ── Beta reader cards ── */
 [data-theme="day"] .beta-reader-card { background: #ffffff !important; border-color: #d0d0d0 !important; }
@@ -1043,13 +1043,13 @@ a.pricing-btn:link {
 [data-theme="day"] [class*="text-[#f87171]"] { color: #b91c1c !important; }
 
 /* ── Hex grey brand backgrounds (used on <Link> CTA buttons) ── */
-[data-theme="day"] [class*="bg-[#787878]"]  { background-color: #d8d8d8 !important; border-color: rgba(47,53,69,0.28) !important; color: #101420 !important; }
+[data-theme="day"] [class*="bg-[#787878]"]  { background-color: #d8d8d8 !important; border-color: rgba(80,80,80,0.28) !important; color: #1a1a1a !important; }
 [data-theme="day"] [class*="bg-[#606060]"]  { background-color: #c2c2c2 !important; }
 [data-theme="day"] [class*="hover:bg-[#606060]"]:hover { background-color: #c2c2c2 !important; }
 
 /* ── Inline feedback popup ── */
 .feedback-inline-popup                    { background: #888888; color: #000000; }
-[data-theme="day"] .feedback-inline-popup { background: #f5f5f5; color: #0b0d13; }
+[data-theme="day"] .feedback-inline-popup { background: #f5f5f5; color: #1a1a1a; }
 .feedback-inline-popup *                  { color: #000000 !important; }
 
 [data-theme="day"] [class*="text-[rgba(255,210,210"] { color: #1a1a1a !important; }
@@ -1108,8 +1108,8 @@ a.pricing-btn:link {
 
 
 /* ── Notification Unread/Read tab buttons — white in day mode ── */
-[data-theme="day"] .notif-tab { background: #ffffff !important; color: #1a1a1a !important; border-color: rgba(47,53,69,0.2) !important; }
-[data-theme="day"] .notif-tab:hover { background: #f0f3fa !important; border-color: rgba(47,53,69,0.35) !important; color: #1a1a1a !important; }
+[data-theme="day"] .notif-tab { background: #ffffff !important; color: #1a1a1a !important; border-color: rgba(80,80,80,0.2) !important; }
+[data-theme="day"] .notif-tab:hover { background: #f0f3fa !important; border-color: rgba(80,80,80,0.35) !important; color: #1a1a1a !important; }
 
 /* ── Purple-violet (rgba 168,85,247) used in Pro card → red ── */
 [data-theme="day"] [class*="border-[rgba(168,85,247"] { border-color: rgba(120,120,120,0.4) !important; }
@@ -1117,7 +1117,7 @@ a.pricing-btn:link {
 /* ── Inner row borders → transparent (outer card borders use rgba rules) ── */
 /* Buttons keep a visible border even though their class says border-neutral-700/800 */
 [data-theme="day"] button[class*="border-neutral-700"],
-[data-theme="day"] button[class*="border-neutral-800"] { border-color: rgba(47, 53, 69, 0.28) !important; }
+[data-theme="day"] button[class*="border-neutral-800"] { border-color: rgba(80, 80, 80, 0.28) !important; }
 [data-theme="day"] [class*="border-neutral-700"]:not(button) { border-color: transparent !important; }
 [data-theme="day"] [class*="border-neutral-800"]:not(button) { border-color: transparent !important; }
 
@@ -1127,9 +1127,9 @@ a.pricing-btn:link {
 
 /* ── Notification cards — must come after neutral-800 rule to win specificity fight ── */
 [data-theme="day"] li.notification-item[class] {
-  border-color: #2f3545 !important;
+  border-color: #3d3d3d !important;
   background-color: #ffffff !important;
-  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
+  box-shadow: 0 16px 38px rgba(26, 26, 26, 0.12);
 }
 
 /* ── Parent disable modal note emphasis — white in night, black in day ── */
@@ -1137,11 +1137,11 @@ a.pricing-btn:link {
 [data-theme="day"] .parent-note-emphasis { color: #000000 !important; }
 
 /* ── Follow / Friend button: suppress red-900 hover outline in day mode ── */
-[data-theme="day"] [class*="hover:border-red-900"]:hover { border-color: rgba(47, 53, 69, 0.45) !important; }
+[data-theme="day"] [class*="hover:border-red-900"]:hover { border-color: rgba(80, 80, 80, 0.45) !important; }
 [data-theme="day"] [class*="hover:bg-red-950"]:hover     { background-color: #c2c2c2 !important; }
-[data-theme="day"] [class*="hover:text-red-400"]:hover   { color: #101420 !important; }
-[data-theme="day"] [class*="border-[rgba(124,92,255"] { border-color: rgba(47,53,69,0.55) !important; }
-[data-theme="day"] [class*="border-[rgba(120,120,120"] { border-color: #2f3545 !important; }
+[data-theme="day"] [class*="hover:text-red-400"]:hover   { color: #1a1a1a !important; }
+[data-theme="day"] [class*="border-[rgba(124,92,255"] { border-color: rgba(80,80,80,0.55) !important; }
+[data-theme="day"] [class*="border-[rgba(120,120,120"] { border-color: #3d3d3d !important; }
 
 /* ── Amber (pending / warning) states ── */
 [data-theme="day"] [class*="bg-amber-500"]   { background-color: rgba(245,158,11,0.09) !important; }
@@ -1185,7 +1185,7 @@ a.pricing-btn:link {
 
 /* ── Purple arbitrary shadows → red ── */
 [data-theme="day"] [class*="shadow-[rgba(124,92,255"] {
-  box-shadow: 0 20px 25px -5px rgba(47,53,69,0.22), 0 8px 10px -6px rgba(47,53,69,0.14) !important;
+  box-shadow: 0 20px 25px -5px rgba(80,80,80,0.22), 0 8px 10px -6px rgba(80,80,80,0.14) !important;
 }
 
 /* ─────────────────────────────────────── */
@@ -1196,9 +1196,9 @@ a.pricing-btn:link {
 }
 [data-theme="day"] .section-card {
   background: #ffffff;
-  border-color: #2f3545;
-  box-shadow: 0 16px 38px rgba(16, 20, 32, 0.12);
-  color: #1a1f2b;
+  border-color: #3d3d3d;
+  box-shadow: 0 16px 38px rgba(26, 26, 26, 0.12);
+  color: #1a1a1a;
 }
 
 /* ── Community upload carousel marquee ── */
