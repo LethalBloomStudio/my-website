@@ -1,4 +1,3 @@
-import NewsletterSection from "@/components/NewsletterSection";
 import FeedbackButton from "@/components/FeedbackButton";
 
 export default function Home() {
@@ -31,8 +30,6 @@ export default function Home() {
             </p>
           </div>
         </section>
-
-        <NewsletterSection />
 
         <FeedbackButton />
 
