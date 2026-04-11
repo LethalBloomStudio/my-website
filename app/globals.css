@@ -78,12 +78,44 @@ textarea::placeholder {
   color: rgba(255, 200, 200, 0.6);
 }
 
+/* ── Accessibility: visible focus rings (WCAG 2.4.7 Focus Visible) ── */
+/* Links and buttons get a high-contrast focus ring when using keyboard */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Day mode: use a dark outline so it's visible on light backgrounds */
+[data-theme="day"] a:focus-visible,
+[data-theme="day"] button:focus-visible,
+[data-theme="day"] [role="button"]:focus-visible,
+[data-theme="day"] [tabindex]:focus-visible {
+  outline-color: #111111;
+}
+
 input:focus,
 textarea:focus,
 select:focus {
   outline: none;
   border-color: rgba(120, 120, 120, 1);
   box-shadow: 0 0 0 3px rgba(120, 120, 120, 0.25);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
+
+[data-theme="day"] input:focus-visible,
+[data-theme="day"] textarea:focus-visible,
+[data-theme="day"] select:focus-visible {
+  outline-color: #111111;
 }
 
 button {
@@ -105,6 +137,54 @@ button:hover {
 }
 .workspace-btn:hover {
   background: #f0f0f0 !important;
+}
+
+.profile-edit-btn {
+  background: rgba(40, 40, 40, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-edit-btn:hover {
+  background: rgba(56, 56, 56, 0.92);
+}
+
+[data-theme="day"] .profile-edit-btn {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(80, 80, 80, 0.18);
+  box-shadow: 0 8px 18px rgba(40, 40, 40, 0.1);
+}
+
+[data-theme="day"] .profile-edit-btn:hover {
+  background: #ffffff;
+  border-color: rgba(80, 80, 80, 0.28);
+}
+
+.social-badge {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+.social-badge--tiktok {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(37, 244, 238, 0.22), transparent 40%),
+    radial-gradient(circle at 70% 70%, rgba(254, 44, 85, 0.22), transparent 42%),
+    #0a0a0a;
+}
+
+.social-badge--instagram {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 42%, #d6249f 62%, #285aeb 92%);
+}
+
+.social-badge--facebook {
+  background: #1877f2;
+}
+
+.social-badge--x {
+  background: #000000;
+}
+
+.social-badge--snapchat {
+  background: #fffc00;
 }
 
 /* ---------- Navbar Layout ---------- */

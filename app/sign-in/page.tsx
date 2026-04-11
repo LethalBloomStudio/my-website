@@ -108,32 +108,41 @@ export default function SignInPage() {
             className="mt-6 space-y-3"
             onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
           >
-            <input
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              type="email"
-            />
-
-            <div className="flex gap-2">
+            <label className="block space-y-1">
+              <span className="text-sm text-neutral-300">Email</span>
               <input
                 className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                type="email"
+                required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="h-[42px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-xs text-neutral-200 hover:bg-neutral-800"
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-sm text-neutral-300">Password</span>
+              <div className="flex gap-2">
+                <input
+                  className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="h-[42px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-xs text-neutral-200 hover:bg-neutral-800"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </label>
             <div className="text-right">
               <Link href="/forgot-password" className="text-xs text-[rgba(210,210,210,1)] hover:underline">
                 Forgot password?
@@ -158,7 +167,7 @@ export default function SignInPage() {
           </form>
 
           {msg ? (
-            <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
+            <p role="alert" className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
           ) : null}
         </section>
 

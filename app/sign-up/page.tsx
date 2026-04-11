@@ -288,6 +288,8 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                   className="h-[42px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-xs text-neutral-200 hover:bg-neutral-800"
                 >
                   {showPassword ? "Hide" : "Show"}
@@ -305,7 +307,7 @@ export default function SignUpPage() {
           </form>
 
           {msg ? (
-            <p className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
+            <p role="alert" className="mt-4 rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 text-sm text-neutral-200">{msg}</p>
           ) : null}
 
 

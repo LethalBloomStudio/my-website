@@ -118,6 +118,13 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/brand/icon-192.png" />
       </head>
       <body>
+        {/* Skip navigation — visible on focus for keyboard/screen reader users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black focus:shadow-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <Script
           id="lbs-service-worker"
           strategy="afterInteractive"
@@ -143,7 +150,7 @@ export default function RootLayout({
               <Link href="/" aria-label="Home" className="brand">
                 <Image
                   src="/brand/logo.svg"
-                  alt="Logo"
+                  alt="Lethal Bloom Studio"
                   width={40}
                   height={40}
                   className="logo"
@@ -151,7 +158,7 @@ export default function RootLayout({
                 />
               </Link>
 
-              <nav className="tabs desktopNav">
+              <nav className="tabs desktopNav" aria-label="Main navigation">
                 <HomeNavButton />
                 {tabs.map((t) => (
                   <Link key={t.href} href={t.href} className="tab">
@@ -173,7 +180,9 @@ export default function RootLayout({
           </div>
         </header>
 
-        {children}
+        <div id="main-content">
+          {children}
+        </div>
         </ThemeProvider>
       </body>
     </html>
