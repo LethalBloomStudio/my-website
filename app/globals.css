@@ -182,10 +182,6 @@ select:focus-visible {
     #0a0a0a;
 }
 
-.social-badge--tiktok svg {
-  fill: #ffffff;
-}
-
 .social-badge--instagram {
   background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 42%, #d6249f 62%, #285aeb 92%);
 }
@@ -202,15 +198,6 @@ select:focus-visible {
   background: #fffc00;
 }
 
-/* ── Social badges: day-mode overrides ── */
-[data-theme="day"] .social-badge--tiktok {
-  background: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.18) !important;
-}
-
-[data-theme="day"] .social-badge--tiktok svg {
-  fill: #000000 !important;
-}
 
 /* ---------- Navbar Layout ---------- */
 .navWrap {
