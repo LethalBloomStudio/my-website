@@ -206,7 +206,7 @@ export default function Home() {
               { val: "5 coins", label: "earned per 200+ word critique you leave" },
               { val: "10 coins", label: "to upload a chapter beyond your free three" },
               { val: "$1.00", label: "= 100 Bloom Coins if you prefer to purchase" },
-              { val: "Never", label: "expire — use them at your own pace" },
+              { val: "Never", label: "expire. Use them at your own pace." },
             ].map(({ val, label }) => (
               <div key={val} className="bg-[rgba(120,120,120,0.08)] px-7 py-8">
                 <div className="mb-1 text-2xl font-light tracking-tight text-neutral-100">{val}</div>
@@ -233,7 +233,7 @@ export default function Home() {
         <div className="grid gap-8 sm:grid-cols-2">
           {[
             { q: "What genres are welcome?", a: "All genres are welcome, from literary fiction and memoir to fantasy, romance, and thriller. Writers of all experience levels participate." },
-            { q: "What counts as meaningful feedback?", a: "200+ words engaging with the actual content of a chapter. Address pacing, character voice, tension, or dialogue — and reference specific moments from the work." },
+            { q: "What counts as meaningful feedback?", a: "200+ words that engage with the actual content of a chapter. Address pacing, character voice, tension, or dialogue while referencing specific moments from the work." },
             { q: "Is my writing protected?", a: "Yes. Your work is shared only with the readers you invite. Lethal Bloom Studio is a private, secure space, not a public forum." },
             { q: "Do Bloom Coins expire?", a: "No. Coins you earn, claim, or purchase remain in your account indefinitely. Spend them at your own pace with no time pressure." },
             { q: "Are there youth accounts?", a: "Yes. Writers ages 13–17 can join under a parent account at no extra cost, with full parental controls and a safe, supervised community." },
