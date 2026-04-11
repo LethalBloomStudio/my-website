@@ -152,18 +152,18 @@ select:focus-visible {
 }
 
 [data-theme="day"] .profile-edit-btn {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(80, 80, 80, 0.18);
-  box-shadow: 0 8px 18px rgba(40, 40, 40, 0.1);
+  background: #ffffff !important;
+  border-color: rgba(80, 80, 80, 0.22) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
 }
 
 [data-theme="day"] .profile-edit-btn:hover {
-  background: #ffffff;
-  border-color: rgba(80, 80, 80, 0.28);
+  background: #f0f0f0 !important;
+  border-color: rgba(80, 80, 80, 0.38) !important;
 }
 
 [data-theme="day"] .profile-edit-btn svg {
-  fill: #1a1a1a;
+  fill: #1a1a1a !important;
 }
 
 .social-badge {
@@ -192,6 +192,16 @@ select:focus-visible {
 
 .social-badge--snapchat {
   background: #fffc00;
+}
+
+/* ── Social badges: day-mode overrides ── */
+[data-theme="day"] .social-badge--tiktok {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+[data-theme="day"] .social-badge--tiktok svg {
+  fill: #000000 !important;
 }
 
 /* ---------- Navbar Layout ---------- */
