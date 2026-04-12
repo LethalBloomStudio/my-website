@@ -230,7 +230,7 @@ export default function WalletTabs({
 
       {/* Parent: gift-to-linked-youth section — always visible when children are linked */}
       {!isYouth && linkedChildren.length > 0 && selectedChild && (
-        <section className="mt-6 rounded-xl border border-violet-700/50 bg-violet-950/15 p-5">
+        <section className="mt-6 rounded-xl border border-violet-700/70 bg-violet-950/40 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-sm font-semibold text-violet-300">
@@ -263,7 +263,7 @@ export default function WalletTabs({
             {PACKAGES.map((p) => (
               <div
                 key={p.label}
-                className="rounded-lg border border-violet-800/40 bg-violet-950/20 p-4"
+                className="rounded-lg border border-violet-800/60 bg-violet-950/40 p-4"
               >
                 <p className="text-sm font-medium text-violet-200">{p.label}</p>
                 <p className="mt-1 text-2xl font-semibold text-white">
