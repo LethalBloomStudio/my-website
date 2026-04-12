@@ -795,6 +795,16 @@ button.btn-success:hover {
   color: #ffffff !important;
 }
 
+/* ── Blurb edit button — fully transparent in all themes ── */
+[data-theme="day"] button.blurb-edit-btn,
+[data-theme="day"] button.blurb-edit-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  padding: 0 !important;
+}
+
 /* ── Friends panel button — white with black outline on all themes ── */
 [data-theme="day"] button.friends-panel-btn,
 [data-theme="day"] button.friends-panel-btn:hover {

@@ -136,7 +136,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                             type="button"
                             onClick={startEditBlurb}
                             aria-label="Edit blurb"
-                            className="w-full text-left cursor-pointer group bg-transparent border-0 p-0"
+                            className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
                           >
                             <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition">
                               {m.description}
@@ -154,7 +154,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                           type="button"
                           onClick={startEditBlurb}
                           aria-label="Add a blurb"
-                          className="w-full text-left cursor-pointer group bg-transparent border-0 p-0"
+                          className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
                         >
                           <p className="text-xs text-neutral-500 italic border border-dashed border-neutral-700 rounded px-2 py-1.5 group-hover:border-neutral-500 group-hover:text-neutral-300 transition">Click to add a blurb…</p>
                         </button>
