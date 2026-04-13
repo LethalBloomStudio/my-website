@@ -107,7 +107,8 @@ export default function DiscoverPage() {
           supabase
             .from("manuscript_chapters")
             .select("manuscript_id")
-            .in("manuscript_id", manuscriptIds),
+            .in("manuscript_id", manuscriptIds)
+            .eq("status", "published"),
           supabase
             .from("public_profiles")
             .select("user_id, pen_name, username, writer_level, beta_reader_level, feedback_preference")

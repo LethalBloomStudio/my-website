@@ -293,7 +293,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
               {/* Title + preview */}
               {(item.title || preview) && (
                 <div className="mt-1 pl-[26px]">
-                  {item.title && <p className="text-[11px] font-semibold text-neutral-800 leading-snug">{item.title}</p>}
+                  {item.title && <p className="text-[11px] font-semibold text-neutral-100 leading-snug">{item.title}</p>}
                   {preview && <p className="text-[11px] text-neutral-300 leading-snug truncate">{preview}</p>}
                 </div>
               )}
