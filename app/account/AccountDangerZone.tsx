@@ -34,6 +34,7 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
   // Delete modal — two steps
   const [deleteStep, setDeleteStep] = useState<"closed" | "reason" | "confirm">("closed");
   const [deleteReason, setDeleteReason] = useState("");
+  const [deleteOtherText, setDeleteOtherText] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -65,10 +66,13 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
     setDeleteLoading(true);
     setDeleteError(null);
     try {
+      const reason = deleteReason === "Other" && deleteOtherText.trim()
+        ? `Other: ${deleteOtherText.trim()}`
+        : deleteReason;
       const res = await fetch("/api/account/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: deleteReason }),
+        body: JSON.stringify({ reason }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -201,6 +205,15 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
                   <span className="text-sm text-neutral-200">{r}</span>
                 </label>
               ))}
+              {deleteReason === "Other" && (
+                <textarea
+                  value={deleteOtherText}
+                  onChange={(e) => setDeleteOtherText(e.target.value)}
+                  placeholder="Please tell us more (optional)…"
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-200 placeholder-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none resize-none"
+                />
+              )}
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -212,7 +225,7 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
                 Continue
               </button>
               <button
-                onClick={() => { setDeleteStep("closed"); setDeleteReason(""); setDeleteError(null); }}
+                onClick={() => { setDeleteStep("closed"); setDeleteReason(""); setDeleteOtherText(""); setDeleteError(null); }}
                 className="flex-1 h-10 rounded-lg border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] text-sm text-neutral-300 hover:text-white transition"
               >
                 Cancel
@@ -259,7 +272,7 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
                 {deleteLoading ? "Deleting…" : "Delete My Account"}
               </button>
               <button
-                onClick={() => { setDeleteStep("closed"); setDeleteReason(""); setDeleteError(null); }}
+                onClick={() => { setDeleteStep("closed"); setDeleteReason(""); setDeleteOtherText(""); setDeleteError(null); }}
                 disabled={deleteLoading}
                 className="flex-1 h-10 rounded-lg border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] text-sm text-neutral-300 hover:text-white transition"
               >
