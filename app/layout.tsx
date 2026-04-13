@@ -11,6 +11,7 @@ import MessagesNavButton from "@/components/MessagesNavButton";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
+import ActivityPing from "@/components/ActivityPing";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -143,6 +144,7 @@ export default function RootLayout({
             `,
           }}
         />
+        <ActivityPing />
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">
