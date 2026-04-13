@@ -150,28 +150,49 @@ export async function GET(req: Request) {
   }
 
   if (scope === "transactions") {
-    const { data: txData } = await supabase
-      .from("bloom_coin_ledger")
-      .select("id, user_id, delta, reason, metadata, created_at")
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    const [{ data: txData }, { data: billingData }] = await Promise.all([
+      supabase
+        .from("bloom_coin_ledger")
+        .select("id, user_id, delta, reason, metadata, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("stripe_billing_events")
+        .select("id, user_id, stripe_invoice_id, stripe_subscription_id, amount_cents, currency, billing_reason, period_start, period_end, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
+
     const rows = (txData ?? []) as { user_id: string; [k: string]: unknown }[];
-    const userIds = [...new Set(rows.map(r => r.user_id))];
-    const { data: accs } = userIds.length
-      ? await supabase.from("accounts").select("user_id, full_name, email").in("user_id", userIds)
-      : { data: [] };
-    const { data: profiles } = userIds.length
-      ? await supabase.from("public_profiles").select("user_id, username").in("user_id", userIds)
-      : { data: [] };
+    const billingRows = (billingData ?? []) as { user_id: string | null; [k: string]: unknown }[];
+
+    const userIds = [...new Set([
+      ...rows.map(r => r.user_id),
+      ...billingRows.map(r => r.user_id).filter(Boolean),
+    ] as string[])];
+
+    const [{ data: accs }, { data: profiles }] = await Promise.all([
+      userIds.length ? supabase.from("accounts").select("user_id, full_name, email").in("user_id", userIds) : { data: [] },
+      userIds.length ? supabase.from("public_profiles").select("user_id, username").in("user_id", userIds) : { data: [] },
+    ]);
+
     const accMap: Record<string, { full_name: string | null; email: string | null }> = {};
     ((accs ?? []) as { user_id: string; full_name: string | null; email: string | null }[]).forEach(a => { accMap[a.user_id] = { full_name: a.full_name, email: a.email }; });
     const usernameMap: Record<string, string | null> = {};
     ((profiles ?? []) as { user_id: string; username: string | null }[]).forEach(p => { usernameMap[p.user_id] = p.username; });
+
     result.transactions = rows.map(r => ({
       ...r,
       full_name: accMap[r.user_id]?.full_name ?? null,
       email: accMap[r.user_id]?.email ?? null,
       username: usernameMap[r.user_id] ?? null,
+    }));
+
+    result.billingEvents = billingRows.map(r => ({
+      ...r,
+      full_name: r.user_id ? (accMap[r.user_id as string]?.full_name ?? null) : null,
+      email: r.user_id ? (accMap[r.user_id as string]?.email ?? null) : null,
+      username: r.user_id ? (usernameMap[r.user_id as string] ?? null) : null,
     }));
   }
 

@@ -225,6 +225,51 @@ export async function POST(req: Request) {
       break;
     }
 
+    // ── Subscription invoice paid (initial + renewals) ───────────────────────
+    case "invoice.paid": {
+      const invoice = event.data.object as Stripe.Invoice;
+      // Only log subscription invoices, not one-time charges
+      if (invoice.parent?.type !== "subscription_details") break;
+
+      const customerId = typeof invoice.customer === "string" ? invoice.customer : (invoice.customer as { id?: string } | null)?.id;
+      if (!customerId) break;
+
+      const subDetails = invoice.parent.subscription_details;
+      const subscriptionId = subDetails?.subscription
+        ? (typeof subDetails.subscription === "string" ? subDetails.subscription : subDetails.subscription.id)
+        : null;
+
+      // Look up user by Stripe customer ID
+      const { data: billingAcct } = await admin
+        .from("accounts")
+        .select("user_id")
+        .eq("stripe_customer_id", customerId)
+        .maybeSingle();
+      const billingUserId = (billingAcct as { user_id?: string } | null)?.user_id ?? null;
+
+      // Idempotency — skip if already logged
+      const { data: existingEvent } = await admin
+        .from("stripe_billing_events")
+        .select("id")
+        .eq("stripe_invoice_id", invoice.id)
+        .maybeSingle();
+      if (existingEvent) break;
+
+      await admin.from("stripe_billing_events").insert({
+        user_id: billingUserId,
+        stripe_customer_id: customerId,
+        stripe_invoice_id: invoice.id,
+        stripe_subscription_id: subscriptionId,
+        amount_cents: invoice.amount_paid ?? 0,
+        currency: invoice.currency ?? "usd",
+        billing_reason: invoice.billing_reason ?? null,
+        period_start: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
+        period_end: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
+      });
+
+      break;
+    }
+
     // ── Payment failed ────────────────────────────────────────────────────────
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;

@@ -162,6 +162,22 @@ type ConductAppeal = {
   all_ms_violations: { id: string; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; type: "manuscript" }[];
 };
 
+type BillingEvent = {
+  id: string;
+  user_id: string | null;
+  stripe_invoice_id: string;
+  stripe_subscription_id: string | null;
+  amount_cents: number;
+  currency: string;
+  billing_reason: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  created_at: string;
+  full_name: string | null;
+  email: string | null;
+  username: string | null;
+};
+
 type DeletedAccount = {
   id: string;
   user_id: string;
@@ -279,6 +295,7 @@ function AdminPageInner() {
   const [reports, setReports] = useState<Report[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [transactions, setTransactions] = useState<PurchaseTransaction[]>([]);
+  const [billingEvents, setBillingEvents] = useState<BillingEvent[]>([]);
   const [appeals, setAppeals] = useState<ConductAppeal[]>([]);
   const [modNotes, setModNotes] = useState<ModNote[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -435,6 +452,7 @@ function AdminPageInner() {
   async function loadTransactions() {
     const data = await adminFetch("/api/admin/data?scope=transactions") as { transactions?: PurchaseTransaction[] } | null;
     if (data?.transactions) setTransactions(data.transactions);
+    if ((data as { billingEvents?: BillingEvent[] } | null)?.billingEvents) setBillingEvents((data as { billingEvents?: BillingEvent[] }).billingEvents!);
   }
 
   async function loadAppeals() {
@@ -1241,19 +1259,36 @@ function AdminPageInner() {
           };
           const earned = transactions.filter(t => t.delta > 0);
           const spent  = transactions.filter(t => t.delta < 0);
-          const totalRevenue = transactions.reduce((sum, t) => sum + (t.metadata?.price_cents ?? 0), 0);
+          const totalCoinRevenue = transactions.reduce((sum, t) => sum + (t.metadata?.price_cents ?? 0), 0);
+          const totalSubRevenue  = billingEvents.reduce((sum, b) => sum + b.amount_cents, 0);
           const totalEarned  = earned.reduce((sum, t) => sum + t.delta, 0);
           const totalSpent   = spent.reduce((sum, t) => sum + Math.abs(t.delta), 0);
+
+          const BILLING_REASON_LABELS: Record<string, string> = {
+            subscription_create: "New Subscription",
+            subscription_cycle:  "Monthly Renewal",
+            subscription_update: "Plan Change",
+            manual:              "Manual Charge",
+          };
+
           return (
             <div>
               <div className="mb-4 flex flex-wrap gap-4">
                 <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
-                  <p className="text-xs text-neutral-500">Total Events</p>
+                  <p className="text-xs text-neutral-500">Coin Events</p>
                   <p className="mt-0.5 text-xl font-semibold text-white">{transactions.length.toLocaleString()}</p>
                 </div>
                 <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
-                  <p className="text-xs text-neutral-500">Stripe Revenue</p>
-                  <p className="mt-0.5 text-xl font-semibold text-emerald-300">${(totalRevenue / 100).toFixed(2)}</p>
+                  <p className="text-xs text-neutral-500">Coin Pack Revenue</p>
+                  <p className="mt-0.5 text-xl font-semibold text-emerald-300">${(totalCoinRevenue / 100).toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Subscription Revenue</p>
+                  <p className="mt-0.5 text-xl font-semibold text-emerald-300">${(totalSubRevenue / 100).toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Total Revenue</p>
+                  <p className="mt-0.5 text-xl font-semibold text-emerald-400">${((totalCoinRevenue + totalSubRevenue) / 100).toFixed(2)}</p>
                 </div>
                 <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
                   <p className="text-xs text-neutral-500">Coins Issued</p>
@@ -1307,6 +1342,50 @@ function AdminPageInner() {
               </div>
               {transactions.length > 0 && (
                 <p className="mt-2 text-xs text-neutral-400">{transactions.length} transaction{transactions.length !== 1 ? "s" : ""}</p>
+              )}
+
+              {/* ── Subscription Billing ── */}
+              <h3 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-widest text-neutral-400">Subscription Billing</h3>
+              <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Period</th>
+                      <th className="px-4 py-3">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {billingEvents.length === 0 && (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No subscription charges recorded yet. They will appear here after the next renewal.</td></tr>
+                    )}
+                    {billingEvents.map(b => (
+                      <tr key={b.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
+                        <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(b.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-neutral-100">{b.full_name || b.username || "—"}</p>
+                          {b.email && <p className="text-xs text-neutral-500">{b.email}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-300 whitespace-nowrap">
+                          {BILLING_REASON_LABELS[b.billing_reason ?? ""] ?? b.billing_reason ?? "Subscription Charge"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400">
+                          {b.period_start && b.period_end
+                            ? `${new Date(b.period_start).toLocaleDateString()} – ${new Date(b.period_end).toLocaleDateString()}`
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-emerald-300">
+                          ${(b.amount_cents / 100).toFixed(2)} {b.currency.toUpperCase()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {billingEvents.length > 0 && (
+                <p className="mt-2 text-xs text-neutral-400">{billingEvents.length} billing event{billingEvents.length !== 1 ? "s" : ""}</p>
               )}
             </div>
           );
