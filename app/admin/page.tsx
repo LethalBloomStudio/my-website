@@ -1345,7 +1345,18 @@ function AdminPageInner() {
               )}
 
               {/* ── Subscription Billing ── */}
-              <h3 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-widest text-neutral-400">Subscription Billing</h3>
+              <div className="mt-8 mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">Subscription Billing</h3>
+                <button
+                  onClick={async () => {
+                    const res = await adminFetch("/api/admin/backfill-billing", { method: "POST" }) as { inserted?: number; skipped?: number } | null;
+                    if (res) { setMsg(`Backfill complete: ${res.inserted ?? 0} inserted, ${res.skipped ?? 0} already existed.`); void loadTransactions(); }
+                  }}
+                  className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition"
+                >
+                  Backfill from Stripe
+                </button>
+              </div>
               <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
