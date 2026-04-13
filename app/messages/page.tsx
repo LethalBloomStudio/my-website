@@ -1137,7 +1137,7 @@ const [now] = useState(() => Date.now());
                 <p className="flex-1 text-sm text-neutral-300">Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span></p>
                 <button
                   onClick={() => router.replace("/messages")}
-                  className="text-xs text-neutral-500 hover:text-white transition border border-neutral-700 rounded-lg px-2 py-0.5"
+                  className="text-xs text-neutral-300 hover:text-white transition border border-[rgba(120,120,120,0.4)] rounded-lg px-2 py-0.5"
                 >
                   Close
                 </button>

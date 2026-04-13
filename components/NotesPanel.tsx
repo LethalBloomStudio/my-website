@@ -171,11 +171,11 @@ export default function NotesPanel({
             )}
             <div className="flex items-center justify-between">
               {autoSaveLabel && (
-                <span className="text-[10px] text-neutral-500">{autoSaveLabel}</span>
+                <span className="text-[10px] text-neutral-400">{autoSaveLabel}</span>
               )}
               <button
                 onClick={() => setEditingId(null)}
-                className="ml-auto rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-400 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200"
+                className="ml-auto rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-200 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
               >
                 Done
               </button>
@@ -191,17 +191,17 @@ export default function NotesPanel({
               {note.content}
             </p>
             {msTitle(note.manuscript_id) && (
-              <p className="mt-1.5 text-[10px] text-neutral-600">📖 {msTitle(note.manuscript_id)}</p>
+              <p className="mt-1.5 text-[10px] text-neutral-400">📖 {msTitle(note.manuscript_id)}</p>
             )}
             <div className="mt-2 flex items-center justify-between gap-2">
-              <span className="text-[10px] text-neutral-700">
+              <span className="text-[10px] text-neutral-400">
                 {new Date(note.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               </span>
               <div className="flex items-center gap-2">
                 {!note.resolved && (
                   <button
                     onClick={() => startEdit(note)}
-                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200"
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
                   >
                     Edit
                   </button>
@@ -209,21 +209,21 @@ export default function NotesPanel({
                 {!note.resolved ? (
                   <button
                     onClick={() => void resolveNote(note.id, true)}
-                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-emerald-700/50 hover:text-emerald-400"
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-300 transition hover:border-emerald-700/50 hover:text-emerald-400"
                   >
                     Resolve
                   </button>
                 ) : (
                   <button
                     onClick={() => void resolveNote(note.id, false)}
-                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-300"
+                    className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
                   >
                     Restore
                   </button>
                 )}
                 <button
                   onClick={() => void deleteNote(note.id)}
-                  className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-500 transition hover:border-red-700/50 hover:text-red-400"
+                  className="rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-300 transition hover:border-red-700/50 hover:text-red-400"
                 >
                   Delete
                 </button>
@@ -242,7 +242,7 @@ export default function NotesPanel({
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Notes</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-300">Notes</p>
         <div className="flex gap-1">
           {(["unresolved", "resolved", "all"] as const).map((opt) => (
             <button
@@ -252,7 +252,7 @@ export default function NotesPanel({
               className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-medium transition ${
                 filter === opt
                   ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.22)] text-neutral-100"
-                  : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.07)] text-neutral-400 hover:bg-[rgba(120,120,120,0.14)] hover:text-neutral-200"
+                  : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.07)] text-neutral-300 hover:bg-[rgba(120,120,120,0.14)] hover:text-white"
               }`}
             >
               {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -303,7 +303,7 @@ export default function NotesPanel({
         ) : error ? (
           <p className="text-xs text-red-400">{error}</p>
         ) : filteredNotes.length === 0 ? (
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-neutral-400">
             {filter === "resolved" ? "No resolved notes." : filter === "all" ? "No notes yet." : "No active notes."}
           </p>
         ) : (
