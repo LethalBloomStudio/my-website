@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,6 +10,7 @@ type Manuscript = {
   genre: string | null;
   word_count: number;
   chapter_count: number;
+  published_chapter_count?: number;
   cover_url: string | null;
   visibility: string;
   description: string | null;
@@ -30,7 +31,19 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
   const [blurbPending, startBlurbTransition] = useTransition();
   const [editingBlurb, setEditingBlurb] = useState(false);
   const [blurbDraft, setBlurbDraft] = useState("");
-  const [blurbExpanded, setBlurbExpanded] = useState(true);
+  const [blurbExpanded, setBlurbExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!blurbExpanded) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setBlurbExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [blurbExpanded]);
 
   if (manuscripts.length === 0) {
     return <p className="text-sm text-neutral-400">No manuscripts yet.</p>;
@@ -62,7 +75,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 hover:border-[rgba(120,120,120,0.6)] transition">
+      <div ref={cardRef} className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 hover:border-[rgba(120,120,120,0.6)] transition">
         <div className="flex gap-5 p-4 items-start">
           {/* Book cover */}
           <Link href={isOwner ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}`} className="shrink-0">
@@ -94,7 +107,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
               </Link>
               <p className="text-xs text-neutral-400">{m.genre ?? "Uncategorized"}</p>
               <p className="text-xs text-neutral-500">
-                {m.chapter_count} {m.chapter_count === 1 ? "chapter" : "chapters"}
+                {(m.published_chapter_count ?? m.chapter_count)} {(m.published_chapter_count ?? m.chapter_count) === 1 ? "chapter" : "chapters"}
               </p>
               <p className="text-xs text-neutral-500">{m.word_count.toLocaleString()} words</p>
               <p className="text-xs text-neutral-600">{m.visibility === "public" ? "Public" : "Private"}</p>
@@ -132,20 +145,42 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                     {m.description ? (
                       <>
                         {isOwner ? (
-                          <button
-                            type="button"
-                            onClick={startEditBlurb}
-                            aria-label="Edit blurb"
-                            className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
-                          >
-                            <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition">
+                          <div>
+                            <button
+                              type="button"
+                              onClick={startEditBlurb}
+                              aria-label="Edit blurb"
+                              className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
+                            >
+                              <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition ${!blurbExpanded ? "line-clamp-3" : ""}`}>
+                                {m.description}
+                              </p>
+                            </button>
+                            {m.description.length > 180 && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
+                                className="mt-1 text-[10px] text-neutral-400 hover:text-white transition"
+                              >
+                                {blurbExpanded ? "See less" : "See more"}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed ${!blurbExpanded ? "line-clamp-3" : ""}`}>
                               {m.description}
                             </p>
-                          </button>
-                        ) : (
-                          <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
-                            {m.description}
-                          </p>
+                            {m.description.length > 180 && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
+                                className="mt-1 text-[10px] text-neutral-400 hover:text-white transition"
+                              >
+                                {blurbExpanded ? "See less" : "See more"}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </>
                     ) : (

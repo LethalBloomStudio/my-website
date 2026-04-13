@@ -20,6 +20,7 @@ type Manuscript = {
   genre: string | null;
   word_count: number;
   chapter_count: number;
+  published_chapter_count?: number;
   cover_url: string | null;
   visibility: string;
   description: string | null;
@@ -285,9 +286,28 @@ export default async function PublicProfilePage(props: {
     .order("created_at", { ascending: false });
 
   const highlightedId = p.highlighted_manuscript_id ?? null;
-  const rawManuscripts = ((manuscriptData as Omit<Manuscript, "visibility">[] | null) ?? []).map(
+  const baseManuscripts = ((manuscriptData as Omit<Manuscript, "visibility">[] | null) ?? []).map(
     (m) => ({ ...m, visibility: "public" })
   );
+
+  // Fetch published-only chapter counts (excludes drafts, prologues, epilogues, trigger pages)
+  const manuscriptIds = baseManuscripts.map((m) => m.id);
+  const publishedCounts: Record<string, number> = {};
+  if (manuscriptIds.length > 0) {
+    const { data: pubChapters } = await supabase
+      .from("manuscript_chapters")
+      .select("manuscript_id")
+      .in("manuscript_id", manuscriptIds)
+      .eq("is_private", false)
+      .eq("chapter_type", "chapter");
+    for (const row of (pubChapters as { manuscript_id: string }[] | null) ?? []) {
+      publishedCounts[row.manuscript_id] = (publishedCounts[row.manuscript_id] ?? 0) + 1;
+    }
+  }
+  const rawManuscripts = baseManuscripts.map((m) => ({
+    ...m,
+    published_chapter_count: publishedCounts[m.id] ?? 0,
+  }));
   const manuscripts = highlightedId
     ? [
         ...rawManuscripts.filter((m) => m.id === highlightedId),
@@ -417,7 +437,7 @@ export default async function PublicProfilePage(props: {
         </header>
 
         {/* Info + Manuscripts side by side */}
-        <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <div className="grid gap-6 lg:grid-cols-2 items-stretch">
           {/* Info left */}
           <section className="space-y-4 rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-neutral-400">Get to Know Me</h2>
