@@ -87,6 +87,8 @@ export default function SignUpPage() {
           dob,
           parental_consent: age >= 18,
           age_category: age < 18 ? "youth_13_17" : "adult_18_plus",
+          ...(trimmedUsername ? { username: trimmedUsername } : {}),
+          ...(trimmedPenName ? { pen_name: trimmedPenName } : {}),
         },
       },
     });

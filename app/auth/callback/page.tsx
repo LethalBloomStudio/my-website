@@ -53,6 +53,20 @@ export default function AuthCallbackPage() {
           );
         }
 
+        // Ensure profiles_public row is populated — covers the email-confirmation
+        // flow where the sign-up form's profiles_public upsert is skipped because
+        // data.session was null. username/pen_name are stored in user_metadata.
+        if (meta.username || meta.pen_name) {
+          await supabase.from("public_profiles").upsert(
+            {
+              user_id: userId,
+              ...(meta.username ? { username: meta.username } : {}),
+              ...(meta.pen_name ? { pen_name: meta.pen_name } : {}),
+            },
+            { onConflict: "user_id", ignoreDuplicates: false }
+          );
+        }
+
         const { data: account } = await supabase
           .from("accounts")
           .select("age_category, parental_consent")
