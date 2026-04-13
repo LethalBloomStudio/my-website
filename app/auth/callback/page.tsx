@@ -31,6 +31,28 @@ export default function AuthCallbackPage() {
         }
 
         const userId = data.session.user.id;
+        const meta = data.session.user.user_metadata ?? {};
+        const userEmail = data.session.user.email ?? null;
+
+        // Ensure accounts row is populated — covers the email-confirmation
+        // flow where the sign-up form never reaches the upsert because
+        // data.session was null at registration time.
+        if (userEmail || meta.full_name) {
+          await supabase.from("accounts").upsert(
+            {
+              user_id: userId,
+              ...(userEmail ? { email: userEmail } : {}),
+              ...(meta.full_name ? { full_name: meta.full_name } : {}),
+              ...(meta.dob ? { dob: meta.dob } : {}),
+              ...(meta.age_category ? { age_category: meta.age_category } : {}),
+              ...(meta.parental_consent !== undefined ? { parental_consent: meta.parental_consent } : {}),
+              last_active_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id", ignoreDuplicates: false }
+          );
+        }
+
         const { data: account } = await supabase
           .from("accounts")
           .select("age_category, parental_consent")
