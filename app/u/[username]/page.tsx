@@ -474,15 +474,17 @@ export default async function PublicProfilePage(props: {
 
           {/* Manuscripts right */}
           <section className="flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-neutral-400">
+            <h2 className="mb-4 shrink-0 text-sm font-semibold uppercase tracking-widest text-neutral-400">
               My Manuscripts
             </h2>
-            <div className="flex-1">
-              <ManuscriptCarousel
-                manuscripts={manuscripts}
-                highlightedId={highlightedId}
-                isOwner={isOwner}
-              />
+            <div className="relative flex-1 min-h-0">
+              <div className="absolute inset-0">
+                <ManuscriptCarousel
+                  manuscripts={manuscripts}
+                  highlightedId={highlightedId}
+                  isOwner={isOwner}
+                />
+              </div>
             </div>
           </section>
         </div>
