@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,19 +31,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
   const [blurbPending, startBlurbTransition] = useTransition();
   const [editingBlurb, setEditingBlurb] = useState(false);
   const [blurbDraft, setBlurbDraft] = useState("");
-  const [blurbExpanded, setBlurbExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!blurbExpanded) return;
-    function handleOutsideClick(e: MouseEvent) {
-      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
-        setBlurbExpanded(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [blurbExpanded]);
 
   if (manuscripts.length === 0) {
     return <p className="text-sm text-neutral-400">No manuscripts yet.</p>;
@@ -75,17 +63,17 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={cardRef} className="flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 hover:border-[rgba(120,120,120,0.6)] transition">
-        <div className="flex gap-5 p-4 items-start">
+      <div ref={cardRef} className="flex-1 flex flex-col rounded-lg border border-neutral-800 bg-neutral-900/40 hover:border-[rgba(120,120,120,0.6)] transition overflow-hidden">
+        <div className="flex gap-5 p-4 flex-1 min-h-0">
           {/* Book cover */}
-          <Link href={isOwner ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}`} className="shrink-0">
+          <Link href={isOwner ? `/manuscripts/${m.id}/details` : `/manuscripts/${m.id}`} className="shrink-0 self-start">
             <div className="relative w-56 rounded border border-neutral-700 overflow-hidden shadow-md" style={{ aspectRatio: "2/3" }}>
               {m.cover_url ? (
                 <Image
                   src={m.cover_url}
                   alt={`${m.title} cover`}
                   fill
-                 
+
                   className="object-cover"
                 />
               ) : (
@@ -97,8 +85,8 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
           </Link>
 
           {/* Info */}
-          <div className="min-w-0 flex flex-col flex-1 pt-1 gap-3">
-            <div className="space-y-2">
+          <div className="min-w-0 flex flex-col flex-1 min-h-0 pt-1 gap-3">
+            <div className="flex flex-col flex-1 min-h-0 gap-2">
               {isHighlighted && (
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-yellow-500">Featured</p>
               )}
@@ -112,8 +100,8 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
               <p className="text-xs text-neutral-500">{m.word_count.toLocaleString()} words</p>
               <p className="text-xs text-neutral-600">{m.visibility === "public" ? "Public" : "Private"}</p>
 
-              {/* Blurb */}
-              <div className="pt-1">
+              {/* Blurb — fills remaining space */}
+              <div className="pt-1 flex-1 flex flex-col min-h-0">
                 <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500 mb-1">Blurb</div>
                 {editingBlurb ? (
                   <div className="space-y-2">
@@ -141,48 +129,24 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                     </div>
                   </div>
                 ) : (
-                  <div>
+                  <div className="flex-1 overflow-y-auto min-h-0">
                     {m.description ? (
-                      <>
-                        {isOwner ? (
-                          <div>
-                            <button
-                              type="button"
-                              onClick={startEditBlurb}
-                              aria-label="Edit blurb"
-                              className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
-                            >
-                              <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition ${!blurbExpanded ? "line-clamp-3" : ""}`}>
-                                {m.description}
-                              </p>
-                            </button>
-                            {m.description.length > 180 && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
-                                className="see-more-btn mt-1 text-[10px] text-neutral-400 hover:text-white transition"
-                              >
-                                {blurbExpanded ? "See less" : "See more"}
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <div>
-                            <p className={`text-xs text-neutral-300 whitespace-pre-line leading-relaxed ${!blurbExpanded ? "line-clamp-3" : ""}`}>
-                              {m.description}
-                            </p>
-                            {m.description.length > 180 && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
-                                className="see-more-btn mt-1 text-[10px] text-neutral-400 hover:text-white transition"
-                              >
-                                {blurbExpanded ? "See less" : "See more"}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </>
+                      isOwner ? (
+                        <button
+                          type="button"
+                          onClick={startEditBlurb}
+                          aria-label="Edit blurb"
+                          className="blurb-edit-btn w-full text-left cursor-pointer group bg-transparent border-0 p-0"
+                        >
+                          <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed group-hover:text-white transition">
+                            {m.description}
+                          </p>
+                        </button>
+                      ) : (
+                        <p className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
+                          {m.description}
+                        </p>
+                      )
                     ) : (
                       isOwner ? (
                         <button
@@ -204,7 +168,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
 
             {/* Feature button — right aligned */}
             {isOwner && (
-              <div className="flex justify-end">
+              <div className="flex justify-end shrink-0">
                 <button
                   onClick={handleHighlight}
                   disabled={highlightPending}
@@ -226,7 +190,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
       {manuscripts.length > 1 && (
         <div className="mt-3 flex items-center justify-between">
           <button
-            onClick={() => { setIndex((i) => (i - 1 + manuscripts.length) % manuscripts.length); setEditingBlurb(false); setBlurbExpanded(false); }}
+            onClick={() => { setIndex((i) => (i - 1 + manuscripts.length) % manuscripts.length); setEditingBlurb(false); }}
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900/40 text-neutral-300 hover:border-[rgba(120,120,120,0.6)] hover:text-white transition"
             aria-label="Previous manuscript"
           >
@@ -234,7 +198,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
           </button>
           <span className="text-xs text-neutral-500">{index + 1} / {manuscripts.length}</span>
           <button
-            onClick={() => { setIndex((i) => (i + 1) % manuscripts.length); setEditingBlurb(false); setBlurbExpanded(false); }}
+            onClick={() => { setIndex((i) => (i + 1) % manuscripts.length); setEditingBlurb(false); }}
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900/40 text-neutral-300 hover:border-[rgba(120,120,120,0.6)] hover:text-white transition"
             aria-label="Next manuscript"
           >
