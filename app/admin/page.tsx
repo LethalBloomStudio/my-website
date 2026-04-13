@@ -924,7 +924,7 @@ function AdminPageInner() {
                       <td className="px-4 py-3">
                         {(() => { const la = formatLastActive(u.last_active_at); return <span className={`text-xs ${la.color}`}>{la.label}</span>; })()}
                       </td>
-                      <td className="px-4 py-3 text-neutral-400 text-xs">{u.subscription_status}</td>
+                      <td className="px-4 py-3"><Badge label={u.subscription_status} color={u.subscription_status === "lethal" ? "red" : "violet"} /></td>
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
