@@ -1774,7 +1774,7 @@ function PageInner() {
                           <div className="rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
                             {/* Reader's original comment — RIGHT (it's theirs) */}
                             <div className="flex justify-end">
-                              <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white px-3 py-2">
+                              <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self px-3 py-2">
                                 <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">You</p>
                                 <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                               </div>
@@ -1789,7 +1789,7 @@ function PageInner() {
                               const isMe = r.replier_id === userId;
                               return (
                                 <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "You")}
                                     </p>
@@ -2191,7 +2191,7 @@ function PageInner() {
                               ) : (
                                 <div className="mt-1.5 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
                                   <div className={`flex ${f.reader_id === userId ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${f.reader_id === userId ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${f.reader_id === userId ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
                                       <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{names[f.reader_id] || "Reader"}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                     </div>
@@ -2205,7 +2205,7 @@ function PageInner() {
                                     const isMe = r.replier_id === userId;
                                     return (
                                       <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white" : "rounded-tl-sm bg-neutral-100"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                             {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
                                           </p>

@@ -818,6 +818,18 @@ button.btn-success:hover {
   color: #111111 !important;
 }
 
+/* ── Manuscript feedback chat bubbles — keep white/light bg + dark text in day mode ── */
+[data-theme="day"] .chat-bubble-self {
+  background-color: #ffffff !important;
+}
+[data-theme="day"] .chat-bubble-other {
+  background-color: #e0e0e0 !important;
+}
+[data-theme="day"] .chat-bubble-self p,
+[data-theme="day"] .chat-bubble-other p {
+  color: #1a1a1a !important;
+}
+
 /* ── Friends panel button — white with black outline on all themes ── */
 [data-theme="day"] button.friends-panel-btn,
 [data-theme="day"] button.friends-panel-btn:hover {
