@@ -108,7 +108,8 @@ export default function DiscoverPage() {
             .from("manuscript_chapters")
             .select("manuscript_id")
             .in("manuscript_id", manuscriptIds)
-            .eq("status", "published"),
+            .eq("is_private", false)
+            .eq("chapter_type", "chapter"),
           supabase
             .from("public_profiles")
             .select("user_id, pen_name, username, writer_level, beta_reader_level, feedback_preference")
