@@ -219,7 +219,7 @@ const _REPORT_CATEGORIES = [
 
 function Badge({ label, color }: { label: string; color: "red" | "amber" | "green" | "neutral" | "blue" | "violet" }) {
   const cls = {
-    red: "bg-red-900/40 text-red-400",
+    red: "bg-red-900/40 text-red-400 badge-red",
     amber: "bg-amber-900/40 text-amber-400",
     green: "bg-emerald-900/40 text-emerald-400",
     neutral: "bg-neutral-800 text-neutral-400",

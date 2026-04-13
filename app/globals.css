@@ -872,6 +872,11 @@ button.btn-success:hover {
   color: #4c1d95 !important;
 }
 
+[data-theme="day"] .badge-red {
+  background: rgba(185, 28, 28, 0.12) !important;
+  color: #991b1b !important;
+}
+
 [data-theme="day"] .badge-mature {
   background: rgba(180, 83, 9, 0.15) !important;
   border-color: rgba(180, 83, 9, 0.45) !important;
