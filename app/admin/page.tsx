@@ -87,7 +87,8 @@ type PurchaseTransaction = {
   email: string | null;
   username: string | null;
   delta: number;
-  metadata: { package_id?: string; price_cents?: number; currency?: string } | null;
+  reason: string;
+  metadata: { package_id?: string; price_cents?: number; currency?: string; announcement_id?: string; manuscript_id?: string; [k: string]: unknown } | null;
   created_at: string;
 };
 
@@ -1222,22 +1223,45 @@ function AdminPageInner() {
 
         {/* ── TRANSACTIONS ── */}
         {tab === "transactions" && (() => {
-          const PACKAGE_LABELS: Record<string, { label: string; coins: number; price: string }> = {
-            starter_100: { label: "Bloom Pack", coins: 100, price: "$1.00" },
-            writer_350:  { label: "Forge Pack",  coins: 350, price: "$3.00" },
-            studio_600:  { label: "Lethal Pack", coins: 600, price: "$5.00" },
+          const REASON_LABELS: Record<string, string> = {
+            coin_purchase:          "Stripe Purchase",
+            coin_purchase_mock:     "Mock Purchase",
+            announcement_reward:    "Announcement Reward",
+            chapter_feedback_reward:"Chapter Feedback Reward",
+            giveaway_win:           "Giveaway Win",
+            parent_gift:            "Parent Gift",
+            featured_slot:          "Featured Slot",
+            extra_reader_slot:      "Extra Reader Slot",
+            admin_adjust:           "Admin Adjustment",
           };
+          const PACKAGE_LABELS: Record<string, string> = {
+            starter_100: "Bloom Pack (100)",
+            writer_350:  "Forge Pack (350)",
+            studio_600:  "Lethal Pack (600)",
+          };
+          const earned = transactions.filter(t => t.delta > 0);
+          const spent  = transactions.filter(t => t.delta < 0);
           const totalRevenue = transactions.reduce((sum, t) => sum + (t.metadata?.price_cents ?? 0), 0);
+          const totalEarned  = earned.reduce((sum, t) => sum + t.delta, 0);
+          const totalSpent   = spent.reduce((sum, t) => sum + Math.abs(t.delta), 0);
           return (
             <div>
               <div className="mb-4 flex flex-wrap gap-4">
                 <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
-                  <p className="text-xs text-neutral-500">Total Purchases</p>
+                  <p className="text-xs text-neutral-500">Total Events</p>
                   <p className="mt-0.5 text-xl font-semibold text-white">{transactions.length.toLocaleString()}</p>
                 </div>
                 <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
-                  <p className="text-xs text-neutral-500">Total Revenue</p>
+                  <p className="text-xs text-neutral-500">Stripe Revenue</p>
                   <p className="mt-0.5 text-xl font-semibold text-emerald-300">${(totalRevenue / 100).toFixed(2)}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Coins Issued</p>
+                  <p className="mt-0.5 text-xl font-semibold text-amber-300">+{totalEarned.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Coins Spent</p>
+                  <p className="mt-0.5 text-xl font-semibold text-red-400">-{totalSpent.toLocaleString()}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
@@ -1246,28 +1270,35 @@ function AdminPageInner() {
                     <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">User</th>
-                      <th className="px-4 py-3">Package</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Detail</th>
                       <th className="px-4 py-3">Coins</th>
-                      <th className="px-4 py-3">Amount Paid</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.length === 0 && (
-                      <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No purchases yet.</td></tr>
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No transactions yet.</td></tr>
                     )}
                     {transactions.map(tx => {
-                      const pkg = PACKAGE_LABELS[tx.metadata?.package_id ?? ""] ?? null;
-                      const priceCents = tx.metadata?.price_cents ?? 0;
+                      const isEarned = tx.delta > 0;
+                      const label = REASON_LABELS[tx.reason] ?? tx.reason;
+                      const detail = tx.metadata?.package_id
+                        ? PACKAGE_LABELS[tx.metadata.package_id as string] ?? tx.metadata.package_id
+                        : tx.metadata?.price_cents
+                          ? `$${((tx.metadata.price_cents as number) / 100).toFixed(2)}`
+                          : "—";
                       return (
                         <tr key={tx.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
                           <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(tx.created_at).toLocaleString()}</td>
                           <td className="px-4 py-3">
                             <p className="text-sm text-neutral-100">{tx.full_name || tx.username || "—"}</p>
-                            {tx.username && <p className="text-xs text-neutral-500">@{tx.username}</p>}
+                            {tx.email && <p className="text-xs text-neutral-500">{tx.email}</p>}
                           </td>
-                          <td className="px-4 py-3 text-sm text-neutral-200">{pkg?.label ?? (tx.metadata?.package_id ?? "—")}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-amber-300">+{tx.delta.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-emerald-300">${(priceCents / 100).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-xs text-neutral-300 whitespace-nowrap">{label}</td>
+                          <td className="px-4 py-3 text-xs text-neutral-400">{detail}</td>
+                          <td className={`px-4 py-3 text-sm font-semibold ${isEarned ? "text-amber-300" : "text-red-400"}`}>
+                            {isEarned ? "+" : ""}{tx.delta.toLocaleString()}
+                          </td>
                         </tr>
                       );
                     })}
@@ -1275,7 +1306,7 @@ function AdminPageInner() {
                 </table>
               </div>
               {transactions.length > 0 && (
-                <p className="mt-2 text-xs text-neutral-600">{transactions.length} transaction{transactions.length !== 1 ? "s" : ""}</p>
+                <p className="mt-2 text-xs text-neutral-400">{transactions.length} transaction{transactions.length !== 1 ? "s" : ""}</p>
               )}
             </div>
           );

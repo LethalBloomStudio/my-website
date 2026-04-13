@@ -153,9 +153,8 @@ export async function GET(req: Request) {
     const { data: txData } = await supabase
       .from("bloom_coin_ledger")
       .select("id, user_id, delta, reason, metadata, created_at")
-      .eq("reason", "coin_purchase_mock")
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
     const rows = (txData ?? []) as { user_id: string; [k: string]: unknown }[];
     const userIds = [...new Set(rows.map(r => r.user_id))];
     const { data: accs } = userIds.length
