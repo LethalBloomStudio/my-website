@@ -865,6 +865,11 @@ button.btn-success:hover {
   color: #1a1a1a !important;
 }
 
+/* ── Community feed cards → white in day mode ── */
+[data-theme="day"] .community-feed-card {
+  background-color: #ffffff !important;
+}
+
 /* ── Select → light, crisp ── */
 [data-theme="day"] select {
   background-color: #ffffff !important;

@@ -267,7 +267,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
           const preview = item.content ? (item.content.length > 100 ? item.content.slice(0, 100).trimEnd() + "…" : item.content) : null;
 
           return (
-            <div key={item.id} className="rounded-lg border border-black bg-white px-2.5 py-2">
+            <div key={item.id} className="community-feed-card rounded-lg border border-black bg-[#2a2a2a] px-2.5 py-2">
               {/* Author + badge + timestamp on one line */}
               <div className="flex items-center gap-2 min-w-0">
                 {username ? (
