@@ -54,12 +54,16 @@ export async function GET() {
       .map((r) => r.user_id)
   );
 
-  // Filter: must be a beta reader or admin to appear; youth viewers see youth + admin only
+  // Filter: must be a beta reader or admin to appear; youth viewers see youth + admin only;
+  // exclude profiles with no identifying information (null username AND null pen_name)
   const filtered = profileList.filter((p) => {
+    const typed = p as { beta_reader_level?: string | null; username?: string | null; pen_name?: string | null };
     const isYouthProfile = ageCategoryMap.get(p.user_id) === "youth_13_17";
     const isAdminProfile = adminSet.has(p.user_id);
-    const hasBetaLevel = (p as { beta_reader_level?: string | null }).beta_reader_level != null;
+    const hasBetaLevel = typed.beta_reader_level != null;
+    const hasIdentity = typed.username != null || typed.pen_name != null;
     if (!hasBetaLevel && !isAdminProfile) return false;
+    if (!hasIdentity) return false;
     if (viewerIsYouth) return isYouthProfile || isAdminProfile;
     return !isYouthProfile;
   });
