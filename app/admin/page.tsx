@@ -106,6 +106,7 @@ type Announcement = {
   body: string;
   is_active: boolean;
   created_at: string;
+  reward_coins: number | null;
 };
 
 type FeatureFlag = {
@@ -1146,7 +1147,12 @@ function AdminPageInner() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex gap-2 mb-1">
-                      <Badge label={a.is_active ? "Live" : "Hidden"} color={a.is_active ? "green" : "neutral"} />
+                      {(() => {
+                        const hasCoin = (a.reward_coins ?? 0) > 0;
+                        const expired = hasCoin && Date.now() > new Date(a.created_at).getTime() + 7 * 24 * 60 * 60 * 1000;
+                        if (expired) return <Badge label="Expired" color="amber" />;
+                        return <Badge label={a.is_active ? "Live" : "Hidden"} color={a.is_active ? "green" : "neutral"} />;
+                      })()}
                       <span className="text-xs text-neutral-500">{new Date(a.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="font-semibold text-neutral-100">{a.title}</p>

@@ -177,7 +177,7 @@ export async function GET(req: Request) {
   }
 
   if (scope === "all" || scope === "announcements") {
-    const { data } = await supabase.from("admin_announcements").select("id, title, body, is_active, created_at").order("created_at", { ascending: false });
+    const { data } = await supabase.from("admin_announcements").select("id, title, body, is_active, created_at, reward_coins").order("created_at", { ascending: false });
     result.announcements = data ?? [];
   }
 
