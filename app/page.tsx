@@ -49,7 +49,7 @@ export default function Home() {
 
       {/* ── Trust bar ── */}
       <div
-        className="flex flex-wrap justify-center gap-x-8 gap-y-2 border-y border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-6 py-3"
+        className="flex flex-wrap justify-center gap-x-8 gap-y-2 border-y border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.14)] px-6 py-3"
         role="region"
         aria-label="Free tier summary"
       >
@@ -69,7 +69,7 @@ export default function Home() {
 
       {/* ── Why we built this ── */}
       <section
-        className="border-b border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.04)] px-6 py-20"
+        className="border-b border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.12)] px-6 py-20"
         aria-labelledby="founder-heading"
       >
         <div className="mx-auto max-w-2xl">
@@ -112,7 +112,7 @@ export default function Home() {
           How it <strong className="font-semibold text-white">works</strong>
         </h2>
         <div
-          className="grid divide-y divide-[rgba(120,120,120,0.2)] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.25)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r lg:[&>*:not(:last-child)]:border-[rgba(120,120,120,0.2)] sm:[&>*:nth-child(1)]:border-r sm:[&>*:nth-child(1)]:border-[rgba(120,120,120,0.2)] sm:[&>*:nth-child(3)]:border-r sm:[&>*:nth-child(3)]:border-[rgba(120,120,120,0.2)] sm:[&>*:nth-child(2)]:border-b sm:[&>*:nth-child(2)]:border-[rgba(120,120,120,0.2)] sm:[&>*:nth-child(1)]:border-b sm:[&>*:nth-child(1)]:border-[rgba(120,120,120,0.2)]"
+          className="grid divide-y divide-[rgba(120,120,120,0.3)] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.45)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r lg:[&>*:not(:last-child)]:border-[rgba(120,120,120,0.3)] sm:[&>*:nth-child(1)]:border-r sm:[&>*:nth-child(1)]:border-[rgba(120,120,120,0.3)] sm:[&>*:nth-child(3)]:border-r sm:[&>*:nth-child(3)]:border-[rgba(120,120,120,0.3)] sm:[&>*:nth-child(2)]:border-b sm:[&>*:nth-child(2)]:border-[rgba(120,120,120,0.3)] sm:[&>*:nth-child(1)]:border-b sm:[&>*:nth-child(1)]:border-[rgba(120,120,120,0.3)]"
           role="list"
         >
           {[
@@ -121,7 +121,7 @@ export default function Home() {
             { num: "03", title: "Give feedback, earn coins", body: "Leave 200+ words of genuine critique on a chapter and earn 5 Bloom Coins to spend on your own work." },
             { num: "04", title: "Grow without limits", body: "Subscribe for $10/mo or $100/yr for unlimited uploads, chapters, and reader slots." },
           ].map(({ num, title, body }) => (
-            <div key={num} className="bg-[rgba(120,120,120,0.06)] px-7 py-8" role="listitem">
+            <div key={num} className="bg-[rgba(120,120,120,0.20)] px-7 py-8" role="listitem">
               <span className="mb-3 block text-[0.7rem] font-medium tracking-widest text-neutral-400">{num}</span>
               <h3 className="mb-2 text-sm font-medium text-neutral-100">{title}</h3>
               <p className="text-xs font-light leading-6 text-neutral-400">{body}</p>
@@ -144,14 +144,14 @@ export default function Home() {
           Start posting and earning.{" "}
           <strong className="font-semibold text-white">No card required.</strong>
         </h2>
-        <div className="mb-8 overflow-hidden rounded-xl border border-[rgba(120,120,120,0.5)]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.12)] px-6 py-4">
+        <div className="mb-8 overflow-hidden rounded-xl border border-[rgba(120,120,120,0.6)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.22)] px-6 py-4">
             <h3 className="text-sm font-medium text-neutral-100">Bloom Member</h3>
             <span className="rounded-full border border-emerald-700/40 bg-emerald-950/30 px-3 py-0.5 text-[0.7rem] font-medium uppercase tracking-wide text-emerald-400">
               Always free
             </span>
           </div>
-          <div className="grid gap-3 bg-[rgba(120,120,120,0.04)] p-6 sm:grid-cols-2 day-white-bg">
+          <div className="grid gap-3 bg-[rgba(120,120,120,0.12)] p-6 sm:grid-cols-2 day-white-bg">
             {[
               "Upload 1 manuscript free",
               "First 3 chapters free",
@@ -185,7 +185,7 @@ export default function Home() {
 
       {/* ── Bloom Coins ── */}
       <section
-        className="border-y border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.04)] px-6 py-20"
+        className="border-y border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-6 py-20"
         aria-labelledby="coins-heading"
       >
         <div className="mx-auto max-w-5xl">
@@ -201,14 +201,14 @@ export default function Home() {
           <p className="mb-8 max-w-lg text-sm font-light leading-7 text-neutral-400">
             Earn coins by leaving meaningful feedback on other writers&apos; work. Spend them to upload additional chapters, open extra manuscript slots, or add more beta reader seats. The more you engage, the more you earn.
           </p>
-          <div className="grid divide-y divide-[rgba(120,120,120,0.2)] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.25)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r lg:[&>*:not(:last-child)]:border-[rgba(120,120,120,0.2)]">
+          <div className="grid divide-y divide-[rgba(120,120,120,0.3)] overflow-hidden rounded-xl border border-[rgba(120,120,120,0.45)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r lg:[&>*:not(:last-child)]:border-[rgba(120,120,120,0.3)]">
             {[
               { val: "5 coins", label: "earned per 200+ word critique you leave" },
               { val: "10 coins", label: "to upload a chapter beyond your free three" },
               { val: "$1.00", label: "= 100 Bloom Coins if you prefer to purchase" },
               { val: "Never", label: "expire. Use them at your own pace." },
             ].map(({ val, label }) => (
-              <div key={val} className="bg-[rgba(120,120,120,0.08)] px-7 py-8">
+              <div key={val} className="bg-[rgba(120,120,120,0.20)] px-7 py-8">
                 <div className="mb-1 text-2xl font-light tracking-tight text-neutral-100">{val}</div>
                 <div className="text-xs font-light leading-5 text-neutral-400">{label}</div>
               </div>
@@ -249,7 +249,7 @@ export default function Home() {
 
       {/* ── CTA Banner ── */}
       <section
-        className="cta-section border-y border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.08)] px-6 py-24 text-center"
+        className="cta-section border-y border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.18)] px-6 py-24 text-center"
         aria-labelledby="cta-heading"
       >
         <h2
@@ -276,7 +276,7 @@ export default function Home() {
       <FeedbackButton />
 
       {/* ── Footer ── */}
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(120,120,120,0.15)] bg-[rgba(120,120,120,0.04)] px-6 py-5">
+      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.12)] px-6 py-5">
         <p className="text-xs text-neutral-400">&copy; {new Date().getFullYear()} Lethal Bloom Studio. All rights reserved.</p>
         <nav className="flex flex-wrap gap-5" aria-label="Footer navigation">
           {[
