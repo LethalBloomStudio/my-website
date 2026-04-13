@@ -160,7 +160,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
-                                className="mt-1 text-[10px] text-neutral-400 hover:text-white transition"
+                                className="see-more-btn mt-1 text-[10px] text-neutral-400 hover:text-white transition"
                               >
                                 {blurbExpanded ? "See less" : "See more"}
                               </button>
@@ -175,7 +175,7 @@ export default function ManuscriptCarousel({ manuscripts, isOwner, highlightedId
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setBlurbExpanded(v => !v); }}
-                                className="mt-1 text-[10px] text-neutral-400 hover:text-white transition"
+                                className="see-more-btn mt-1 text-[10px] text-neutral-400 hover:text-white transition"
                               >
                                 {blurbExpanded ? "See less" : "See more"}
                               </button>

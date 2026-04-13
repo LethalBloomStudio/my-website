@@ -294,7 +294,7 @@ export default async function PublicProfilePage(props: {
   const manuscriptIds = baseManuscripts.map((m) => m.id);
   const publishedCounts: Record<string, number> = {};
   if (manuscriptIds.length > 0) {
-    const { data: pubChapters } = await supabase
+    const { data: pubChapters } = await supabaseAdmin()
       .from("manuscript_chapters")
       .select("manuscript_id")
       .in("manuscript_id", manuscriptIds)

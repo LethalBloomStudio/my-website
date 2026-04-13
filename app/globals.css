@@ -805,6 +805,19 @@ button.btn-success:hover {
   padding: 0 !important;
 }
 
+/* ── See more / See less inline text button — no background or border ── */
+[data-theme="day"] button.see-more-btn,
+[data-theme="day"] button.see-more-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #666666 !important;
+  padding: 0 !important;
+}
+[data-theme="day"] button.see-more-btn:hover {
+  color: #111111 !important;
+}
+
 /* ── Friends panel button — white with black outline on all themes ── */
 [data-theme="day"] button.friends-panel-btn,
 [data-theme="day"] button.friends-panel-btn:hover {
