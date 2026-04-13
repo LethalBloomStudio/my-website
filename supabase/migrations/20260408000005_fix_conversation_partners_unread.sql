@@ -12,6 +12,7 @@ returns table(
 language sql
 security definer
 stable
+set search_path = public
 as $$
   select
     partner_id,

@@ -613,6 +613,7 @@ create or replace function public.send_inactivity_reminders()
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   with warning_4m as (
@@ -674,6 +675,7 @@ create or replace function public.delete_inactive_accounts()
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   delete from auth.users
@@ -688,6 +690,7 @@ create or replace function public.process_inactivity_lifecycle()
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   perform public.send_inactivity_reminders();
@@ -698,6 +701,7 @@ $$;
 create or replace function public.reset_inactivity_warning_state()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   if new.last_active_at is distinct from old.last_active_at

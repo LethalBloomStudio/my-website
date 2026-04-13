@@ -12,6 +12,7 @@ update public.manuscripts set updated_at = created_at where updated_at = now();
 create or replace function public.set_manuscripts_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at := now();

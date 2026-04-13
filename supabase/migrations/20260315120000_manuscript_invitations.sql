@@ -26,7 +26,9 @@ CREATE POLICY "inv_update_reader" ON public.manuscript_invitations
 
 -- Trigger: auto-create access grant when a reader accepts
 CREATE OR REPLACE FUNCTION public.sync_grant_on_invitation_accept()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   IF NEW.status = 'accepted' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'accepted') THEN
     INSERT INTO public.manuscript_access_grants (manuscript_id, reader_id, granted_by)

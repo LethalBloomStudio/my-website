@@ -30,6 +30,7 @@ where m.word_count is null or m.word_count = 0;
 create or replace function public.sync_manuscript_chapter_stats()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 declare
   mid uuid;

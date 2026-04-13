@@ -11,7 +11,10 @@ alter table public.user_feedback enable row level security;
 -- Anyone (including anon) can insert feedback
 create policy "user_feedback_insert"
   on public.user_feedback for insert
-  with check (true);
+  with check (
+    user_id is null
+    or user_id = auth.uid()
+  );
 
 -- Only admins can read feedback (via service role / admin API)
 create policy "user_feedback_admin_select"

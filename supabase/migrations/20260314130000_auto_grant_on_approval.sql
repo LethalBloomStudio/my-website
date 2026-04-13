@@ -11,7 +11,9 @@ WHERE r.status = 'approved'
 
 -- Trigger: auto-create/remove grant whenever a request is inserted or updated
 CREATE OR REPLACE FUNCTION public.sync_access_grant_on_request_change()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
+RETURNS TRIGGER LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
   -- Approved (insert or update) → ensure grant exists
   IF NEW.status = 'approved' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'approved') THEN
