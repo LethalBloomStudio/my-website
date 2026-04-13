@@ -63,7 +63,7 @@ export default function FeedbackButton() {
 
   return (
     <>
-      <div className="mt-4 text-center">
+      <div className="px-6 py-12 text-center">
         <p className="text-sm text-neutral-400">
           We&apos;re always looking to improve your experience.
         </p>
