@@ -197,7 +197,7 @@ export default async function SubscriptionPage() {
           >
             View full pricing details
           </Link>
-          <span className="text-neutral-700">·</span>
+          <span className="text-neutral-400">·</span>
           <Link
             href="/account"
             className="text-sm text-neutral-500 hover:text-neutral-300 underline underline-offset-2 transition"

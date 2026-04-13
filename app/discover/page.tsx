@@ -317,7 +317,7 @@ export default function DiscoverPage() {
           </div>
         )}
         {!loading && filtered.length > 0 && filtered.length <= visibleCount && (
-          <p className="mt-4 text-center text-xs text-neutral-700">All manuscripts shown</p>
+          <p className="mt-4 text-center text-xs text-neutral-400">All manuscripts shown</p>
         )}
       </div>
     </main>

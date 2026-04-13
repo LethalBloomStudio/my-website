@@ -1000,7 +1000,7 @@ export default function AnnouncementsSection({
           </div>
 
           {hasMore && <div ref={sentinelRef} className="py-2 text-center"><span className="text-xs text-neutral-600">Loading more…</span></div>}
-          {!hasMore && announcements.length > PAGE_SIZE && <p className="mt-1 text-center text-xs text-neutral-700">All posts shown</p>}
+          {!hasMore && announcements.length > PAGE_SIZE && <p className="mt-1 text-center text-xs text-neutral-400">All posts shown</p>}
         </>
       )}
 

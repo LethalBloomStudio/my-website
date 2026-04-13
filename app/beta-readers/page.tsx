@@ -455,7 +455,7 @@ function BetaReadersPageInner() {
           </div>
         )}
         {!loading && visible.length > 0 && visible.length <= visibleCount && (
-          <p className="mt-4 text-center text-xs text-neutral-700">All readers shown</p>
+          <p className="mt-4 text-center text-xs text-neutral-400">All readers shown</p>
         )}
       </div>
 

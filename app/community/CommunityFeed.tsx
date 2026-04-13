@@ -324,7 +324,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
 
       <div ref={sentinelRef} className="py-2 text-center">
         {loadingMore && <span className="text-[11px] text-neutral-600">Loading more…</span>}
-        {!hasMore && items.length > 0 && <span className="text-[11px] text-neutral-700">All caught up</span>}
+        {!hasMore && items.length > 0 && <span className="text-[11px] text-neutral-400">All caught up</span>}
       </div>
     </>
   );

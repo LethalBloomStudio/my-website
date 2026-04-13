@@ -1074,7 +1074,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
           </div>
 
           {hasMore && <div ref={sentinelRef} className="py-4 text-center"><span className="text-xs text-neutral-600">Loading more…</span></div>}
-          {!hasMore && posts.length > 0 && <p className="mt-3 text-center text-xs text-neutral-700">All posts shown</p>}
+          {!hasMore && posts.length > 0 && <p className="mt-3 text-center text-xs text-neutral-400">All posts shown</p>}
         </>
       )}
 
