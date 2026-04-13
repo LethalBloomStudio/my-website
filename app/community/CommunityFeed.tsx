@@ -278,23 +278,23 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
                   <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
                 )}
                 {username ? (
-                  <Link href={`/u/${username}`} className="text-[11px] font-medium text-neutral-700 hover:text-neutral-900 transition truncate shrink-0">
+                  <Link href={`/u/${username}`} className="text-[11px] font-medium text-neutral-200 hover:text-white transition truncate shrink-0">
                     {displayName}
                   </Link>
                 ) : (
-                  <span className="text-[11px] font-medium text-neutral-700 truncate shrink-0">{displayName}</span>
+                  <span className="text-[11px] font-medium text-neutral-200 truncate shrink-0">{displayName}</span>
                 )}
                 <span className={`shrink-0 inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${badgeClass}`}>
                   {cat.emoji} {cat.label}
                 </span>
-                <span className="ml-auto shrink-0 text-[10px] text-neutral-400">{timeAgo(item.created_at)}</span>
+                <span className="ml-auto shrink-0 text-[10px] text-neutral-300">{timeAgo(item.created_at)}</span>
               </div>
 
               {/* Title + preview */}
               {(item.title || preview) && (
                 <div className="mt-1 pl-[26px]">
                   {item.title && <p className="text-[11px] font-semibold text-neutral-800 leading-snug">{item.title}</p>}
-                  {preview && <p className="text-[11px] text-neutral-500 leading-snug truncate">{preview}</p>}
+                  {preview && <p className="text-[11px] text-neutral-300 leading-snug truncate">{preview}</p>}
                 </div>
               )}
 
@@ -303,7 +303,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
                 <button onClick={() => void toggleLike(item.id)} disabled={!viewerId}
                   title={viewerId ? (item.user_liked ? "Unlike" : "Like") : "Sign in to like"}
                   className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium transition ${
-                    item.user_liked ? "text-rose-500 hover:text-rose-600" : "text-neutral-400 hover:text-neutral-600 disabled:cursor-default"
+                    item.user_liked ? "text-rose-500 hover:text-rose-600" : "text-neutral-300 hover:text-neutral-100 disabled:cursor-default"
                   }`}>
                   {item.user_liked ? (
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="#f87171" xmlns="http://www.w3.org/2000/svg">

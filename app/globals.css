@@ -865,6 +865,14 @@ button.btn-success:hover {
   color: #1a1a1a !important;
 }
 
+/* ── Message compose textarea — suppress distracting focus border change ── */
+.msg-input:focus,
+.msg-input:focus-visible {
+  border-color: rgba(120, 120, 120, 0.3) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 /* ── Community feed cards → white in day mode ── */
 [data-theme="day"] .community-feed-card {
   background-color: #ffffff !important;

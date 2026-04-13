@@ -171,16 +171,16 @@ function CommentRow({
             <span className="text-xs font-semibold text-neutral-200">{name}</span>
           )}
           {comment.reply_to_name && (
-            <span className="text-[11px] text-neutral-600">↩ {comment.reply_to_name}</span>
+            <span className="text-[11px] text-neutral-400">↩ {comment.reply_to_name}</span>
           )}
-          <span className="text-[10px] text-neutral-600">{timeAgo(comment.created_at)}</span>
+          <span className="text-[10px] text-neutral-400">{timeAgo(comment.created_at)}</span>
         </div>
         <p className="mt-0.5 text-xs text-neutral-300 leading-relaxed break-words">{comment.content}</p>
         <div className="mt-1.5 flex items-center gap-1.5">
           <button onClick={onLike} disabled={!currentUserId}
             className={`flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${comment.user_liked
               ? "border-rose-700/40 bg-rose-950/20 text-rose-400 hover:bg-rose-950/30"
-              : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-500 hover:border-[rgba(120,120,120,0.45)] hover:text-neutral-300 disabled:cursor-default"}`}>
+              : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white disabled:cursor-default"}`}>
             <Heart filled={comment.user_liked} />
             {comment.like_count > 0 && <span>{comment.like_count}</span>}
           </button>
@@ -188,7 +188,7 @@ function CommentRow({
             <button onClick={onReply}
               className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
                 ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
-                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-500 hover:border-[rgba(120,120,120,0.45)] hover:text-neutral-300"}`}>
+                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
               Reply
             </button>
           )}
@@ -844,13 +844,13 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                           <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_COLORS[post.type]}`}>
                             {cat?.emoji} {cat?.label}
                           </span>
-                          <span className="text-[10px] text-neutral-600">{timeAgo(post.created_at)}</span>
+                          <span className="text-[10px] text-neutral-400">{timeAgo(post.created_at)}</span>
                         </div>
                         <p className="mt-1.5 text-sm font-semibold text-neutral-100 leading-snug">{post.title}</p>
                         {post.author?.username ? (
-                          <Link href={`/u/${post.author.username}`} className="text-[11px] text-neutral-500 hover:text-neutral-300 transition">by {authorName}</Link>
+                          <Link href={`/u/${post.author.username}`} className="text-[11px] text-neutral-400 hover:text-neutral-200 transition">by {authorName}</Link>
                         ) : (
-                          <span className="text-[11px] text-neutral-500">by {authorName}</span>
+                          <span className="text-[11px] text-neutral-400">by {authorName}</span>
                         )}
                       </div>
                     </div>
@@ -947,7 +947,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                             </button>
                           );
                         })}
-                        <p className="text-[10px] text-neutral-600">{totalPollVotes} vote{totalPollVotes !== 1 ? "s" : ""}</p>
+                        <p className="text-[10px] text-neutral-400">{totalPollVotes} vote{totalPollVotes !== 1 ? "s" : ""}</p>
                       </div>
                     )}
                   </div>
@@ -955,13 +955,13 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                   {/* Action bar */}
                   <div className="flex items-center gap-1 border-t border-[rgba(120,120,120,0.15)] px-3 py-2">
                     <button onClick={() => void togglePostLike(post.id)} disabled={!currentUserId}
-                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${post.user_liked ? "text-rose-400 hover:text-rose-300" : "text-neutral-500 hover:text-neutral-300 disabled:cursor-default"}`}>
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${post.user_liked ? "text-rose-400 hover:text-rose-300" : "text-neutral-300 hover:text-white disabled:cursor-default"}`}>
                       <Heart filled={post.user_liked} />
                       <span>{post.like_count > 0 ? post.like_count : "Like"}</span>
                     </button>
                     <button
                       onClick={() => { setExpandedPostId(isExpanded ? null : post.id); setReplyingTo(null); setCommentError(null); }}
-                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${isExpanded ? "text-neutral-200" : "text-neutral-500 hover:text-neutral-300"}`}>
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${isExpanded ? "text-neutral-200" : "text-neutral-300 hover:text-white"}`}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
@@ -972,7 +972,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                         <button
                           onClick={() => setEditingPost({ id: post.id, title: post.title, content: post.content ?? "" })}
                           title="Edit post"
-                          className="rounded px-2 py-1 text-[11px] text-neutral-600 hover:text-neutral-300 transition">
+                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-neutral-200 transition">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
@@ -980,7 +980,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                         <button
                           onClick={() => setDeletingPostId(post.id)}
                           title="Delete post"
-                          className="rounded px-2 py-1 text-[11px] text-neutral-600 hover:text-red-400 transition">
+                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-red-400 transition">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
                           </svg>
@@ -1206,7 +1206,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                             placeholder={`Option ${idx + 1}`}
                             className="flex-1 rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none" />
                           {pollOptions.length > 2 && (
-                            <button onClick={() => setPollOptions(prev => prev.filter((_, i) => i !== idx))} className="text-neutral-600 hover:text-red-400 transition">
+                            <button onClick={() => setPollOptions(prev => prev.filter((_, i) => i !== idx))} className="text-neutral-400 hover:text-red-400 transition">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                             </button>
                           )}
