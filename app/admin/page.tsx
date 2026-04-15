@@ -1700,7 +1700,7 @@ function AdminPageInner() {
           const maxCount = tallySorted[0]?.[1] ?? 1;
 
           return (
-            <div className="max-w-4xl">
+            <div className="mx-auto max-w-4xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-neutral-100">User Feedback</h2>
                 <button
@@ -1777,7 +1777,7 @@ function AdminPageInner() {
 
         {/* ── PROMOTIONS ── */}
         {tab === "promotions" && (
-          <div className="max-w-4xl space-y-8">
+          <div className="mx-auto max-w-4xl space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-neutral-100">Promotions</h2>
               <button onClick={() => void loadPromotions()} className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition">Refresh</button>
