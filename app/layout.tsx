@@ -148,6 +148,34 @@ export default function RootLayout({
         />
         <ActivityPing />
         <NavScrollBehavior />
+        {/* Pull-tab shown when nav is hidden */}
+        <div
+          id="nav-pull-tab"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%) translateY(-100%)",
+            zIndex: 51,
+            transition: "transform 0.3s ease",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{
+            background: "rgba(100,100,100,0.55)",
+            backdropFilter: "blur(6px)",
+            borderRadius: "0 0 12px 12px",
+            padding: "5px 18px 6px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </div>
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">

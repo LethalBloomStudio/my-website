@@ -8,15 +8,18 @@ export default function NavScrollBehavior() {
     let navHidden = false;
 
     const nav = document.querySelector(".navWrap") as HTMLElement | null;
+    const tab = document.getElementById("nav-pull-tab") as HTMLElement | null;
     if (!nav) return;
 
     const showNav = () => {
       nav.style.transform = "translateY(0)";
+      if (tab) tab.style.transform = "translateX(-50%) translateY(-100%)";
       navHidden = false;
     };
 
     const hideNav = () => {
       nav.style.transform = "translateY(-100%)";
+      if (tab) tab.style.transform = "translateX(-50%) translateY(0)";
       navHidden = true;
     };
 
@@ -38,12 +41,21 @@ export default function NavScrollBehavior() {
       }
     };
 
+    if (tab) {
+      tab.addEventListener("click", showNav);
+      tab.addEventListener("mouseenter", showNav);
+    }
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("mousemove", handleMouseMove);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("mousemove", handleMouseMove);
+      if (tab) {
+        tab.removeEventListener("click", showNav);
+        tab.removeEventListener("mouseenter", showNav);
+      }
     };
   }, []);
 
