@@ -1408,7 +1408,6 @@ html[data-theme="day"] textarea[class] {
 /* ---------- Site Footer ---------- */
 .siteFooter {
   border-top: 1px solid rgba(120, 120, 120, 0.18);
-  margin-top: 80px;
   padding: 56px 24px 32px;
   background: #0a0a0a;
 }

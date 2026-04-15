@@ -63,7 +63,7 @@ export default function FeedbackButton() {
 
   return (
     <>
-      <div className="px-6 py-4 text-center">
+      <div className="border-b border-[rgba(120,120,120,0.3)] px-6 py-4 text-center">
         <p className="text-sm text-neutral-400">
           We&apos;re always looking to improve your experience.
         </p>
