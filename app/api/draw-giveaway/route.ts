@@ -74,7 +74,7 @@ export async function POST(req: Request) {
   const profRow = prof as { pen_name: string | null; username: string | null } | null;
   const winnerName = profRow?.pen_name ?? profRow?.username ?? "a lucky member";
 
-  // Notify the winner — same metadata shape the notifications page knows how to claim
+  // Notify the winner - same metadata shape the notifications page knows how to claim
   await supabase.from("system_notifications").insert({
     user_id: winnerId,
     category: "socials",

@@ -369,7 +369,7 @@ function NewManuscriptInner() {
                   )}
                   <p className="mt-2 text-xs text-neutral-500">
                     Selected: {selectedCategories.length}/{categoryLimit(selectedCategories)}
-                    {selectedCategories.length > 0 ? ` — ${selectedCategories.join(", ")}` : ""}
+                    {selectedCategories.length > 0 ? ` - ${selectedCategories.join(", ")}` : ""}
                     {profileAgeCategory !== "youth_13_17" && " · Up to 5, or 2 when YA/MG is selected."}
                   </p>
                 </div>

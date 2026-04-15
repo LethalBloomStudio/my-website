@@ -18,7 +18,7 @@ async function requireAdmin(req: Request) {
   return { admin };
 }
 
-// POST — apply a promotion to all eligible existing free users
+// POST - apply a promotion to all eligible existing free users
 export async function POST(req: Request) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -113,10 +113,10 @@ export async function POST(req: Request) {
     // Notify users
     const notifications = batch.map((u) => ({
       user_id: u.user_id,
-      title: isCoinsOnly ? "You received Bloom Coins! ✿" : `${p.name} — You've been enrolled! ✿`,
+      title: isCoinsOnly ? "You received Bloom Coins! ✿" : `${p.name} - You've been enrolled! ✿`,
       body: isCoinsOnly
         ? `You've been awarded ${p.bonus_coins} Bloom Coins as part of a special promotion.`
-        : `Great news! You now have full Lethal Member access for ${p.duration_days} days as part of the "${p.name}" promotion. Enjoy all member benefits — no subscription required.${p.bonus_coins > 0 ? ` You also received ${p.bonus_coins} bonus Bloom Coins.` : ""}`,
+        : `Great news! You now have full Lethal Member access for ${p.duration_days} days as part of the "${p.name}" promotion. Enjoy all member benefits - no subscription required.${p.bonus_coins > 0 ? ` You also received ${p.bonus_coins} bonus Bloom Coins.` : ""}`,
       category: "socials",
       severity: "info",
     }));

@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   // Notify the user
   const notifTitle =
     body.decision === "approved"
-      ? "Appeal Approved — Access Restored"
+      ? "Appeal Approved - Access Restored"
       : "Appeal Denied";
   const notifBody =
     body.decision === "approved"

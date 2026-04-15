@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // User must not already have an active slot (use limit(1) — maybeSingle throws if duplicates exist)
+  // User must not already have an active slot (use limit(1) - maybeSingle throws if duplicates exist)
   const { data: existingRows } = await admin
     .from("featured_manuscripts")
     .select("id")

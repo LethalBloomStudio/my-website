@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 
-// Public endpoint — returns the current active promotion safe to display to visitors
+// Public endpoint - returns the current active promotion safe to display to visitors
 export async function GET() {
   const admin = supabaseAdmin();
 

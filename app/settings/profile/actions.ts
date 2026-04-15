@@ -80,7 +80,7 @@ export async function updateProfile(formData: FormData) {
     is_public,
     updated_at: new Date().toISOString(),
 
-    // Social links — adults only; strip leading @ and whitespace
+    // Social links - adults only; strip leading @ and whitespace
     ...(isAdult ? {
       social_tiktok: String(formData.get("social_tiktok") ?? "").trim().replace(/^@/, "") || null,
       social_instagram: String(formData.get("social_instagram") ?? "").trim().replace(/^@/, "") || null,

@@ -29,7 +29,7 @@ async function sendYouthInviteEmail(
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;max-width:520px">
       <h2 style="margin-bottom:8px">You've been invited to Lethal Bloom Studio</h2>
       <p>Hi ${childName},</p>
-      <p><strong>${parentName}</strong> has set up a youth account for you on <strong>Lethal Bloom Studio</strong> — a platform for writers to share manuscripts and get meaningful feedback.</p>
+      <p><strong>${parentName}</strong> has set up a youth account for you on <strong>Lethal Bloom Studio</strong> - a platform for writers to share manuscripts and get meaningful feedback.</p>
       <p>Your account will be connected to your parent or guardian's profile. Click the button below to set up your account:</p>
       <p style="margin:24px 0">
         <a href="${inviteUrl}" style="display:inline-block;padding:12px 20px;background:#333333;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">

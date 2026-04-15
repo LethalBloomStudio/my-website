@@ -49,7 +49,7 @@ export async function GET() {
     .maybeSingle();
 
   // Build list of user IDs that must be excluded from messaging for this user.
-  // Uses admin client to bypass RLS — includes any youth accounts in their friend graph.
+  // Uses admin client to bypass RLS - includes any youth accounts in their friend graph.
   const admin = supabaseAdmin();
   const excludedFromMessaging: string[] = [];
 

@@ -243,7 +243,7 @@ const [now] = useState(() => Date.now());
     const senderIds = pending.map((r) => r.sender_id);
 
     // Fetch conversation partners + supporting data in parallel
-    // Uses an RPC to get distinct partners — avoids the PostgREST 1000-row cap
+    // Uses an RPC to get distinct partners - avoids the PostgREST 1000-row cap
     // that caused old conversations to disappear.
     const [hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, partnersRes] = await Promise.all([
       hiddenIds.length > 0
@@ -396,7 +396,7 @@ const [now] = useState(() => Date.now());
     void init();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Inbox watcher — updates sidebar unread badge when a message arrives from
+  // Inbox watcher - updates sidebar unread badge when a message arrives from
   // someone other than the currently open conversation
   useEffect(() => {
     if (!myId) return;
@@ -420,7 +420,7 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When switching chats, only reload the messages — sidebar stays cached
+  // When switching chats, only reload the messages - sidebar stays cached
   useEffect(() => {
     if (!sidebarLoadedRef.current) return; // initial load handles this
     initialScrollDoneRef.current = false;
@@ -619,7 +619,7 @@ const [now] = useState(() => Date.now());
     const json = (await res.json()) as { error?: string; message?: Msg; triggers?: string[]; consequence?: string };
     if (!res.ok) {
       if (json.triggers && json.consequence) {
-        // Violation — show acknowledgment modal, refresh status so UI reflects new suspension/blacklist
+        // Violation - show acknowledgment modal, refresh status so UI reflects new suspension/blacklist
         setViolationModal({ message: json.error ?? "Message blocked.", triggers: json.triggers, consequence: json.consequence });
         const statusRes = await fetch("/api/messages/status");
         if (statusRes.ok) {
@@ -640,14 +640,14 @@ const [now] = useState(() => Date.now());
         const container = messagesContainerRef.current;
         if (container) container.scrollTop = container.scrollHeight;
       });
-      // Keep sidebar in sync — bump existing entry or add new conversation
+      // Keep sidebar in sync - bump existing entry or add new conversation
       const sentAt = Date.now();
       setFriends((prev) => {
         const exists = prev.find((f) => f.userId === withUser);
         if (exists) {
           return [{ ...exists, lastMessageAt: sentAt }, ...prev.filter((f) => f.userId !== withUser)];
         }
-        // New conversation — add from currently loaded label/avatar
+        // New conversation - add from currently loaded label/avatar
         return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
       });
     }
@@ -748,7 +748,7 @@ const [now] = useState(() => Date.now());
     });
     if (error) { setMsg(error.message); return; }
 
-    // Permanently block — upsert the relationship to "blocked"
+    // Permanently block - upsert the relationship to "blocked"
     await supabase
       .from("profile_friend_requests")
       .upsert(
@@ -952,7 +952,7 @@ const [now] = useState(() => Date.now());
                           </button>
                           <button
                             onClick={() => void refriend(f.userId)}
-                            title="Undo — re-enable chat"
+                            title="Undo - re-enable chat"
                             className="shrink-0 rounded-lg border border-neutral-700 px-2 py-0.5 text-[10px] text-neutral-500 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200 transition"
                           >
                             Undo
@@ -964,7 +964,7 @@ const [now] = useState(() => Date.now());
                 </div>
               )}
 
-              {/* Blocked users — permanent, no undo */}
+              {/* Blocked users - permanent, no undo */}
               {blockedUsers.length > 0 && (
                 <div className="mt-3 border-t border-red-900/40 pt-3">
                   <p className="text-xs text-red-900/80 font-medium">Blocked ({blockedUsers.length})</p>
@@ -1042,18 +1042,18 @@ const [now] = useState(() => Date.now());
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Community Guidelines</p>
                   <ul className="space-y-1.5">
-                    <li>• We&apos;re all adults here — keep things appropriate and respectful for our community.</li>
+                    <li>• We&apos;re all adults here - keep things appropriate and respectful for our community.</li>
                     <li>• No soliciting other members for paid work, freelance opportunities, or external projects.</li>
                     <li>• No bullying, harassment, hate speech, or targeted negativity toward other members.</li>
                     <li>• Treat every writer with the same respect you&apos;d want for yourself and your work.</li>
-                    <li>• Keep feedback and conversations constructive — we&apos;re here to support each other&apos;s growth.</li>
+                    <li>• Keep feedback and conversations constructive - we&apos;re here to support each other&apos;s growth.</li>
                   </ul>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Strike System</p>
                   <ul className="space-y-1.5">
                     <li>• <span className="text-neutral-200">Strike 1:</span> Friendly reminder of community guidelines.</li>
-                    <li>• <span className="text-neutral-200">Strike 2:</span> Second reminder — one more violation triggers a suspension.</li>
+                    <li>• <span className="text-neutral-200">Strike 2:</span> Second reminder - one more violation triggers a suspension.</li>
                     <li>• <span className="text-neutral-200">Strike 3:</span> 3-day messaging suspension.</li>
                     <li>• Appeals may be submitted.</li>
                   </ul>
@@ -1078,7 +1078,7 @@ const [now] = useState(() => Date.now());
               {/* Parent report restriction */}
               {status?.parent_report_restricted && (
                 <div className="mt-4 rounded-lg border border-red-700/50 bg-red-950/20 p-4">
-                  <p className="text-sm font-semibold text-red-300 mb-1">Account Restricted — Parent Report</p>
+                  <p className="text-sm font-semibold text-red-300 mb-1">Account Restricted - Parent Report</p>
                   <p className="text-xs text-neutral-300 mb-3">Your account has been temporarily restricted from messaging and beta reading following a report from a parent account. An admin will review the report. If you believe this is in error, you may submit an appeal.</p>
                   {prAppealSubmitted ? (
                     <div className="flex items-center gap-2 rounded-lg border border-amber-700/50 bg-amber-950/30 px-3 py-2 text-sm text-amber-300">
@@ -1096,7 +1096,7 @@ const [now] = useState(() => Date.now());
                 </div>
               )}
 
-              {/* Appeal section — only when suspended or blacklisted */}
+              {/* Appeal section - only when suspended or blacklisted */}
               {(status?.blacklisted || (status?.messaging_suspended_until && new Date(status.messaging_suspended_until).getTime() > now)) && (
                 <div className="mt-4 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] p-4">
                   <p className="text-sm font-semibold text-neutral-100 mb-1">Submit an Appeal</p>
@@ -1276,7 +1276,7 @@ const [now] = useState(() => Date.now());
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-950 p-6 shadow-2xl">
             <h2 className="text-lg font-semibold text-neutral-100 mb-1">Submit an Appeal</h2>
-            <p className="text-sm text-neutral-400 mb-4">Explain why you believe your suspension or blacklist should be lifted. Be honest and specific — vague appeals are less likely to be approved.</p>
+            <p className="text-sm text-neutral-400 mb-4">Explain why you believe your suspension or blacklist should be lifted. Be honest and specific - vague appeals are less likely to be approved.</p>
             <textarea
               value={appealReason}
               onChange={(e) => setAppealReason(e.target.value)}

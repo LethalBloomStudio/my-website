@@ -34,7 +34,7 @@ export default function AuthCallbackPage() {
         const meta = data.session.user.user_metadata ?? {};
         const userEmail = data.session.user.email ?? null;
 
-        // Ensure accounts row is populated — covers the email-confirmation
+        // Ensure accounts row is populated - covers the email-confirmation
         // flow where the sign-up form never reaches the upsert because
         // data.session was null at registration time.
         if (userEmail || meta.full_name) {
@@ -53,7 +53,7 @@ export default function AuthCallbackPage() {
           );
         }
 
-        // Ensure profiles_public row is populated — covers the email-confirmation
+        // Ensure profiles_public row is populated - covers the email-confirmation
         // flow where the sign-up form's profiles_public upsert is skipped because
         // data.session was null. username/pen_name are stored in user_metadata.
         if (meta.username || meta.pen_name) {

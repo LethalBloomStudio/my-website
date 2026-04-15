@@ -228,7 +228,7 @@ export default function WalletTabs({
         )}
       </section>
 
-      {/* Parent: gift-to-linked-youth section — always visible when children are linked */}
+      {/* Parent: gift-to-linked-youth section - always visible when children are linked */}
       {!isYouth && linkedChildren.length > 0 && selectedChild && (
         <section className="mt-6 rounded-xl border border-violet-700/70 bg-violet-950/40 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -320,7 +320,7 @@ export default function WalletTabs({
               /* Youth: request coins from parent */
               <div className="space-y-4">
                 {requestOk ? (
-                  /* Success confirmation — replaces the whole form */
+                  /* Success confirmation - replaces the whole form */
                   <div className="rounded-xl border border-emerald-700/50 bg-emerald-950/20 p-5">
                     <p className="text-base font-semibold text-emerald-300">Request sent!</p>
                     <p className="mt-2 text-sm text-emerald-200/80">

@@ -76,6 +76,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // Sort merged list by created_at desc (best-effort — both sub-queries are already ordered)
+  // Sort merged list by created_at desc (best-effort - both sub-queries are already ordered)
   return NextResponse.json(merged);
 }

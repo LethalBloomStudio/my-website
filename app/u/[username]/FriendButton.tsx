@@ -110,7 +110,7 @@ export default function FriendButton({
   if (status === "pending_sent") {
     return (
       <button onClick={cancelRequest} disabled={loading} className="rounded-lg border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] px-4 py-1.5 text-sm text-neutral-400 hover:border-[rgba(120,120,120,0.7)] hover:bg-[rgba(120,120,120,0.22)] hover:text-neutral-200 transition disabled:opacity-50">
-        {loading ? "..." : "Request Sent — Cancel"}
+        {loading ? "..." : "Request Sent - Cancel"}
       </button>
     );
   }

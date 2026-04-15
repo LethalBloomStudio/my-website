@@ -14,7 +14,7 @@ function planToStoredStatus(planId: string): string {
   return "lethal"; // default for lethal_member (monthly)
 }
 
-// Stripe sends the raw body — Next.js must NOT parse it
+// Stripe sends the raw body - Next.js must NOT parse it
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       const coinsNum = parseInt(coins, 10);
       if (isNaN(coinsNum) || coinsNum <= 0) break;
 
-      // Idempotency — skip if this session was already processed
+      // Idempotency - skip if this session was already processed
       const { data: existing } = await admin
         .from("bloom_coin_ledger")
         .select("id")
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       // Validate plan_id against known values
       if (!KNOWN_PLANS.has(plan_id)) break;
 
-      // treat past_due as still active — Stripe retries payment during grace period
+      // treat past_due as still active - Stripe retries payment during grace period
       const isActive = sub.status === "active" || sub.status === "trialing" || sub.status === "past_due";
       const newStatus = isActive ? planToStoredStatus(plan_id) : "free";
 
@@ -247,7 +247,7 @@ export async function POST(req: Request) {
         .maybeSingle();
       const billingUserId = (billingAcct as { user_id?: string } | null)?.user_id ?? null;
 
-      // Idempotency — skip if already logged
+      // Idempotency - skip if already logged
       const { data: existingEvent } = await admin
         .from("stripe_billing_events")
         .select("id")

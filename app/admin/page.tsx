@@ -628,7 +628,7 @@ function AdminPageInner() {
     setPrClearModal(null);
     setPrClearNote("");
     if (res?.ok) {
-      setMsg(res.auto_restored ? "Report cleared — access automatically restored." : "Report cleared. User has a pending appeal; access not auto-restored.");
+      setMsg(res.auto_restored ? "Report cleared - access automatically restored." : "Report cleared. User has a pending appeal; access not auto-restored.");
       void loadParentReports();
     } else {
       setMsg("Failed to clear report.");
@@ -1040,7 +1040,7 @@ function AdminPageInner() {
                               {u.full_name || u.username}
                             </Link>
                           ) : (
-                            <span className="font-medium text-neutral-100">{u.full_name || "—"}</span>
+                            <span className="font-medium text-neutral-100">{u.full_name || "-"}</span>
                           )}
                           {u.pen_name && <span className="text-xs text-neutral-400">&ldquo;{u.pen_name}&rdquo;</span>}
                           {u.username && <span className="text-xs text-neutral-500">@{u.username}</span>}
@@ -1048,7 +1048,7 @@ function AdminPageInner() {
                           {u.messaging_restricted && <span className="text-[10px] text-amber-400">Messaging restricted</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-neutral-400 text-xs">{u.email || "—"}</td>
+                      <td className="px-4 py-3 text-neutral-400 text-xs">{u.email || "-"}</td>
                       <td className="px-4 py-3"><Badge label={u.account_status} color={statusColor(u.account_status)} /></td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-0.5">
@@ -1126,9 +1126,9 @@ function AdminPageInner() {
                         {m.is_featured && <span className="ml-2 text-[10px] text-amber-400 font-semibold">★ Featured</span>}
                         {m.admin_hidden && <span className="ml-2 text-[10px] text-red-400">Hidden</span>}
                       </td>
-                      <td className="px-4 py-3 text-neutral-400 text-xs">{m.owner_name || "—"}</td>
+                      <td className="px-4 py-3 text-neutral-400 text-xs">{m.owner_name || "-"}</td>
                       <td className="px-4 py-3"><Badge label={m.visibility} color={m.visibility === "public" ? "green" : "neutral"} /></td>
-                      <td className="px-4 py-3 text-neutral-400 text-xs">{m.genre || "—"}</td>
+                      <td className="px-4 py-3 text-neutral-400 text-xs">{m.genre || "-"}</td>
                       <td className="px-4 py-3">
                         {m.admin_note && <span className="text-xs text-amber-400" title={m.admin_note}>⚑ Note</span>}
                       </td>
@@ -1210,8 +1210,8 @@ function AdminPageInner() {
                 {accessRequests.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No access requests.</td></tr>}
                 {accessRequests.map(r => (
                   <tr key={r.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
-                    <td className="px-4 py-3 text-neutral-200">{r.requester_name || "—"}</td>
-                    <td className="px-4 py-3 text-neutral-400">{r.manuscript_title || "—"}</td>
+                    <td className="px-4 py-3 text-neutral-200">{r.requester_name || "-"}</td>
+                    <td className="px-4 py-3 text-neutral-400">{r.manuscript_title || "-"}</td>
                     <td className="px-4 py-3"><Badge label={r.status} color={r.status === "approved" ? "green" : r.status === "pending" ? "amber" : "neutral"} /></td>
                     <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3">
@@ -1250,7 +1250,7 @@ function AdminPageInner() {
 
                 {/* Bloom Coin reward selector */}
                 <div>
-                  <p className="text-xs text-neutral-400 mb-2">Attach Bloom Coin reward <span className="text-neutral-600">(optional — admin sends from unlimited pool)</span></p>
+                  <p className="text-xs text-neutral-400 mb-2">Attach Bloom Coin reward <span className="text-neutral-600">(optional - admin sends from unlimited pool)</span></p>
                   <div className="flex flex-wrap gap-2">
                     {([0, 5, 10, 25, 50, 75, 100] as const).map(amt => (
                       <button key={amt} type="button"
@@ -1274,7 +1274,7 @@ function AdminPageInner() {
                   <div className="w-full max-w-sm rounded-xl border border-amber-700/50 bg-neutral-950 p-6 shadow-2xl">
                     <h3 className="text-base font-semibold text-white mb-2">Confirm Coin Reward</h3>
                     <p className="text-sm text-neutral-300 mb-1">You are about to post an announcement with a <span className="text-amber-300 font-semibold"><span style={{ color: "#f59e0b" }}>✿</span> {annRewardCoins} Bloom Coin</span> reward claimable by every user.</p>
-                    <p className="text-xs text-neutral-500 mb-5">Coins are distributed from the admin pool — no balance is deducted from your account.</p>
+                    <p className="text-xs text-neutral-500 mb-5">Coins are distributed from the admin pool - no balance is deducted from your account.</p>
                     <div className="flex gap-3">
                       <button onClick={() => void postAnnouncement()}
                         className="flex-1 h-9 rounded-lg border border-amber-600 bg-amber-900/40 text-sm font-medium text-amber-200 hover:bg-amber-900/60 transition">
@@ -1359,7 +1359,7 @@ function AdminPageInner() {
                     <td className="px-4 py-3 text-neutral-300 text-xs">{e.admin_name || e.admin_id.slice(0, 8)}</td>
                     <td className="px-4 py-3"><code className="text-xs text-amber-400">{e.action}</code></td>
                     <td className="px-4 py-3 text-neutral-400 text-xs"><span className="text-neutral-500">{e.target_type}/</span>{e.target_id.slice(0, 12)}{e.target_id.length > 12 ? "…" : ""}</td>
-                    <td className="px-4 py-3 text-neutral-500 text-xs">{e.notes || "—"}</td>
+                    <td className="px-4 py-3 text-neutral-500 text-xs">{e.notes || "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1449,12 +1449,12 @@ function AdminPageInner() {
                         ? PACKAGE_LABELS[tx.metadata.package_id as string] ?? tx.metadata.package_id
                         : tx.metadata?.price_cents
                           ? `$${((tx.metadata.price_cents as number) / 100).toFixed(2)}`
-                          : "—";
+                          : "-";
                       return (
                         <tr key={tx.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
                           <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(tx.created_at).toLocaleString()}</td>
                           <td className="px-4 py-3">
-                            <p className="text-sm text-neutral-100">{tx.full_name || tx.username || "—"}</p>
+                            <p className="text-sm text-neutral-100">{tx.full_name || tx.username || "-"}</p>
                             {tx.email && <p className="text-xs text-neutral-500">{tx.email}</p>}
                           </td>
                           <td className="px-4 py-3 text-xs text-neutral-300 whitespace-nowrap">{label}</td>
@@ -1504,7 +1504,7 @@ function AdminPageInner() {
                       <tr key={b.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
                         <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(b.created_at).toLocaleString()}</td>
                         <td className="px-4 py-3">
-                          <p className="text-sm text-neutral-100">{b.full_name || b.username || "—"}</p>
+                          <p className="text-sm text-neutral-100">{b.full_name || b.username || "-"}</p>
                           {b.email && <p className="text-xs text-neutral-500">{b.email}</p>}
                         </td>
                         <td className="px-4 py-3 text-xs text-neutral-300 whitespace-nowrap">
@@ -1513,7 +1513,7 @@ function AdminPageInner() {
                         <td className="px-4 py-3 text-xs text-neutral-400">
                           {b.period_start && b.period_end
                             ? `${new Date(b.period_start).toLocaleDateString()} – ${new Date(b.period_end).toLocaleDateString()}`
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-emerald-300">
                           ${(b.amount_cents / 100).toFixed(2)} {b.currency.toUpperCase()}
@@ -1579,17 +1579,17 @@ function AdminPageInner() {
                           {new Date(d.deleted_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-sm text-neutral-100">{d.full_name_snapshot ?? "—"}</p>
+                          <p className="text-sm text-neutral-100">{d.full_name_snapshot ?? "-"}</p>
                           {d.email_snapshot && <p className="text-xs text-neutral-500">{d.email_snapshot}</p>}
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-400">
-                          {d.username_snapshot ? `@${d.username_snapshot}` : "—"}
+                          {d.username_snapshot ? `@${d.username_snapshot}` : "-"}
                           {d.pen_name_snapshot && (
                             <p className="text-xs text-neutral-600">{d.pen_name_snapshot}</p>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-neutral-400">{ageLabel(d.age_category)}</td>
-                        <td className="px-4 py-3 text-sm text-neutral-400 capitalize">{d.subscription_status ?? "—"}</td>
+                        <td className="px-4 py-3 text-sm text-neutral-400 capitalize">{d.subscription_status ?? "-"}</td>
                         <td className="px-4 py-3 text-sm text-neutral-400">{d.bloom_coins?.toLocaleString() ?? "0"}</td>
                         <td className="px-4 py-3 text-sm text-neutral-300 max-w-xs">{d.reason}</td>
                       </tr>
@@ -1628,7 +1628,7 @@ function AdminPageInner() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             {r.status === "pending" && <Badge label="Pending" color="amber" />}
-                            {r.status === "cleared" && <Badge label={r.auto_restored ? "Cleared — Restored" : "Cleared — Appealing"} color={r.auto_restored ? "green" : "neutral"} />}
+                            {r.status === "cleared" && <Badge label={r.auto_restored ? "Cleared - Restored" : "Cleared - Appealing"} color={r.auto_restored ? "green" : "neutral"} />}
                             <span className="text-xs text-neutral-500">{new Date(r.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1 text-sm mb-3">
@@ -1653,7 +1653,7 @@ function AdminPageInner() {
                           {appeal && (
                             <div className="mt-3 rounded-lg border border-blue-800/40 bg-blue-950/20 p-3">
                               <p className="text-xs font-semibold text-blue-400 mb-1">
-                                Appeal from reported user{appeal.status === "pending" ? " — Pending Review" : ` — ${appeal.status}`}
+                                Appeal from reported user{appeal.status === "pending" ? " - Pending Review" : ` - ${appeal.status}`}
                               </p>
                               <p className="text-sm text-neutral-300">{appeal.reason}</p>
                               {appeal.admin_note && <p className="text-xs text-neutral-500 mt-1 italic">{appeal.admin_note}</p>}
@@ -1688,7 +1688,7 @@ function AdminPageInner() {
             </p>
             {parentReportAppeals.some(a => a.report_id === prClearModal.id && a.status === "pending") && (
               <div className="mb-4 rounded-lg border border-amber-700/40 bg-amber-900/15 p-3 text-xs text-amber-400">
-                This user has a pending appeal. Clearing will NOT auto-restore access — they must resolve their appeal first.
+                This user has a pending appeal. Clearing will NOT auto-restore access - they must resolve their appeal first.
               </div>
             )}
             <textarea
@@ -1747,7 +1747,7 @@ function AdminPageInner() {
                   {/* ── Tally summary ── */}
                   {tallySorted.length > 0 && (
                     <div className="mb-5 rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] p-5">
-                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-500">Response Tally — {feedbackEntries.length} submission{feedbackEntries.length !== 1 ? "s" : ""}</h3>
+                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-500">Response Tally - {feedbackEntries.length} submission{feedbackEntries.length !== 1 ? "s" : ""}</h3>
                       <div className="space-y-2">
                         {tallySorted.map(([label, count]) => (
                           <div key={label} className="flex items-center gap-3">
@@ -2100,8 +2100,8 @@ function AdminPageInner() {
                 {actionType === "reset_strikes" && (
                   <div className="rounded-lg border border-blue-600/70 bg-blue-800/40 px-3 py-2.5 text-xs text-blue-100 space-y-1">
                     <p className="font-semibold">This will reset to zero:</p>
-                    <p>Messaging — {selectedUser!.conduct_strikes} strike{selectedUser!.conduct_strikes !== 1 ? "s" : ""} · {selectedUser!.lifetime_suspension_count} lifetime suspension{selectedUser!.lifetime_suspension_count !== 1 ? "s" : ""}{selectedUser!.blacklisted ? " · blacklisted" : ""}{selectedUser!.messaging_suspended_until ? " · currently suspended" : ""}</p>
-                    <p>Manuscript — {selectedUser!.manuscript_conduct_strikes} strike{selectedUser!.manuscript_conduct_strikes !== 1 ? "s" : ""} · {selectedUser!.manuscript_lifetime_suspension_count} lifetime suspension{selectedUser!.manuscript_lifetime_suspension_count !== 1 ? "s" : ""}{selectedUser!.manuscript_blacklisted ? " · blacklisted" : ""}{selectedUser!.manuscript_suspended_until ? " · currently suspended" : ""}</p>
+                    <p>Messaging - {selectedUser!.conduct_strikes} strike{selectedUser!.conduct_strikes !== 1 ? "s" : ""} · {selectedUser!.lifetime_suspension_count} lifetime suspension{selectedUser!.lifetime_suspension_count !== 1 ? "s" : ""}{selectedUser!.blacklisted ? " · blacklisted" : ""}{selectedUser!.messaging_suspended_until ? " · currently suspended" : ""}</p>
+                    <p>Manuscript - {selectedUser!.manuscript_conduct_strikes} strike{selectedUser!.manuscript_conduct_strikes !== 1 ? "s" : ""} · {selectedUser!.manuscript_lifetime_suspension_count} lifetime suspension{selectedUser!.manuscript_lifetime_suspension_count !== 1 ? "s" : ""}{selectedUser!.manuscript_blacklisted ? " · blacklisted" : ""}{selectedUser!.manuscript_suspended_until ? " · currently suspended" : ""}</p>
                   </div>
                 )}
                 {(actionType !== "reactivate" && actionType !== "reset_username" && actionType !== "toggle_admin" && actionType !== "restrict_messaging" && actionType !== "toggle_age_group" && actionType !== "reset_strikes") && (
@@ -2557,7 +2557,7 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
                 disabled={reviewing === a.id}
                 className="flex-1 rounded-lg border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-900/40 transition disabled:opacity-50"
               >
-                {reviewing === a.id ? "…" : "Approve — Restore Access"}
+                {reviewing === a.id ? "…" : "Approve - Restore Access"}
               </button>
               <button
                 onClick={() => void review(a.id, "denied")}
@@ -2599,8 +2599,8 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
                     </td>
                     <td className="px-4 py-3">{statusBadge(a.status)}</td>
                     <td className="px-4 py-3 text-sm text-center text-amber-300 font-medium">{a.user_lifetime_suspensions}</td>
-                    <td className="px-4 py-3 text-sm text-neutral-400">{a.reviewer_name ?? "—"}</td>
-                    <td className="px-4 py-3 text-sm text-neutral-400">{a.admin_note ?? "—"}</td>
+                    <td className="px-4 py-3 text-sm text-neutral-400">{a.reviewer_name ?? "-"}</td>
+                    <td className="px-4 py-3 text-sm text-neutral-400">{a.admin_note ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>

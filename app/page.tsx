@@ -37,7 +37,7 @@ export default function Home() {
           {activePromo && (
             <div className="inline-flex items-center gap-2 rounded-full border border-violet-600/50 bg-violet-950/40 px-4 py-1.5 text-xs font-medium text-violet-200">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
-              {activePromo.name} — Sign up free and get{" "}
+              {activePromo.name} - Sign up free and get{" "}
               <strong className="text-violet-100">{activePromo.duration_days} days of Lethal Member access</strong>
               {activePromo.bonus_coins > 0 && (
                 <> + <strong className="text-amber-300">{activePromo.bonus_coins} Bloom Coins</strong></>

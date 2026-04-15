@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Read the Terms of Service for Lethal Bloom Studio — the rules and agreements that govern your use of our creative writing platform.",
+    "Read the Terms of Service for Lethal Bloom Studio - the rules and agreements that govern your use of our creative writing platform.",
 };
 
 export default function TermsPage() {

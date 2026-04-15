@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     const feedbackReaderId = feedbackRowTyped?.reader_id ?? null;
     const feedbackChapterId = feedbackRowTyped?.chapter_id ?? null;
 
-    // Fetch reader's age_category via admin (bypasses RLS — anon client can't read other users' accounts)
+    // Fetch reader's age_category via admin (bypasses RLS - anon client can't read other users' accounts)
     let readerAgeCategory: string | null = null;
     if (feedbackReaderId) {
       const { data: readerAcct } = await admin
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       manuscriptTitle = (msRow as { owner_id?: string; title?: string } | null)?.title ?? null;
     }
 
-    // Block youth from replying on adult-owned manuscripts — adults can never reply to youth
+    // Block youth from replying on adult-owned manuscripts - adults can never reply to youth
     // feedback, so there is no valid back-and-forth for a youth to participate in.
     if (manuscriptOwnerId && senderAge === "youth_13_17") {
       const { data: ownerAcct } = await admin

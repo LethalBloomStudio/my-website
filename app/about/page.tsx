@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn about Lethal Bloom Studio — a creative writing platform built for authors, beta readers, and storytellers who take their craft seriously.",
+    "Learn about Lethal Bloom Studio - a creative writing platform built for authors, beta readers, and storytellers who take their craft seriously.",
 };
 
 export default function AboutPage() {

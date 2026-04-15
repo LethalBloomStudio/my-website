@@ -251,7 +251,7 @@ export default async function AccountPage({
           <div className="block">
             <div className="text-sm text-neutral-400">Date of birth (private)</div>
             <div className="mt-2 w-full rounded-lg border border-neutral-800 bg-neutral-900/20 px-4 py-3 text-sm text-neutral-300">
-              {dobRaw ? new Date(`${dobRaw}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"}
+              {dobRaw ? new Date(`${dobRaw}T00:00:00`).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "-"}
             </div>
             <p className="mt-2 text-xs text-neutral-500">Date of birth cannot be changed after sign-up.</p>
           </div>

@@ -243,7 +243,7 @@ function PageInner() {
         const data = await res.json() as { consequence: string; message: string; strike: number };
         setCopyConsequence(data);
       } else {
-        // Already suspended or blacklisted — redirect immediately
+        // Already suspended or blacklisted - redirect immediately
         router.replace("/manuscripts");
       }
     });
@@ -286,7 +286,7 @@ function PageInner() {
       setMyAllFeedback((prev) => [newItem, ...prev]);
       setFeedback((prev) => [newItem, ...prev]);
 
-      // Bloom coin check — beta readers earn 5 coins after 200 words of feedback per chapter
+      // Bloom coin check - beta readers earn 5 coins after 200 words of feedback per chapter
       // Trigger pages never award coins
       const chId = activeChapter?.id;
       const isBetaReader = manuscript && userId !== manuscript.owner_id &&
@@ -348,7 +348,7 @@ function PageInner() {
     let shouldNotify = false;
 
     if (!existingRow) {
-      // No prior request — insert fresh
+      // No prior request - insert fresh
       const { error } = await supabase.from("manuscript_access_requests").insert({
         manuscript_id: manuscriptId,
         requester_id: userId,
@@ -357,7 +357,7 @@ function PageInner() {
       if (error) { setMsg(error.message); return; }
       shouldNotify = true;
     } else if (existingRow.status === "left" || existingRow.status === "denied") {
-      // Reader previously left or was denied — reset to pending so author sees it again
+      // Reader previously left or was denied - reset to pending so author sees it again
       const { error } = await supabase
         .from("manuscript_access_requests")
         .update({ status: "pending" })
@@ -367,11 +367,11 @@ function PageInner() {
       setMyRequestStatus("pending");
       shouldNotify = true;
     } else {
-      // Already pending, approved, or disabled — treat as already sent
+      // Already pending, approved, or disabled - treat as already sent
       setRequesting(false);
     }
 
-    // No system_notification here — the manuscript_access_requests row already creates
+    // No system_notification here - the manuscript_access_requests row already creates
     // an actionable accept/decline notification for the author in the notifications feed.
 
     setRequestSent(true);
@@ -510,7 +510,7 @@ function PageInner() {
 
   /**
    * Renders a paragraph (which may contain inline HTML like <strong>, <em>) with
-   * only a dotted-underline span (for scroll targeting) — no inline button.
+   * only a dotted-underline span (for scroll targeting) - no inline button.
    * The actual speech-bubble buttons are rendered as absolute overlays via Range API.
    */
   function renderParagraphContent(
@@ -568,7 +568,7 @@ function PageInner() {
         );
       }
 
-      // The excerpt — id used for scroll targeting; underline + bubble rendered as absolute overlays
+      // The excerpt - id used for scroll targeting; underline + bubble rendered as absolute overlays
       const excerptHtml = html.slice(startH, endH);
       parts.push(
         <span key={item.id} id={`text-marker-${item.id}`} className="inline">
@@ -782,7 +782,7 @@ function PageInner() {
           .maybeSingle();
         const ownerAgeCategory = (ownerAcct as { age_category?: string | null } | null)?.age_category ?? null;
 
-        // Adults cannot view youth-owned manuscripts — EXCEPT confirmed parents
+        // Adults cannot view youth-owned manuscripts - EXCEPT confirmed parents
         if (!localParentView && ownerAgeCategory === "youth_13_17" && viewerAgeCategory !== "youth_13_17") {
           setMsg("This manuscript is not available.");
           setLoading(false);
@@ -790,7 +790,7 @@ function PageInner() {
         }
 
         // Youth can only access adult-owned manuscripts that are in MG or YA categories
-        // Only restrict when the owner is confirmed adult — null means we couldn't fetch (RLS) and should not block
+        // Only restrict when the owner is confirmed adult - null means we couldn't fetch (RLS) and should not block
         if (viewerAgeCategory === "youth_13_17" && ownerAgeCategory === "adult_18_plus") {
           const manuscriptCategories = (row.categories && row.categories.length > 0
             ? row.categories
@@ -805,7 +805,7 @@ function PageInner() {
         }
       }
 
-      // Block check — if either party has blocked the other, deny access for non-owners
+      // Block check - if either party has blocked the other, deny access for non-owners
       if (uid && uid !== row.owner_id) {
         const { data: blockRow } = await supabase
           .from("profile_friend_requests")
@@ -871,7 +871,7 @@ function PageInner() {
           .select("id, title, chapter_order, content, is_private, chapter_type")
           .eq("manuscript_id", manuscriptId)
           .order("chapter_order", { ascending: true });
-        // Reader view always shows only published chapters — owners see drafts in the workspace
+        // Reader view always shows only published chapters - owners see drafts in the workspace
         if (!localParentView) {
           chapterQuery.eq("is_private", false);
         }
@@ -938,7 +938,7 @@ function PageInner() {
             ((completions as { chapter_id: string }[] | null) ?? []).map((c) => c.chapter_id)
           ));
 
-          // Non-owner reader: only fetch their own feedback — never load other readers' data
+          // Non-owner reader: only fetch their own feedback - never load other readers' data
           const { data: myF, error: fError } = await supabase
             .from("line_feedback")
             .select("id, reader_id, selection_excerpt, comment_text, chapter_id, start_offset, end_offset, word_count, coins_awarded, created_at, resolved, author_response")
@@ -1106,7 +1106,7 @@ function PageInner() {
     feedbackIdsRef.current = Array.from(new Set(allIds));
   }, [feedback, myAllFeedback]);
 
-  // Realtime — live feedback replies and resolution updates
+  // Realtime - live feedback replies and resolution updates
   // No polling: realtime INSERT/UPDATE events handle all live updates
   useEffect(() => {
     if (!userId || !manuscriptId) return;
@@ -1147,7 +1147,7 @@ function PageInner() {
 
   // Measure navbar height so the fixed chapter reader sits flush below it.
   // useLayoutEffect fires synchronously before the browser paints, so navH is
-  // set before the first frame — the fixed panel never flashes at top:0.
+  // set before the first frame - the fixed panel never flashes at top:0.
   useLayoutEffect(() => {
     const nav = document.querySelector(".navWrap") as HTMLElement | null;
     if (!nav) return;
@@ -1158,7 +1158,7 @@ function PageInner() {
     return () => ro.disconnect();
   }, []);
 
-  // (body scroll lock removed — chapter now uses normal page scroll)
+  // (body scroll lock removed - chapter now uses normal page scroll)
 
   async function _reply(f: LineFeedback) {
     const body = (replyDrafts[f.id] ?? "").trim();
@@ -1201,9 +1201,9 @@ function PageInner() {
     },
     { label: "Status", value: manuscript.visibility === "public" ? "Public" : "Private" },
     { label: "Age rating", value: manuscript.age_rating === "teen_safe" ? "Teen-safe" : "Adult" },
-    { label: "Chapters", value: shownChapterCount > 0 ? `${shownChapterCount} chapter${shownChapterCount !== 1 ? "s" : ""}` : "—" },
-    { label: "Word count", value: shownWordCount > 0 ? `${shownWordCount.toLocaleString()} words` : "—" },
-    { label: "Uploaded", value: manuscript.created_at ? new Date(manuscript.created_at).toLocaleString() : "—" },
+    { label: "Chapters", value: shownChapterCount > 0 ? `${shownChapterCount} chapter${shownChapterCount !== 1 ? "s" : ""}` : "-" },
+    { label: "Word count", value: shownWordCount > 0 ? `${shownWordCount.toLocaleString()} words` : "-" },
+    { label: "Uploaded", value: manuscript.created_at ? new Date(manuscript.created_at).toLocaleString() : "-" },
     {
       label: "Genre / categories",
       value: displayCategories.length ? displayCategories.join(", ") : "Uncategorized",
@@ -1211,7 +1211,7 @@ function PageInner() {
     ...(manuscript.description ? [{ label: "Description", value: manuscript.description, multiline: true }] : []),
   ];
   // Compute chapter number from ALL chapters (including drafts) so published chapters
-  // keep their original numbers — e.g. chapter 4 stays "Chapter 4" even if 1–3 are drafts
+  // keep their original numbers - e.g. chapter 4 stays "Chapter 4" even if 1–3 are drafts
   const sortedForNum = [...allChapterMeta].sort((a, b) => a.chapter_order - b.chapter_order);
   const chapterNumMapReader = new Map<string, number>();
   let _rn = 0;
@@ -1261,7 +1261,7 @@ function PageInner() {
       {isParentView && (
         <div className="mb-4 rounded-xl border border-violet-700/50 bg-violet-950/20 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-violet-300">Parent View — Read Only</p>
+            <p className="text-sm font-semibold text-violet-300">Parent View - Read Only</p>
             <p className="text-xs text-violet-400/80 mt-0.5">You are viewing your child&apos;s manuscript workspace. All actions are disabled.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -1389,7 +1389,7 @@ function PageInner() {
         </div>
       )}
 
-      {/* Parent — disable manuscript modal */}
+      {/* Parent - disable manuscript modal */}
       {parentDisableModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 px-4">
           <div className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-950 p-6 shadow-2xl">
@@ -1420,7 +1420,7 @@ function PageInner() {
         </div>
       )}
 
-      {/* Parent — report user modal */}
+      {/* Parent - report user modal */}
       {parentReportModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 px-4">
           <div className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-950 p-6 shadow-2xl">
@@ -1465,7 +1465,7 @@ function PageInner() {
               {myRequestStatus === "left" ? (
                 <>
                   <p className="text-sm font-medium text-neutral-200">You left this project.</p>
-                  <p className="mt-1 text-xs text-neutral-400">You can request to rejoin — the author will be able to approve your access again.</p>
+                  <p className="mt-1 text-xs text-neutral-400">You can request to rejoin - the author will be able to approve your access again.</p>
                   <button
                     onClick={() => void requestAccess()}
                     disabled={requesting}
@@ -1772,7 +1772,7 @@ function PageInner() {
                       {isExpanded && (
                         <div className="mt-2">
                           <div className="rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                            {/* Reader's original comment — RIGHT (it's theirs) */}
+                            {/* Reader's original comment - RIGHT (it's theirs) */}
                             <div className="flex justify-end">
                               <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self px-3 py-2">
                                 <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">You</p>
@@ -1781,7 +1781,7 @@ function PageInner() {
                             </div>
                             {f.author_response && (
                               <p className={`text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
-                                {f.author_response === "agree" ? "✓ Author agreed — conversation closed" : "✗ Author disagreed — conversation closed"}
+                                {f.author_response === "agree" ? "✓ Author agreed - conversation closed" : "✗ Author disagreed - conversation closed"}
                               </p>
                             )}
                             {/* Reply bubbles */}
@@ -1799,7 +1799,7 @@ function PageInner() {
                               );
                             })}
                           </div>
-                          {/* Reply box — only if not resolved */}
+                          {/* Reply box - only if not resolved */}
                           {canReply && (
                             <div className="mt-2 flex gap-1.5">
                               <textarea
@@ -1831,7 +1831,7 @@ function PageInner() {
           )}
           {activeChapter && (
             <div className="flex flex-col gap-4 items-start pb-16 lg:flex-row">
-              {/* Chapter text — full page scroll, no internal scrollbox */}
+              {/* Chapter text - full page scroll, no internal scrollbox */}
               <section ref={chapterSectionRef} className="w-full min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
@@ -1884,7 +1884,7 @@ function PageInner() {
                     letterSpacing: readerFormat.letterSpacing,
                   } : { fontFamily: "'Merriweather', Georgia, serif", fontSize: "1.0625rem", lineHeight: "1.9" }}
                 >
-                  {/* Watermark overlay — non-owners only */}
+                  {/* Watermark overlay - non-owners only */}
                   {!isOwner && (
                     <div
                       aria-hidden="true"
@@ -1982,7 +1982,7 @@ function PageInner() {
                 </div>
               </section>
 
-              {/* Feedback column — sticky alongside the chapter text (hidden for owner) */}
+              {/* Feedback column - sticky alongside the chapter text (hidden for owner) */}
               {canRead && !isOwner && (
                 <div
                   ref={asideRef}
@@ -2044,7 +2044,7 @@ function PageInner() {
                         className="w-full rounded-lg border border-neutral-700 bg-neutral-900/80 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
                       />
                       {pasteBlocked && (
-                        <p className="mt-1 text-xs text-amber-400">Pasting is not allowed — feedback must be typed manually.</p>
+                        <p className="mt-1 text-xs text-amber-400">Pasting is not allowed - feedback must be typed manually.</p>
                       )}
                       <div className="mt-2 flex gap-2">
                         <button
@@ -2064,7 +2064,7 @@ function PageInner() {
                     </div>
                   )}
 
-                  {/* Card area — running log, always visible */}
+                  {/* Card area - running log, always visible */}
                   <div ref={cardAreaRef} className="flex-1 overflow-y-auto">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
@@ -2085,7 +2085,7 @@ function PageInner() {
                     if (allFeedback.length === 0 && !pendingSelection) {
                       return (
                         <p className="p-4 text-[11px] italic text-neutral-600 select-none">
-                          {canLeaveLineEdits ? "Highlight any text — a single punctuation mark, word, sentence, or paragraph — to leave feedback." : "No feedback on this chapter yet."}
+                          {canLeaveLineEdits ? "Highlight any text - a single punctuation mark, word, sentence, or paragraph - to leave feedback." : "No feedback on this chapter yet."}
                         </p>
                       );
                     }
@@ -2126,7 +2126,7 @@ function PageInner() {
                             );
                           }
 
-                          // Expanded card (selected) — inline in the list
+                          // Expanded card (selected) - inline in the list
                           return (
                             <div
                               key={f.id}
@@ -2275,7 +2275,7 @@ function PageInner() {
         </>
       )}
 
-      {/* Floating inline feedback popup — appears right beside highlighted text */}
+      {/* Floating inline feedback popup - appears right beside highlighted text */}
       {/* Bloom coin earned toast */}
       {coinToast && (
         <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-900 px-5 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]">
@@ -2317,7 +2317,7 @@ function PageInner() {
             className="w-full rounded-lg border border-neutral-700 bg-neutral-900/80 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
           />
           {pasteBlocked && (
-            <p className="mt-1 text-xs text-amber-400">Pasting is not allowed — feedback must be typed manually.</p>
+            <p className="mt-1 text-xs text-amber-400">Pasting is not allowed - feedback must be typed manually.</p>
           )}
           <div className="mt-2 flex gap-2">
             <button

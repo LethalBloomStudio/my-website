@@ -41,7 +41,7 @@ function formatRemaining(expiresAt: string, now: number): string {
 export default function FeaturedCarousel() {
   const supabase = useMemo(() => supabaseBrowser(), []);
 
-  // Audience is determined from the user's own age_category — never derived from a prop
+  // Audience is determined from the user's own age_category - never derived from a prop
   // so there's no flash of the wrong carousel while the parent is still loading.
   const [audience, setAudience] = useState<"adult" | "youth" | null>(null);
 
@@ -82,7 +82,7 @@ export default function FeaturedCarousel() {
     } else if (el.scrollLeft > copyWidth * 2) {
       el.scrollLeft -= copyWidth;
     }
-    // Direct assignment — avoids the scrollBy smooth-scroll being cancelled by the
+    // Direct assignment - avoids the scrollBy smooth-scroll being cancelled by the
     // RAF loop's own direct scrollLeft writes on the very next animation frame.
     el.scrollLeft += dir === "left" ? -amount : amount;
   }, []);
@@ -211,7 +211,7 @@ export default function FeaturedCarousel() {
     return () => cancelAnimationFrame(raf);
   }, [loading]);
 
-  // Steady auto-scroll via rAF — 40 px/s, pauses when cursor is inside the carousel
+  // Steady auto-scroll via rAF - 40 px/s, pauses when cursor is inside the carousel
   useEffect(() => {
     if (loading) return;
     let last: number | null = null;
@@ -532,7 +532,7 @@ export default function FeaturedCarousel() {
                     disabled={buying}
                     className="rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.2)] px-4 py-1.5 text-sm text-white transition hover:border-[rgba(120,120,120,0.9)] disabled:opacity-40"
                   >
-                    {buying ? "Processing…" : <>Confirm — <span style={{ color: "#f59e0b" }}>✿</span> {COST} Bloom Coins</>}
+                    {buying ? "Processing…" : <>Confirm - <span style={{ color: "#f59e0b" }}>✿</span> {COST} Bloom Coins</>}
                   </button>
                 </div>
               </>

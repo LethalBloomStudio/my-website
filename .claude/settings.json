@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(grep -n \"Free\\\\|free\\\\|\\\\$5\\\\|\\\\$0\\\\|cost\\\\|price\\\\|tier\" app/manage-youth/page.tsx)"
+    ]
+  }
+}

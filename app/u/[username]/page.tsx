@@ -102,7 +102,7 @@ export default async function PublicProfilePage(props: {
   const isOwner = viewerId === p.user_id;
 
   // Check if this profile belongs to an admin, and fetch owner's age_category
-  // Must use supabaseAdmin — anon client is blocked by RLS for cross-user accounts reads
+  // Must use supabaseAdmin - anon client is blocked by RLS for cross-user accounts reads
   const { data: accRow } = await supabaseAdmin()
     .from("accounts")
     .select("is_admin, age_category")
@@ -136,7 +136,7 @@ export default async function PublicProfilePage(props: {
     viewerAgeCategory = (viewerAcct as { age_category?: string } | null)?.age_category ?? null;
   }
 
-  // Youth profiles are only visible to other youth and the linked parent — block everyone else
+  // Youth profiles are only visible to other youth and the linked parent - block everyone else
   if (profileOwnerIsYouth && !isOwner) {
     const viewerIsYouth = viewerAgeCategory === "youth_13_17";
     if (!viewerIsYouth) {
@@ -329,7 +329,7 @@ export default async function PublicProfilePage(props: {
             />
           )}
 
-          {/* Follow + Friend buttons — bottom right */}
+          {/* Follow + Friend buttons - bottom right */}
           {viewerId && !isOwner && (
             <div className="absolute bottom-3 right-3 z-20 flex flex-wrap gap-2">
               <FollowButton
@@ -349,7 +349,7 @@ export default async function PublicProfilePage(props: {
             </div>
           )}
 
-          {/* Friends button + social media icons — bottom-left corner */}
+          {/* Friends button + social media icons - bottom-left corner */}
           {!profileOwnerIsYouth && (
             <div className="absolute bottom-3 left-3 z-20 flex gap-2">
               <FriendsPanel friends={friends} profileUserId={p.user_id} viewerUserId={viewerId} />
@@ -424,7 +424,7 @@ export default async function PublicProfilePage(props: {
               <p className="text-sm text-neutral-300">@{p.username || "-"}</p>
             )}
 
-            {/* Follower count — always visible */}
+            {/* Follower count - always visible */}
             {isOwner ? (
               <FollowersPanel initialCount={totalFollowers} followers={followers} profileUserId={p.user_id} />
             ) : (

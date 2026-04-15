@@ -111,7 +111,7 @@ export default async function SubscriptionPage() {
           <>
             <SubscriptionClient currentStatus={status} />
 
-            {/* Billing summary — always visible */}
+            {/* Billing summary - always visible */}
             <section className="space-y-3">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
                   Billing Summary
@@ -123,8 +123,8 @@ export default async function SubscriptionPage() {
                       <p className="text-sm text-neutral-200">
                         {isLethal
                           ? isAnnual
-                            ? "Lethal Member — Annual"
-                            : "Lethal Member — Monthly"
+                            ? "Lethal Member - Annual"
+                            : "Lethal Member - Monthly"
                           : "Bloom Member"}
                       </p>
                       <p className="text-xs text-neutral-500">{isLethal ? "Subscription" : "Base plan"}</p>
@@ -146,11 +146,11 @@ export default async function SubscriptionPage() {
                           Youth account &middot;{" "}
                           {link.subscription_tier === "unlimited"
                             ? "Unlimited add-on"
-                            : "Free tier"}
+                            : "Bloom Member"}
                         </p>
                       </div>
                       <span className="text-sm font-medium text-neutral-200 shrink-0">
-                        {link.subscription_tier === "unlimited" ? "$5/mo" : "Free"}
+                        {link.subscription_tier === "unlimited" ? "$5/mo" : "$0/mo"}
                       </span>
                     </div>
                   ))}

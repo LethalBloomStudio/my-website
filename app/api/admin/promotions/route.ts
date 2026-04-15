@@ -18,7 +18,7 @@ async function requireAdmin(req: Request) {
   return { user, admin };
 }
 
-// GET — list all promotions
+// GET - list all promotions
 export async function GET(req: Request) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   return NextResponse.json({ promotions: data ?? [] });
 }
 
-// POST — create a new promotion
+// POST - create a new promotion
 export async function POST(req: Request) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

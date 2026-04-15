@@ -69,7 +69,7 @@ const POST_CATEGORIES: {
   { type: "challenge", label: "Reading Challenge", emoji: "📚", description: "Set a reading or writing challenge for the community", placeholder: "Describe the challenge and any rules…" },
   { type: "prompt", label: "Writing Prompt", emoji: "✍️", description: "Share a creative writing prompt for writers to respond to", placeholder: "Write your prompt here…" },
   { type: "recommendation", label: "Recommendation", emoji: "📖", description: "Share a book recommendation or ask for suggestions", placeholder: "Tell us about the book or what you're looking for…" },
-  { type: "qa", label: "Q&A Session", emoji: "❓", description: "Open a Q&A — let the community ask you anything", placeholder: "Set the topic or theme for this Q&A…" },
+  { type: "qa", label: "Q&A Session", emoji: "❓", description: "Open a Q&A - let the community ask you anything", placeholder: "Set the topic or theme for this Q&A…" },
   { type: "giveaway", label: "Bloom Coin Giveaway", emoji: "🎁", description: "Award Bloom Coins to a random winner who likes + comments", placeholder: "Describe what this giveaway is for…" },
 ];
 
@@ -367,7 +367,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     }
   }
 
-  // Auto-draw expired giveaways — only once per post ID to prevent loop
+  // Auto-draw expired giveaways - only once per post ID to prevent loop
   useEffect(() => {
     const expired = posts.filter(p =>
       p.type === "giveaway" &&
@@ -610,7 +610,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
     if (!res.ok || !json.ok) {
       if (json.triggers && json.consequence) {
-        // Policy violation — show acknowledgment modal
+        // Policy violation - show acknowledgment modal
         setViolationModal({ message: json.error ?? "Comment blocked.", triggers: json.triggers, consequence: json.consequence });
       } else {
         setCommentError(json.error ?? "Failed to post comment.");
@@ -912,7 +912,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-xs text-neutral-600">No qualifying entries — no winner selected.</p>
+                              <p className="text-xs text-neutral-600">No qualifying entries - no winner selected.</p>
                             )
                           )}
                         </div>
@@ -1014,7 +1014,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                                   onReply={() => setReplyingTo(replyingTo?.commentId === comment.id ? null : { postId: post.id, commentId: comment.id, authorName: commentAuthorName })}
                                   isReplying={replyingTo?.commentId === comment.id} />
 
-                                {/* Replies — indented with left border */}
+                                {/* Replies - indented with left border */}
                                 {(replies.length > 0 || replyInThisThread) && (
                                   <div className="ml-8 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
                                     {replies.map(reply => {

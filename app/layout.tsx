@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://lethalbloomstudio.com",
     siteName: "Lethal Bloom Studio",
-    title: "Lethal Bloom Studio — Where Writers Sharpen Their Craft Together",
+    title: "Lethal Bloom Studio - Where Writers Sharpen Their Craft Together",
     description:
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously. Lethal Bloom Studio is the creative platform for writers who mean it.",
     images: [
@@ -68,14 +68,14 @@ export const metadata: Metadata = {
         url: "/Website Logo.png",
         width: 1200,
         height: 630,
-        alt: "Lethal Bloom Studio — Creative Writing Platform",
+        alt: "Lethal Bloom Studio - Creative Writing Platform",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Lethal Bloom Studio — Where Writers Sharpen Their Craft Together",
+    title: "Lethal Bloom Studio - Where Writers Sharpen Their Craft Together",
     description:
       "Upload your manuscript. Collect honest feedback. Build your story in a community that takes writing seriously.",
     images: ["/Website Logo.png"],
@@ -122,7 +122,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/brand/icon-192.png" />
       </head>
       <body>
-        {/* Skip navigation — visible on focus for keyboard/screen reader users */}
+        {/* Skip navigation - visible on focus for keyboard/screen reader users */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black focus:shadow-lg focus:outline-none"

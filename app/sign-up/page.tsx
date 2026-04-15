@@ -195,7 +195,7 @@ export default function SignUpPage() {
                     {activePromo.bonus_coins > 0 && (
                       <> plus <strong className="text-amber-300">{activePromo.bonus_coins} Bloom Coins</strong></>
                     )}{" "}
-                    — no credit card required.
+                    - no credit card required.
                   </p>
                 </div>
               </div>

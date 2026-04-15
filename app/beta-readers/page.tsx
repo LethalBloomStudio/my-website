@@ -42,9 +42,9 @@ const LEVELS = [
 ];
 
 const LEVEL_DESCRIPTIONS: Record<string, string> = {
-  bloom: "Encouraging, supportive feedback — great for early drafts.",
-  forge: "Balanced critique — detailed notes with constructive honesty.",
-  lethal: "Direct, editorial-level feedback — no-holds-barred analysis.",
+  bloom: "Encouraging, supportive feedback - great for early drafts.",
+  forge: "Balanced critique - detailed notes with constructive honesty.",
+  lethal: "Direct, editorial-level feedback - no-holds-barred analysis.",
 };
 
 

@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     if (reportErr) return NextResponse.json({ error: reportErr.message }, { status: 500 });
 
-    // Restrict the reported user — block messaging AND manuscript/beta reading access
+    // Restrict the reported user - block messaging AND manuscript/beta reading access
     await admin
       .from("accounts")
       .update({ parent_report_restricted: true, updated_at: new Date().toISOString() })

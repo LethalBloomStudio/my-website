@@ -178,7 +178,7 @@ export default function YouthInvitePage({
             </h1>
             <p className="mt-2 text-sm text-neutral-400">
               <strong className="text-neutral-200">{invite!.parent_name}</strong> has set up a
-              youth account for you on Lethal Bloom Studio — a platform for writers to share
+              youth account for you on Lethal Bloom Studio - a platform for writers to share
               their work and get real feedback. Finish setting up your account below.
             </p>
           </div>

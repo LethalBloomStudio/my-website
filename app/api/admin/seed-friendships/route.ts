@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 // Called after new user signup and after admin promotion.
-// Only auto-friends with lethalbloom_owner — other admins are not auto-friended.
+// Only auto-friends with lethalbloom_owner - other admins are not auto-friended.
 
 const AUTO_FRIEND_USERNAME = "lethalbloom_owner";
 
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   const body = await req.json() as { user_id?: string; admin_id?: string };
 
   if (body.admin_id) {
-    // An admin was just promoted — only auto-friend if it's lethalbloom_owner
+    // An admin was just promoted - only auto-friend if it's lethalbloom_owner
     const autoId = await getAutoFriendAdminId(supabase);
     if (!autoId || body.admin_id !== autoId) {
       return NextResponse.json({ ok: true, count: 0, skipped: true });
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   }
 
   if (body.user_id) {
-    // A new user signed up — only friend them with lethalbloom_owner
+    // A new user signed up - only friend them with lethalbloom_owner
     const autoId = await getAutoFriendAdminId(supabase);
     if (!autoId || autoId === body.user_id) {
       return NextResponse.json({ ok: true, count: 0 });
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ error: "Provide user_id or admin_id" }, { status: 400 });
 }
 
-// GET — backfill all existing users with lethalbloom_owner only
+// GET - backfill all existing users with lethalbloom_owner only
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace("Bearer ", "");

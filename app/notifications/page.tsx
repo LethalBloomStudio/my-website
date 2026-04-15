@@ -95,7 +95,7 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
   // Social: followers, likes, announcements from followed users, friend requests
   if (type === "new_follower" || type === "ann_like" || type === "followed_ann" || type === "friend_request") return "social";
 
-  // System / admin notifications — route by title
+  // System / admin notifications - route by title
   if (type === "admin") {
     const n = item.payload as SystemNotification;
     const title = n.title ?? "";
@@ -341,7 +341,7 @@ export default function NotificationsPage() {
       setLoading(false);
       return;
     }
-    // invitations table may not exist yet — silently skip if it errors
+    // invitations table may not exist yet - silently skip if it errors
 
     // Social queries
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -400,7 +400,7 @@ export default function NotificationsPage() {
       setUserUsernames({});
     }
 
-    // Only notify the manuscript author about incoming feedback — readers do not need
+    // Only notify the manuscript author about incoming feedback - readers do not need
     // a notification for feedback they themselves submitted.
     const feedbackItems = (feedbackRowsRaw ?? []).map((payload) => ({
       key: `feedback-${payload.id}`,
@@ -498,7 +498,7 @@ export default function NotificationsPage() {
       // non-fatal
     }
 
-    // replyItems removed — feedback replies are now delivered via system_notifications (category: feedback_reply)
+    // replyItems removed - feedback replies are now delivered via system_notifications (category: feedback_reply)
     const feed: FeedItem[] = [...feedbackItems, ...requestItems, ...moderationItems, ...adminItems, ...invitationItems, ...followerItems, ...annLikeItems, ...followedAnnItems, ...friendRequestItems].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
@@ -602,7 +602,7 @@ export default function NotificationsPage() {
         const claimId = meta?.announcement_id ?? meta?.giveaway_post_id;
         if (!claimId || !meta?.reward_coins) return false;
         if (claimedIds.has(claimId)) return false;
-        // Expired rewards should be marked read — don't protect them
+        // Expired rewards should be marked read - don't protect them
         const age = nowMs - new Date(item.created_at).getTime();
         return age <= SEVEN_DAYS_MS;
       })
@@ -1244,7 +1244,7 @@ export default function NotificationsPage() {
       );
     }
 
-    // Feedback reply notification — author replied to beta reader's feedback
+    // Feedback reply notification - author replied to beta reader's feedback
     if (item.type === "admin" && item.payload.category === "feedback_reply") {
       const n = item.payload;
       const manuscriptId = n.metadata?.manuscript_id as string | undefined;
@@ -1426,7 +1426,7 @@ export default function NotificationsPage() {
           </div>
         ) : null}
 
-        {/* Filter bar — dropdown menus */}
+        {/* Filter bar - dropdown menus */}
         <div className="mt-6 flex items-center gap-3 flex-wrap">
 
           {/* Category dropdown */}

@@ -62,12 +62,12 @@ export default function SubscriptionClient({
               {isFree
                 ? "Bloom Member"
                 : isAnnual
-                ? "Lethal Member — Annual"
-                : "Lethal Member — Monthly"}
+                ? "Lethal Member - Annual"
+                : "Lethal Member - Monthly"}
             </p>
             <p className="mt-0.5 text-sm text-neutral-400">
               {isFree
-                ? "Free tier — limited uploads, earn coins to unlock more"
+                ? "Free tier - limited uploads, earn coins to unlock more"
                 : isAnnual
                 ? "$100/year · billed annually · cancel anytime"
                 : "$10/month · billed monthly · cancel anytime"}
@@ -167,7 +167,7 @@ export default function SubscriptionClient({
             disabled={loading}
             className="h-11 w-full rounded-lg bg-neutral-100 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-950"
           >
-            {loading ? "Processing..." : `Subscribe — ${selectedPlan === "lethal_member_annual" ? "$100/yr" : "$10/mo"}`}
+            {loading ? "Processing..." : `Subscribe - ${selectedPlan === "lethal_member_annual" ? "$100/yr" : "$10/mo"}`}
           </button>
           <p className="text-center text-xs text-neutral-500">Cancel anytime. No hidden fees.</p>
         </div>
@@ -211,7 +211,7 @@ export default function SubscriptionClient({
             {loading ? "Opening…" : "Manage billing / Cancel subscription"}
           </button>
           <p className="text-xs text-neutral-500">
-            Switch plans, update payment method, or cancel — all handled securely through Stripe.
+            Switch plans, update payment method, or cancel - all handled securely through Stripe.
           </p>
         </div>
       )}

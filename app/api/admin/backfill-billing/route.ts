@@ -80,7 +80,7 @@ export async function POST() {
     }).single();
 
     if (error?.code === "23505") {
-      // Unique constraint — already exists
+      // Unique constraint - already exists
       skipped++;
     } else if (error) {
       skipped++;

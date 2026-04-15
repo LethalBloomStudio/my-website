@@ -426,7 +426,7 @@ useEffect(() => {
                 <div>
                   <label className="block text-xs text-neutral-400 mb-1">
                     Date of Birth{" "}
-                    <span className="text-neutral-600">(private — never shown publicly)</span>
+                    <span className="text-neutral-600">(private - never shown publicly)</span>
                   </label>
                   <input
                     type="date"
@@ -454,7 +454,7 @@ useEffect(() => {
                       }`}
                     >
                       Bloom Member{" "}
-                      <span className="opacity-60">Free</span>
+                      <span className="opacity-60">$0/mo</span>
                     </button>
                     <button
                       type="button"
@@ -604,7 +604,7 @@ useEffect(() => {
                   {isExpanded && link.child_user_id && (
                     <div className="border-t border-[rgba(120,120,120,0.2)] bg-[rgba(0,0,0,0.2)] px-4 py-4">
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
-                        Manuscripts — Read Only
+                        Manuscripts - Read Only
                       </h4>
                       {!childMss || childMss === undefined ? (
                         <p className="text-xs text-neutral-500">Loading…</p>
@@ -675,7 +675,10 @@ useEffect(() => {
           <h2 className="text-base font-semibold">Youth Account Plans</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-4">
-              <p className="text-sm font-semibold text-neutral-100">Free</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-neutral-100">Bloom Member</p>
+                <span className="text-xs font-bold text-neutral-400">$0/mo</span>
+              </div>
               <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
                 Child earns and spends Bloom Coins like a standard Bloom Member. First 3 chapters
                 free per manuscript, additional chapters cost 10 coins each. Up to 3 reader slots
@@ -703,7 +706,7 @@ useEffect(() => {
                 child&apos;s account from your profile, the +$5/mo charge for that profile is
                 removed and your subscription returns to the standard $10/mo rate on your next
                 billing cycle. The child&apos;s account remains active but will no longer be
-                connected to yours. <span className="font-semibold">This action is permanent — a removed youth account cannot be relinked.</span>
+                connected to yours. <span className="font-semibold">This action is permanent - a removed youth account cannot be relinked.</span>
               </p>
             </div>
             <div className="rounded-lg border border-blue-800/40 bg-blue-950/10 px-4 py-3">
@@ -737,7 +740,7 @@ useEffect(() => {
             </li>
             <li>
               You have read-only access to your child&apos;s manuscripts from this page. You can
-              remove the link at any time — the child&apos;s account remains active but is no
+              remove the link at any time - the child&apos;s account remains active but is no
               longer connected to yours, and the additional subscription charge stops.
             </li>
             <li>
@@ -801,7 +804,7 @@ useEffect(() => {
               <h2 className="text-lg font-semibold text-white">Downgrade to Bloom Member?</h2>
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
                 <span className="font-semibold text-neutral-200">{target.child_name}</span> will lose
-                their Lethal Member benefits — unlimited manuscripts, chapters, and reader slots — and
+                their Lethal Member benefits - unlimited manuscripts, chapters, and reader slots - and
                 revert to the free Bloom Member tier. The{" "}
                 <span className="font-semibold text-neutral-200">$5/mo</span> add-on charge will be
                 removed from your next billing cycle.

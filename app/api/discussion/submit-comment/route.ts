@@ -168,7 +168,7 @@ export async function POST(req: Request) {
     }, { status: 403 });
   }
 
-  // Content is clean — insert the comment
+  // Content is clean - insert the comment
   const { data, error } = await supabase
     .from("discussion_comments")
     .insert({

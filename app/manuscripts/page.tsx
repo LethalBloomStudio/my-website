@@ -177,7 +177,7 @@ export default function ManuscriptsPage() {
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth.user?.id;
     if (!uid) return;
-    // Mark request as "left" — slot stays filled, author cannot re-enable
+    // Mark request as "left" - slot stays filled, author cannot re-enable
     await supabase
       .from("manuscript_access_requests")
       .update({ status: "left" })
@@ -381,7 +381,7 @@ export default function ManuscriptsPage() {
               <p className="text-neutral-500 text-xs">Total suspensions on record: {conduct.manuscript_lifetime_suspension_count}. Repeated violations may result in a permanent ban.</p>
             </div>
 
-            {/* Appeal — only when suspended or blacklisted */}
+            {/* Appeal - only when suspended or blacklisted */}
             {(conduct.manuscript_blacklisted || (conduct.manuscript_suspended_until && new Date(conduct.manuscript_suspended_until).getTime() > now)) && (
               <div className="mt-4 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] p-4">
                 <p className="text-sm font-semibold text-neutral-100 mb-1">Submit an Appeal</p>

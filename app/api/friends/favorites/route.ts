@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-// GET — return the current user's favorited friend IDs
+// GET - return the current user's favorited friend IDs
 export async function GET() {
   const supabase = await supabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +18,7 @@ export async function GET() {
   return NextResponse.json({ favorites });
 }
 
-// POST — toggle a favorite { friendUserId: string }
+// POST - toggle a favorite { friendUserId: string }
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
   const { data: { user } } = await supabase.auth.getUser();

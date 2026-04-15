@@ -31,7 +31,7 @@ export default function AccountDangerZone({ isDeactivated, isYouth: _isYouth, li
   const [deactivateLoading, setDeactivateLoading] = useState(false);
   const [deactivateError, setDeactivateError] = useState<string | null>(null);
 
-  // Delete modal — two steps
+  // Delete modal - two steps
   const [deleteStep, setDeleteStep] = useState<"closed" | "reason" | "confirm">("closed");
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteOtherText, setDeleteOtherText] = useState("");

@@ -91,7 +91,7 @@ export async function POST(req: Request) {
   if (triggers.length > 0) {
     const nextStrike = (account?.conduct_strikes ?? 0) + 1;
     const consequence = consequenceFromStrike(nextStrike);
-    // Strike + suspension/blacklist update — must always succeed
+    // Strike + suspension/blacklist update - must always succeed
     const strikeUpdates: Record<string, unknown> = {
       conduct_strikes: nextStrike,
       updated_at: new Date().toISOString(),
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     }
     await supabase.from("accounts").update(strikeUpdates).eq("user_id", senderId);
 
-    // Acknowledgment flag — separate update so a missing column never blocks the strike above
+    // Acknowledgment flag - separate update so a missing column never blocks the strike above
     await supabase.from("accounts").update({ has_unacknowledged_violation: true }).eq("user_id", senderId);
 
     await supabase.from("message_moderation_flags").insert({
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
   const senderName = (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.pen_name?.trim()
     || (senderProfile as { pen_name?: string | null; username?: string | null } | null)?.username
     || "Someone";
-  // One notification per conversation thread — upsert so repeated messages
+  // One notification per conversation thread - upsert so repeated messages
   // update the preview instead of stacking separate notifications.
   const preview = content.length > 80 ? content.slice(0, 80) + "…" : content;
   const dedupeKey = `dm-thread-${senderId}-${toUserId}`;

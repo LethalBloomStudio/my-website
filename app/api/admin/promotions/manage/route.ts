@@ -18,7 +18,7 @@ async function requireAdmin(req: Request) {
   return { admin };
 }
 
-// POST — pause, resume, end, or delete a promotion
+// POST - pause, resume, end, or delete a promotion
 export async function POST(req: Request) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: claimError.message }, { status: 500 });
   }
 
-  // Credit coins to user — admin source, so no balance deduction needed
+  // Credit coins to user - admin source, so no balance deduction needed
   const { data: accRow } = await supabase
     .from("accounts")
     .select("bloom_coins")

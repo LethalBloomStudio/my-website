@@ -187,7 +187,7 @@ export default async function ProfilePage() {
               className="profile-banner-img absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
             />
           )}
-          {/* Edit Profile button — bottom right corner */}
+          {/* Edit Profile button - bottom right corner */}
           <div className="absolute bottom-3 right-3 z-20">
             <Link
               href="/settings/profile"
@@ -200,7 +200,7 @@ export default async function ProfilePage() {
             </Link>
           </div>
 
-          {/* Friends button + social media icons — bottom-left corner */}
+          {/* Friends button + social media icons - bottom-left corner */}
           <div className="absolute bottom-3 left-3 z-20 flex gap-2">
             <FriendsPanel friends={friends} profileUserId={user.id} viewerUserId={user.id} />
             {isAdult && (

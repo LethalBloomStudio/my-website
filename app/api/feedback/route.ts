@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please select at least one option or add your own feedback." }, { status: 400 });
     }
 
-    // Get user id if logged in (optional — anon feedback is allowed)
+    // Get user id if logged in (optional - anon feedback is allowed)
     const supabase = await supabaseServer();
     const { data: auth } = await supabase.auth.getUser();
     const userId = auth?.user?.id ?? null;
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  // Admin only — returns all feedback entries
+  // Admin only - returns all feedback entries
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;

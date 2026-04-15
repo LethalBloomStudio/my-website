@@ -163,7 +163,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
   }, [supabase, viewerId, audience]);
 
   // IntersectionObserver uses refs for loadingMore/hasMore so it never needs
-  // to be rebuilt when those values change — no cascade re-triggering.
+  // to be rebuilt when those values change - no cascade re-triggering.
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;

@@ -501,7 +501,7 @@ export default function ManuscriptDetailsPage() {
     setOwnerPenName(profRow?.pen_name || (profRow?.username ? `@${profRow.username}` : "Author"));
     setProfileFeedbackPreference(feedbackPref);
     // memberTier is based on subscription_status OR an active promotion
-    // writer_level is the user's self-selected writing experience — unrelated to subscription
+    // writer_level is the user's self-selected writing experience - unrelated to subscription
     const subscription = (accountRow?.subscription_status ?? "").toLowerCase().trim();
     const onActivePromo = !!(accountRow?.active_promotion_id && accountRow?.promotion_expires_at && new Date(accountRow.promotion_expires_at) > new Date());
     setMemberTier(
@@ -632,7 +632,7 @@ export default function ManuscriptDetailsPage() {
 
     setAuthorUserId(userId);
 
-    // Fetch coin activity — author spends on this manuscript
+    // Fetch coin activity - author spends on this manuscript
     const { data: ledgerRows } = await supabase
       .from("bloom_coin_ledger")
       .select("id, delta, reason, created_at, metadata")
@@ -818,7 +818,7 @@ export default function ManuscriptDetailsPage() {
     setTimeout(() => onReaderScroll(), 50);
   }, [readerSlots, acceptedReaders.length]);
 
-  // Realtime — live feedback replies
+  // Realtime - live feedback replies
   // No polling: realtime INSERT events handle all live updates
   useEffect(() => {
     if (!authorUserId || !manuscriptId) return;
@@ -838,7 +838,7 @@ export default function ManuscriptDetailsPage() {
     };
   }, [authorUserId, manuscriptId, supabase]);
 
-  // Realtime subscription — keep coin balance live as coins are earned/spent anywhere
+  // Realtime subscription - keep coin balance live as coins are earned/spent anywhere
   useEffect(() => {
     if (!authorUserId) return;
     const channel = supabase
@@ -855,7 +855,7 @@ export default function ManuscriptDetailsPage() {
     return () => { void supabase.removeChannel(channel); };
   }, [authorUserId, supabase]);
 
-  // Realtime subscription — keep chapter completion coin log live
+  // Realtime subscription - keep chapter completion coin log live
   useEffect(() => {
     if (!manuscriptId) return;
     const channel = supabase
@@ -951,7 +951,7 @@ export default function ManuscriptDetailsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
 
-  // When "Show me" navigates to a chapter, markerInfos populates after render —
+  // When "Show me" navigates to a chapter, markerInfos populates after render -
   // re-trigger the scroll once the selected feedback's marker appears for the first time.
   useEffect(() => {
     if (!selectedFeedbackId) { prevMarkerInfosRef.current = {}; return; }
@@ -1007,7 +1007,7 @@ export default function ManuscriptDetailsPage() {
     return range;
   }
 
-  // Compute inline marker positions from the Range API — runs after the editor DOM has settled
+  // Compute inline marker positions from the Range API - runs after the editor DOM has settled
   function recomputeMarkers() {
     const wrapper = editorWrapperRef.current;
     if (!wrapper) return;
@@ -1201,7 +1201,7 @@ export default function ManuscriptDetailsPage() {
   async function addReaderSlot() {
     if (!manuscript) return;
     if (memberTier === "lethal") {
-      // Lethal Members get slots free — persist a delta-0 ledger entry so the
+      // Lethal Members get slots free - persist a delta-0 ledger entry so the
       // count survives page reloads and shows correctly on the invite page.
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
@@ -1368,7 +1368,7 @@ export default function ManuscriptDetailsPage() {
 
     if (updates.length === 0) return;
 
-    // Optimistic update — reflect order instantly in the sidebar
+    // Optimistic update - reflect order instantly in the sidebar
     const updatesById = new Map(updates.map((u) => [u.id, u]));
     setChapters(reordered.map((c, i) => {
       const u = updatesById.get(c.id);
@@ -1696,7 +1696,7 @@ export default function ManuscriptDetailsPage() {
     { label: "Author", value: `You${manuscript?.created_at ? ` · ${new Date(manuscript.created_at).toLocaleDateString()}` : ""}` },
     { label: "Visibility", value: manuscript?.visibility === "public" ? "Public" : "Draft" },
     { label: "Age rating", value: manuscript?.age_rating === "teen_safe" ? "Teen-safe" : "Adult" },
-    { label: "Word count", value: displayedWordCount ? `${displayedWordCount.toLocaleString()} words` : "—" },
+    { label: "Word count", value: displayedWordCount ? `${displayedWordCount.toLocaleString()} words` : "-" },
   ];
   if (selectedChapter) {
     detailItems.push({
@@ -2124,11 +2124,11 @@ export default function ManuscriptDetailsPage() {
                     </button>
                   ))}
                   <p className="text-[10px] text-neutral-600">
-                    {stage === "alpha" ? "Early draft — rough and unpolished" : "Polished draft — ready for feedback"}
+                    {stage === "alpha" ? "Early draft - rough and unpolished" : "Polished draft - ready for feedback"}
                   </p>
                 </div>
 
-                {/* Feedback & Content — 3 boxes side by side */}
+                {/* Feedback & Content - 3 boxes side by side */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-wide text-neutral-500 mb-1">Requested Feedback</p>
@@ -2199,7 +2199,7 @@ export default function ManuscriptDetailsPage() {
                   )}
                 </div>
 
-                {/* Editable: Summary — full width */}
+                {/* Editable: Summary - full width */}
                 <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
                   <p className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">Summary</p>
                   <textarea
@@ -2221,7 +2221,7 @@ export default function ManuscriptDetailsPage() {
                 </section>
               )}
 
-              {/* Feedback from Beta Readers — manuscript overview */}
+              {/* Feedback from Beta Readers - manuscript overview */}
               <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
@@ -2310,7 +2310,7 @@ export default function ManuscriptDetailsPage() {
                                 {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
                               </p>
                             )}
-                            {/* Expand button — show when there are replies OR feedback is unresolved */}
+                            {/* Expand button - show when there are replies OR feedback is unresolved */}
                             {(fReplies.length > 0 || !f.resolved && !f.author_response) && (
                               <button
                                 type="button"
@@ -2395,7 +2395,7 @@ export default function ManuscriptDetailsPage() {
                 })()}
               </section>
 
-              {/* Coin Activity — spending by this author + earnings by readers (hidden for parent) */}
+              {/* Coin Activity - spending by this author + earnings by readers (hidden for parent) */}
               {!isParentView && <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">Coin Activity</h2>
@@ -2406,7 +2406,7 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </div>
 
-                {/* Reader earnings — running log of coins earned by readers from feedback on this manuscript */}
+                {/* Reader earnings - running log of coins earned by readers from feedback on this manuscript */}
                 <div className="mb-4">
                   <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Readers earned</p>
                   {readerCompletions.length === 0 ? (
@@ -2454,7 +2454,7 @@ export default function ManuscriptDetailsPage() {
                             <div className="min-w-0">
                               <span className="text-xs text-neutral-300 truncate">Rewarded {recipientName}</span>
                               {rewardReasonLabel && (
-                                <span className="ml-1.5 text-[10px] text-neutral-500 truncate">— {rewardReasonLabel}</span>
+                                <span className="ml-1.5 text-[10px] text-neutral-500 truncate">- {rewardReasonLabel}</span>
                               )}
                             </div>
                             <span className="text-xs font-semibold text-rose-400 shrink-0 ml-2">{entry.delta} <span style={{ color: '#f59e0b' }}>✿</span></span>
@@ -2623,7 +2623,7 @@ export default function ManuscriptDetailsPage() {
                     <div>
                       {previewMode ? (
                         <div className="chapter-editor relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
-                          {/* Owner watermark — tiled, same style as reader watermark */}
+                          {/* Owner watermark - tiled, same style as reader watermark */}
                           <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                             {Array.from({ length: 16 }).map((_, row) =>
                               Array.from({ length: 3 }).map((_, col) => (
@@ -2651,7 +2651,7 @@ export default function ManuscriptDetailsPage() {
                               ))
                             )}
                           </div>
-                          {/* Paragraphs — rendered with chapterTextToPreviewHtml for identical structure to ChapterEditor */}
+                          {/* Paragraphs - rendered with chapterTextToPreviewHtml for identical structure to ChapterEditor */}
                           {previewHtml ? (
                             <div className="relative z-[1]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
                           ) : (
@@ -2668,7 +2668,7 @@ export default function ManuscriptDetailsPage() {
                             placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
                             className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
                           />
-                          {/* Dotted amber underlines — always visible, same style as reader view.
+                          {/* Dotted amber underlines - always visible, same style as reader view.
                               Dim (0.45 opacity) when idle, bright (0.95) + bg fill when selected. */}
                           {Object.entries(markerInfos).flatMap(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
@@ -2689,7 +2689,7 @@ export default function ManuscriptDetailsPage() {
                               />
                             ));
                           })}
-                          {/* Speech-bubble markers — same size and style as reader view */}
+                          {/* Speech-bubble markers - same size and style as reader view */}
                           {Object.entries(markerInfos).map(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
                             return (
@@ -2764,7 +2764,7 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </section>
 
-                {/* Feedback aside — hidden in reader view preview */}
+                {/* Feedback aside - hidden in reader view preview */}
                 {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: chapterSectionH > 0 ? chapterSectionH : `calc(100vh - ${navH + 24}px)` }}>
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
@@ -2832,7 +2832,7 @@ export default function ManuscriptDetailsPage() {
 
                             {/* Chat thread */}
                             <div className="mt-2 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                              {/* Reader's original comment — LEFT */}
+                              {/* Reader's original comment - LEFT */}
                               <div className="flex justify-start">
                                 <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other px-3 py-2">
                                   <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
@@ -2858,10 +2858,10 @@ export default function ManuscriptDetailsPage() {
                             {/* Conversation closed indicator */}
                             {(f.resolved || !!f.author_response) && (
                               <p className={`mt-2 text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
-                                {f.author_response === "agree" ? "✓ You agreed — conversation closed" : "✗ You disagreed — conversation closed"}
+                                {f.author_response === "agree" ? "✓ You agreed - conversation closed" : "✗ You disagreed - conversation closed"}
                               </p>
                             )}
-                            {/* Reply box — visible when this card is selected and not resolved */}
+                            {/* Reply box - visible when this card is selected and not resolved */}
                             {isSelected && !isParentView && !f.resolved && !f.author_response && (
                               <div className="mt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                                 <textarea
@@ -2885,7 +2885,7 @@ export default function ManuscriptDetailsPage() {
                               </div>
                             )}
 
-                            {/* Report button — parent view only */}
+                            {/* Report button - parent view only */}
                             {isParentView && (
                               <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                                 <button
@@ -2895,7 +2895,7 @@ export default function ManuscriptDetailsPage() {
                                     setParentReportModal({
                                       readerId: f.reader_id,
                                       readerName: readerName,
-                                      feedbackExcerpt: `${f.selection_excerpt ? `"${f.selection_excerpt}" — ` : ""}${f.comment_text}`,
+                                      feedbackExcerpt: `${f.selection_excerpt ? `"${f.selection_excerpt}" - ` : ""}${f.comment_text}`,
                                     });
                                     setParentReportReason("");
                                     setParentReportDone(false);
@@ -2915,7 +2915,7 @@ export default function ManuscriptDetailsPage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "agree"); }}
                                 className="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-2.5 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40 transition"
-                                title="Agree — acknowledges feedback and removes it from this view"
+                                title="Agree - acknowledges feedback and removes it from this view"
                               >
                                 Agree
                               </button>
@@ -2923,7 +2923,7 @@ export default function ManuscriptDetailsPage() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "disagree"); }}
                                 className="rounded-lg border border-rose-700/60 bg-rose-900/20 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/40 transition"
-                                title="Disagree — acknowledges feedback and removes it from this view"
+                                title="Disagree - acknowledges feedback and removes it from this view"
                               >
                                 Disagree
                               </button>
