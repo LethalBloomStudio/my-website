@@ -65,7 +65,7 @@ export default function TermsPage() {
         <p>
           Lethal Bloom Studio is a community for writers and readers who take their craft seriously.
           We expect all users to treat each other with respect. Harassment, bullying, impersonation,
-          or abuse of any kind — toward other users, authors, or platform staff — is not tolerated
+          or abuse of any kind toward other users, authors, or platform staff is not tolerated
           and may result in permanent account suspension.
         </p>
       </section>
@@ -76,7 +76,7 @@ export default function TermsPage() {
           Some features of Lethal Bloom Studio require a paid subscription. By subscribing, you
           authorize us to charge your payment method on a recurring basis until you cancel.
           Subscriptions may be canceled at any time through your account settings. Refunds are
-          handled on a case-by-case basis — contact us at{" "}
+          handled on a case-by-case basis. Contact us at{" "}
           <a
             href="mailto:support@lethalbloomstudio.com"
             className="text-neutral-300 underline underline-offset-2 hover:text-white"

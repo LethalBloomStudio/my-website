@@ -18,7 +18,7 @@ export default function AboutPage() {
         <h2 id="mission-heading" className="text-lg font-semibold text-neutral-100">Our Mission</h2>
         <p>
           Lethal Bloom Studio exists to give writers a real place to grow. Not a social media feed
-          dressed up as a writing platform — a focused workspace where manuscripts get honest
+          dressed up as a writing platform, but a focused workspace where manuscripts get honest
           feedback, beta readers do serious work, and authors at every stage can sharpen their craft.
         </p>
         <p>
@@ -41,7 +41,7 @@ export default function AboutPage() {
       <section className="mt-10 space-y-6 text-sm font-light leading-7" aria-labelledby="community-heading">
         <h2 id="community-heading" className="text-lg font-semibold text-neutral-100">Our Community</h2>
         <p>
-          Lethal Bloom Studio is home to writers of all backgrounds — debut novelists, seasoned
+          Lethal Bloom Studio is home to writers of all backgrounds: debut novelists, seasoned
           authors, genre fiction fans, literary writers, and everyone in between. What we share is a
           commitment to the work. Every feature we build is in service of that.
         </p>
@@ -56,7 +56,7 @@ export default function AboutPage() {
         <h2 id="contact-heading" className="text-lg font-semibold text-neutral-100">Get in Touch</h2>
         <p>
           We&apos;re a small, independent team and we read every message we receive. Whether you have
-          feedback, a question, or just want to say hello — reach out anytime.
+          feedback, a question, or just want to say hello, reach out anytime.
         </p>
         <ul className="list-inside list-disc space-y-2 text-neutral-400">
           <li>

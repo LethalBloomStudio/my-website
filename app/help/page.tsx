@@ -467,7 +467,7 @@ export default async function HelpPage() {
 
                 <details className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-3 py-2.5">
                   <summary className="cursor-pointer text-sm font-medium text-neutral-200">Can youth members upload manuscripts?</summary>
-                  <p className="mt-2.5 text-sm text-neutral-300 leading-relaxed">Yes. Youth members can upload manuscripts and chapters the same way any other member can. Bloom Members receive their first 3 chapters free, with additional chapters costing 10 Bloom Coins each. All manuscripts uploaded by youth members are private by default and follow the same access controls as adult accounts — only approved beta readers can view their content. Youth members are encouraged to have a parent or guardian involved when inviting readers to their project.</p>
+                  <p className="mt-2.5 text-sm text-neutral-300 leading-relaxed">Yes. Youth members can upload manuscripts and chapters the same way any other member can. Bloom Members receive their first 3 chapters free, with additional chapters costing 10 Bloom Coins each. All manuscripts uploaded by youth members are private by default and follow the same access controls as adult accounts. Only approved beta readers can view their content. Youth members are encouraged to have a parent or guardian involved when inviting readers to their project.</p>
                 </details>
 
                 <details className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-3 py-2.5">

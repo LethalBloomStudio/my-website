@@ -27,24 +27,24 @@ export default function PrivacyPage() {
         <h2 id="collect-heading" className="text-lg font-semibold text-neutral-100">Information We Collect</h2>
         <ul className="list-inside list-disc space-y-2 text-neutral-400">
           <li>
-            <strong className="text-neutral-300">Account information</strong> — email address,
+            <strong className="text-neutral-300">Account information:</strong> email address,
             username, display name, and profile details you provide when signing up.
           </li>
           <li>
-            <strong className="text-neutral-300">Content you upload</strong> — manuscripts,
+            <strong className="text-neutral-300">Content you upload:</strong> manuscripts,
             chapters, comments, feedback, and messages you create on the platform.
           </li>
           <li>
-            <strong className="text-neutral-300">Usage data</strong> — pages visited, features
+            <strong className="text-neutral-300">Usage data:</strong> pages visited, features
             used, and activity on the platform (e.g., last active time) to help us improve the
             experience.
           </li>
           <li>
-            <strong className="text-neutral-300">Payment information</strong> — processed securely
+            <strong className="text-neutral-300">Payment information:</strong> processed securely
             through Stripe. We do not store your card details directly.
           </li>
           <li>
-            <strong className="text-neutral-300">Youth account data</strong> — for users under 18,
+            <strong className="text-neutral-300">Youth account data:</strong> for users under 18,
             we collect parent or guardian contact information to fulfill our parental consent
             requirements.
           </li>
@@ -67,8 +67,8 @@ export default function PrivacyPage() {
         <h2 id="share-heading" className="text-lg font-semibold text-neutral-100">Information Sharing</h2>
         <p>
           We do not sell your personal information. We share data only with trusted service
-          providers necessary to operate the platform — including our authentication provider
-          (Supabase) and payment processor (Stripe) — and only as required to deliver the service
+          providers necessary to operate the platform, including our authentication provider
+          (Supabase) and payment processor (Stripe), and only as required to deliver the service
           or comply with the law.
         </p>
       </section>
