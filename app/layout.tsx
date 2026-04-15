@@ -13,6 +13,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 import ActivityPing from "@/components/ActivityPing";
 import Footer from "@/components/Footer";
+import NavScrollBehavior from "@/components/NavScrollBehavior";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -146,6 +147,7 @@ export default function RootLayout({
           }}
         />
         <ActivityPing />
+        <NavScrollBehavior />
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">
