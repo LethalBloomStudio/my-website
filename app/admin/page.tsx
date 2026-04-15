@@ -288,6 +288,35 @@ function ageLabel(cat: string | null): string {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+function PromoCountdown({ createdAt, durationDays, status }: { createdAt: string; durationDays: number; status: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const expiresAt = new Date(createdAt).getTime() + durationDays * 24 * 60 * 60 * 1000;
+  const msLeft = expiresAt - now;
+
+  if (msLeft <= 0) {
+    return <span className="text-[10px] text-neutral-500">Enrollment period ended</span>;
+  }
+
+  const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
+  const hoursLeft = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minsLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+  const label = daysLeft > 0
+    ? `${daysLeft}d ${hoursLeft}h remaining`
+    : hoursLeft > 0
+      ? `${hoursLeft}h ${minsLeft}m remaining`
+      : `${minsLeft}m remaining`;
+
+  const color = status === "paused" ? "text-amber-400" : daysLeft < 1 ? "text-red-400" : "text-emerald-400";
+
+  return <span className={`text-[10px] font-medium ${color}`}>⏱ {label}</span>;
+}
+
 export default function AdminPage() {
   return <Suspense><AdminPageInner /></Suspense>;
 }
@@ -1930,7 +1959,12 @@ function AdminPageInner() {
                             {p.max_users && <span>Cap: {p.max_users.toLocaleString()}</span>}
                             <span className="font-medium text-neutral-300">{p.enrolled_count.toLocaleString()} enrolled</span>
                           </div>
-                          <p className="mt-1 text-[10px] text-neutral-600">Created {new Date(p.created_at).toLocaleDateString()}{p.ended_at ? ` · Ended ${new Date(p.ended_at).toLocaleDateString()}` : ""}</p>
+                          <p className="mt-1 flex items-center gap-3 text-[10px] text-neutral-600">
+                            <span>Created {new Date(p.created_at).toLocaleDateString()}{p.ended_at ? ` · Ended ${new Date(p.ended_at).toLocaleDateString()}` : ""}</span>
+                            {!isEnded && p.benefit !== "coins_only" && (
+                              <PromoCountdown createdAt={p.created_at} durationDays={p.duration_days} status={p.status} />
+                            )}
+                          </p>
                         </div>
                         {!isEnded && (
                           <div className="flex flex-wrap gap-2">
