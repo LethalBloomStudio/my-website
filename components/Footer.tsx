@@ -3,15 +3,6 @@ import Image from "next/image";
 
 const footerLinks = [
   {
-    heading: "Platform",
-    links: [
-      { href: "/discover", label: "Discover" },
-      { href: "/community", label: "Community" },
-      { href: "/manuscripts", label: "Manuscripts" },
-      { href: "/pricing", label: "Pricing" },
-    ],
-  },
-  {
     heading: "Support",
     links: [
       { href: "/help", label: "Help & FAQ" },

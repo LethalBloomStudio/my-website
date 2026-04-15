@@ -275,22 +275,6 @@ export default function Home() {
 
       <FeedbackButton />
 
-      {/* ── Footer ── */}
-      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.12)] px-6 py-5">
-        <p className="text-xs text-neutral-400">&copy; {new Date().getFullYear()} Lethal Bloom Studio. All rights reserved.</p>
-        <nav className="flex flex-wrap gap-5" aria-label="Footer navigation">
-          {[
-            { label: "Pricing", href: "/pricing" },
-            { label: "Help", href: "/help" },
-            { label: "Accessibility", href: "/accessibility" },
-          ].map(({ label, href }) => (
-            <a key={href} href={href} className="text-xs text-neutral-400 transition hover:text-neutral-200">
-              {label}
-            </a>
-          ))}
-        </nav>
-      </footer>
-
     </main>
   );
 }
