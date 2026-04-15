@@ -2163,7 +2163,7 @@ export default function ManuscriptDetailsPage() {
 
               {/* Brainstorm Notes */}
               {manuscriptId && (
-                <section className="flex max-h-[560px] flex-col rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
+                <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">
                   <NotesPanel defaultManuscriptId={manuscriptId} />
                 </section>
               )}
