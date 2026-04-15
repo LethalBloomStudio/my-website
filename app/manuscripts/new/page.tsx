@@ -63,11 +63,11 @@ function NewManuscriptInner() {
       if (!auth.user) return;
       const { data } = await supabase
         .from("accounts")
-        .select("age_category, dob, bloom_coins, subscription_status")
+        .select("age_category, dob, bloom_coins, subscription_status, active_promotion_id, promotion_expires_at")
         .eq("user_id", auth.user.id)
         .maybeSingle();
 
-      const row = data as { age_category?: string | null; dob?: string | null; bloom_coins?: number | null; subscription_status?: string | null } | null;
+      const row = data as { age_category?: string | null; dob?: string | null; bloom_coins?: number | null; subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null;
       const inferred =
         row?.age_category === "youth_13_17" || row?.age_category === "adult_18_plus"
           ? row.age_category
@@ -80,7 +80,8 @@ function NewManuscriptInner() {
       const profileFeedback = (profile as { writer_level?: string | null; feedback_preference?: string | null } | null)?.feedback_preference;
       const subscription = (row?.subscription_status ?? "").toLowerCase();
       const lethalFromSubscription = subscription.includes("lethal");
-      setMemberTier(writerLevel === "lethal" || lethalFromSubscription ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
+      const onActivePromo = !!(row?.active_promotion_id && row?.promotion_expires_at && new Date(row.promotion_expires_at) > new Date());
+      setMemberTier(writerLevel === "lethal" || lethalFromSubscription || onActivePromo ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
 
       // Map profile feedback_preference to manuscript requested_feedback values
       const feedbackMap: Record<string, FeedbackLevel> = { gentle: "bloom", balanced: "forge", direct: "lethal" };

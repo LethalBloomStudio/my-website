@@ -54,10 +54,10 @@ export default function NewChapterPage() {
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("subscription_status, bloom_coins")
+      .select("subscription_status, bloom_coins, active_promotion_id, promotion_expires_at")
       .eq("user_id", userId)
       .maybeSingle();
-    const accountRow = (account as { subscription_status?: string | null; bloom_coins?: number | null } | null);
+    const accountRow = (account as { subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
     setCoinBalance(Number(accountRow?.bloom_coins ?? 0));
 
     const { data: profile } = await supabase
@@ -68,8 +68,9 @@ export default function NewChapterPage() {
     const writerLevel = (profile as { writer_level?: string | null } | null)?.writer_level;
     const subscription = (accountRow?.subscription_status ?? "").toLowerCase();
     const lethalFromSubscription = subscription.includes("lethal");
+    const onActivePromo = !!(accountRow?.active_promotion_id && accountRow?.promotion_expires_at && new Date(accountRow.promotion_expires_at) > new Date());
     setMemberTier(
-      writerLevel === "lethal" || lethalFromSubscription
+      writerLevel === "lethal" || lethalFromSubscription || onActivePromo
         ? "lethal"
         : writerLevel === "forge"
           ? "forge"

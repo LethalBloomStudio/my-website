@@ -21,12 +21,14 @@ export default async function SubscriptionPage() {
 
   const { data } = await supabase
     .from("accounts")
-    .select("subscription_status, age_category")
+    .select("subscription_status, age_category, active_promotion_id, promotion_expires_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const account = data as { subscription_status: string | null; age_category: string | null } | null;
-  const status = account?.subscription_status?.trim() || "free";
+  const account = data as { subscription_status: string | null; age_category: string | null; active_promotion_id: string | null; promotion_expires_at: string | null } | null;
+  const baseStatus = account?.subscription_status?.trim() || "free";
+  const onActivePromo = !!(account?.active_promotion_id && account?.promotion_expires_at && new Date(account.promotion_expires_at) > new Date());
+  const status = onActivePromo && baseStatus === "free" ? "lethal" : baseStatus;
   const isYouth = account?.age_category === "youth_13_17";
   const admin = supabaseAdmin();
 

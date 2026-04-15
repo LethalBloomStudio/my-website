@@ -482,10 +482,10 @@ export default function ManuscriptDetailsPage() {
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("age_category, subscription_status, bloom_coins")
+      .select("age_category, subscription_status, bloom_coins, active_promotion_id, promotion_expires_at")
       .eq("user_id", userId)
       .maybeSingle();
-    const accountRow = (account as { age_category?: string | null; subscription_status?: string | null; bloom_coins?: number | null } | null);
+    const accountRow = (account as { age_category?: string | null; subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
     const ageCategory = accountRow?.age_category;
     setProfileAgeCategory(ageCategory === "youth_13_17" ? "youth_13_17" : "adult_18_plus");
     setCoinBalance(Number(accountRow?.bloom_coins ?? 0));
@@ -500,11 +500,12 @@ export default function ManuscriptDetailsPage() {
     const feedbackPref = profRow?.feedback_preference ?? "gentle";
     setOwnerPenName(profRow?.pen_name || (profRow?.username ? `@${profRow.username}` : "Author"));
     setProfileFeedbackPreference(feedbackPref);
-    // memberTier is based ONLY on subscription_status, NOT writer_level
+    // memberTier is based on subscription_status OR an active promotion
     // writer_level is the user's self-selected writing experience — unrelated to subscription
     const subscription = (accountRow?.subscription_status ?? "").toLowerCase().trim();
+    const onActivePromo = !!(accountRow?.active_promotion_id && accountRow?.promotion_expires_at && new Date(accountRow.promotion_expires_at) > new Date());
     setMemberTier(
-      subscription === "lethal" || subscription.includes("lethal") ? "lethal" :
+      subscription === "lethal" || subscription.includes("lethal") || onActivePromo ? "lethal" :
       subscription === "forge" || subscription.includes("forge") ? "forge" :
       "bloom"
     );
