@@ -332,7 +332,8 @@ function AdminPageInner() {
   const [promoDesc, setPromoDesc] = useState("");
   const [promoDays, setPromoDays] = useState<number>(14);
   const [promoCustomDays, setPromoCustomDays] = useState("");
-  const [promoAppliesTo, setPromoAppliesTo] = useState<"new_signups" | "all_free" | "both">("new_signups");
+  const [promoBenefit, setPromoBenefit] = useState<"lethal_access" | "coins_only">("lethal_access");
+  const [promoAppliesTo, setPromoAppliesTo] = useState<"new_signups" | "all_free" | "both" | "all_users">("new_signups");
   const [promoBonusCoins, setPromoBonusCoins] = useState(0);
   const [promoMaxUsers, setPromoMaxUsers] = useState<number | null>(null);
   const [promoCreating, setPromoCreating] = useState(false);
@@ -531,14 +532,16 @@ function AdminPageInner() {
   async function createPromotion() {
     const days = promoDays === 0 ? Number(promoCustomDays) : promoDays;
     if (!promoName.trim()) { setMsg("Promotion name is required."); return; }
-    if (!days || days < 1) { setMsg("Enter a valid duration."); return; }
+    if (promoBenefit === "lethal_access" && (!days || days < 1)) { setMsg("Enter a valid duration."); return; }
+    if (promoBenefit === "coins_only" && promoBonusCoins < 1) { setMsg("Coins-only promotions require a bonus coin amount."); return; }
     setPromoCreating(true);
     const data = await adminFetch("/api/admin/promotions", {
       method: "POST",
       body: JSON.stringify({
         name: promoName.trim(),
         description: promoDesc.trim() || undefined,
-        duration_days: days,
+        benefit: promoBenefit,
+        duration_days: promoBenefit === "coins_only" ? 1 : days,
         applies_to: promoAppliesTo,
         bonus_coins: promoBonusCoins,
         max_users: promoMaxUsers,
@@ -548,7 +551,7 @@ function AdminPageInner() {
     if (data?.promotion) {
       setPromotions((prev) => [data.promotion!, ...prev]);
       setPromoName(""); setPromoDesc(""); setPromoDays(14); setPromoCustomDays("");
-      setPromoAppliesTo("new_signups"); setPromoBonusCoins(0); setPromoMaxUsers(null);
+      setPromoBenefit("lethal_access"); setPromoAppliesTo("new_signups"); setPromoBonusCoins(0); setPromoMaxUsers(null);
       setMsg("Promotion created.");
     } else {
       setMsg(data?.error ?? "Failed to create promotion.");
@@ -1795,34 +1798,60 @@ function AdminPageInner() {
                   <input value={promoDesc} onChange={e => setPromoDesc(e.target.value)} placeholder="Internal note about this promotion" className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-[rgba(120,120,120,0.7)]" />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs text-neutral-400">Duration</label>
-                  <div className="flex flex-wrap gap-2">
-                    {[3, 7, 14, 30, 60, 90, 0].map(d => (
-                      <button key={d} type="button" onClick={() => setPromoDays(d)}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${promoDays === d ? "border-red-700/60 bg-red-950/30 text-red-300" : "border-[rgba(120,120,120,0.35)] text-neutral-400 hover:text-white"}`}>
-                        {d === 0 ? "Custom" : `${d}d`}
+                {promoBenefit === "lethal_access" && (
+                  <div className="space-y-1">
+                    <label className="text-xs text-neutral-400">Duration</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[3, 7, 14, 30, 60, 90, 0].map(d => (
+                        <button key={d} type="button" onClick={() => setPromoDays(d)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${promoDays === d ? "border-red-700/60 bg-red-950/30 text-red-300" : "border-[rgba(120,120,120,0.35)] text-neutral-400 hover:text-white"}`}>
+                          {d === 0 ? "Custom" : `${d}d`}
+                        </button>
+                      ))}
+                    </div>
+                    {promoDays === 0 && (
+                      <input type="number" min={1} value={promoCustomDays} onChange={e => setPromoCustomDays(e.target.value)} placeholder="Number of days" className="mt-2 w-32 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-1.5 text-sm text-neutral-100 focus:outline-none" />
+                    )}
+                  </div>
+                )}
+
+                <div className="sm:col-span-2 space-y-2">
+                  <label className="text-xs text-neutral-400">Promotion Type</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {([
+                      ["lethal_access", "Lethal Member Access", "Grants full Lethal tier benefits to free users for the duration of the promotion. Requires a duration."],
+                      ["coins_only", "Bloom Coins Award", "Immediately awards bonus Bloom Coins to eligible users. No tier change. Works for all user types including current Lethal members."],
+                    ] as const).map(([val, title, desc]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => {
+                          setPromoBenefit(val);
+                          if (val === "coins_only") {
+                            if (promoBonusCoins === 0) setPromoBonusCoins(50);
+                            if (promoAppliesTo === "both") setPromoAppliesTo("all_users");
+                          } else {
+                            if (promoAppliesTo === "all_users") setPromoAppliesTo("both");
+                          }
+                        }}
+                        className={`rounded-xl border p-4 text-left transition ${promoBenefit === val ? "border-violet-600/60 bg-violet-950/25" : "border-[rgba(120,120,120,0.3)] bg-neutral-900/30 hover:border-[rgba(120,120,120,0.5)]"}`}
+                      >
+                        <div className={`text-sm font-semibold ${promoBenefit === val ? "text-violet-200" : "text-neutral-200"}`}>{title}</div>
+                        <div className="mt-1 text-xs text-neutral-500 leading-relaxed">{desc}</div>
                       </button>
                     ))}
-                  </div>
-                  {promoDays === 0 && (
-                    <input type="number" min={1} value={promoCustomDays} onChange={e => setPromoCustomDays(e.target.value)} placeholder="Number of days" className="mt-2 w-32 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-1.5 text-sm text-neutral-100 focus:outline-none" />
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-neutral-400">Benefit</label>
-                  <div className="rounded-lg border border-[rgba(120,120,120,0.35)] bg-neutral-900/40 px-3 py-2 text-sm text-neutral-300">
-                    Lethal Member access (full platform benefits)
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs text-neutral-400">Applies To</label>
                   <div className="flex flex-col gap-2">
-                    {([["new_signups", "New signups only"], ["all_free", "All current free members"], ["both", "Both new signups + existing free"]] as const).map(([val, label]) => (
+                    {(promoBenefit === "lethal_access"
+                      ? [["new_signups", "New signups only"], ["all_free", "All current free members"], ["both", "Both new signups + existing free"]] as const
+                      : [["new_signups", "New signups only"], ["all_free", "Current free members only"], ["all_users", "All users (free + Lethal)"]] as const
+                    ).map(([val, label]) => (
                       <label key={val} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="appliesTo" value={val} checked={promoAppliesTo === val} onChange={() => setPromoAppliesTo(val)} className="accent-red-500" />
+                        <input type="radio" name="appliesTo" value={val} checked={promoAppliesTo === val} onChange={() => setPromoAppliesTo(val as typeof promoAppliesTo)} className="accent-red-500" />
                         <span className="text-sm text-neutral-300">{label}</span>
                       </label>
                     ))}
@@ -1879,7 +1908,7 @@ function AdminPageInner() {
                   const isActive = p.status === "active";
                   const isPaused = p.status === "paused";
                   const isEnded = p.status === "ended";
-                  const appliesToLabel = p.applies_to === "new_signups" ? "New signups" : p.applies_to === "all_free" ? "All free members" : "New signups + existing free";
+                  const appliesToLabel = p.applies_to === "new_signups" ? "New signups" : p.applies_to === "all_free" ? "All free members" : p.applies_to === "all_users" ? "All users" : "New signups + existing free";
                   return (
                     <div key={p.id} className={`rounded-xl border p-5 ${isActive ? "border-emerald-700/40 bg-emerald-950/10" : isPaused ? "border-amber-700/40 bg-amber-950/10" : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)]"}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1892,7 +1921,10 @@ function AdminPageInner() {
                           </div>
                           {p.description && <p className="mt-0.5 text-xs text-neutral-500">{p.description}</p>}
                           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
-                            <span>{p.duration_days} day{p.duration_days !== 1 ? "s" : ""} of Lethal benefits</span>
+                            {p.benefit === "coins_only"
+                              ? <span className="text-amber-400 font-medium">Coins award only</span>
+                              : <span>{p.duration_days} day{p.duration_days !== 1 ? "s" : ""} of Lethal access</span>
+                            }
                             <span>{appliesToLabel}</span>
                             {p.bonus_coins > 0 && <span>+{p.bonus_coins} ✿ bonus</span>}
                             {p.max_users && <span>Cap: {p.max_users.toLocaleString()}</span>}

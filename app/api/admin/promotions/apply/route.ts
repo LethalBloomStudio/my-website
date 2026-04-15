@@ -30,23 +30,37 @@ export async function POST(req: Request) {
   if (!promo) return NextResponse.json({ error: "Promotion not found or not active." }, { status: 404 });
 
   const p = promo as {
-    id: string; duration_days: number; bonus_coins: number;
+    id: string; benefit: string; duration_days: number; bonus_coins: number;
     max_users: number | null; enrolled_count: number; applies_to: string;
   };
 
-  if (!["all_free", "both"].includes(p.applies_to)) {
+  const isCoinsOnly = p.benefit === "coins_only";
+
+  if (!isCoinsOnly && !["all_free", "both"].includes(p.applies_to)) {
+    return NextResponse.json({ error: "This promotion only applies to new signups." }, { status: 400 });
+  }
+  if (isCoinsOnly && !["all_free", "all_users"].includes(p.applies_to)) {
     return NextResponse.json({ error: "This promotion only applies to new signups." }, { status: 400 });
   }
 
-  // Fetch all free users not already on a promotion and not lethal members
-  const { data: freeUsers } = await ctx.admin
+  // Build the eligible users query based on applies_to and benefit
+  let usersQuery = ctx.admin
     .from("accounts")
     .select("user_id, bloom_coins")
-    .eq("subscription_status", "free")
-    .is("active_promotion_id", null)
     .eq("account_status", "active");
 
-  const eligible = (freeUsers as { user_id: string; bloom_coins: number }[] | null) ?? [];
+  if (p.applies_to === "all_users") {
+    // All active users regardless of subscription or existing promotion
+  } else {
+    // Free users only; if lethal_access also skip those already on a promotion
+    usersQuery = usersQuery.eq("subscription_status", "free");
+    if (!isCoinsOnly) {
+      usersQuery = usersQuery.is("active_promotion_id", null);
+    }
+  }
+
+  const { data: eligibleUsers } = await usersQuery;
+  const eligible = (eligibleUsers as { user_id: string; bloom_coins: number }[] | null) ?? [];
 
   let toApply = eligible;
   if (p.max_users !== null) {
@@ -56,7 +70,7 @@ export async function POST(req: Request) {
   }
 
   if (toApply.length === 0) {
-    return NextResponse.json({ ok: true, applied: 0, message: "No eligible free users found." });
+    return NextResponse.json({ ok: true, applied: 0, message: "No eligible users found." });
   }
 
   const expiresAt = new Date(Date.now() + p.duration_days * 24 * 60 * 60 * 1000).toISOString();
@@ -67,10 +81,13 @@ export async function POST(req: Request) {
     const batch = toApply.slice(i, i + 100);
     const userIds = batch.map((u) => u.user_id);
 
-    await ctx.admin
-      .from("accounts")
-      .update({ active_promotion_id: p.id, promotion_expires_at: expiresAt })
-      .in("user_id", userIds);
+    // Only update tier for lethal_access promotions
+    if (!isCoinsOnly) {
+      await ctx.admin
+        .from("accounts")
+        .update({ active_promotion_id: p.id, promotion_expires_at: expiresAt })
+        .in("user_id", userIds);
+    }
 
     // Award bonus coins if set
     if (p.bonus_coins > 0) {
@@ -91,8 +108,10 @@ export async function POST(req: Request) {
     // Notify users
     const notifications = batch.map((u) => ({
       user_id: u.user_id,
-      title: "You've been enrolled in a promotion! ✿",
-      body: `You now have Lethal Member benefits for ${p.duration_days} days as part of a special promotion.`,
+      title: isCoinsOnly ? "You received Bloom Coins! ✿" : "You've been enrolled in a promotion! ✿",
+      body: isCoinsOnly
+        ? `You've been awarded ${p.bonus_coins} Bloom Coins as part of a special promotion.`
+        : `You now have Lethal Member benefits for ${p.duration_days} days as part of a special promotion.`,
       category: "socials",
       severity: "info",
     }));

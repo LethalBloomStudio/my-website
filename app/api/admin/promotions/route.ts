@@ -43,14 +43,18 @@ export async function POST(req: Request) {
 
   if (!body.name?.trim()) return NextResponse.json({ error: "Name is required." }, { status: 400 });
   if (!body.duration_days || body.duration_days < 1) return NextResponse.json({ error: "Duration must be at least 1 day." }, { status: 400 });
-  if (!["new_signups", "all_free", "both"].includes(body.applies_to)) {
+  if (!["new_signups", "all_free", "both", "all_users"].includes(body.applies_to)) {
     return NextResponse.json({ error: "Invalid applies_to value." }, { status: 400 });
+  }
+  const benefit = body.benefit ?? "lethal_access";
+  if (!["lethal_access", "coins_only"].includes(benefit)) {
+    return NextResponse.json({ error: "Invalid benefit value." }, { status: 400 });
   }
 
   const { data, error } = await ctx.admin.from("promotions").insert({
     name: body.name.trim(),
     description: body.description?.trim() ?? null,
-    benefit: body.benefit ?? "lethal_benefits",
+    benefit,
     duration_days: body.duration_days,
     applies_to: body.applies_to,
     bonus_coins: body.bonus_coins ?? 0,

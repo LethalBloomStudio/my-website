@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     .limit(1);
 
   const promo = (promos as Array<{
-    id: string; duration_days: number; bonus_coins: number;
+    id: string; benefit: string; duration_days: number; bonus_coins: number;
     max_users: number | null; enrolled_count: number;
   }> | null)?.[0];
 
@@ -30,13 +30,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, enrolled: false, reason: "cap_reached" });
   }
 
+  const isCoinsOnly = promo.benefit === "coins_only";
   const expiresAt = new Date(Date.now() + promo.duration_days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Apply promotion to user
-  await admin
-    .from("accounts")
-    .update({ active_promotion_id: promo.id, promotion_expires_at: expiresAt })
-    .eq("user_id", user_id);
+  // For lethal_access: set tier promotion on account. For coins_only: just award coins.
+  if (!isCoinsOnly) {
+    await admin
+      .from("accounts")
+      .update({ active_promotion_id: promo.id, promotion_expires_at: expiresAt })
+      .eq("user_id", user_id);
+  }
 
   // Award bonus coins
   if (promo.bonus_coins > 0) {
@@ -54,5 +57,5 @@ export async function POST(req: Request) {
   // Increment enrolled count
   await admin.from("promotions").update({ enrolled_count: promo.enrolled_count + 1 }).eq("id", promo.id);
 
-  return NextResponse.json({ ok: true, enrolled: true, expires_at: expiresAt });
+  return NextResponse.json({ ok: true, enrolled: true, benefit: promo.benefit, expires_at: isCoinsOnly ? null : expiresAt });
 }
