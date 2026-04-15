@@ -1,94 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import FeedbackButton from "@/components/FeedbackButton";
 
 export default function Home() {
-  const [heroPassed, setHeroPassed] = useState(false);
-  const [stripExpanded, setStripExpanded] = useState(false);
-  const heroRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!heroRef.current) return;
-      setHeroPassed(heroRef.current.getBoundingClientRect().bottom < 0);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
     <main id="main" className="min-h-screen">
 
-      {/* ── Collapsed hero strip (fixed, appears when hero scrolls out of view) ── */}
-      <div
-        aria-hidden={!heroPassed}
-        className={`fixed left-0 right-0 z-40 transition-all duration-300 ease-in-out ${
-          heroPassed ? "top-14 opacity-100" : "-top-20 opacity-0 pointer-events-none"
-        }`}
-        onMouseEnter={() => setStripExpanded(true)}
-        onMouseLeave={() => setStripExpanded(false)}
-      >
-        {/* Thin strip */}
-        <div className="flex h-9 cursor-pointer items-center justify-center gap-2.5 border-b border-[rgba(120,120,120,0.3)] bg-[#0a0814]">
-          <span className="text-[0.62rem] font-medium uppercase tracking-[0.18em] text-neutral-500">
-            Writing is solitary. Revision shouldn&apos;t be.
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`text-neutral-600 transition-transform duration-300 ${stripExpanded ? "rotate-180" : ""}`}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
-
-        {/* Expanded panel on hover */}
-        <div
-          className={`overflow-hidden border-b border-[rgba(120,120,120,0.25)] bg-[#0a0814] transition-all duration-500 ease-in-out ${
-            stripExpanded ? "max-h-72 opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="px-6 py-10 text-center">
-            <h2
-              className="mx-auto max-w-xl text-2xl font-light leading-tight text-neutral-100 sm:text-3xl"
-              style={{ letterSpacing: "-0.02em" }}
-            >
-              Writing is solitary.<br />
-              <strong className="font-semibold text-white">Revision shouldn&apos;t be.</strong>
-            </h2>
-            <p className="mx-auto mt-3 max-w-sm text-sm font-light leading-6 text-neutral-400">
-              A secure space where writers share chapters and receive meaningful critique.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <a
-                href="/sign-up"
-                className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-[rgba(120,120,120,0.9)] hover:bg-[rgba(120,120,120,0.3)]"
-              >
-                Create Free Account
-              </a>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.35)] px-5 py-2.5 text-sm font-medium text-neutral-400 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
-                onClick={() => setStripExpanded(false)}
-              >
-                See how it works
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Hero ── */}
       <section
-        ref={heroRef}
         className="night-hero-bg bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_60%),#0a0814] px-6 py-24 text-center sm:py-32"
         aria-labelledby="hero-heading"
       >
