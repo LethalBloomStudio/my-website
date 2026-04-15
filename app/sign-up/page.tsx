@@ -2,11 +2,13 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { resolvePostAuthPath } from "@/lib/postAuthRedirect";
+
+type ActivePromo = { name: string; duration_days: number; bonus_coins: number };
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -26,6 +28,16 @@ export default function SignUpPage() {
   const [parentEmail, setParentEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [activePromo, setActivePromo] = useState<ActivePromo | null>(null);
+
+  useEffect(() => {
+    fetch("/api/promotions/active")
+      .then((r) => r.json())
+      .then((d: { promotion?: ActivePromo | null }) => {
+        if (d.promotion) setActivePromo(d.promotion);
+      })
+      .catch(() => {});
+  }, []);
 
   function handleUsernameChange(val: string) {
     const lower = val.toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -171,7 +183,26 @@ export default function SignUpPage() {
         <section className="rounded-2xl border border-[rgba(120,120,120,0.5)] bg-[rgba(20,20,20,0.92)] p-6 shadow-xl shadow-[rgba(120,120,120,0.18)]">
           <h1 className="text-3xl font-semibold tracking-tight">Join Now</h1>
 
-          <p className="mt-2 text-sm text-neutral-300">
+          {activePromo && (
+            <div className="mt-4 rounded-xl border border-violet-600/40 bg-violet-950/35 px-4 py-3">
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
+                <div>
+                  <p className="text-sm font-semibold text-violet-100">{activePromo.name}</p>
+                  <p className="mt-0.5 text-sm text-violet-200">
+                    Create your free account today and automatically receive{" "}
+                    <strong className="text-white">{activePromo.duration_days} days of full Lethal Member access</strong>
+                    {activePromo.bonus_coins > 0 && (
+                      <> plus <strong className="text-amber-300">{activePromo.bonus_coins} Bloom Coins</strong></>
+                    )}{" "}
+                    — no credit card required.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="mt-3 text-sm text-neutral-300">
             Already have an account?{" "}
             <Link href="/sign-in" className="text-[rgba(210,210,210,1)] hover:underline">
               Sign in
