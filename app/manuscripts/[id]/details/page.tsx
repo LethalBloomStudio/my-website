@@ -151,7 +151,7 @@ export default function ManuscriptDetailsPage() {
   const [rewardAmount, setRewardAmount] = useState<5 | 10>(5);
   const [rewardReason, setRewardReason] = useState("");
   const [authorUserId, setAuthorUserId] = useState<string | null>(null);
-  const [manuscriptLedger, setManuscriptLedger] = useState<{ id: string; delta: number; reason: string; created_at: string }[]>([]);
+  const [manuscriptLedger, setManuscriptLedger] = useState<{ id: string; delta: number; reason: string; created_at: string; metadata?: Record<string, unknown> }[]>([]);
   const [readerCompletions, setReaderCompletions] = useState<{ chapter_id: string; reader_id: string; coins_awarded: number; completed_at: string }[]>([]);
   const [readerNames, setReaderNames] = useState<Record<string, string>>({});
   const [feedbackItems, setFeedbackItems] = useState<LineFeedback[]>([]);
@@ -634,12 +634,13 @@ export default function ManuscriptDetailsPage() {
     // Fetch coin activity — author spends on this manuscript
     const { data: ledgerRows } = await supabase
       .from("bloom_coin_ledger")
-      .select("id, delta, reason, created_at")
+      .select("id, delta, reason, created_at, metadata")
       .eq("user_id", userId)
       .filter("metadata->>manuscript_id", "eq", manuscriptId)
       .order("created_at", { ascending: false })
       .limit(20);
-    setManuscriptLedger((ledgerRows as { id: string; delta: number; reason: string; created_at: string }[] | null) ?? []);
+    const lRows = (ledgerRows as { id: string; delta: number; reason: string; created_at: string; metadata?: Record<string, unknown> }[] | null) ?? [];
+    setManuscriptLedger(lRows);
 
     // Fetch reader chapter completions for this manuscript (coins earned by readers)
     const { data: completionRows } = await supabase
@@ -651,8 +652,11 @@ export default function ManuscriptDetailsPage() {
     const cRows = (completionRows as { chapter_id: string; reader_id: string; coins_awarded: number; completed_at: string }[] | null) ?? [];
     setReaderCompletions(cRows);
 
-    // Fetch names for readers who have completions
-    const completionReaderIds = Array.from(new Set(cRows.map((c) => c.reader_id)));
+    // Resolve names for all involved reader IDs (completions + reward recipients)
+    const rewardRecipientIds = lRows
+      .filter((e) => e.reason === "reader_reward" && typeof e.metadata?.reader_id === "string")
+      .map((e) => e.metadata!.reader_id as string);
+    const completionReaderIds = Array.from(new Set([...cRows.map((c) => c.reader_id), ...rewardRecipientIds]));
     if (completionReaderIds.length > 0) {
       const { data: rProfiles } = await supabase
         .from("public_profiles")
@@ -1198,6 +1202,17 @@ export default function ManuscriptDetailsPage() {
     const { data: readerAcc } = await supabase.from("accounts").select("bloom_coins").eq("user_id", reader.user_id).maybeSingle();
     const readerBalance = Number((readerAcc as { bloom_coins?: number | null } | null)?.bloom_coins ?? 0);
     await supabase.from("accounts").update({ bloom_coins: readerBalance + rewardAmount }).eq("user_id", reader.user_id);
+    // Record receipt in reader's ledger via server route (needs admin client)
+    await fetch("/api/manuscript/reward-reader", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        manuscript_id: manuscript.id,
+        reader_id: reader.user_id,
+        amount: rewardAmount,
+        reward_reason: rewardReason,
+      }),
+    });
     // Notify reader
     await supabase.from("system_notifications").insert({
       user_id: reader.user_id,
@@ -2353,19 +2368,24 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </div>
 
-                {/* Reader earnings — coins earned by readers from this manuscript */}
+                {/* Reader earnings — coins earned by readers from feedback on this manuscript */}
                 {readerCompletions.length > 0 && (
                   <div className="mb-4">
                     <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Readers earned</p>
                     <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
                       {readerCompletions.map((c, i) => {
                         const chapterObj = chapters.find((ch) => ch.id === c.chapter_id);
+                        const chapterLabel = chapterObj
+                          ? chapterObj.chapter_type === "prologue" ? "Prologue"
+                          : chapterObj.chapter_type === "trigger_page" ? "Trigger Page"
+                          : `Ch. ${chapterNumFor(chapterObj.id)}`
+                          : null;
                         return (
                           <div key={i} className="flex items-center justify-between rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] px-3 py-1.5">
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="text-xs text-neutral-300 truncate">{readerNames[c.reader_id] || "Reader"}</span>
-                              {chapterObj && (
-                                <span className="text-[10px] text-neutral-600 truncate">{chapterObj.chapter_type === "prologue" ? "Prologue" : chapterObj.chapter_type === "trigger_page" ? "Trigger Page" : `Ch. ${chapterNumFor(chapterObj.id)}`}</span>
+                              {chapterLabel && (
+                                <span className="text-[10px] text-neutral-500 truncate">feedback on {chapterLabel}</span>
                               )}
                             </div>
                             <span className="text-xs font-semibold text-emerald-400 shrink-0 ml-2">+{c.coins_awarded} <span style={{ color: '#f59e0b' }}>✿</span></span>
@@ -2376,12 +2396,37 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 )}
 
-                {/* Author spends on this manuscript */}
-                {manuscriptLedger.length > 0 ? (
+                {/* Author rewards sent to readers */}
+                {manuscriptLedger.some((e) => e.reason === "reader_reward") && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Rewards you sent</p>
+                    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                      {manuscriptLedger.filter((e) => e.reason === "reader_reward").map((entry) => {
+                        const recipientId = entry.metadata?.reader_id as string | undefined;
+                        const recipientName = recipientId ? (readerNames[recipientId] || "Reader") : "Reader";
+                        const rewardReasonLabel = typeof entry.metadata?.reason === "string" ? entry.metadata.reason : null;
+                        return (
+                          <div key={entry.id} className="flex items-center justify-between rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] px-3 py-1.5">
+                            <div className="min-w-0">
+                              <span className="text-xs text-neutral-300 truncate">Rewarded {recipientName}</span>
+                              {rewardReasonLabel && (
+                                <span className="ml-1.5 text-[10px] text-neutral-500 truncate">— {rewardReasonLabel}</span>
+                              )}
+                            </div>
+                            <span className="text-xs font-semibold text-rose-400 shrink-0 ml-2">{entry.delta} <span style={{ color: '#f59e0b' }}>✿</span></span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other author spending on this manuscript (slots, chapters, etc.) */}
+                {manuscriptLedger.some((e) => e.reason !== "reader_reward") && (
                   <div>
                     <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Your spending</p>
                     <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
-                      {manuscriptLedger.map((entry) => {
+                      {manuscriptLedger.filter((e) => e.reason !== "reader_reward").map((entry) => {
                         const label = entry.reason === "extra_reader_slot"
                           ? "Extra reader slot"
                           : entry.reason === "extra_chapter_upload"
@@ -2398,9 +2443,11 @@ export default function ManuscriptDetailsPage() {
                       })}
                     </div>
                   </div>
-                ) : readerCompletions.length === 0 ? (
+                )}
+
+                {readerCompletions.length === 0 && manuscriptLedger.length === 0 && (
                   <p className="text-sm italic text-neutral-500">No coin activity on this manuscript yet.</p>
-                ) : null}
+                )}
               </section>}
             </>
           )}
