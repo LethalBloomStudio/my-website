@@ -106,10 +106,10 @@ export default function PrivacyPage() {
       <section className="mt-10 space-y-6 text-sm font-light leading-7" aria-labelledby="youth-heading">
         <h2 id="youth-heading" className="text-lg font-semibold text-neutral-100">Youth Privacy (COPPA)</h2>
         <p>
-          Lethal Bloom Studio takes the privacy of younger users seriously. Users under 13 may only
-          use the platform with verified parental consent. We require parents or guardians to
-          approve accounts for users under 18 and provide tools for parents to monitor and manage
-          their child&apos;s activity on the platform.
+          Lethal Bloom Studio takes the privacy of younger users seriously. The platform is open
+          to users aged 13 and older. Users between the ages of 13 and 17 are considered youth
+          members and require parental or guardian approval. We provide tools for parents to monitor
+          and manage their child&apos;s activity on the platform.
         </p>
       </section>
 
