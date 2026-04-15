@@ -30,20 +30,21 @@ export default function Home() {
         className="night-hero-bg bg-[radial-gradient(circle_at_top,rgba(120,120,120,0.18),transparent_60%),#0a0814] px-6 py-24 text-center sm:py-32"
         aria-labelledby="hero-heading"
       >
-        <span className="mb-4 inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">
-          Now open to writers
-        </span>
-        {activePromo && (
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-600/50 bg-violet-950/40 px-4 py-1.5 text-xs font-medium text-violet-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
-            {activePromo.name} — Sign up free and get{" "}
-            <strong className="text-violet-100">{activePromo.duration_days} days of Lethal Member access</strong>
-            {activePromo.bonus_coins > 0 && (
-              <> + <strong className="text-amber-300">{activePromo.bonus_coins} Bloom Coins</strong></>
-            )}
-          </div>
-        )}
-        {!activePromo && <div className="mb-6" />}
+        <div className="mb-6 flex flex-col items-center gap-3">
+          <span className="inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">
+            Now open to writers
+          </span>
+          {activePromo && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-600/50 bg-violet-950/40 px-4 py-1.5 text-xs font-medium text-violet-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
+              {activePromo.name} — Sign up free and get{" "}
+              <strong className="text-violet-100">{activePromo.duration_days} days of Lethal Member access</strong>
+              {activePromo.bonus_coins > 0 && (
+                <> + <strong className="text-amber-300">{activePromo.bonus_coins} Bloom Coins</strong></>
+              )}
+            </div>
+          )}
+        </div>
         <h1
           id="hero-heading"
           className="mx-auto max-w-3xl text-4xl font-light leading-tight text-neutral-100 sm:text-5xl lg:text-6xl"

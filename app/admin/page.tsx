@@ -1676,9 +1676,7 @@ function AdminPageInner() {
             )}
           </div>
         )}
-      </div>
 
-      {/* ── CLEAR PARENT REPORT MODAL ── */}
       {prClearModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-md rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl">
@@ -2005,6 +2003,7 @@ function AdminPageInner() {
             )}
           </div>
         )}
+      </div>
 
       {/* ── USER MANAGEMENT MODAL ── */}
       {selectedUser && (
