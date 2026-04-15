@@ -877,9 +877,9 @@ export default function ManuscriptDetailsPage() {
               .select("user_id, pen_name, username")
               .eq("user_id", row.reader_id)
               .maybeSingle()
-              .then(({ data }) => {
-                if (data) {
-                  const p = data as { user_id: string; pen_name: string | null; username: string | null };
+              .then((result: { data: unknown }) => {
+                if (result.data) {
+                  const p = result.data as { user_id: string; pen_name: string | null; username: string | null };
                   setReaderNames((n) => ({ ...n, [p.user_id]: p.pen_name || (p.username ? `@${p.username}` : "Reader") }));
                 }
               });

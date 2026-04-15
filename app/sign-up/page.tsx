@@ -127,6 +127,13 @@ export default function SignUpPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: data.user.id }),
       });
+
+      // Apply any active signup promotion
+      await fetch("/api/admin/promotions/apply-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: data.user.id }),
+      });
     }
 
     if (age < 18 && data.user) {

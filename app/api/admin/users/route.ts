@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
   const { data: accs, error } = await supabase
     .from("accounts")
-    .select("user_id, full_name, email, account_status, is_admin, created_at, bloom_coins, subscription_status, status_reason, messaging_restricted, last_active_at, age_category, parental_consent, conduct_strikes, lifetime_suspension_count, messaging_suspended_until, blacklisted, manuscript_conduct_strikes, manuscript_lifetime_suspension_count, manuscript_suspended_until, manuscript_blacklisted")
+    .select("user_id, full_name, email, account_status, is_admin, created_at, bloom_coins, subscription_status, status_reason, messaging_restricted, last_active_at, age_category, parental_consent, conduct_strikes, lifetime_suspension_count, messaging_suspended_until, blacklisted, manuscript_conduct_strikes, manuscript_lifetime_suspension_count, manuscript_suspended_until, manuscript_blacklisted, active_promotion_id, promotion_expires_at")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

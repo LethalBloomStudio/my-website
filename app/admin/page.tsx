@@ -33,6 +33,23 @@ type UserRow = {
   manuscript_lifetime_suspension_count: number;
   manuscript_suspended_until: string | null;
   manuscript_blacklisted: boolean;
+  active_promotion_id: string | null;
+  promotion_expires_at: string | null;
+};
+
+type Promotion = {
+  id: string;
+  name: string;
+  description: string | null;
+  benefit: string;
+  duration_days: number;
+  applies_to: string;
+  bonus_coins: number;
+  max_users: number | null;
+  status: string;
+  enrolled_count: number;
+  created_at: string;
+  ended_at: string | null;
 };
 
 type Manuscript = {
@@ -218,7 +235,7 @@ type ParentReportAppeal = {
   created_at: string;
 };
 
-type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "appeals" | "deleted" | "parent_reports" | "feedback";
+type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -285,7 +302,7 @@ function AdminPageInner() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get("tab");
-    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","appeals","deleted","parent_reports","feedback"];
+    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","appeals","deleted","parent_reports","feedback","promotions"];
     return valid.includes(t as Tab) ? (t as Tab) : "overview";
   });
 
@@ -309,6 +326,16 @@ function AdminPageInner() {
   const [prClearNote, setPrClearNote] = useState("");
   const [prClearLoading, setPrClearLoading] = useState(false);
   const [accessRequests, setAccessRequests] = useState<{ id: string; requester_name: string | null; manuscript_title: string | null; status: string; created_at: string }[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoName, setPromoName] = useState("");
+  const [promoDesc, setPromoDesc] = useState("");
+  const [promoDays, setPromoDays] = useState<number>(14);
+  const [promoCustomDays, setPromoCustomDays] = useState("");
+  const [promoAppliesTo, setPromoAppliesTo] = useState<"new_signups" | "all_free" | "both">("new_signups");
+  const [promoBonusCoins, setPromoBonusCoins] = useState(0);
+  const [promoMaxUsers, setPromoMaxUsers] = useState<number | null>(null);
+  const [promoCreating, setPromoCreating] = useState(false);
 
   // UI state
   const [msg, setMsg] = useState<string | null>(null);
@@ -494,6 +521,68 @@ function AdminPageInner() {
   async function loadFeedback() {
     const data = await adminFetch("/api/feedback") as { feedback?: { id: string; user_id: string | null; username: string | null; suggestions: string[]; custom_text: string | null; created_at: string }[] } | null;
     if (data?.feedback) setFeedbackEntries(data.feedback);
+  }
+
+  async function loadPromotions() {
+    const data = await adminFetch("/api/admin/promotions") as { promotions?: Promotion[] } | null;
+    if (data?.promotions) setPromotions(data.promotions);
+  }
+
+  async function createPromotion() {
+    const days = promoDays === 0 ? Number(promoCustomDays) : promoDays;
+    if (!promoName.trim()) { setMsg("Promotion name is required."); return; }
+    if (!days || days < 1) { setMsg("Enter a valid duration."); return; }
+    setPromoCreating(true);
+    const data = await adminFetch("/api/admin/promotions", {
+      method: "POST",
+      body: JSON.stringify({
+        name: promoName.trim(),
+        description: promoDesc.trim() || undefined,
+        duration_days: days,
+        applies_to: promoAppliesTo,
+        bonus_coins: promoBonusCoins,
+        max_users: promoMaxUsers,
+      }),
+    }) as { promotion?: Promotion; error?: string } | null;
+    setPromoCreating(false);
+    if (data?.promotion) {
+      setPromotions((prev) => [data.promotion!, ...prev]);
+      setPromoName(""); setPromoDesc(""); setPromoDays(14); setPromoCustomDays("");
+      setPromoAppliesTo("new_signups"); setPromoBonusCoins(0); setPromoMaxUsers(null);
+      setMsg("Promotion created.");
+    } else {
+      setMsg(data?.error ?? "Failed to create promotion.");
+    }
+  }
+
+  async function applyPromoToAll(id: string) {
+    setPromoLoading(true);
+    const data = await adminFetch("/api/admin/promotions/apply", {
+      method: "POST",
+      body: JSON.stringify({ promotion_id: id }),
+    }) as { ok?: boolean; applied?: number; message?: string; error?: string } | null;
+    setPromoLoading(false);
+    if (data?.ok) {
+      setMsg(data.message ?? `Applied to ${data.applied ?? 0} users.`);
+      void loadPromotions();
+      void loadUsers();
+    } else {
+      setMsg(data?.error ?? "Failed to apply promotion.");
+    }
+  }
+
+  async function managePromotion(id: string, action: "pause" | "resume" | "end" | "delete") {
+    const data = await adminFetch("/api/admin/promotions/manage", {
+      method: "POST",
+      body: JSON.stringify({ promotion_id: id, action }),
+    }) as { ok?: boolean; error?: string } | null;
+    if (data?.ok) {
+      void loadPromotions();
+      void loadUsers();
+      setMsg(`Promotion ${action}ed.`);
+    } else {
+      setMsg(data?.error ?? "Action failed.");
+    }
   }
 
   async function clearParentReport() {
@@ -765,6 +854,7 @@ function AdminPageInner() {
     { id: "deleted", label: "Deleted Accounts" },
     { id: "parent_reports", label: "Parent Reports", badge: pendingParentReportsCount || undefined },
     { id: "feedback", label: "User Feedback" },
+    { id: "promotions", label: "Promotions" },
   ];
 
   return (
@@ -794,6 +884,7 @@ function AdminPageInner() {
               if (t.id === "deleted") void loadDeletedAccounts();
               if (t.id === "parent_reports") void loadParentReports();
               if (t.id === "feedback") void loadFeedback();
+              if (t.id === "promotions") void loadPromotions();
             }}
               className={`relative h-9 rounded-lg border px-3.5 text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white" : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-400 hover:text-white"}`}>
               {t.label}
@@ -942,7 +1033,12 @@ function AdminPageInner() {
                       <td className="px-4 py-3">
                         {(() => { const la = formatLastActive(u.last_active_at); return <span className={`text-xs ${la.color}`}>{la.label}</span>; })()}
                       </td>
-                      <td className="px-4 py-3"><Badge label={u.subscription_status} color={u.subscription_status === "lethal" ? "red" : "violet"} /></td>
+                      <td className="px-4 py-3">{(() => {
+                        const onPromo = u.active_promotion_id && u.promotion_expires_at && new Date(u.promotion_expires_at) > new Date();
+                        if (u.subscription_status === "lethal") return <Badge label="lethal" color="red" />;
+                        if (onPromo) return <Badge label="promotion" color="violet" />;
+                        return <Badge label={u.subscription_status} color="violet" />;
+                      })()}</td>
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
@@ -1675,6 +1771,174 @@ function AdminPageInner() {
             </div>
           );
         })()}
+
+        {/* ── PROMOTIONS ── */}
+        {tab === "promotions" && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-neutral-100">Promotions</h2>
+              <button onClick={() => void loadPromotions()} className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition">Refresh</button>
+            </div>
+
+            {/* Create form */}
+            <div className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(18,18,18,0.95)] p-6 space-y-5">
+              <h3 className="text-sm font-semibold text-neutral-200">Create New Promotion</h3>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs text-neutral-400">Promotion Name *</label>
+                  <input value={promoName} onChange={e => setPromoName(e.target.value)} placeholder="e.g. Spring Launch Special" className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-[rgba(120,120,120,0.7)]" />
+                </div>
+
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs text-neutral-400">Description (shown to admins only)</label>
+                  <input value={promoDesc} onChange={e => setPromoDesc(e.target.value)} placeholder="Internal note about this promotion" className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-[rgba(120,120,120,0.7)]" />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-neutral-400">Duration</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[3, 7, 14, 30, 60, 90, 0].map(d => (
+                      <button key={d} type="button" onClick={() => setPromoDays(d)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${promoDays === d ? "border-red-700/60 bg-red-950/30 text-red-300" : "border-[rgba(120,120,120,0.35)] text-neutral-400 hover:text-white"}`}>
+                        {d === 0 ? "Custom" : `${d}d`}
+                      </button>
+                    ))}
+                  </div>
+                  {promoDays === 0 && (
+                    <input type="number" min={1} value={promoCustomDays} onChange={e => setPromoCustomDays(e.target.value)} placeholder="Number of days" className="mt-2 w-32 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-1.5 text-sm text-neutral-100 focus:outline-none" />
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-neutral-400">Benefit</label>
+                  <div className="rounded-lg border border-[rgba(120,120,120,0.35)] bg-neutral-900/40 px-3 py-2 text-sm text-neutral-300">
+                    Lethal Member access (full platform benefits)
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-neutral-400">Applies To</label>
+                  <div className="flex flex-col gap-2">
+                    {([["new_signups", "New signups only"], ["all_free", "All current free members"], ["both", "Both new signups + existing free"]] as const).map(([val, label]) => (
+                      <label key={val} className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="appliesTo" value={val} checked={promoAppliesTo === val} onChange={() => setPromoAppliesTo(val)} className="accent-red-500" />
+                        <span className="text-sm text-neutral-300">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-neutral-400">Bonus Bloom Coins on Enroll</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[0, 25, 50, 100, 250].map(c => (
+                      <button key={c} type="button" onClick={() => setPromoBonusCoins(c)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${promoBonusCoins === c ? "border-amber-700/60 bg-amber-950/30 text-amber-300" : "border-[rgba(120,120,120,0.35)] text-neutral-400 hover:text-white"}`}>
+                        {c === 0 ? "None" : `+${c} ✿`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-neutral-400">Max Users Cap</label>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={promoMaxUsers === null} onChange={() => setPromoMaxUsers(null)} className="accent-red-500" />
+                      <span className="text-sm text-neutral-300">Unlimited</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={promoMaxUsers !== null} onChange={() => setPromoMaxUsers(100)} className="accent-red-500" />
+                      <span className="text-sm text-neutral-300">Cap at</span>
+                    </label>
+                    {promoMaxUsers !== null && (
+                      <input type="number" min={1} value={promoMaxUsers} onChange={e => setPromoMaxUsers(Number(e.target.value))} className="w-24 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-2 py-1 text-sm text-neutral-100 focus:outline-none" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => void createPromotion()}
+                disabled={promoCreating}
+                className="rounded-lg border border-red-700/60 bg-red-950/30 px-5 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-950/50 disabled:opacity-40"
+              >
+                {promoCreating ? "Creating…" : "Create Promotion"}
+              </button>
+            </div>
+
+            {/* Promotions list */}
+            {promotions.length === 0 ? (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] p-8 text-center text-sm text-neutral-500">
+                No promotions yet. Create one above.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {promotions.map(p => {
+                  const isActive = p.status === "active";
+                  const isPaused = p.status === "paused";
+                  const isEnded = p.status === "ended";
+                  const appliesToLabel = p.applies_to === "new_signups" ? "New signups" : p.applies_to === "all_free" ? "All free members" : "New signups + existing free";
+                  return (
+                    <div key={p.id} className={`rounded-xl border p-5 ${isActive ? "border-emerald-700/40 bg-emerald-950/10" : isPaused ? "border-amber-700/40 bg-amber-950/10" : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)]"}`}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-neutral-100">{p.name}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isActive ? "bg-emerald-900/40 text-emerald-400" : isPaused ? "bg-amber-900/40 text-amber-400" : "bg-neutral-800 text-neutral-500"}`}>
+                              {p.status}
+                            </span>
+                          </div>
+                          {p.description && <p className="mt-0.5 text-xs text-neutral-500">{p.description}</p>}
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
+                            <span>{p.duration_days} day{p.duration_days !== 1 ? "s" : ""} of Lethal benefits</span>
+                            <span>{appliesToLabel}</span>
+                            {p.bonus_coins > 0 && <span>+{p.bonus_coins} ✿ bonus</span>}
+                            {p.max_users && <span>Cap: {p.max_users.toLocaleString()}</span>}
+                            <span className="font-medium text-neutral-300">{p.enrolled_count.toLocaleString()} enrolled</span>
+                          </div>
+                          <p className="mt-1 text-[10px] text-neutral-600">Created {new Date(p.created_at).toLocaleDateString()}{p.ended_at ? ` · Ended ${new Date(p.ended_at).toLocaleDateString()}` : ""}</p>
+                        </div>
+                        {!isEnded && (
+                          <div className="flex flex-wrap gap-2">
+                            {isActive && ["all_free", "both"].includes(p.applies_to) && (
+                              <button
+                                onClick={() => void applyPromoToAll(p.id)}
+                                disabled={promoLoading}
+                                className="rounded-lg border border-violet-700/50 bg-violet-950/20 px-3 py-1.5 text-xs text-violet-300 transition hover:bg-violet-950/40 disabled:opacity-40"
+                              >
+                                Apply to all free users
+                              </button>
+                            )}
+                            {isActive && (
+                              <button onClick={() => void managePromotion(p.id, "pause")} className="rounded-lg border border-amber-700/40 bg-amber-950/10 px-3 py-1.5 text-xs text-amber-400 transition hover:bg-amber-950/30">
+                                Pause
+                              </button>
+                            )}
+                            {isPaused && (
+                              <button onClick={() => void managePromotion(p.id, "resume")} className="rounded-lg border border-emerald-700/40 bg-emerald-950/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-950/30">
+                                Resume
+                              </button>
+                            )}
+                            <button onClick={() => void managePromotion(p.id, "end")} className="rounded-lg border border-red-700/40 bg-red-950/10 px-3 py-1.5 text-xs text-red-400 transition hover:bg-red-950/30">
+                              End
+                            </button>
+                          </div>
+                        )}
+                        {isEnded && (
+                          <button onClick={() => void managePromotion(p.id, "delete")} className="rounded-lg border border-[rgba(120,120,120,0.3)] px-3 py-1.5 text-xs text-neutral-500 transition hover:text-red-400 hover:border-red-700/40">
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
       {/* ── USER MANAGEMENT MODAL ── */}
       {selectedUser && (
