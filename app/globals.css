@@ -1404,3 +1404,132 @@ html[data-theme="day"] textarea[class] {
     justify-content: center;
   }
 }
+
+/* ---------- Site Footer ---------- */
+.siteFooter {
+  border-top: 1px solid rgba(120, 120, 120, 0.18);
+  margin-top: 80px;
+  padding: 56px 24px 32px;
+  background: #0a0a0a;
+}
+
+.footerInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.footerBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 240px;
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.footerBrandName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e8e8e8;
+  letter-spacing: -0.01em;
+}
+
+.footerTagline {
+  font-size: 13px;
+  color: rgba(200, 200, 200, 0.5);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.footerNav {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.footerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footerColHeading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(200, 200, 200, 0.45);
+  margin: 0;
+}
+
+.footerColLinks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footerLink {
+  font-size: 13px;
+  color: rgba(200, 200, 200, 0.65);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.footerLink:hover {
+  color: #e8e8e8;
+}
+
+.footerBottom {
+  max-width: 1100px;
+  margin: 40px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid rgba(120, 120, 120, 0.12);
+}
+
+.footerCopy {
+  font-size: 12px;
+  color: rgba(200, 200, 200, 0.35);
+  margin: 0;
+}
+
+/* Footer — day mode */
+[data-theme="day"] .siteFooter {
+  background: #f5f5f5;
+  border-top-color: rgba(26, 26, 26, 0.1);
+}
+
+[data-theme="day"] .footerBrandName { color: #1a1a1a; }
+[data-theme="day"] .footerTagline   { color: rgba(26, 26, 26, 0.45); }
+[data-theme="day"] .footerColHeading { color: rgba(26, 26, 26, 0.4); }
+[data-theme="day"] .footerLink      { color: rgba(26, 26, 26, 0.6); }
+[data-theme="day"] .footerLink:hover { color: #111111; }
+[data-theme="day"] .footerBottom    { border-top-color: rgba(26, 26, 26, 0.08); }
+[data-theme="day"] .footerCopy      { color: rgba(26, 26, 26, 0.35); }
+
+/* Footer — mobile */
+@media (max-width: 640px) {
+  .footerInner {
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .footerNav {
+    gap: 32px;
+  }
+
+  .footerBrand {
+    max-width: 100%;
+  }
+}
