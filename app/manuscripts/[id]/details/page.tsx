@@ -854,6 +854,43 @@ export default function ManuscriptDetailsPage() {
     return () => { void supabase.removeChannel(channel); };
   }, [authorUserId, supabase]);
 
+  // Realtime subscription — keep chapter completion coin log live
+  useEffect(() => {
+    if (!manuscriptId) return;
+    const channel = supabase
+      .channel(`chapter-completions-${manuscriptId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chapter_read_completions", filter: `manuscript_id=eq.${manuscriptId}` },
+        async (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new as { chapter_id: string; reader_id: string; coins_awarded: number; completed_at: string };
+          setReaderCompletions((prev) => {
+            const already = prev.some((c) => c.chapter_id === row.chapter_id && c.reader_id === row.reader_id);
+            if (already) return prev;
+            return [row, ...prev];
+          });
+          // Resolve name for this reader if not already known
+          setReaderNames((prev) => {
+            if (prev[row.reader_id]) return prev;
+            void supabase
+              .from("public_profiles")
+              .select("user_id, pen_name, username")
+              .eq("user_id", row.reader_id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) {
+                  const p = data as { user_id: string; pen_name: string | null; username: string | null };
+                  setReaderNames((n) => ({ ...n, [p.user_id]: p.pen_name || (p.username ? `@${p.username}` : "Reader") }));
+                }
+              });
+            return prev;
+          });
+        },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [manuscriptId, supabase]);
+
   useEffect(() => {
     const selected = chapters.find((c) => c.id === selectedChapterId) ?? null;
     if (selected) {
@@ -2368,11 +2405,13 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </div>
 
-                {/* Reader earnings — coins earned by readers from feedback on this manuscript */}
-                {readerCompletions.length > 0 && (
-                  <div className="mb-4">
-                    <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Readers earned</p>
-                    <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+                {/* Reader earnings — running log of coins earned by readers from feedback on this manuscript */}
+                <div className="mb-4">
+                  <p className="mb-2 text-[11px] uppercase tracking-wide text-neutral-500">Readers earned</p>
+                  {readerCompletions.length === 0 ? (
+                    <p className="text-[11px] italic text-neutral-600">No reader earnings yet on this manuscript.</p>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                       {readerCompletions.map((c, i) => {
                         const chapterObj = chapters.find((ch) => ch.id === c.chapter_id);
                         const chapterLabel = chapterObj
@@ -2380,21 +2419,25 @@ export default function ManuscriptDetailsPage() {
                           : chapterObj.chapter_type === "trigger_page" ? "Trigger Page"
                           : `Ch. ${chapterNumFor(chapterObj.id)}`
                           : null;
+                        const dateLabel = new Date(c.completed_at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
                         return (
                           <div key={i} className="flex items-center justify-between rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] px-3 py-1.5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs text-neutral-300 truncate">{readerNames[c.reader_id] || "Reader"}</span>
-                              {chapterLabel && (
-                                <span className="text-[10px] text-neutral-500 truncate">feedback on {chapterLabel}</span>
-                              )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-neutral-300 truncate">{readerNames[c.reader_id] || "Reader"}</span>
+                                {chapterLabel && (
+                                  <span className="text-[10px] text-neutral-500 truncate">· {chapterLabel}</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-neutral-600">{dateLabel}</span>
                             </div>
                             <span className="text-xs font-semibold text-emerald-400 shrink-0 ml-2">+{c.coins_awarded} <span style={{ color: '#f59e0b' }}>✿</span></span>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Author rewards sent to readers */}
                 {manuscriptLedger.some((e) => e.reason === "reader_reward") && (
