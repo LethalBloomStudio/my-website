@@ -1834,9 +1834,9 @@ function AdminPageInner() {
                             if (promoAppliesTo === "all_users") setPromoAppliesTo("both");
                           }
                         }}
-                        className={`rounded-xl border p-4 text-left transition ${promoBenefit === val ? "border-violet-600/60 bg-violet-950/25" : "border-[rgba(120,120,120,0.3)] bg-neutral-900/30 hover:border-[rgba(120,120,120,0.5)]"}`}
+                        className={`rounded-xl border p-4 text-left transition ${promoBenefit === val ? "border-violet-600 bg-violet-700/20 dark:bg-violet-950/40" : "border-[rgba(120,120,120,0.3)] bg-neutral-900/30 hover:border-[rgba(120,120,120,0.5)]"}`}
                       >
-                        <div className={`text-sm font-semibold ${promoBenefit === val ? "text-violet-200" : "text-neutral-200"}`}>{title}</div>
+                        <div className={`text-sm font-semibold ${promoBenefit === val ? "text-violet-700 dark:text-violet-300" : "text-neutral-200"}`}>{title}</div>
                         <div className="mt-1 text-xs text-neutral-500 leading-relaxed">{desc}</div>
                       </button>
                     ))}
@@ -1864,7 +1864,7 @@ function AdminPageInner() {
                     {[0, 25, 50, 100, 250].map(c => (
                       <button key={c} type="button" onClick={() => setPromoBonusCoins(c)}
                         className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${promoBonusCoins === c ? "border-amber-700/60 bg-amber-950/30 text-amber-300" : "border-[rgba(120,120,120,0.35)] text-neutral-400 hover:text-white"}`}>
-                        {c === 0 ? "None" : `+${c} ✿`}
+                        {c === 0 ? "None" : <><span className="text-amber-400">✿</span> +{c}</>}
                       </button>
                     ))}
                   </div>
