@@ -1068,7 +1068,7 @@ function AdminPageInner() {
                       <td className="px-4 py-3">{(() => {
                         const onPromo = u.active_promotion_id && u.promotion_expires_at && new Date(u.promotion_expires_at) > new Date();
                         if (u.subscription_status === "lethal") return <Badge label="lethal" color="red" />;
-                        if (onPromo) return <Badge label="promotion" color="violet" />;
+                        if (onPromo) return <Badge label="promotion" color="amber" />;
                         return <Badge label={u.subscription_status} color="violet" />;
                       })()}</td>
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
