@@ -1042,11 +1042,11 @@ const [now] = useState(() => Date.now());
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">Community Guidelines</p>
                   <ul className="space-y-1.5">
-                    <li>• We're all adults here — keep things appropriate and respectful for our community.</li>
+                    <li>• We&apos;re all adults here — keep things appropriate and respectful for our community.</li>
                     <li>• No soliciting other members for paid work, freelance opportunities, or external projects.</li>
                     <li>• No bullying, harassment, hate speech, or targeted negativity toward other members.</li>
-                    <li>• Treat every writer with the same respect you'd want for yourself and your work.</li>
-                    <li>• Keep feedback and conversations constructive — we're here to support each other's growth.</li>
+                    <li>• Treat every writer with the same respect you&apos;d want for yourself and your work.</li>
+                    <li>• Keep feedback and conversations constructive — we&apos;re here to support each other&apos;s growth.</li>
                   </ul>
                 </div>
                 <div>

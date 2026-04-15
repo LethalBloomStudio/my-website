@@ -188,6 +188,7 @@ export default function FeaturedCarousel() {
   // Load slots once audience is known, then keep live via realtime
   useEffect(() => {
     if (!audience) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSlots();
     const ch = supabase
       .channel(`featured-carousel-${audience}`)
