@@ -1,20 +1,26 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/Supabase/supabaseServer";
-import { supabaseAdmin } from "@/lib/Supabase/admin";
 
-async function requireAdmin() {
-  const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+function adminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+async function requireAdmin(req: Request) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+  const admin = adminClient();
+  const { data: { user } } = await admin.auth.getUser(token);
   if (!user) return null;
-  const admin = supabaseAdmin();
   const { data } = await admin.from("accounts").select("is_admin").eq("user_id", user.id).maybeSingle();
   if (!(data as { is_admin?: boolean } | null)?.is_admin) return null;
   return { user, admin };
 }
 
 // GET — list all promotions
-export async function GET() {
-  const ctx = await requireAdmin();
+export async function GET(req: Request) {
+  const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { data, error } = await ctx.admin
@@ -28,7 +34,7 @@ export async function GET() {
 
 // POST — create a new promotion
 export async function POST(req: Request) {
-  const ctx = await requireAdmin();
+  const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as {

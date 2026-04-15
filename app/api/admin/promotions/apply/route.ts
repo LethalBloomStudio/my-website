@@ -1,20 +1,26 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/Supabase/supabaseServer";
-import { supabaseAdmin } from "@/lib/Supabase/admin";
 
-async function requireAdmin() {
-  const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+function adminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+async function requireAdmin(req: Request) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+  const admin = adminClient();
+  const { data: { user } } = await admin.auth.getUser(token);
   if (!user) return null;
-  const admin = supabaseAdmin();
   const { data } = await admin.from("accounts").select("is_admin").eq("user_id", user.id).maybeSingle();
   if (!(data as { is_admin?: boolean } | null)?.is_admin) return null;
-  return { user, admin };
+  return { admin };
 }
 
 // POST — apply a promotion to all eligible existing free users
 export async function POST(req: Request) {
-  const ctx = await requireAdmin();
+  const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { promotion_id } = (await req.json()) as { promotion_id: string };
@@ -31,7 +37,7 @@ export async function POST(req: Request) {
 
   const p = promo as {
     id: string; benefit: string; duration_days: number; bonus_coins: number;
-    max_users: number | null; enrolled_count: number; applies_to: string;
+    max_users: number | null; enrolled_count: number; applies_to: string; name: string;
   };
 
   const isCoinsOnly = p.benefit === "coins_only";
@@ -52,7 +58,7 @@ export async function POST(req: Request) {
   if (p.applies_to === "all_users") {
     // All active users regardless of subscription or existing promotion
   } else {
-    // Free users only; if lethal_access also skip those already on a promotion
+    // Free users only; for lethal_access also skip those already on a promotion
     usersQuery = usersQuery.eq("subscription_status", "free");
     if (!isCoinsOnly) {
       usersQuery = usersQuery.is("active_promotion_id", null);
@@ -75,7 +81,6 @@ export async function POST(req: Request) {
 
   const expiresAt = new Date(Date.now() + p.duration_days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Apply promotion in batches of 100
   let applied = 0;
   for (let i = 0; i < toApply.length; i += 100) {
     const batch = toApply.slice(i, i + 100);
@@ -108,10 +113,10 @@ export async function POST(req: Request) {
     // Notify users
     const notifications = batch.map((u) => ({
       user_id: u.user_id,
-      title: isCoinsOnly ? "You received Bloom Coins! ✿" : "You've been enrolled in a promotion! ✿",
+      title: isCoinsOnly ? "You received Bloom Coins! ✿" : `${p.name} — You've been enrolled! ✿`,
       body: isCoinsOnly
         ? `You've been awarded ${p.bonus_coins} Bloom Coins as part of a special promotion.`
-        : `You now have Lethal Member benefits for ${p.duration_days} days as part of a special promotion.`,
+        : `Great news! You now have full Lethal Member access for ${p.duration_days} days as part of the "${p.name}" promotion. Enjoy all member benefits — no subscription required.${p.bonus_coins > 0 ? ` You also received ${p.bonus_coins} bonus Bloom Coins.` : ""}`,
       category: "socials",
       severity: "info",
     }));
@@ -120,7 +125,7 @@ export async function POST(req: Request) {
     applied += batch.length;
   }
 
-  // Update enrolled_count on the promotion
+  // Update enrolled_count
   await ctx.admin
     .from("promotions")
     .update({ enrolled_count: p.enrolled_count + applied })
