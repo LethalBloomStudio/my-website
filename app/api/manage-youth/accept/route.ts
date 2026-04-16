@@ -54,13 +54,19 @@ export async function POST(req: Request) {
       })
       .eq("id", row.id);
 
-    // Set child's account as youth with parental consent already granted
+    // Set child's account as youth with parental consent already granted.
+    // Also sync subscription_status:
+    // - "unlimited" (parent add-on) → grant lethal access now, parent is paying.
+    // - "lethal_standalone" → access comes from Stripe payment, not set here.
+    // - "free" → no change (stays free).
+    const grantLethal = row.subscription_tier === "unlimited";
     await supabase
       .from("accounts")
       .update({
         age_category: "youth_13_17",
         parental_consent: true,
         dob: row.child_dob,
+        ...(grantLethal ? { subscription_status: "lethal" } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", child_user_id);

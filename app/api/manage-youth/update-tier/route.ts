@@ -16,20 +16,52 @@ export async function POST(req: Request) {
 
   const admin = supabaseAdmin();
 
-  // Verify the link belongs to this parent
+  // Verify the link belongs to this parent and get the child's user ID
   const { data: link } = await admin
     .from("youth_links")
-    .select("id")
+    .select("id, child_user_id, subscription_tier")
     .eq("id", link_id)
     .eq("parent_user_id", parentId)
     .maybeSingle();
 
   if (!link) return NextResponse.json({ error: "Access denied." }, { status: 403 });
 
+  const childUserId = (link as { child_user_id?: string | null }).child_user_id ?? null;
+
   await admin
     .from("youth_links")
     .update({ subscription_tier: tier, updated_at: new Date().toISOString() })
     .eq("id", link_id);
+
+  // Sync subscription_status on the child's account.
+  // - "unlimited" is the parent-paid add-on ($5/mo) — grant lethal access immediately.
+  // - "free" downgrades from the parent add-on — revoke lethal access.
+  //   (Only revoke if the child has no independent Stripe subscription of their own.)
+  // - "lethal_standalone" is billed independently via Stripe ($10/mo) — access is
+  //   granted/revoked exclusively by the Stripe webhook, not here.
+  if (childUserId) {
+    if (tier === "unlimited") {
+      await admin
+        .from("accounts")
+        .update({ subscription_status: "lethal", updated_at: new Date().toISOString() })
+        .eq("user_id", childUserId);
+    } else if (tier === "free") {
+      // Only revoke access if the child doesn't have their own active Stripe subscription
+      const { data: childAcct } = await admin
+        .from("accounts")
+        .select("stripe_subscription_id")
+        .eq("user_id", childUserId)
+        .maybeSingle();
+      const hasOwnSubscription = !!(childAcct as { stripe_subscription_id?: string | null } | null)?.stripe_subscription_id;
+      if (!hasOwnSubscription) {
+        await admin
+          .from("accounts")
+          .update({ subscription_status: "free", updated_at: new Date().toISOString() })
+          .eq("user_id", childUserId);
+      }
+    }
+    // "lethal_standalone": no change here — Stripe webhook handles it
+  }
 
   return NextResponse.json({ ok: true });
 }
