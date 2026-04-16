@@ -12,7 +12,7 @@ type YouthLink = {
   child_name: string;
   child_dob: string;
   child_user_id: string | null;
-  subscription_tier: "free" | "unlimited" | "lethal_standalone";
+  subscription_tier: "free" | "unlimited";
   status: "pending" | "active" | "revoked";
   invite_expires_at: string;
   created_at: string;
@@ -68,7 +68,7 @@ export default function ManageYouthPage() {
   const [childName, setChildName] = useState("");
   const [childEmail, setChildEmail] = useState("");
   const [childDob, setChildDob] = useState("");
-  const [tier, setTier] = useState<"free" | "unlimited" | "lethal_standalone">("free");
+  const [tier, setTier] = useState<"free" | "unlimited">("free");
 
 useEffect(() => {
   async function init() {
@@ -254,7 +254,7 @@ useEffect(() => {
       setChildName("");
       setChildEmail("");
       setChildDob("");
-      setTier("free" as "free" | "unlimited" | "lethal_standalone");
+      setTier("free");
       if (userId) await loadLinks(userId);
     } finally {
       setSubmitting(false);
@@ -290,7 +290,7 @@ useEffect(() => {
     if (userId) await loadLinks(userId);
   }
 
-  async function updateTier(id: string, newTier: "free" | "unlimited" | "lethal_standalone") {
+  async function updateTier(id: string, newTier: "free" | "unlimited") {
     await fetch("/api/manage-youth/update-tier", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -443,44 +443,30 @@ useEffect(() => {
                   <label className="block text-xs text-neutral-400 mb-1">
                     Subscription Tier
                   </label>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setTier("free")}
-                        className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                          tier === "free"
-                            ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.25)] text-white"
-                            : "border-[rgba(120,120,120,0.3)] bg-neutral-900/40 text-neutral-400 hover:border-[rgba(120,120,120,0.5)]"
-                        }`}
-                      >
-                        Bloom Member{" "}
-                        <span className="opacity-60">$0/mo</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTier("unlimited")}
-                        className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                          tier === "unlimited"
-                            ? "border-violet-600/80 bg-violet-950/30 text-violet-300"
-                            : "border-[rgba(120,120,120,0.3)] bg-neutral-900/40 text-neutral-400 hover:border-[rgba(120,120,120,0.5)]"
-                        }`}
-                      >
-                        Lethal Member{" "}
-                        <span className="opacity-60">+$5/mo</span>
-                      </button>
-                    </div>
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setTier("lethal_standalone")}
-                      className={`w-full rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                        tier === "lethal_standalone"
-                          ? "border-red-600/80 bg-red-950/30 text-red-300"
+                      onClick={() => setTier("free")}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                        tier === "free"
+                          ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.25)] text-white"
                           : "border-[rgba(120,120,120,0.3)] bg-neutral-900/40 text-neutral-400 hover:border-[rgba(120,120,120,0.5)]"
                       }`}
                     >
-                      Youth Lethal Member{" "}
-                      <span className="opacity-60">$10/mo (own billing)</span>
+                      Bloom Member{" "}
+                      <span className="opacity-60">$0/mo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTier("unlimited")}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                        tier === "unlimited"
+                          ? "border-violet-600/80 bg-violet-950/30 text-violet-300"
+                          : "border-[rgba(120,120,120,0.3)] bg-neutral-900/40 text-neutral-400 hover:border-[rgba(120,120,120,0.5)]"
+                      }`}
+                    >
+                      Lethal Member{" "}
+                      <span className="opacity-60">+$5/mo</span>
                     </button>
                   </div>
                 </div>
@@ -489,11 +475,6 @@ useEffect(() => {
               {tier === "unlimited" && (
                 <p className="text-xs text-amber-400/80">
                   The +$5/mo unlimited add-on will be added to your next billing cycle.
-                </p>
-              )}
-              {tier === "lethal_standalone" && (
-                <p className="text-xs text-red-400/80">
-                  Youth Lethal is billed at $10/mo independently on your child&apos;s account. All youth safety rules still apply.
                 </p>
               )}
 
@@ -554,18 +535,12 @@ useEffect(() => {
 
                         <span
                           className={`rounded-lg border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                            link.subscription_tier === "lethal_standalone"
-                              ? "border-red-700/60 bg-red-950/30 text-red-400"
-                              : link.subscription_tier === "unlimited"
+                            link.subscription_tier === "unlimited"
                               ? "border-violet-700/60 bg-violet-950/30 text-violet-400"
                               : "border-neutral-700 bg-neutral-950/30 text-neutral-400"
                           }`}
                         >
-                          {link.subscription_tier === "lethal_standalone"
-                            ? "Youth Lethal"
-                            : link.subscription_tier === "unlimited"
-                            ? "Lethal Member"
-                            : "Bloom Member"}
+                          {link.subscription_tier === "unlimited" ? "Lethal Member" : "Bloom Member"}
                         </span>
                       </div>
 
@@ -585,23 +560,6 @@ useEffect(() => {
                         >
                           Upgrade +$5/mo
                         </button>
-                      ) : link.subscription_tier === "unlimited" ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmUpgradeId(link.id)}
-                            className="rounded-lg border border-red-700/50 bg-red-950/20 px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-950/40 transition"
-                          >
-                            Youth Lethal $10/mo
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDowngradeId(link.id)}
-                            className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.16)] transition"
-                          >
-                            Downgrade
-                          </button>
-                        </>
                       ) : (
                         <button
                           type="button"
@@ -715,7 +673,7 @@ useEffect(() => {
         {/* Plan info */}
         <section className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.14)] p-6 space-y-4">
           <h2 className="text-base font-semibold">Youth Account Plans</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-neutral-100">Bloom Member</p>
@@ -734,18 +692,7 @@ useEffect(() => {
               </div>
               <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
                 Unlimited manuscript and chapter uploads. Unlimited beta reader slots. Billed as
-                an add-on to your Lethal Member subscription.
-              </p>
-            </div>
-            <div className="rounded-lg border border-red-700/40 bg-red-950/10 px-4 py-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-neutral-100">Youth Lethal</p>
-                <span className="text-xs font-bold text-red-400">$10 / mo</span>
-              </div>
-              <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
-                All Lethal Member benefits billed independently at the standard $10/mo rate on
-                your child&apos;s account. All youth safety rules still apply. Requires parental
-                approval to activate.
+                an add-on to your subscription at half the standard rate.
               </p>
             </div>
           </div>
@@ -809,7 +756,6 @@ useEffect(() => {
       {confirmUpgradeId && (() => {
         const target = links.find((l) => l.id === confirmUpgradeId);
         if (!target) return null;
-        const upgradingToLethal = target.subscription_tier === "unlimited";
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
             <div
@@ -817,27 +763,12 @@ useEffect(() => {
               aria-modal="true"
               className="w-full max-w-sm rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl"
             >
-              <h2 className="text-lg font-semibold text-white">
-                {upgradingToLethal ? "Upgrade to Youth Lethal?" : "Upgrade to Lethal Member?"}
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Upgrade to Lethal Member?</h2>
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
-                {upgradingToLethal ? (
-                  <>
-                    This will switch{" "}
-                    <span className="font-semibold text-neutral-200">{target.child_name}</span> to the
-                    Youth Lethal plan at{" "}
-                    <span className="font-semibold text-neutral-200">$10/mo</span>, billed
-                    independently on their account. The current +$5/mo add-on will be removed from
-                    your billing.
-                  </>
-                ) : (
-                  <>
-                    This will add{" "}
-                    <span className="font-semibold text-neutral-200">$5/mo</span> for{" "}
-                    <span className="font-semibold text-neutral-200">{target.child_name}</span> to your
-                    subscription. The charge will appear on your next billing cycle.
-                  </>
-                )}
+                This will add{" "}
+                <span className="font-semibold text-neutral-200">$5/mo</span> for{" "}
+                <span className="font-semibold text-neutral-200">{target.child_name}</span> to your
+                subscription. The charge will appear on your next billing cycle.
               </p>
               <div className="mt-5 flex justify-end gap-2">
                 <button
@@ -849,10 +780,7 @@ useEffect(() => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    void updateTier(confirmUpgradeId, upgradingToLethal ? "lethal_standalone" : "unlimited");
-                    setConfirmUpgradeId(null);
-                  }}
+                  onClick={() => { void updateTier(confirmUpgradeId, "unlimited"); setConfirmUpgradeId(null); }}
                   className="rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.2)] px-4 py-1.5 text-sm text-white hover:border-[rgba(120,120,120,0.9)] transition"
                 >
                   Confirm upgrade
@@ -866,7 +794,6 @@ useEffect(() => {
       {confirmDowngradeId && (() => {
         const target = links.find((l) => l.id === confirmDowngradeId);
         if (!target) return null;
-        const isLethalStandalone = target.subscription_tier === "lethal_standalone";
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
             <div
@@ -878,12 +805,9 @@ useEffect(() => {
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
                 <span className="font-semibold text-neutral-200">{target.child_name}</span> will lose
                 their Lethal Member benefits - unlimited manuscripts, chapters, and reader slots - and
-                revert to the free Bloom Member tier.{" "}
-                {isLethalStandalone ? (
-                  <>The <span className="font-semibold text-neutral-200">$10/mo</span> Youth Lethal subscription will be cancelled.</>
-                ) : (
-                  <>The <span className="font-semibold text-neutral-200">$5/mo</span> add-on charge will be removed from your next billing cycle.</>
-                )}
+                revert to the free Bloom Member tier. The{" "}
+                <span className="font-semibold text-neutral-200">$5/mo</span> add-on charge will be
+                removed from your next billing cycle.
               </p>
               <div className="mt-5 flex justify-end gap-2">
                 <button
@@ -923,14 +847,7 @@ useEffect(() => {
                 profile. Their account will remain active but will no longer be connected to yours.
               </p>
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
-                {target.subscription_tier === "lethal_standalone"
-                  ? <>
-                      Their Youth Lethal subscription is billed independently at{" "}
-                      <span className="font-semibold text-neutral-200">$10/mo</span>. Once removed,
-                      they will lose Lethal Member access and revert to the free Bloom Member tier.
-                      The $10/mo subscription will be cancelled.
-                    </>
-                  : target.subscription_tier === "unlimited"
+                {target.subscription_tier === "unlimited"
                   ? <>
                       Their Lethal Member access was provided at a discounted rate of{" "}
                       <span className="font-semibold text-neutral-200">$5/mo</span> through your

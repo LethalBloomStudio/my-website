@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as { link_id?: string; tier?: string };
   const { link_id, tier } = body;
-  if (!link_id || (tier !== "free" && tier !== "unlimited" && tier !== "lethal_standalone")) {
+  if (!link_id || (tier !== "free" && tier !== "unlimited")) {
     return NextResponse.json({ error: "Missing or invalid fields." }, { status: 400 });
   }
 
@@ -69,21 +69,11 @@ export async function POST(req: Request) {
         .update({ subscription_status: "lethal", updated_at: new Date().toISOString() })
         .eq("user_id", childUserId);
     } else if (tier === "free") {
-      // Only revoke access if the child doesn't have their own active Stripe subscription
-      const { data: childAcct } = await admin
+      await admin
         .from("accounts")
-        .select("stripe_subscription_id")
-        .eq("user_id", childUserId)
-        .maybeSingle();
-      const hasOwnSubscription = !!(childAcct as { stripe_subscription_id?: string | null } | null)?.stripe_subscription_id;
-      if (!hasOwnSubscription) {
-        await admin
-          .from("accounts")
-          .update({ subscription_status: "free", updated_at: new Date().toISOString() })
-          .eq("user_id", childUserId);
-      }
+        .update({ subscription_status: "free", updated_at: new Date().toISOString() })
+        .eq("user_id", childUserId);
     }
-    // "lethal_standalone": no change here — Stripe webhook handles it
   }
 
   return NextResponse.json({ ok: true });
