@@ -196,7 +196,9 @@ export default function YouthInvitePage({
             </p>
             <p>
               <span className="text-neutral-300">Plan: </span>
-              {invite!.subscription_tier === "unlimited"
+              {invite!.subscription_tier === "lethal_standalone"
+                ? "Youth Lethal Member · $10/mo (own billing)"
+                : invite!.subscription_tier === "unlimited"
                 ? "Unlimited (gifted by parent)"
                 : "Free Bloom Member"}
             </p>

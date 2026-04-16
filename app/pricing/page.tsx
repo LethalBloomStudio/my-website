@@ -161,7 +161,7 @@ export default async function PricingPage() {
           If you have a child who loves reading and writing, Lethal Bloom Studio gives you the tools to add them to your account so they can participate in the community safely, with you in control. Youth profiles are linked directly to your parent account, giving you full visibility into their activity without restricting their creativity.
         </p>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] p-4">
             <p className="text-sm font-semibold text-neutral-100">Free Youth Account</p>
             <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
@@ -178,6 +178,16 @@ export default async function PricingPage() {
               Upgrade your child&apos;s account to Unlimited for just $5/month, half the standard Lethal Member rate. They get unlimited manuscript uploads, unlimited chapter uploads, and unlimited beta reader slots, all under your parental supervision.
             </p>
             <p className="mt-2 text-xs text-neutral-500">$5/mo added to your subscription · Cancel anytime</p>
+          </div>
+          <div className="rounded-lg border border-red-700/40 bg-red-950/10 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-neutral-100">Youth Lethal Account</p>
+              <span className="text-xs font-bold text-red-400">$10 / mo</span>
+            </div>
+            <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
+              Full Lethal Member benefits at the standard $10/month rate, billed independently on your child&apos;s account. Unlimited uploads, chapters, and beta reader slots. Parental approval is still required to activate the account.
+            </p>
+            <p className="mt-2 text-xs text-neutral-500">$10/mo on child&apos;s account · All youth safety rules apply</p>
           </div>
         </div>
 
@@ -204,7 +214,7 @@ export default async function PricingPage() {
         </div>
 
         <p className="mt-4 text-xs text-neutral-500 leading-relaxed">
-          Removing a linked youth account ends the +$5/mo add-on charge and returns your subscription to its standard rate. When a youth member turns 18, their account is automatically upgraded to a full adult profile and the parent link is removed.
+          Removing a linked youth account ends any associated charges: the +$5/mo add-on charge (Unlimited tier) or the $10/mo Youth Lethal subscription on the child&apos;s account. Your subscription returns to its standard rate. When a youth member turns 18, their account is automatically upgraded to a full adult profile and the parent link is removed.
         </p>
       </section>
 

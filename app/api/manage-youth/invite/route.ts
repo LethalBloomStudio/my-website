@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         child_email: child_email.trim().toLowerCase(),
         child_name: child_name.trim(),
         child_dob,
-        subscription_tier: subscription_tier === "unlimited" ? "unlimited" : "free",
+        subscription_tier: subscription_tier === "unlimited" ? "unlimited" : subscription_tier === "lethal_standalone" ? "lethal_standalone" : "free",
         status: "pending",
       })
       .select("invite_token")

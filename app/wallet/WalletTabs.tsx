@@ -10,7 +10,7 @@ type WalletLedgerRow = {
   created_at: string;
 };
 
-type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" };
+type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" | "lethal_standalone" };
 
 type WalletTabsProps = {
   displayName: string;
@@ -201,7 +201,11 @@ export default function WalletTabs({
                       <div>
                         <p className="text-sm text-neutral-100">{c.name}</p>
                         <p className="text-xs text-neutral-500">
-                          {c.subscriptionTier === "unlimited" ? "Lethal Member · +$5/mo" : "Bloom Member · Free"}
+                          {c.subscriptionTier === "lethal_standalone"
+                            ? "Youth Lethal · $10/mo"
+                            : c.subscriptionTier === "unlimited"
+                            ? "Lethal Member · +$5/mo"
+                            : "Bloom Member · Free"}
                         </p>
                       </div>
                       <span

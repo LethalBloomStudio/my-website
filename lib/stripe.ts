@@ -34,6 +34,11 @@ export const SUBSCRIPTION_PLANS = {
     amount: 10000,  // $100.00
     interval: "year" as const,
   },
+  youth_lethal_member: {
+    label: "Youth Lethal Member — Monthly",
+    amount: 1000,   // $10.00
+    interval: "month" as const,
+  },
 } as const;
 
 export type SubscriptionPlanId = keyof typeof SUBSCRIPTION_PLANS;

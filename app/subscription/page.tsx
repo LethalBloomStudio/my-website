@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type YouthLink = {
   id: string;
   child_name: string;
-  subscription_tier: "free" | "unlimited";
+  subscription_tier: "free" | "unlimited" | "lethal_standalone";
   status: string;
 };
 
@@ -144,13 +144,19 @@ export default async function SubscriptionPage() {
                         <p className="text-sm text-neutral-200">{link.child_name}</p>
                         <p className="text-xs text-neutral-500">
                           Youth account &middot;{" "}
-                          {link.subscription_tier === "unlimited"
+                          {link.subscription_tier === "lethal_standalone"
+                            ? "Youth Lethal (own billing)"
+                            : link.subscription_tier === "unlimited"
                             ? "Unlimited add-on"
                             : "Bloom Member"}
                         </p>
                       </div>
                       <span className="text-sm font-medium text-neutral-200 shrink-0">
-                        {link.subscription_tier === "unlimited" ? "$5/mo" : "$0/mo"}
+                        {link.subscription_tier === "lethal_standalone"
+                          ? "—"
+                          : link.subscription_tier === "unlimited"
+                          ? "$5/mo"
+                          : "$0/mo"}
                       </span>
                     </div>
                   ))}
@@ -177,7 +183,8 @@ export default async function SubscriptionPage() {
 
                 {youthLinks.length > 0 && (
                   <p className="text-xs text-neutral-500 leading-relaxed">
-                    Youth account add-ons are billed monthly and added to your subscription.
+                    Youth account add-ons (+$5/mo) are billed monthly and added to your subscription.
+                    Youth Lethal accounts ($10/mo) are billed independently and shown as &ldquo;—&rdquo; above.
                     Manage youth tiers from your{" "}
                     <Link
                       href="/manage-youth"

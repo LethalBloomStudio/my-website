@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as { link_id?: string; tier?: string };
   const { link_id, tier } = body;
-  if (!link_id || (tier !== "free" && tier !== "unlimited")) {
+  if (!link_id || (tier !== "free" && tier !== "unlimited" && tier !== "lethal_standalone")) {
     return NextResponse.json({ error: "Missing or invalid fields." }, { status: 400 });
   }
 
