@@ -26,6 +26,29 @@ export async function POST(req: Request) {
 
   if (!link) return NextResponse.json({ error: "Access denied." }, { status: 403 });
 
+  // The "unlimited" add-on is billed through the parent's Lethal subscription.
+  // Verify the parent is actually an active Lethal member before granting it.
+  if (tier === "unlimited") {
+    const { data: parentAcct } = await admin
+      .from("accounts")
+      .select("subscription_status, active_promotion_id, promotion_expires_at")
+      .eq("user_id", parentId)
+      .maybeSingle();
+    const parentStatus = ((parentAcct as { subscription_status?: string | null } | null)?.subscription_status ?? "").toLowerCase();
+    const parentIsLethal = parentStatus.includes("lethal");
+    const onPromo = !!(
+      (parentAcct as { active_promotion_id?: string | null; promotion_expires_at?: string | null } | null)?.active_promotion_id &&
+      (parentAcct as { promotion_expires_at?: string | null } | null)?.promotion_expires_at &&
+      new Date((parentAcct as { promotion_expires_at: string }).promotion_expires_at) > new Date()
+    );
+    if (!parentIsLethal && !onPromo) {
+      return NextResponse.json(
+        { error: "You must have an active Lethal Member subscription to add the Unlimited add-on for a youth account." },
+        { status: 403 }
+      );
+    }
+  }
+
   const childUserId = (link as { child_user_id?: string | null }).child_user_id ?? null;
 
   await admin

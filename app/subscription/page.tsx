@@ -32,16 +32,18 @@ export default async function SubscriptionPage() {
   const isYouth = account?.age_category === "youth_13_17";
   const admin = supabaseAdmin();
 
-  // For youth: fetch parent info
+  // For youth: fetch parent info and their intended subscription tier
   let parentUsername: string | null = null;
+  let youthIntendedTier: string | null = null;
   if (isYouth) {
     const { data: link } = await admin
       .from("youth_links")
-      .select("parent_user_id")
+      .select("parent_user_id, subscription_tier")
       .eq("child_user_id", user.id)
       .eq("status", "active")
       .maybeSingle();
-    const parentId = (link as { parent_user_id?: string } | null)?.parent_user_id ?? null;
+    const parentId = (link as { parent_user_id?: string; subscription_tier?: string } | null)?.parent_user_id ?? null;
+    youthIntendedTier = (link as { subscription_tier?: string } | null)?.subscription_tier ?? null;
     if (parentId) {
       const { data: pp } = await admin
         .from("public_profiles")
@@ -81,32 +83,37 @@ export default async function SubscriptionPage() {
         </header>
 
         {isYouth ? (
-          /* Youth accounts cannot manage their own subscription */
-          <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] px-6 py-6 space-y-3">
-            <p className="text-sm font-medium text-neutral-200">
-              Subscription managed by your parent or guardian
-            </p>
-            <p className="text-sm text-neutral-400 leading-relaxed">
-              Your subscription tier is controlled by your linked parent account. To change or upgrade
-              your plan, ask your parent to visit their Manage Youth page.
-            </p>
-            <div className="flex gap-3 pt-1">
-              {parentUsername && (
+          youthIntendedTier === "lethal_standalone" ? (
+            /* Youth Lethal: independent $10/mo subscription — youth pays directly */
+            <SubscriptionClient currentStatus={status} youthLethalMode />
+          ) : (
+            /* Free and unlimited-add-on youth: subscription managed by parent */
+            <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] px-6 py-6 space-y-3">
+              <p className="text-sm font-medium text-neutral-200">
+                Subscription managed by your parent or guardian
+              </p>
+              <p className="text-sm text-neutral-400 leading-relaxed">
+                Your subscription tier is controlled by your linked parent account. To change or upgrade
+                your plan, ask your parent to visit their Manage Youth page.
+              </p>
+              <div className="flex gap-3 pt-1">
+                {parentUsername && (
+                  <Link
+                    href={`/u/${parentUsername}`}
+                    className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.14)] px-4 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.24)] transition"
+                  >
+                    View parent profile
+                  </Link>
+                )}
                 <Link
-                  href={`/u/${parentUsername}`}
-                  className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.14)] px-4 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.24)] transition"
+                  href="/account"
+                  className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.4)] bg-transparent px-4 text-sm text-neutral-400 hover:text-neutral-200 transition"
                 >
-                  View parent profile
+                  Back to account
                 </Link>
-              )}
-              <Link
-                href="/account"
-                className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.4)] bg-transparent px-4 text-sm text-neutral-400 hover:text-neutral-200 transition"
-              >
-                Back to account
-              </Link>
+              </div>
             </div>
-          </div>
+          )
         ) : (
           <>
             <SubscriptionClient currentStatus={status} />

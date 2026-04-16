@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 
-type Plan = "lethal_member" | "lethal_member_annual";
+type Plan = "lethal_member" | "lethal_member_annual" | "youth_lethal_member";
 
 export default function SubscriptionClient({
   currentStatus,
+  youthLethalMode = false,
 }: {
   currentStatus: string;
+  youthLethalMode?: boolean;
 }) {
   const isFree = !currentStatus || currentStatus === "free";
   const isMonthly = currentStatus === "lethal" || currentStatus === "lethal_member";
@@ -17,7 +19,7 @@ export default function SubscriptionClient({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [_confirmCancel, _setConfirmCancel] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<Plan>("lethal_member");
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(youthLethalMode ? "youth_lethal_member" : "lethal_member");
 
   async function handleSubscribe() {
     setLoading(true);
@@ -89,54 +91,67 @@ export default function SubscriptionClient({
       {isFree && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
-            Upgrade to Lethal Member
+            {youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
           </h2>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {/* Monthly */}
-            <button
-              type="button"
-              onClick={() => setSelectedPlan("lethal_member")}
-              className={`rounded-xl border p-4 text-left transition ${
-                selectedPlan === "lethal_member"
-                  ? "border-violet-600/60 bg-violet-950/20"
-                  : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] hover:border-[rgba(120,120,120,0.55)]"
-              }`}
-            >
+          {youthLethalMode ? (
+            /* Youth Lethal: single fixed plan, no annual option */
+            <div className="rounded-xl border border-red-700/40 bg-red-950/10 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-neutral-100">Monthly</span>
-                {selectedPlan === "lethal_member" && (
-                  <span className="text-xs text-violet-400">Selected</span>
-                )}
+                <span className="text-sm font-semibold text-neutral-100">Youth Lethal Member</span>
+                <span className="text-xs text-red-400 font-bold">$10 / mo</span>
               </div>
-              <p className="mt-1 text-xl font-bold text-neutral-100">
-                $10<span className="text-sm font-normal text-neutral-400">/mo</span>
+              <p className="mt-1 text-xs text-neutral-400">
+                Approved by your parent or guardian · billed monthly to your account · cancel anytime
               </p>
-              <p className="mt-1 text-xs text-neutral-400">Billed monthly · cancel anytime</p>
-            </button>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* Monthly */}
+              <button
+                type="button"
+                onClick={() => setSelectedPlan("lethal_member")}
+                className={`rounded-xl border p-4 text-left transition ${
+                  selectedPlan === "lethal_member"
+                    ? "border-violet-600/60 bg-violet-950/20"
+                    : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] hover:border-[rgba(120,120,120,0.55)]"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-neutral-100">Monthly</span>
+                  {selectedPlan === "lethal_member" && (
+                    <span className="text-xs text-violet-400">Selected</span>
+                  )}
+                </div>
+                <p className="mt-1 text-xl font-bold text-neutral-100">
+                  $10<span className="text-sm font-normal text-neutral-400">/mo</span>
+                </p>
+                <p className="mt-1 text-xs text-neutral-400">Billed monthly · cancel anytime</p>
+              </button>
 
-            {/* Annual */}
-            <button
-              type="button"
-              onClick={() => setSelectedPlan("lethal_member_annual")}
-              className={`rounded-xl border p-4 text-left transition ${
-                selectedPlan === "lethal_member_annual"
-                  ? "border-violet-600/60 bg-violet-950/20"
-                  : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] hover:border-[rgba(120,120,120,0.55)]"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-neutral-100">Annual</span>
-                <span className="rounded-lg bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-800/40">
-                  Save $20
-                </span>
-              </div>
-              <p className="mt-1 text-xl font-bold text-neutral-100">
-                $100<span className="text-sm font-normal text-neutral-400">/yr</span>
-              </p>
-              <p className="mt-1 text-xs text-neutral-400">Billed once · cancel anytime</p>
-            </button>
-          </div>
+              {/* Annual */}
+              <button
+                type="button"
+                onClick={() => setSelectedPlan("lethal_member_annual")}
+                className={`rounded-xl border p-4 text-left transition ${
+                  selectedPlan === "lethal_member_annual"
+                    ? "border-violet-600/60 bg-violet-950/20"
+                    : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] hover:border-[rgba(120,120,120,0.55)]"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-neutral-100">Annual</span>
+                  <span className="rounded-lg bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-800/40">
+                    Save $20
+                  </span>
+                </div>
+                <p className="mt-1 text-xl font-bold text-neutral-100">
+                  $100<span className="text-sm font-normal text-neutral-400">/yr</span>
+                </p>
+                <p className="mt-1 text-xs text-neutral-400">Billed once · cancel anytime</p>
+              </button>
+            </div>
+          )}
 
           {/* What you get */}
           <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] px-5 py-4">
@@ -167,7 +182,7 @@ export default function SubscriptionClient({
             disabled={loading}
             className="h-11 w-full rounded-lg bg-neutral-100 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-950"
           >
-            {loading ? "Processing..." : `Subscribe - ${selectedPlan === "lethal_member_annual" ? "$100/yr" : "$10/mo"}`}
+            {loading ? "Processing..." : youthLethalMode ? "Subscribe - $10/mo" : `Subscribe - ${selectedPlan === "lethal_member_annual" ? "$100/yr" : "$10/mo"}`}
           </button>
           <p className="text-center text-xs text-neutral-500">Cancel anytime. No hidden fees.</p>
         </div>
