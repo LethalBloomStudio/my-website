@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type YouthLink = {
   id: string;
   child_name: string;
-  subscription_tier: "free" | "unlimited" | "lethal_standalone";
+  subscription_tier: "free" | "unlimited";
   status: string;
 };
 
@@ -32,18 +32,18 @@ export default async function SubscriptionPage() {
   const isYouth = account?.age_category === "youth_13_17";
   const admin = supabaseAdmin();
 
-  // For youth: fetch parent info and their intended subscription tier
+  // For youth: check if they have an active parent link
   let parentUsername: string | null = null;
-  let youthIntendedTier: string | null = null;
+  let hasParentLink = false;
   if (isYouth) {
     const { data: link } = await admin
       .from("youth_links")
-      .select("parent_user_id, subscription_tier")
+      .select("parent_user_id")
       .eq("child_user_id", user.id)
       .eq("status", "active")
       .maybeSingle();
-    const parentId = (link as { parent_user_id?: string; subscription_tier?: string } | null)?.parent_user_id ?? null;
-    youthIntendedTier = (link as { subscription_tier?: string } | null)?.subscription_tier ?? null;
+    const parentId = (link as { parent_user_id?: string } | null)?.parent_user_id ?? null;
+    hasParentLink = !!parentId;
     if (parentId) {
       const { data: pp } = await admin
         .from("public_profiles")
@@ -83,8 +83,8 @@ export default async function SubscriptionPage() {
         </header>
 
         {isYouth ? (
-          youthIntendedTier === "lethal_standalone" ? (
-            /* Youth Lethal: independent $10/mo subscription — youth pays directly */
+          !hasParentLink ? (
+            /* Standalone youth (no parent link): independent $10/mo subscription */
             <SubscriptionClient currentStatus={status} youthLethalMode />
           ) : (
             /* Free and unlimited-add-on youth: subscription managed by parent */
@@ -151,9 +151,7 @@ export default async function SubscriptionPage() {
                         <p className="text-sm text-neutral-200">{link.child_name}</p>
                         <p className="text-xs text-neutral-500">
                           Youth account &middot;{" "}
-                          {link.subscription_tier === "lethal_standalone"
-                            ? "Youth Lethal (own billing)"
-                            : link.subscription_tier === "unlimited"
+                          {link.subscription_tier === "unlimited"
                             ? "Unlimited add-on"
                             : "Bloom Member"}
                         </p>

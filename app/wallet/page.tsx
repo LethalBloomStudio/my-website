@@ -19,7 +19,7 @@ type WalletLedgerRow = {
   created_at: string;
 };
 
-type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" | "lethal_standalone" };
+type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" };
 
 export default async function WalletPage({
   searchParams,
@@ -71,7 +71,7 @@ export default async function WalletPage({
       .eq("parent_user_id", user.id)
       .eq("status", "active");
 
-    const links = (linkRows as Array<{ child_user_id: string; child_name: string; subscription_tier: "free" | "unlimited" | "lethal_standalone" }> | null) ?? [];
+    const links = (linkRows as Array<{ child_user_id: string; child_name: string; subscription_tier: "free" | "unlimited" }> | null) ?? [];
     if (links.length > 0) {
       const childIds = links.map((l) => l.child_user_id);
       const { data: childAccts } = await admin
