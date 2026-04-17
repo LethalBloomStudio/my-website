@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type YouthLink = {
   id: string;
   child_name: string;
-  subscription_tier: "free" | "unlimited";
+  subscription_tier: "free" | "unlimited" | "lethal_standalone";
   status: string;
 };
 
