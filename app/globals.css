@@ -321,9 +321,8 @@ select:focus-visible {
   flex: 0 0 auto;
 }
 
-/* Keep your logo BIG */
 .logo {
-  height: 200px;
+  height: 52px;
   width: auto;
   display: block;
 }
@@ -348,7 +347,7 @@ select:focus-visible {
 .tab {
   text-decoration: none;
   color: #000000;
-  padding: 10px 12px;
+  padding: 6px 12px;
   border-radius: 12px;
   font-weight: 800;
   border: 1px solid rgba(120, 120, 120, 0.9);

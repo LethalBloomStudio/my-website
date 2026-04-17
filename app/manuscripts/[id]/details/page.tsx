@@ -2219,7 +2219,7 @@ export default function ManuscriptDetailsPage() {
                     value={copyrightInfo}
                     onChange={isParentView ? undefined : (e) => setCopyrightInfo(e.target.value)}
                     readOnly={isParentView}
-                    rows={2}
+                    rows={4}
                     placeholder="Copyright notice or ownership statement."
                     className={`w-full rounded-lg border border-neutral-700 bg-neutral-900/40 px-2 py-1.5 text-sm text-neutral-100 placeholder-neutral-600 resize-y focus:outline-none focus:border-[rgba(120,120,120,0.7)] ${isParentView ? "cursor-default select-text" : ""}`}
                   />
