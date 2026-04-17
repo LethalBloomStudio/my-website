@@ -76,7 +76,7 @@ export default function PromotionBanner() {
       <button
         onClick={dismiss}
         aria-label="Dismiss promotion banner"
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-violet-400 hover:text-white transition"
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-violet-400 hover:text-white hover:bg-white/10 transition"
       >
         ✕
       </button>
