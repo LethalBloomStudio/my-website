@@ -1259,7 +1259,7 @@ const [now] = useState(() => Date.now());
           )}
 
           {/* ── Notes panel ── */}
-          <div className="hidden lg:flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[634px] overflow-hidden">
+          <div className="hidden lg:block rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[634px] overflow-hidden">
             <NotesPanel manuscripts={myManuscripts} />
           </div>
         </div>

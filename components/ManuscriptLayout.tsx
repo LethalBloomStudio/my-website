@@ -124,7 +124,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
   }
 
   const sidebar = (
-    <aside className={`w-full shrink-0 space-y-3 self-start md:sticky md:top-20 ${compactSidebar ? "md:w-[200px]" : "md:w-[240px]"}`}>
+    <aside className="w-full shrink-0 space-y-3 self-start md:sticky md:top-20 md:w-[240px]">
       <div
         className={`rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(18,18,18,0.95)] p-3 shadow-[0_10px_28px_rgba(0,0,0,0.35)] ${onCoverClick ? "cursor-pointer hover:border-[rgba(120,120,120,0.65)] hover:bg-[rgba(20,20,20,0.98)] transition" : ""}`}
         onClick={onCoverClick}

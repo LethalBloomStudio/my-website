@@ -2211,6 +2211,19 @@ export default function ManuscriptDetailsPage() {
                     className={`w-full rounded-lg border border-neutral-700 bg-neutral-900/40 px-2 py-1.5 text-sm text-neutral-100 placeholder-neutral-600 resize-y focus:outline-none focus:border-[rgba(120,120,120,0.7)] ${isParentView ? "cursor-default select-text" : ""}`}
                   />
                 </div>
+
+                {/* Editable: Copyright info */}
+                <div className="rounded-lg border border-neutral-800 bg-neutral-950/30 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">Copyright Info</p>
+                  <textarea
+                    value={copyrightInfo}
+                    onChange={isParentView ? undefined : (e) => setCopyrightInfo(e.target.value)}
+                    readOnly={isParentView}
+                    rows={2}
+                    placeholder="Copyright notice or ownership statement."
+                    className={`w-full rounded-lg border border-neutral-700 bg-neutral-900/40 px-2 py-1.5 text-sm text-neutral-100 placeholder-neutral-600 resize-y focus:outline-none focus:border-[rgba(120,120,120,0.7)] ${isParentView ? "cursor-default select-text" : ""}`}
+                  />
+                </div>
               </div>
           </section>
 
