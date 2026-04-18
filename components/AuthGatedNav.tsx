@@ -71,6 +71,17 @@ export default function AuthGatedNav() {
       <Link href="/discover" className="tab">
         Discover
       </Link>
+      {isAdmin && (
+        <Link href="/beta-readers?view=youth" className="iconTab" aria-label="Youth Beta Readers" data-tip="Youth Beta Readers">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="9" cy="7" r="3" />
+            <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            <path d="M21 21v-2a4 4 0 0 0-3-3.85" />
+            <circle cx="19" cy="4" r="2.5" fill="currentColor" stroke="none" />
+          </svg>
+        </Link>
+      )}
       <BetaReadersNavButton />
       <ManuscriptButton />
       <WalletNavButton />

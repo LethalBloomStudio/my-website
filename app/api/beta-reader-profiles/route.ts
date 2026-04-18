@@ -4,21 +4,27 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   const serverClient = await supabaseServer();
   const { data: { user } } = await serverClient.auth.getUser();
 
   const admin = supabaseAdmin();
+  const viewParam = new URL(req.url).searchParams.get("view");
 
-  // Determine the viewer's age category
+  // Determine the viewer's age category and admin status
   let viewerIsYouth = false;
+  let viewerIsAdmin = false;
   if (user) {
     const { data: acct } = await admin
       .from("accounts")
-      .select("age_category")
+      .select("age_category, is_admin")
       .eq("user_id", user.id)
       .maybeSingle();
-    viewerIsYouth = (acct as { age_category?: string } | null)?.age_category === "youth_13_17";
+    const a = acct as { age_category?: string; is_admin?: boolean } | null;
+    viewerIsYouth = a?.age_category === "youth_13_17";
+    viewerIsAdmin = !!a?.is_admin;
+    // Admin requesting youth view sees the same profiles youth accounts see
+    if (viewerIsAdmin && viewParam === "youth") viewerIsYouth = true;
   }
 
   // Fetch all public profiles (admin accounts may not have beta_reader_level set)

@@ -180,33 +180,29 @@ export default function RootLayout({
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">
-            <div className="flex flex-none items-center gap-2.5">
-              <Link href="/" aria-label="Home" className="brand">
-                <Image
-                  src="/brand/logo.svg"
-                  alt="Lethal Bloom Studio"
-                  width={40}
-                  height={40}
-                  className="logo"
-                  loading="eager"
-                />
-              </Link>
+            <Link href="/" aria-label="Home" className="brand">
+              <Image
+                src="/brand/logo.svg"
+                alt="Lethal Bloom Studio"
+                width={40}
+                height={40}
+                className="logo"
+                loading="eager"
+              />
+            </Link>
 
-              <nav className="tabs desktopNav" aria-label="Main navigation">
-                <HomeNavButton />
-                {tabs.map((t) => (
-                  <Link key={t.href} href={t.href} className="tab">
-                    {t.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
+            <nav className="tabs desktopNav" aria-label="Main navigation">
+              <HomeNavButton />
+              {tabs.map((t) => (
+                <Link key={t.href} href={t.href} className="tab">
+                  {t.label}
+                </Link>
+              ))}
+              <AuthGatedNav />
+              <MessagesNavButton />
+            </nav>
 
             <div className="navRight">
-              <div className="desktopNav" style={{ display: "contents" }}>
-                <AuthGatedNav />
-                <MessagesNavButton />
-              </div>
               <ThemeToggle />
               <AuthButton />
               <MobileNav />

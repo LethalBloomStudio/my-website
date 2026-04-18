@@ -96,8 +96,10 @@ function BetaReadersPageInner() {
     const uid = auth.session?.user?.id ?? null;
     setCurrentUserId(uid);
 
+    const viewParam = searchParams.get("view");
+    const profilesUrl = viewParam === "youth" ? "/api/beta-reader-profiles?view=youth" : "/api/beta-reader-profiles";
     const [profilesRes, ownerRes] = await Promise.all([
-      fetch("/api/beta-reader-profiles"),
+      fetch(profilesUrl),
       fetch("/api/owner-profiles"),
     ]);
 
