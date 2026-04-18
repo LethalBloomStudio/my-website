@@ -2011,6 +2011,64 @@ function AdminPageInner() {
             )}
           </div>
         )}
+        {/* ── YOUTH BETA READERS ── */}
+        {tab === "youth_beta_readers" && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-neutral-100">Youth Beta Readers</h2>
+              <button
+                onClick={() => void loadYouthBetaReaders()}
+                className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {youthBetaReaders.length === 0 ? (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] p-8 text-center text-sm text-neutral-500">
+                No youth beta readers found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.95)]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
+                      <th className="px-4 py-3">Reader</th>
+                      <th className="px-4 py-3">Level</th>
+                      <th className="px-4 py-3">Genres</th>
+                      <th className="px-4 py-3">Feedback Areas</th>
+                      <th className="px-4 py-3">Bio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {youthBetaReaders.map((r) => (
+                      <tr key={r.user_id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-neutral-100">{r.pen_name ?? r.username ?? "—"}</p>
+                          {r.username && r.pen_name && <p className="text-xs text-neutral-500">@{r.username}</p>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-violet-900/40 px-2 py-0.5 text-xs font-semibold capitalize text-violet-300">
+                            {r.beta_reader_level}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
+                          {r.reads_genres?.join(", ") ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
+                          {r.feedback_areas?.join(", ") ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-xs truncate">
+                          {r.bio ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── USER MANAGEMENT MODAL ── */}
@@ -2615,65 +2673,6 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
             </table>
           )}
         </div>
-
-        {/* ── YOUTH BETA READERS ── */}
-        {tab === "youth_beta_readers" && (
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-neutral-100">Youth Beta Readers</h2>
-              <button
-                onClick={() => void loadYouthBetaReaders()}
-                className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition"
-              >
-                Refresh
-              </button>
-            </div>
-
-            {youthBetaReaders.length === 0 ? (
-              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] p-8 text-center text-sm text-neutral-500">
-                No youth beta readers found.
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.95)]">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
-                      <th className="px-4 py-3">Reader</th>
-                      <th className="px-4 py-3">Level</th>
-                      <th className="px-4 py-3">Genres</th>
-                      <th className="px-4 py-3">Feedback Areas</th>
-                      <th className="px-4 py-3">Bio</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {youthBetaReaders.map((r) => (
-                      <tr key={r.user_id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
-                        <td className="px-4 py-3">
-                          <p className="text-sm text-neutral-100">{r.pen_name ?? r.username ?? "—"}</p>
-                          {r.username && r.pen_name && <p className="text-xs text-neutral-500">@{r.username}</p>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="rounded-full bg-violet-900/40 px-2 py-0.5 text-xs font-semibold capitalize text-violet-300">
-                            {r.beta_reader_level}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
-                          {r.reads_genres?.join(", ") ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
-                          {r.feedback_areas?.join(", ") ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-xs truncate">
-                          {r.bio ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
       </div>
     </div>
