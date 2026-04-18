@@ -199,10 +199,12 @@ export default function RootLayout({
                 </Link>
               ))}
               <AuthGatedNav />
-              <MessagesNavButton />
             </nav>
 
             <div className="navRight">
+              <div className="desktopNav" style={{ display: "contents" }}>
+                <MessagesNavButton />
+              </div>
               <ThemeToggle />
               <AuthButton />
               <MobileNav />
