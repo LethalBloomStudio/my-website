@@ -336,6 +336,7 @@ select:focus-visible {
   justify-content: flex-start;
   flex-wrap: nowrap;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .navRight {
@@ -1397,6 +1398,7 @@ html[data-theme="day"] textarea[class] {
 
   .tabs {
     width: 100%;
+    margin-left: 0;
     justify-content: center;
     flex-wrap: wrap;
     white-space: normal;
