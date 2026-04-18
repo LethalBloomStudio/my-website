@@ -229,27 +229,28 @@ select:focus-visible {
 }
 
 .hamburger {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   gap: 4px;
   background: var(--brand);
   border: 1px solid rgba(120, 120, 120, 0.9);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   padding: 6px 10px;
-  height: 32px;
+  height: auto;
   width: auto;
-  box-sizing: border-box;
 }
 
 .hamburgerBar {
   display: block;
-  width: 20px;
-  height: 2px;
+  width: 18px;
+  height: 4px;
   background: #111111;
   border-radius: 2px;
   transition: transform 200ms ease, opacity 200ms ease;
+  flex-shrink: 0;
 }
 
 .mobileDrawer {
