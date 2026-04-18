@@ -342,7 +342,6 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: auto;
   flex: 0 0 auto;
 }
 
