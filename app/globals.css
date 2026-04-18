@@ -298,7 +298,8 @@ select:focus-visible {
   }
 
   .mobileNavWrap {
-    display: block;
+    display: inline-flex;
+    align-items: center;
   }
 }
 
