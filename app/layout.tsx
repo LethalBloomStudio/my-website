@@ -180,7 +180,7 @@ export default function RootLayout({
         <ThemeProvider>
         <header className="navWrap">
           <div className="navInner">
-            <div className="flex flex-none items-center gap-3.5">
+            <div className="flex flex-none items-center gap-2.5">
               <Link href="/" aria-label="Home" className="brand">
                 <Image
                   src="/brand/logo.svg"
