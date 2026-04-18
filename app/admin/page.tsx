@@ -235,7 +235,7 @@ type ParentReportAppeal = {
   created_at: string;
 };
 
-type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions";
+type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions" | "youth_beta_readers";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -331,7 +331,7 @@ function AdminPageInner() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get("tab");
-    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","appeals","deleted","parent_reports","feedback","promotions"];
+    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","appeals","deleted","parent_reports","feedback","promotions","youth_beta_readers"];
     return valid.includes(t as Tab) ? (t as Tab) : "overview";
   });
 
@@ -356,6 +356,7 @@ function AdminPageInner() {
   const [prClearLoading, setPrClearLoading] = useState(false);
   const [accessRequests, setAccessRequests] = useState<{ id: string; requester_name: string | null; manuscript_title: string | null; status: string; created_at: string }[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [youthBetaReaders, setYouthBetaReaders] = useState<{ user_id: string; username: string | null; pen_name: string | null; bio: string | null; beta_reader_level: string; reads_genres: string[] | null; feedback_areas: string[] | null; feedback_strengths: string[] | null }[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoName, setPromoName] = useState("");
   const [promoDesc, setPromoDesc] = useState("");
@@ -556,6 +557,11 @@ function AdminPageInner() {
   async function loadPromotions() {
     const data = await adminFetch("/api/admin/promotions") as { promotions?: Promotion[] } | null;
     if (data?.promotions) setPromotions(data.promotions);
+  }
+
+  async function loadYouthBetaReaders() {
+    const data = await adminFetch("/api/admin/data?scope=youth_beta_readers") as { youthBetaReaders?: typeof youthBetaReaders } | null;
+    if (data?.youthBetaReaders) setYouthBetaReaders(data.youthBetaReaders);
   }
 
   async function createPromotion() {
@@ -887,6 +893,7 @@ function AdminPageInner() {
     { id: "parent_reports", label: "Parent Reports", badge: pendingParentReportsCount || undefined },
     { id: "feedback", label: "User Feedback" },
     { id: "promotions", label: "Promotions" },
+    { id: "youth_beta_readers", label: "Youth Beta Readers" },
   ];
 
   return (
@@ -917,6 +924,7 @@ function AdminPageInner() {
               if (t.id === "parent_reports") void loadParentReports();
               if (t.id === "feedback") void loadFeedback();
               if (t.id === "promotions") void loadPromotions();
+              if (t.id === "youth_beta_readers") void loadYouthBetaReaders();
             }}
               className={`relative h-9 rounded-lg border px-3.5 text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white" : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-400 hover:text-white"}`}>
               {t.label}
@@ -2607,6 +2615,65 @@ function AppealsTab({ appeals, adminFetch, onAudit, onMsg, onRefresh }: {
             </table>
           )}
         </div>
+
+        {/* ── YOUTH BETA READERS ── */}
+        {tab === "youth_beta_readers" && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-neutral-100">Youth Beta Readers</h2>
+              <button
+                onClick={() => void loadYouthBetaReaders()}
+                className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {youthBetaReaders.length === 0 ? (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] p-8 text-center text-sm text-neutral-500">
+                No youth beta readers found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.95)]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
+                      <th className="px-4 py-3">Reader</th>
+                      <th className="px-4 py-3">Level</th>
+                      <th className="px-4 py-3">Genres</th>
+                      <th className="px-4 py-3">Feedback Areas</th>
+                      <th className="px-4 py-3">Bio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {youthBetaReaders.map((r) => (
+                      <tr key={r.user_id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-neutral-100">{r.pen_name ?? r.username ?? "—"}</p>
+                          {r.username && r.pen_name && <p className="text-xs text-neutral-500">@{r.username}</p>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-violet-900/40 px-2 py-0.5 text-xs font-semibold capitalize text-violet-300">
+                            {r.beta_reader_level}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
+                          {r.reads_genres?.join(", ") ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-[160px]">
+                          {r.feedback_areas?.join(", ") ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-400 max-w-xs truncate">
+                          {r.bio ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

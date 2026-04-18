@@ -370,6 +370,26 @@ export async function GET(req: Request) {
     result.deletedAccounts = data ?? [];
   }
 
+  if (scope === "youth_beta_readers") {
+    const { data: profiles } = await supabase
+      .from("public_profiles")
+      .select("user_id, username, pen_name, avatar_url, bio, beta_reader_level, reads_genres, feedback_areas, feedback_strengths")
+      .not("beta_reader_level", "is", null)
+      .eq("is_public", true);
+    const profileList = (profiles ?? []) as Array<{ user_id: string; [k: string]: unknown }>;
+    if (profileList.length === 0) {
+      result.youthBetaReaders = [];
+    } else {
+      const { data: accts } = await supabase
+        .from("accounts")
+        .select("user_id, age_category")
+        .in("user_id", profileList.map(p => p.user_id))
+        .eq("age_category", "youth_13_17");
+      const youthIds = new Set(((accts ?? []) as { user_id: string }[]).map(a => a.user_id));
+      result.youthBetaReaders = profileList.filter(p => youthIds.has(p.user_id));
+    }
+  }
+
   return NextResponse.json(result);
 }
 
