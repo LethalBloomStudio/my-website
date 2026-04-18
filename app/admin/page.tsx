@@ -906,28 +906,34 @@ function AdminPageInner() {
           </div>
         )}
 
-        {/* Tab bar */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => {
-              setTab(t.id);
-              if (t.id === "transactions" && transactions.length === 0) void loadTransactions();
-              if (t.id === "appeals") void loadAppeals();
-              if (t.id === "deleted") void loadDeletedAccounts();
-              if (t.id === "parent_reports") void loadParentReports();
-              if (t.id === "feedback") void loadFeedback();
-              if (t.id === "promotions") void loadPromotions();
-            }}
-              className={`relative h-9 rounded-lg border px-3.5 text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white" : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-400 hover:text-white"}`}>
-              {t.label}
-              {t.badge ? (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white leading-none">
-                  {t.badge}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
+        {/* Sidebar + content layout */}
+        <div className="flex gap-6 items-start">
+
+          {/* Sidebar nav */}
+          <aside className="flex-none w-48 flex flex-col gap-1">
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => {
+                setTab(t.id);
+                if (t.id === "transactions" && transactions.length === 0) void loadTransactions();
+                if (t.id === "appeals") void loadAppeals();
+                if (t.id === "deleted") void loadDeletedAccounts();
+                if (t.id === "parent_reports") void loadParentReports();
+                if (t.id === "feedback") void loadFeedback();
+                if (t.id === "promotions") void loadPromotions();
+              }}
+                className={`relative w-full text-left rounded-lg border px-3.5 py-2 text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.2)] text-white" : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-400 hover:text-white"}`}>
+                {t.label}
+                {t.badge ? (
+                  <span className="absolute top-1.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white leading-none">
+                    {t.badge}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </aside>
+
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
 
         {/* ── OVERVIEW ── */}
         {tab === "overview" && stats && (
@@ -2003,6 +2009,8 @@ function AdminPageInner() {
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* ── USER MANAGEMENT MODAL ── */}
