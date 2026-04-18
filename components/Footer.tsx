@@ -34,7 +34,7 @@ export default function Footer() {
             />
             <span className="footerBrandName">Lethal Bloom Studio</span>
           </Link>
-          <p className="footerTagline">A home for writers who mean it.</p>
+          <p className="footerTagline">A home for writers who mean every word.</p>
         </div>
 
         <nav className="footerNav" aria-label="Footer navigation">
