@@ -1,5 +1,5 @@
--- Fix chapter_count to only count published (non-private) chapters.
--- Previously counted all chapters including drafts.
+-- Fix chapter_count to only count published (non-private) chapters of type 'chapter'.
+-- Prologues, epilogues, and trigger pages are excluded from the count.
 
 create or replace function public.sync_manuscript_chapter_stats()
 returns trigger
@@ -16,6 +16,7 @@ begin
       select count(*) from public.manuscript_chapters
       where manuscript_id = mid
         and is_private = false
+        and chapter_type = 'chapter'
     ),
     word_count = (
       select coalesce(
@@ -41,4 +42,5 @@ set chapter_count = (
   select count(*) from public.manuscript_chapters c
   where c.manuscript_id = m.id
     and c.is_private = false
+    and c.chapter_type = 'chapter'
 );
