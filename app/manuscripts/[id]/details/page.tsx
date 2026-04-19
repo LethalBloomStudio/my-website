@@ -162,6 +162,7 @@ export default function ManuscriptDetailsPage() {
   const [parentReportDone, setParentReportDone] = useState(false);
   const [parentReportMsg, setParentReportMsg] = useState<string | null>(null);
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const chapterChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [feedbackFilter, setFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
@@ -837,6 +838,34 @@ export default function ManuscriptDetailsPage() {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     };
   }, [authorUserId, manuscriptId, supabase]);
+
+  // Live chapter list — syncs additions from other tabs (e.g. chapters/new page)
+  useEffect(() => {
+    if (!manuscriptId) return;
+    if (chapterChannelRef.current) void supabase.removeChannel(chapterChannelRef.current);
+
+    const ch = supabase
+      .channel(`manuscript-chapters-${manuscriptId}-owner`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "manuscript_chapters", filter: `manuscript_id=eq.${manuscriptId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const c = payload.new as Chapter;
+          setChapters((prev) => prev.some((p) => p.id === c.id) ? prev : [...prev, c].sort((a, b) => a.chapter_order - b.chapter_order));
+        })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "manuscript_chapters", filter: `manuscript_id=eq.${manuscriptId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const c = payload.new as Chapter;
+          setChapters((prev) => prev.map((p) => p.id === c.id ? c : p).sort((a, b) => a.chapter_order - b.chapter_order));
+        })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "manuscript_chapters", filter: `manuscript_id=eq.${manuscriptId}` },
+        (payload: { old: Record<string, unknown> }) => {
+          const old = payload.old as { id: string };
+          setChapters((prev) => prev.filter((p) => p.id !== old.id));
+        })
+      .subscribe();
+
+    chapterChannelRef.current = ch;
+    return () => { if (chapterChannelRef.current) void supabase.removeChannel(chapterChannelRef.current); };
+  }, [manuscriptId, supabase]);
 
   // Realtime subscription - keep coin balance live as coins are earned/spent anywhere
   useEffect(() => {

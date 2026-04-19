@@ -79,6 +79,7 @@ function PageInner() {
   const [myChapterFeedback, setMyChapterFeedback] = useState<LineFeedback[]>([]);
   const [replies, setReplies] = useState<FeedbackReply[]>([]);
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const chapterChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
@@ -1131,6 +1132,38 @@ function PageInner() {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     };
   }, [userId, manuscriptId, supabase]);
+
+  // Live chapter updates — adds newly published chapters and removes unpublished ones
+  useEffect(() => {
+    if (!manuscriptId) return;
+    if (chapterChannelRef.current) void supabase.removeChannel(chapterChannelRef.current);
+
+    const ch = supabase
+      .channel(`manuscript-chapters-${manuscriptId}-reader`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "manuscript_chapters", filter: `manuscript_id=eq.${manuscriptId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const c = payload.new as Chapter;
+          if (c.is_private) return;
+          setChapters((prev) => prev.some((p) => p.id === c.id) ? prev : [...prev, c].sort((a, b) => a.chapter_order - b.chapter_order));
+          setAllChapterMeta((prev) => prev.some((p) => p.id === c.id) ? prev : [...prev, { id: c.id, chapter_order: c.chapter_order, chapter_type: c.chapter_type }].sort((a, b) => a.chapter_order - b.chapter_order));
+        })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "manuscript_chapters", filter: `manuscript_id=eq.${manuscriptId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const c = payload.new as Chapter;
+          if (c.is_private) {
+            setChapters((prev) => prev.filter((p) => p.id !== c.id));
+          } else {
+            setChapters((prev) => prev.some((p) => p.id === c.id)
+              ? prev.map((p) => p.id === c.id ? c : p).sort((a, b) => a.chapter_order - b.chapter_order)
+              : [...prev, c].sort((a, b) => a.chapter_order - b.chapter_order));
+            setAllChapterMeta((prev) => prev.some((p) => p.id === c.id) ? prev : [...prev, { id: c.id, chapter_order: c.chapter_order, chapter_type: c.chapter_type }].sort((a, b) => a.chapter_order - b.chapter_order));
+          }
+        })
+      .subscribe();
+
+    chapterChannelRef.current = ch;
+    return () => { if (chapterChannelRef.current) void supabase.removeChannel(chapterChannelRef.current); };
+  }, [manuscriptId, supabase]);
 
   // Click anywhere outside the feedback column (and not on a marker bubble) to deselect
   useEffect(() => {
