@@ -18,6 +18,7 @@ type Manuscript = {
   genre: string | null;
   categories: string[] | null;
   word_count: number;
+  chapter_count: number;
   requested_feedback: string | null;
   age_rating: string;
   created_at: string;
@@ -104,29 +105,17 @@ export default function DiscoverPage() {
       const manuscriptIds = manuscripts.map((r) => r.id);
 
       if (manuscriptIds.length > 0) {
-        const [chapterRes, profileRes] = await Promise.all([
-          supabase
-            .from("manuscript_chapters")
-            .select("manuscript_id")
-            .in("manuscript_id", manuscriptIds)
-            .eq("is_private", false)
-            .eq("chapter_type", "chapter"),
-          supabase
-            .from("public_profiles")
-            .select("user_id, pen_name, username, writer_level, beta_reader_level, feedback_preference")
-            .in("user_id", Array.from(new Set(manuscripts.map((r) => r.owner_id)))),
-        ]);
-
         const counts: Record<string, number> = {};
-        ((chapterRes.data as Array<{ manuscript_id: string }> | null) ?? []).forEach((r) => {
-          counts[r.manuscript_id] = (counts[r.manuscript_id] ?? 0) + 1;
-        });
+        manuscripts.forEach((m) => { counts[m.id] = m.chapter_count ?? 0; });
         setChapterCounts(counts);
 
+        const { data: profileRes } = await supabase
+          .from("public_profiles")
+          .select("user_id, pen_name, username, writer_level, beta_reader_level, feedback_preference")
+          .in("user_id", Array.from(new Set(manuscripts.map((r) => r.owner_id))));
+
         const map: Record<string, Profile> = {};
-        ((profileRes.data as Profile[]) ?? []).forEach((p) => {
-          map[p.user_id] = p;
-        });
+        ((profileRes as Profile[]) ?? []).forEach((p) => { map[p.user_id] = p; });
         setProfiles(map);
       } else {
         setChapterCounts({});
