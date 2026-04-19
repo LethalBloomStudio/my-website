@@ -163,6 +163,8 @@ export default function ManuscriptDetailsPage() {
   const [parentReportMsg, setParentReportMsg] = useState<string | null>(null);
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const chapterChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [onlineReaderIds, setOnlineReaderIds] = useState<Set<string>>(new Set());
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [feedbackFilter, setFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
@@ -825,6 +827,26 @@ export default function ManuscriptDetailsPage() {
   useEffect(() => {
     setTimeout(() => onReaderScroll(), 50);
   }, [readerSlots, acceptedReaders.length]);
+
+  // Presence — track which accepted readers are currently viewing the manuscript
+  useEffect(() => {
+    if (!manuscriptId) return;
+    if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
+    const ch = supabase
+      .channel(`manuscript-presence:${manuscriptId}`)
+      .on("presence", { event: "sync" }, () => {
+        const state = ch.presenceState() as Record<string, { user_id: string }[]>;
+        const ids = new Set(
+          Object.values(state).flatMap((presences) => presences.map((p) => p.user_id))
+        );
+        setOnlineReaderIds(ids);
+      })
+      .subscribe();
+    presenceChannelRef.current = ch;
+    return () => {
+      if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
+    };
+  }, [manuscriptId, supabase]);
 
   // Realtime - live feedback replies
   // No polling: realtime INSERT events handle all live updates
@@ -2047,10 +2069,11 @@ export default function ManuscriptDetailsPage() {
                 >
                   {Array.from({ length: readerSlots }).map((_, i) => {
                     const reader = acceptedReaders[i];
+                    const isOnline = reader ? onlineReaderIds.has(reader.user_id) : false;
                     return reader ? (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
                         <div className="relative h-14 w-14">
-                          <div className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}>
+                          <div className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : isOnline ? "border-emerald-400 shadow-[0_0_14px_4px_rgba(52,211,153,0.55)]" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}>
                             {reader.avatar_url ? (
                               <Image src={reader.avatar_url} alt={reader.pen_name || reader.username || "Reader"} fill sizes="56px" className="object-cover" />
                             ) : (

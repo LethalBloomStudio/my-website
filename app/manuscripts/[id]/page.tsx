@@ -80,6 +80,7 @@ function PageInner() {
   const [replies, setReplies] = useState<FeedbackReply[]>([]);
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const chapterChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
@@ -1130,6 +1131,20 @@ function PageInner() {
 
     return () => {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
+    };
+  }, [userId, manuscriptId, supabase]);
+
+  // Broadcast reader presence so author workspace can show online status
+  useEffect(() => {
+    if (!userId || !manuscriptId) return;
+    if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
+    const ch = supabase.channel(`manuscript-presence:${manuscriptId}`);
+    ch.subscribe((status: string) => {
+      if (status === "SUBSCRIBED") void ch.track({ user_id: userId });
+    });
+    presenceChannelRef.current = ch;
+    return () => {
+      if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
     };
   }, [userId, manuscriptId, supabase]);
 
