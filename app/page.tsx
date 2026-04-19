@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import FeedbackButton from "@/components/FeedbackButton";
+import { supabaseBrowser } from "@/lib/Supabase/browser";
 
 type ActivePromo = {
   id: string;
@@ -12,6 +13,18 @@ type ActivePromo = {
 
 export default function Home() {
   const [activePromo, setActivePromo] = useState<ActivePromo | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const supabase = useMemo(() => supabaseBrowser(), []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSignedIn(!!data.session?.user);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(!!session?.user);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [supabase]);
 
   useEffect(() => {
     fetch("/api/promotions/active")
@@ -58,7 +71,7 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a
-            href="/sign-up"
+            href={signedIn ? "/profile" : "/sign-up"}
             className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-6 py-3 text-sm font-semibold text-white transition hover:border-[rgba(120,120,120,0.9)] hover:bg-[rgba(120,120,120,0.3)]"
           >
             Create Free Account
@@ -198,7 +211,7 @@ export default function Home() {
         </div>
         <div className="text-center">
           <a
-            href="/sign-up"
+            href={signedIn ? "/profile" : "/sign-up"}
             className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-6 py-3 text-sm font-semibold text-white transition hover:border-[rgba(120,120,120,0.9)] hover:bg-[rgba(120,120,120,0.3)]"
           >
             Create Free Account
@@ -292,7 +305,7 @@ export default function Home() {
           Upload your first three chapters free today. No credit card, no commitment. Just better feedback from writers who care about the craft.
         </p>
         <a
-          href="/sign-up"
+          href={signedIn ? "/profile" : "/sign-up"}
           className="inline-flex items-center rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-8 py-3 text-sm font-semibold text-white transition hover:border-[rgba(120,120,120,0.9)] hover:bg-[rgba(120,120,120,0.3)]"
         >
           Create Free Account
