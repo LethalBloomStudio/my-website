@@ -171,6 +171,7 @@ export default function ManuscriptDetailsPage() {
   const [feedbackNames, setFeedbackNames] = useState<Record<string, string>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
+  const [selectedAsideTop, setSelectedAsideTop] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [ownerPenName, setOwnerPenName] = useState("");
   const editorWrapperRef = useRef<HTMLDivElement>(null);
@@ -949,33 +950,24 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Scroll page to the text marker, then align the sidebar card beside it
+  // Scroll page to the text marker, then pin the aside adjacent to it
   useEffect(() => {
-    if (!selectedFeedbackId) return;
+    if (!selectedFeedbackId) {
+      setSelectedAsideTop(null);
+      return;
+    }
     const info = markerInfos[selectedFeedbackId];
     const wrapper = editorWrapperRef.current;
-    const aside = feedbackAsideRef.current;
-    const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
 
     if (info && wrapper) {
-      // Absolute document Y of the marker
       const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + info.top;
-      // Scroll page so the marker lands ~30% from the top of the viewport
-      const targetScrollY = markerDocY - window.innerHeight * 0.3;
-      window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
-
-      // After scroll completes, align the sidebar card
-      // Marker will be at ~30% from viewport top; aside sticky top = navH + 12
-      if (aside && cardEl) {
-        const markerViewportY = window.innerHeight * 0.3;
-        const asideViewportTop = navH + 12;
-        const desiredRelativeTop = Math.max(0, markerViewportY - asideViewportTop);
-        setTimeout(() => {
-          aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
-        }, 350); // after smooth scroll animation (~300ms)
-      }
+      const markerViewportY = window.innerHeight * 0.3;
+      window.scrollTo({ top: Math.max(0, markerDocY - markerViewportY), behavior: "smooth" });
+      setTimeout(() => {
+        setSelectedAsideTop(Math.max(navH + 12, markerViewportY));
+      }, 350);
     } else {
-      cardEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setSelectedAsideTop(navH + 12);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
@@ -988,15 +980,13 @@ export default function ManuscriptDetailsPage() {
     const prevInfo = prevMarkerInfosRef.current[selectedFeedbackId];
     if (info && !prevInfo) {
       const wrapper = editorWrapperRef.current;
-      const aside = feedbackAsideRef.current;
-      const cardEl = document.getElementById(`feedback-card-${selectedFeedbackId}`);
       if (wrapper) {
         const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + (info as { top: number }).top;
-        window.scrollTo({ top: Math.max(0, markerDocY - window.innerHeight * 0.3), behavior: "smooth" });
-        if (aside && cardEl) {
-          const desiredRelativeTop = Math.max(0, window.innerHeight * 0.3 - (navH + 12));
-          setTimeout(() => { aside.scrollTop = cardEl.offsetTop - desiredRelativeTop; }, 350);
-        }
+        const markerViewportY = window.innerHeight * 0.3;
+        window.scrollTo({ top: Math.max(0, markerDocY - markerViewportY), behavior: "smooth" });
+        setTimeout(() => {
+          setSelectedAsideTop(Math.max(navH + 12, markerViewportY));
+        }, 350);
       }
     }
     prevMarkerInfosRef.current = markerInfos;
@@ -2701,7 +2691,7 @@ export default function ManuscriptDetailsPage() {
                           )}
                         </div>
                       ) : (
-                        <div ref={editorWrapperRef} className="relative">
+                        <div ref={editorWrapperRef} className="relative" onClick={() => { if (selectedFeedbackId) { setSelectedFeedbackId(null); setSelectedAsideTop(null); } }}>
                           <ChapterEditor
                             value={chapterEditorContent}
                             onChange={setChapterEditorContent}
@@ -2743,7 +2733,8 @@ export default function ManuscriptDetailsPage() {
                                 title="View feedback"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedFeedbackId(isSelected ? null : fid);
+                                  if (isSelected) { setSelectedFeedbackId(null); setSelectedAsideTop(null); }
+                                  else setSelectedFeedbackId(fid);
                                 }}
                                 style={{
                                   position: "absolute",
@@ -2807,7 +2798,7 @@ export default function ManuscriptDetailsPage() {
                 </section>
 
                 {/* Feedback aside - hidden in reader view preview */}
-                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: navH + 12, maxHeight: chapterSectionH > 0 ? chapterSectionH : `calc(100vh - ${navH + 24}px)` }}>
+                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: (selectedAsideTop !== null ? selectedAsideTop : navH + 12), maxHeight: chapterSectionH > 0 ? chapterSectionH : `calc(100vh - ${navH + 24}px)`, transition: "top 0.3s ease" }}>
                   <div className="mb-3">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                       Reader Feedback
@@ -2840,11 +2831,14 @@ export default function ManuscriptDetailsPage() {
                       feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
                       !f.resolved && !f.author_response
                     );
+                    const visibleCards = selectedFeedbackId
+                      ? filtered.filter((f) => f.id === selectedFeedbackId)
+                      : filtered;
                     return filtered.length === 0 ? (
                     <p className="text-xs text-neutral-500 italic">No {feedbackFilter !== "all" ? feedbackFilter : ""} feedback on this chapter yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {filtered.map((f) => {
+                      {visibleCards.map((f) => {
                         const isSelected = selectedFeedbackId === f.id;
                         const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
@@ -2853,13 +2847,14 @@ export default function ManuscriptDetailsPage() {
                             key={f.id}
                             id={`feedback-card-${f.id}`}
                             onClick={() => {
-                              setSelectedFeedbackId(isSelected ? null : f.id);
+                              if (isSelected) { setSelectedFeedbackId(null); setSelectedAsideTop(null); }
+                              else setSelectedFeedbackId(f.id);
                             }}
                             className={`cursor-pointer rounded-lg border p-3 transition ${
                               isSelected
                                 ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)]"
                                 : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)] hover:border-[rgba(120,120,120,0.45)] hover:bg-[rgba(120,120,120,0.09)]"
-                            } ${selectedFeedbackId && !isSelected ? "opacity-40" : ""}`}
+                            }`}
                           >
                             {/* Header */}
                             <div className="flex items-center justify-between gap-1 mb-1.5">
