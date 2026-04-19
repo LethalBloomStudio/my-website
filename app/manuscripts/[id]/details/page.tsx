@@ -2426,6 +2426,21 @@ export default function ManuscriptDetailsPage() {
                                 </button>
                               </div>
                             )}
+                            {/* Undo resolved */}
+                            {!isParentView && (f.resolved || !!f.author_response) && (
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <p className={`text-[10px] font-medium ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
+                                  {f.author_response === "agree" ? "✓ You agreed - conversation closed" : "✗ You disagreed - conversation closed"}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => void undoResolveFeedback(f.id)}
+                                  className="shrink-0 rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-400 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200 transition"
+                                >
+                                  Undo
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
