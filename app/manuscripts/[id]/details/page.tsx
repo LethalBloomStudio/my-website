@@ -2859,18 +2859,30 @@ export default function ManuscriptDetailsPage() {
                         const cardStyle: React.CSSProperties = info
                           ? { position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
                           : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
+                        const isExpanded = isSelected;
                         return (
                           <div
                             key={f.id}
                             id={`feedback-card-${f.id}`}
                             style={cardStyle}
                             onClick={() => setSelectedFeedbackId(isSelected ? null : f.id)}
-                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                              isSelected
-                                ? "border-[rgba(120,120,120,0.7)] bg-[rgba(20,20,20,0.97)] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
-                                : "border-[rgba(120,120,120,0.25)] bg-[rgba(20,20,20,0.88)] hover:border-[rgba(120,120,120,0.45)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+                            className={`group cursor-pointer rounded-lg border transition-all duration-200 ${
+                              isExpanded
+                                ? "border-[rgba(120,120,120,0.7)] bg-[rgba(20,20,20,0.97)] shadow-[0_8px_24px_rgba(0,0,0,0.5)] p-3"
+                                : "border-[rgba(120,120,120,0.2)] bg-[rgba(20,20,20,0.70)] hover:border-[rgba(120,120,120,0.45)] hover:bg-[rgba(20,20,20,0.88)] shadow-[0_2px_8px_rgba(0,0,0,0.2)] px-2.5 py-1.5"
                             }`}
                           >
+                            {/* Collapsed: single-line pill */}
+                            {!isExpanded && (
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="shrink-0 text-[10px] font-semibold text-neutral-400">{readerName}</span>
+                                <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
+                              </div>
+                            )}
+
+                            {/* Expanded: full card */}
+                            {isExpanded && (
+                              <>
                             {/* Header */}
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <p className="text-[11px] font-medium text-[rgba(210,210,210,0.85)]">{readerName}</p>
@@ -2972,6 +2984,8 @@ export default function ManuscriptDetailsPage() {
                                   className="rounded-lg border border-rose-700/60 bg-rose-900/20 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/40 transition"
                                   title="Disagree - acknowledges feedback and removes it from this view">Disagree</button>
                               </div>
+                            )}
+                              </>
                             )}
                           </div>
                         );
