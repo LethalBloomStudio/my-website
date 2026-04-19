@@ -171,11 +171,11 @@ export default function ManuscriptDetailsPage() {
   const [feedbackNames, setFeedbackNames] = useState<Record<string, string>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
-  const [selectedAsideTop, setSelectedAsideTop] = useState<number | null>(null);
+  const [editorOffsetY, setEditorOffsetY] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
   const [ownerPenName, setOwnerPenName] = useState("");
   const editorWrapperRef = useRef<HTMLDivElement>(null);
-  const feedbackAsideRef = useRef<HTMLElement>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
   const [chapterSectionH, setChapterSectionH] = useState(0);
   const prevMarkerInfosRef = useRef<Record<string, unknown>>({});
@@ -950,24 +950,14 @@ export default function ManuscriptDetailsPage() {
   }, [chapters, selectedChapterId]);
 
 
-  // Scroll page to the text marker, then pin the aside adjacent to it
+  // Scroll page to bring the selected marker into view
   useEffect(() => {
-    if (!selectedFeedbackId) {
-      setSelectedAsideTop(null);
-      return;
-    }
+    if (!selectedFeedbackId) return;
     const info = markerInfos[selectedFeedbackId];
     const wrapper = editorWrapperRef.current;
-
     if (info && wrapper) {
       const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + info.top;
-      const markerViewportY = window.innerHeight * 0.3;
-      window.scrollTo({ top: Math.max(0, markerDocY - markerViewportY), behavior: "smooth" });
-      setTimeout(() => {
-        setSelectedAsideTop(Math.max(navH + 12, markerViewportY));
-      }, 350);
-    } else {
-      setSelectedAsideTop(navH + 12);
+      window.scrollTo({ top: Math.max(0, markerDocY - window.innerHeight * 0.35), behavior: "smooth" });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFeedbackId]);
@@ -982,18 +972,14 @@ export default function ManuscriptDetailsPage() {
       const wrapper = editorWrapperRef.current;
       if (wrapper) {
         const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + (info as { top: number }).top;
-        const markerViewportY = window.innerHeight * 0.3;
-        window.scrollTo({ top: Math.max(0, markerDocY - markerViewportY), behavior: "smooth" });
-        setTimeout(() => {
-          setSelectedAsideTop(Math.max(navH + 12, markerViewportY));
-        }, 350);
+        window.scrollTo({ top: Math.max(0, markerDocY - window.innerHeight * 0.35), behavior: "smooth" });
       }
     }
     prevMarkerInfosRef.current = markerInfos;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markerInfos, selectedFeedbackId]);
 
-  // Track chapter section height so the aside only scrolls when feedback exceeds it
+  // Track chapter section height
   useEffect(() => {
     const el = chapterSectionRef.current;
     if (!el) return;
@@ -1001,6 +987,21 @@ export default function ManuscriptDetailsPage() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [selectedChapterId]);
+
+  // Measure how far the editor wrapper is below the right column top
+  // so inline feedback cards can be absolutely positioned to match marker Y
+  useEffect(() => {
+    function measure() {
+      const wrapper = editorWrapperRef.current;
+      const col = rightColumnRef.current;
+      if (!wrapper || !col) return;
+      setEditorOffsetY(wrapper.getBoundingClientRect().top - col.getBoundingClientRect().top);
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (chapterSectionRef.current) ro.observe(chapterSectionRef.current);
+    return () => ro.disconnect();
+  }, [selectedChapterId, markerInfos]);
 
   // Find the DOM Range for an excerpt inside a root element using a TreeWalker
   function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
@@ -1078,7 +1079,7 @@ export default function ManuscriptDetailsPage() {
     if (!selectedFeedbackId) return;
     function onDocClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (feedbackAsideRef.current?.contains(target)) return;
+      if (rightColumnRef.current?.contains(target)) return;
       if (target.closest("[data-feedback-marker]")) return;
       setSelectedFeedbackId(null);
     }
@@ -2691,7 +2692,7 @@ export default function ManuscriptDetailsPage() {
                           )}
                         </div>
                       ) : (
-                        <div ref={editorWrapperRef} className="relative" onClick={() => { if (selectedFeedbackId) { setSelectedFeedbackId(null); setSelectedAsideTop(null); } }}>
+                        <div ref={editorWrapperRef} className="relative">
                           <ChapterEditor
                             value={chapterEditorContent}
                             onChange={setChapterEditorContent}
@@ -2733,8 +2734,7 @@ export default function ManuscriptDetailsPage() {
                                 title="View feedback"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (isSelected) { setSelectedFeedbackId(null); setSelectedAsideTop(null); }
-                                  else setSelectedFeedbackId(fid);
+                                  setSelectedFeedbackId(isSelected ? null : fid);
                                 }}
                                 style={{
                                   position: "absolute",
@@ -2797,18 +2797,12 @@ export default function ManuscriptDetailsPage() {
                   </div>
                 </section>
 
-                {/* Feedback aside - hidden in reader view preview */}
-                {!previewMode && <aside ref={feedbackAsideRef} className="w-72 shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] overflow-y-auto" style={{ position: "sticky", top: (selectedAsideTop !== null ? selectedAsideTop : navH + 12), maxHeight: chapterSectionH > 0 ? chapterSectionH : `calc(100vh - ${navH + 24}px)`, transition: "top 0.3s ease" }}>
-                  <div className="mb-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                      Reader Feedback
-                      {chapterFeedback.length > 0 && (
-                        <span className="ml-2 rounded-full bg-[rgba(120,120,120,0.2)] px-2 py-0.5 text-[10px] font-normal text-[rgba(210,210,210,0.8)]">
-                          {chapterFeedback.length}
-                        </span>
-                      )}
-                    </h3>
-                    <div className="mt-2 flex gap-1">
+                {/* Inline feedback column — each card floats at the same Y as its text marker */}
+                {!previewMode && (
+                  <div ref={rightColumnRef} className="w-72 shrink-0 relative" style={{ minHeight: chapterSectionH || undefined }}>
+                    {/* Filter row */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500 mr-0.5">Feedback</span>
                       {(["unresolved", "resolved", "all"] as const).map((opt) => (
                         <button
                           key={opt}
@@ -2824,21 +2818,20 @@ export default function ManuscriptDetailsPage() {
                         </button>
                       ))}
                     </div>
-                  </div>
-                  {(() => {
-                    const filtered = chapterFeedback.filter((f) =>
-                      feedbackFilter === "all" ? true :
-                      feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
-                      !f.resolved && !f.author_response
-                    );
-                    const visibleCards = selectedFeedbackId
-                      ? filtered.filter((f) => f.id === selectedFeedbackId)
-                      : filtered;
-                    return filtered.length === 0 ? (
-                    <p className="text-xs text-neutral-500 italic">No {feedbackFilter !== "all" ? feedbackFilter : ""} feedback on this chapter yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {visibleCards.map((f) => {
+
+                    {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
+                    {(() => {
+                      const filtered = chapterFeedback.filter((f) =>
+                        feedbackFilter === "all" ? true :
+                        feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
+                        !f.resolved && !f.author_response
+                      );
+                      if (filtered.length === 0) return (
+                        <p className="text-[11px] text-neutral-600 italic mt-2">No {feedbackFilter !== "all" ? feedbackFilter : ""} feedback on this chapter yet.</p>
+                      );
+                      return filtered.map((f) => {
+                        const info = markerInfos[f.id];
+                        if (!info) return null;
                         const isSelected = selectedFeedbackId === f.id;
                         const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
@@ -2846,14 +2839,12 @@ export default function ManuscriptDetailsPage() {
                           <div
                             key={f.id}
                             id={`feedback-card-${f.id}`}
-                            onClick={() => {
-                              if (isSelected) { setSelectedFeedbackId(null); setSelectedAsideTop(null); }
-                              else setSelectedFeedbackId(f.id);
-                            }}
-                            className={`cursor-pointer rounded-lg border p-3 transition ${
+                            style={{ position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }}
+                            onClick={() => setSelectedFeedbackId(isSelected ? null : f.id)}
+                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                               isSelected
-                                ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)]"
-                                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.05)] hover:border-[rgba(120,120,120,0.45)] hover:bg-[rgba(120,120,120,0.09)]"
+                                ? "border-[rgba(120,120,120,0.7)] bg-[rgba(20,20,20,0.97)] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+                                : "border-[rgba(120,120,120,0.25)] bg-[rgba(20,20,20,0.88)] hover:border-[rgba(120,120,120,0.45)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
                             }`}
                           >
                             {/* Header */}
@@ -2869,22 +2860,18 @@ export default function ManuscriptDetailsPage() {
 
                             {/* Chat thread */}
                             <div className="mt-2 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                              {/* Reader's original comment - LEFT */}
                               <div className="flex justify-start">
                                 <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other px-3 py-2">
                                   <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
                                   <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                 </div>
                               </div>
-                              {/* Reply bubbles */}
                               {replies.map((r) => {
                                 const isAuthorReply = r.replier_id === authorUserId;
                                 return (
                                   <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
                                     <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
-                                      <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
-                                        {isAuthorReply ? "You" : readerName}
-                                      </p>
+                                      <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
                                     </div>
                                   </div>
@@ -2892,13 +2879,14 @@ export default function ManuscriptDetailsPage() {
                               })}
                             </div>
 
-                            {/* Conversation closed indicator */}
+                            {/* Conversation closed */}
                             {(f.resolved || !!f.author_response) && (
                               <p className={`mt-2 text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
                                 {f.author_response === "agree" ? "✓ You agreed - conversation closed" : "✗ You disagreed - conversation closed"}
                               </p>
                             )}
-                            {/* Reply box - visible when this card is selected and not resolved */}
+
+                            {/* Reply box */}
                             {isSelected && !isParentView && !f.resolved && !f.author_response && (
                               <div className="mt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                                 <textarea
@@ -2922,21 +2910,15 @@ export default function ManuscriptDetailsPage() {
                               </div>
                             )}
 
-                            {/* Report button - parent view only */}
+                            {/* Report button — parent view */}
                             {isParentView && (
                               <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setParentReportModal({
-                                      readerId: f.reader_id,
-                                      readerName: readerName,
-                                      feedbackExcerpt: `${f.selection_excerpt ? `"${f.selection_excerpt}" - ` : ""}${f.comment_text}`,
-                                    });
-                                    setParentReportReason("");
-                                    setParentReportDone(false);
-                                    setParentReportMsg(null);
+                                    setParentReportModal({ readerId: f.reader_id, readerName, feedbackExcerpt: `${f.selection_excerpt ? `"${f.selection_excerpt}" - ` : ""}${f.comment_text}` });
+                                    setParentReportReason(""); setParentReportDone(false); setParentReportMsg(null);
                                   }}
                                   className="rounded-lg border border-orange-700/50 bg-orange-950/15 px-2.5 py-1 text-[11px] text-orange-400 hover:bg-orange-950/30 transition"
                                 >
@@ -2945,34 +2927,23 @@ export default function ManuscriptDetailsPage() {
                               </div>
                             )}
 
-                            {/* Agree / Disagree buttons (author only) */}
+                            {/* Agree / Disagree — author only */}
                             {!isParentView && !f.author_response && (
-                            <div className="mt-2.5 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "agree"); }}
-                                className="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-2.5 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40 transition"
-                                title="Agree - acknowledges feedback and removes it from this view"
-                              >
-                                Agree
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "disagree"); }}
-                                className="rounded-lg border border-rose-700/60 bg-rose-900/20 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/40 transition"
-                                title="Disagree - acknowledges feedback and removes it from this view"
-                              >
-                                Disagree
-                              </button>
-                            </div>
+                              <div className="mt-2.5 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "agree"); }}
+                                  className="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-2.5 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40 transition"
+                                  title="Agree - acknowledges feedback and removes it from this view">Agree</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); void resolveFeedback(f.id, "disagree"); }}
+                                  className="rounded-lg border border-rose-700/60 bg-rose-900/20 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/40 transition"
+                                  title="Disagree - acknowledges feedback and removes it from this view">Disagree</button>
+                              </div>
                             )}
                           </div>
                         );
-                      })}
-                    </div>
-                  );
-                  })()}
-                </aside>}
+                      });
+                    })()}
+                  </div>
+                )}
               </div>
             );
           })()}
