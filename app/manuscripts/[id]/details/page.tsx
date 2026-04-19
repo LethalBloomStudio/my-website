@@ -2821,34 +2821,11 @@ export default function ManuscriptDetailsPage() {
                 {/* Inline feedback column — each card floats at the same Y as its text marker */}
                 {!previewMode && (
                   <div ref={rightColumnRef} className="w-72 shrink-0 relative" style={{ minHeight: chapterSectionH || undefined }}>
-                    {/* Filter row */}
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500 mr-0.5">Feedback</span>
-                      {(["unresolved", "resolved", "all"] as const).map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setFeedbackFilter(opt)}
-                          className={`rounded-lg border px-2 py-0.5 text-[10px] font-medium transition ${
-                            feedbackFilter === opt
-                              ? "border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.22)] text-neutral-100"
-                              : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] text-neutral-500 hover:text-neutral-300"
-                          }`}
-                        >
-                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-
                     {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
                     {(() => {
-                      const filtered = chapterFeedback.filter((f) =>
-                        feedbackFilter === "all" ? true :
-                        feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
-                        !f.resolved && !f.author_response
-                      );
+                      const filtered = chapterFeedback.filter((f) => !f.resolved && !f.author_response);
                       if (filtered.length === 0) return (
-                        <p className="text-[11px] text-neutral-600 italic mt-2">No {feedbackFilter !== "all" ? feedbackFilter : ""} feedback on this chapter yet.</p>
+                        <p className="text-[11px] text-neutral-600 italic mt-2">No unresolved feedback on this chapter yet.</p>
                       );
                       return filtered.map((f) => {
                         const info = markerInfos[f.id];
