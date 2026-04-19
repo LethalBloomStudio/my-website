@@ -600,7 +600,7 @@ function PageInner() {
 
   const isOwner = !!(manuscript && userId && manuscript.owner_id === userId);
   const hasGrant = grants.some((g) => g.reader_id === userId);
-  const canRead = isOwner || hasGrant || isParentView;
+  const canRead = isOwner || hasGrant || isParentView || manuscript?.visibility === "public";
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
   const displayCategories =
@@ -832,7 +832,7 @@ function PageInner() {
       const gRows = (g as AccessGrant[]) ?? [];
       setGrants(gRows);
       const ownerView = uid === row.owner_id;
-      const viewerCanRead = ownerView || localParentView || gRows.some((x) => x.reader_id === uid);
+      const viewerCanRead = ownerView || localParentView || gRows.some((x) => x.reader_id === uid) || row.visibility === "public";
 
       // If user is a beta reader (not owner, not parent) and is restricted, block access
       if (uid && !ownerView && !localParentView && gRows.some((x) => x.reader_id === uid)) {
