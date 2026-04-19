@@ -17,8 +17,8 @@ export default function Home() {
   const supabase = useMemo(() => supabaseBrowser(), []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSignedIn(!!data.session?.user);
+    supabase.auth.getSession().then((result) => {
+      setSignedIn(!!result.data.session?.user);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setSignedIn(!!session?.user);
