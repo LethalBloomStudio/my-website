@@ -72,6 +72,7 @@ export default function DiscoverPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(15);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const chapterCountChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const sortedCategoryOptions = useMemo(
     () => [...genreOptionsForAgeCategory(isYouth ? "youth_13_17" : null)].sort((a, b) => a.localeCompare(b)),
     [isYouth],
@@ -135,6 +136,34 @@ export default function DiscoverPage() {
       setLoading(false);
     })();
   }, [supabase]);
+
+  // Real-time: update chapter counter when manuscripts.chapter_count changes
+  useEffect(() => {
+    if (items.length === 0) return;
+    if (chapterCountChannelRef.current) {
+      void supabase.removeChannel(chapterCountChannelRef.current);
+    }
+    const tracked = new Set(items.map((m) => m.id));
+    chapterCountChannelRef.current = supabase
+      .channel("discover-manuscript-chapter-counts")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "manuscripts" },
+        (payload) => {
+          const updated = payload.new as { id: string; chapter_count?: number };
+          if (updated.chapter_count != null && tracked.has(updated.id)) {
+            setChapterCounts((prev) => ({ ...prev, [updated.id]: updated.chapter_count! }));
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      if (chapterCountChannelRef.current) {
+        void supabase.removeChannel(chapterCountChannelRef.current);
+        chapterCountChannelRef.current = null;
+      }
+    };
+  }, [items, supabase]);
 
   // Reset visible count whenever filters change
   useEffect(() => {
