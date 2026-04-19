@@ -2837,15 +2837,18 @@ export default function ManuscriptDetailsPage() {
                       );
                       return filtered.map((f) => {
                         const info = markerInfos[f.id];
-                        if (!info) return null;
                         const isSelected = selectedFeedbackId === f.id;
                         const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
+                        // Resolved/unmatched feedback has no marker — render in normal flow at top of column
+                        const cardStyle: React.CSSProperties = info
+                          ? { position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
+                          : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
                         return (
                           <div
                             key={f.id}
                             id={`feedback-card-${f.id}`}
-                            style={{ position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }}
+                            style={cardStyle}
                             onClick={() => setSelectedFeedbackId(isSelected ? null : f.id)}
                             className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                               isSelected
