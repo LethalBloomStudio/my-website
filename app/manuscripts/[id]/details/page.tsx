@@ -336,6 +336,12 @@ export default function ManuscriptDetailsPage() {
     setFeedbackItems((prev) => prev.map((f) => f.id === feedbackId ? { ...f, resolved: true, author_response: response } : f));
   }
 
+  async function undoResolveFeedback(feedbackId: string) {
+    const { error } = await supabase.from("line_feedback").update({ resolved: false, author_response: null }).eq("id", feedbackId);
+    if (error) return setMsg(error.message);
+    setFeedbackItems((prev) => prev.map((f) => f.id === feedbackId ? { ...f, resolved: false, author_response: null } : f));
+  }
+
   async function submitParentReport() {
     if (!parentReportModal || !parentReportReason || !authorUserId) return;
     setParentReportSubmitting(true);
@@ -2879,11 +2885,22 @@ export default function ManuscriptDetailsPage() {
                               })}
                             </div>
 
-                            {/* Conversation closed */}
+                            {/* Conversation closed + Undo */}
                             {(f.resolved || !!f.author_response) && (
-                              <p className={`mt-2 text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
-                                {f.author_response === "agree" ? "✓ You agreed - conversation closed" : "✗ You disagreed - conversation closed"}
-                              </p>
+                              <div className="mt-2 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                                <p className={`text-[10px] font-medium ${f.author_response === "agree" ? "text-emerald-400/80" : "text-rose-400/80"}`}>
+                                  {f.author_response === "agree" ? "✓ You agreed - conversation closed" : "✗ You disagreed - conversation closed"}
+                                </p>
+                                {!isParentView && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); void undoResolveFeedback(f.id); }}
+                                    className="shrink-0 rounded-md border border-[rgba(120,120,120,0.3)] px-2 py-0.5 text-[10px] text-neutral-400 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200 transition"
+                                  >
+                                    Undo
+                                  </button>
+                                )}
+                              </div>
                             )}
 
                             {/* Reply box */}
