@@ -17,13 +17,19 @@ export default function Home() {
   const supabase = useMemo(() => supabaseBrowser(), []);
 
   useEffect(() => {
-    supabase.auth.getSession().then((result) => {
-      setSignedIn(!!result.data.session?.user);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    let cancelled = false;
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setSignedIn(!!data.session?.user);
+    }
+    void checkSession();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, session: { user?: unknown } | null) => {
       setSignedIn(!!session?.user);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, [supabase]);
 
   useEffect(() => {
