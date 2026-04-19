@@ -149,7 +149,7 @@ export default function DiscoverPage() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "manuscripts" },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           const updated = payload.new as { id: string; chapter_count?: number };
           if (updated.chapter_count != null && tracked.has(updated.id)) {
             setChapterCounts((prev) => ({ ...prev, [updated.id]: updated.chapter_count! }));
