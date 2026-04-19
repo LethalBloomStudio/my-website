@@ -198,6 +198,7 @@ export default function ManuscriptDetailsPage() {
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [manualSaving, setManualSaving] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
+  const [rewardToast, setRewardToast] = useState<string | null>(null);
   // Track the last content/title/type that was actually saved to DB to avoid unnecessary writes
   const lastSavedContent = useRef<string>("");
   const lastSavedTitle = useRef<string>("");
@@ -1308,7 +1309,8 @@ export default function ManuscriptDetailsPage() {
     setRewardModal(null);
     setRewardReason("");
     setRewardAmount(5);
-    setMsg(`Rewarded ${reader.pen_name || reader.username || "reader"} ${rewardAmount} Bloom Coins.`);
+    setRewardToast(`✿ ${rewardAmount} Bloom Coins sent to ${reader.pen_name || reader.username || "reader"}`);
+    setTimeout(() => setRewardToast(null), 3000);
   }
 
   async function deleteChapter(chapterId: string) {
@@ -1894,6 +1896,11 @@ export default function ManuscriptDetailsPage() {
       <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-emerald-600/60 bg-emerald-950/90 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] text-sm font-medium text-emerald-300 transition-all duration-300 ${saveToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}`}>
         <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
         Chapter saved
+      </div>
+      {/* Reward toast */}
+      <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-amber-600/60 bg-amber-950/90 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] text-sm font-medium text-amber-300 transition-all duration-300 ${rewardToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}`}>
+        <span className="shrink-0" style={{ color: "#f59e0b" }}>✿</span>
+        {rewardToast}
       </div>
       <div className="mx-auto max-w-[1600px] px-6 py-12">
         {/* Hidden file input for cover uploads triggered by clicking the cover in the sidebar */}
