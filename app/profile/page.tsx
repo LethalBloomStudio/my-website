@@ -189,21 +189,8 @@ export default async function ProfilePage() {
               className="profile-banner-img absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
             />
           )}
-          {/* Edit Profile button - bottom right corner */}
-          <div className="absolute bottom-3 right-3 z-20">
-            <Link
-              href="/settings/profile"
-              title="Edit Profile"
-              className="profile-edit-btn flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition hover:scale-110"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-              </svg>
-            </Link>
-          </div>
-
-          {/* Friends button + social media icons - bottom-left corner */}
-          <div className="absolute bottom-3 left-3 z-20 flex gap-2">
+          {/* All banner action buttons — anchored to bottom-right */}
+          <div className="absolute bottom-3 right-3 z-20 flex flex-wrap justify-end gap-2">
             <FriendsPanel friends={friends} profileUserId={user.id} viewerUserId={user.id} />
             {isAdult && (
               <>
@@ -262,6 +249,15 @@ export default async function ProfilePage() {
                 )}
               </>
             )}
+            <Link
+              href="/settings/profile"
+              title="Edit Profile"
+              className="profile-edit-btn flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition hover:scale-110"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+            </Link>
           </div>
 
           <div className="relative z-10 space-y-3">

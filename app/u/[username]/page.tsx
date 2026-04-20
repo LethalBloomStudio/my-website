@@ -331,29 +331,27 @@ export default async function PublicProfilePage(props: {
             />
           )}
 
-          {/* Follow + Friend buttons - bottom right */}
-          {viewerId && !isOwner && (
-            <div className="absolute bottom-3 right-3 z-20 flex flex-wrap gap-2">
-              <FollowButton
-                viewerId={viewerId}
-                profileUserId={p.user_id}
-                initialFollowing={viewerFollows}
-              />
-              <FriendButton
-                viewerId={viewerId}
-                profileUserId={p.user_id}
-                initialStatus={friendStatus}
-                isAdminProfile={isAdminProfile}
-                isParentProfile={isParentProfile}
-                ownerAgeCategory={accRowTyped?.age_category ?? null}
-                viewerAgeCategory={viewerAgeCategory}
-              />
-            </div>
-          )}
-
-          {/* Friends button + social media icons - bottom-left corner */}
+          {/* All banner action buttons — anchored to bottom-right */}
           {!profileOwnerIsYouth && (
-            <div className="absolute bottom-3 left-3 z-20 flex gap-2">
+            <div className="absolute bottom-3 right-3 z-20 flex flex-wrap justify-end gap-2" style={{ maxWidth: "calc(100% - 1.5rem)" }}>
+              {viewerId && !isOwner && (
+                <>
+                  <FollowButton
+                    viewerId={viewerId}
+                    profileUserId={p.user_id}
+                    initialFollowing={viewerFollows}
+                  />
+                  <FriendButton
+                    viewerId={viewerId}
+                    profileUserId={p.user_id}
+                    initialStatus={friendStatus}
+                    isAdminProfile={isAdminProfile}
+                    isParentProfile={isParentProfile}
+                    ownerAgeCategory={accRowTyped?.age_category ?? null}
+                    viewerAgeCategory={viewerAgeCategory}
+                  />
+                </>
+              )}
               <FriendsPanel friends={friends} profileUserId={p.user_id} viewerUserId={viewerId} />
               {p.social_tiktok && (
                 <a href={`https://tiktok.com/@${p.social_tiktok}`} target="_blank" rel="noopener noreferrer"
