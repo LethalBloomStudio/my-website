@@ -19,6 +19,7 @@ type Body = {
   reply_to_id: string | null;
   reply_to_author_id: string | null;
   post_author_id: string; // used as the "receiver" for moderation flags
+  community?: string;
 };
 
 export async function POST(req: Request) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as Body;
-  const { post_id, content, parent_id, reply_to_id, reply_to_author_id, post_author_id } = body;
+  const { post_id, content, parent_id, reply_to_id, reply_to_author_id, post_author_id, community } = body;
 
   if (!post_id || !content?.trim()) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -183,6 +184,17 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the post author when someone else replies
+  if (post_author_id && post_author_id !== user.id) {
+    await supabase.from("system_notifications").insert({
+      user_id: post_author_id,
+      category: "social",
+      title: "New reply on your discussion post",
+      body: content.trim().slice(0, 150),
+      metadata: { post_id, community: community ?? "adult" },
+    });
+  }
 
   return NextResponse.json({ ok: true, comment: data });
 }

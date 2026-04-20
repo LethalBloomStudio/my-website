@@ -660,6 +660,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
         reply_to_id: replyToId,
         reply_to_author_id: replyToAuthorId,
         post_author_id: post?.author_id ?? currentUserId,
+        community,
       }),
     });
 
