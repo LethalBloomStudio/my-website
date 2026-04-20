@@ -24,9 +24,10 @@ type BetaManuscript = {
   title: string;
   genre: string | null;
   cover_url: string | null;
+  owner_id: string;
   owner_pen_name: string | null;
   owner_username: string | null;
-  requested_feedback: string | null;
+  owner_feedback_preference: string | null;
   total_chapters: number;
   read_chapters: number;
   new_chapters: number;
@@ -59,9 +60,10 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
 function feedbackBadge(value: string | null): { label: string; cls: string } | null {
   if (!value) return null;
   const v = value.toLowerCase();
-  if (v === "bloom") return { label: "Bloom", cls: "border-emerald-700/50 bg-emerald-950/30 text-emerald-400" };
-  if (v === "forge") return { label: "Forge", cls: "border-blue-700/50 bg-blue-950/30 text-blue-400" };
-  if (v === "lethal") return { label: "Lethal", cls: "border-rose-700/50 bg-rose-950/30 text-rose-400" };
+  if (v === "bloom" || v === "gentle") return { label: "Bloom", cls: "border-emerald-700/50 bg-emerald-950/30 text-emerald-400" };
+  if (v === "forge" || v === "balanced" || v === "line_edits") return { label: "Forge", cls: "border-blue-700/50 bg-blue-950/30 text-blue-400" };
+  if (v === "lethal" || v === "direct" || v === "blunt") return { label: "Lethal", cls: "border-rose-700/50 bg-rose-950/30 text-rose-400" };
+  if (v === "big_picture") return { label: "Big Picture", cls: "border-teal-700/50 bg-teal-950/30 text-teal-400" };
   return null;
 }
 
@@ -159,7 +161,7 @@ export default function ManuscriptsPage() {
         const [betaDataRes, chaptersRes, completionsRes] = await Promise.all([
           supabase
             .from("manuscripts")
-            .select("id, title, genre, cover_url, owner_id, requested_feedback")
+            .select("id, title, genre, cover_url, owner_id")
             .in("id", grantedIds)
             .neq("owner_id", uid),
           supabase
@@ -175,7 +177,7 @@ export default function ManuscriptsPage() {
             .eq("reader_id", uid),
         ]);
 
-        const betaRows = (betaDataRes.data as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string; requested_feedback: string | null }> | null) ?? [];
+        const betaRows = (betaDataRes.data as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string }> | null) ?? [];
         const chapters = (chaptersRes.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string }>;
         const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; manuscript_id: string; completed_at: string }>;
 
@@ -202,10 +204,10 @@ export default function ManuscriptsPage() {
           const ownerIds = [...new Set(betaRows.map((r) => r.owner_id))];
           const { data: profiles } = await supabase
             .from("public_profiles")
-            .select("user_id, pen_name, username")
+            .select("user_id, pen_name, username, feedback_preference")
             .in("user_id", ownerIds);
           const profileMap = new Map(
-            ((profiles as Array<{ user_id: string; pen_name: string | null; username: string | null }> | null) ?? [])
+            ((profiles as Array<{ user_id: string; pen_name: string | null; username: string | null; feedback_preference: string | null }> | null) ?? [])
               .map((p) => [p.user_id, p])
           );
           setBetaItems(
@@ -221,9 +223,10 @@ export default function ManuscriptsPage() {
                 title: r.title,
                 genre: r.genre,
                 cover_url: r.cover_url,
+                owner_id: r.owner_id,
                 owner_pen_name: p?.pen_name ?? null,
                 owner_username: p?.username ?? null,
-                requested_feedback: r.requested_feedback ?? null,
+                owner_feedback_preference: p?.feedback_preference ?? null,
                 total_chapters: msChapters.length,
                 read_chapters: msCompletions?.count ?? 0,
                 new_chapters: newChapters,
@@ -261,16 +264,17 @@ export default function ManuscriptsPage() {
           );
         }
       )
-      // Feedback preference changed on a beta manuscript
+      // Author updated their feedback preference on their profile
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "manuscripts" },
+        { event: "UPDATE", schema: "public", table: "public_profiles" },
         (payload: { new: Record<string, unknown> }) => {
-          const row = payload.new as { id: string; requested_feedback: string | null };
-          if (!betaIds.has(row.id)) return;
+          const row = payload.new as { user_id: string; feedback_preference: string | null };
           setBetaItems((prev) =>
             prev.map((m) =>
-              m.id === row.id ? { ...m, requested_feedback: row.requested_feedback } : m
+              m.owner_id === row.user_id
+                ? { ...m, owner_feedback_preference: row.feedback_preference }
+                : m
             )
           );
         }
@@ -421,7 +425,7 @@ export default function ManuscriptsPage() {
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {betaItems.map((m) => {
-                    const badge = feedbackBadge(m.requested_feedback);
+                    const badge = feedbackBadge(m.owner_feedback_preference);
                     const unread = m.total_chapters - m.read_chapters;
                     return (
                       <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
@@ -445,11 +449,14 @@ export default function ManuscriptsPage() {
                               <h3 className="text-lg font-medium text-white group-hover:underline">{m.title}</h3>
                               <p className="mt-1 text-sm text-neutral-300">{m.genre ?? "Uncategorized"}</p>
 
-                              {/* Feedback level badge */}
+                              {/* Per-manuscript requested feedback level */}
                               {badge && (
-                                <span className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${badge.cls}`}>
-                                  {badge.label} feedback
-                                </span>
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <span className="text-[11px] text-neutral-500">Author requests:</span>
+                                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${badge.cls}`}>
+                                    {badge.label}
+                                  </span>
+                                </div>
                               )}
 
                               {/* Chapter progress */}
