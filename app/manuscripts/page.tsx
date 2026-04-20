@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
@@ -26,6 +26,10 @@ type BetaManuscript = {
   cover_url: string | null;
   owner_pen_name: string | null;
   owner_username: string | null;
+  requested_feedback: string | null;
+  total_chapters: number;
+  read_chapters: number;
+  new_chapters: number;
 };
 
 type AppealStatus = {
@@ -42,7 +46,7 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
       alt={`${title} cover`}
       width={64}
       height={96}
-     
+
       className="h-24 w-16 shrink-0 rounded-lg border border-neutral-700 object-cover"
     />
   ) : (
@@ -50,6 +54,15 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
       No Cover
     </div>
   );
+}
+
+function feedbackBadge(value: string | null): { label: string; cls: string } | null {
+  if (!value) return null;
+  const v = value.toLowerCase();
+  if (v === "bloom") return { label: "Bloom", cls: "border-emerald-700/50 bg-emerald-950/30 text-emerald-400" };
+  if (v === "forge") return { label: "Forge", cls: "border-blue-700/50 bg-blue-950/30 text-blue-400" };
+  if (v === "lethal") return { label: "Lethal", cls: "border-rose-700/50 bg-rose-950/30 text-rose-400" };
+  return null;
 }
 
 export default function ManuscriptsPage() {
@@ -60,6 +73,7 @@ export default function ManuscriptsPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [isYouth, setIsYouth] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [conduct, setConduct] = useState<{
     manuscript_conduct_strikes: number;
     manuscript_suspended_until: string | null;
@@ -72,6 +86,10 @@ export default function ManuscriptsPage() {
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
   const now = Date.now(); // eslint-disable-line react-hooks/purity
+
+  // Keep a ref so realtime handlers can access current betaItems without re-subscribing
+  const betaItemsRef = useRef<BetaManuscript[]>([]);
+  useEffect(() => { betaItemsRef.current = betaItems; }, [betaItems]);
 
   useEffect(() => {
     (async () => {
@@ -87,6 +105,7 @@ export default function ManuscriptsPage() {
       }
 
       const uid = auth.user.id;
+      setUserId(uid);
 
       // Manuscript conduct status
       const { data: conductData } = await supabase
@@ -126,22 +145,58 @@ export default function ManuscriptsPage() {
         setItems((data as Manuscript[]) ?? []);
       }
 
-      // Manuscripts accepted to beta read (approved access grants, not own)
+      // Manuscripts accepted to beta read (approved access grants, not own) — include grant created_at
       const { data: grantRows } = await supabase
         .from("manuscript_access_grants")
-        .select("manuscript_id")
+        .select("manuscript_id, created_at")
         .eq("reader_id", uid);
 
-      const grantedIds = (grantRows ?? []).map((r: { manuscript_id: string }) => r.manuscript_id);
+      const grantList = (grantRows ?? []) as Array<{ manuscript_id: string; created_at: string }>;
+      const grantedIds = grantList.map((r) => r.manuscript_id);
+      const grantDateMap = new Map(grantList.map((g) => [g.manuscript_id, g.created_at]));
 
       if (grantedIds.length > 0) {
-        const { data: betaData } = await supabase
-          .from("manuscripts")
-          .select("id, title, genre, cover_url, owner_id")
-          .in("id", grantedIds)
-          .neq("owner_id", uid); // exclude own manuscripts
+        const [betaDataRes, chaptersRes, completionsRes] = await Promise.all([
+          supabase
+            .from("manuscripts")
+            .select("id, title, genre, cover_url, owner_id, requested_feedback")
+            .in("id", grantedIds)
+            .neq("owner_id", uid),
+          supabase
+            .from("manuscript_chapters")
+            .select("id, manuscript_id, created_at")
+            .in("manuscript_id", grantedIds)
+            .eq("is_private", false)
+            .eq("chapter_type", "chapter"),
+          supabase
+            .from("chapter_read_completions")
+            .select("chapter_id, manuscript_id, completed_at")
+            .in("manuscript_id", grantedIds)
+            .eq("reader_id", uid),
+        ]);
 
-        const betaRows = (betaData as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string }> | null) ?? [];
+        const betaRows = (betaDataRes.data as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string; requested_feedback: string | null }> | null) ?? [];
+        const chapters = (chaptersRes.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string }>;
+        const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; manuscript_id: string; completed_at: string }>;
+
+        // Group chapters by manuscript_id
+        const chaptersByMs = new Map<string, Array<{ id: string; created_at: string }>>();
+        for (const ch of chapters) {
+          if (!chaptersByMs.has(ch.manuscript_id)) chaptersByMs.set(ch.manuscript_id, []);
+          chaptersByMs.get(ch.manuscript_id)!.push({ id: ch.id, created_at: ch.created_at });
+        }
+
+        // Group completions by manuscript_id, track count + most recent date
+        const completionsByMs = new Map<string, { count: number; latestAt: string }>();
+        for (const comp of completions) {
+          const existing = completionsByMs.get(comp.manuscript_id);
+          if (!existing) {
+            completionsByMs.set(comp.manuscript_id, { count: 1, latestAt: comp.completed_at });
+          } else {
+            existing.count++;
+            if (comp.completed_at > existing.latestAt) existing.latestAt = comp.completed_at;
+          }
+        }
 
         if (betaRows.length > 0) {
           const ownerIds = [...new Set(betaRows.map((r) => r.owner_id))];
@@ -156,6 +211,11 @@ export default function ManuscriptsPage() {
           setBetaItems(
             betaRows.map((r) => {
               const p = profileMap.get(r.owner_id);
+              const msChapters = chaptersByMs.get(r.id) ?? [];
+              const msCompletions = completionsByMs.get(r.id);
+              const grantDate = grantDateMap.get(r.id) ?? new Date(0).toISOString();
+              const lastReadDate = msCompletions?.latestAt ?? grantDate;
+              const newChapters = msChapters.filter((ch) => ch.created_at > lastReadDate).length;
               return {
                 id: r.id,
                 title: r.title,
@@ -163,6 +223,10 @@ export default function ManuscriptsPage() {
                 cover_url: r.cover_url,
                 owner_pen_name: p?.pen_name ?? null,
                 owner_username: p?.username ?? null,
+                requested_feedback: r.requested_feedback ?? null,
+                total_chapters: msChapters.length,
+                read_chapters: msCompletions?.count ?? 0,
+                new_chapters: newChapters,
               };
             })
           );
@@ -172,6 +236,50 @@ export default function ManuscriptsPage() {
       setLoading(false);
     })();
   }, [supabase]);
+
+  // Realtime: update chapter counts and feedback preference live
+  useEffect(() => {
+    if (!userId || betaItems.length === 0) return;
+    const betaIds = new Set(betaItems.map((m) => m.id));
+
+    const ch = supabase
+      .channel("beta-reading-live")
+      // New published chapter added to one of the beta manuscripts
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "manuscript_chapters" },
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new as { manuscript_id: string; is_private: boolean; chapter_type: string; created_at: string };
+          if (!betaIds.has(row.manuscript_id)) return;
+          if (row.is_private || row.chapter_type !== "chapter") return;
+          setBetaItems((prev) =>
+            prev.map((m) =>
+              m.id === row.manuscript_id
+                ? { ...m, total_chapters: m.total_chapters + 1, new_chapters: m.new_chapters + 1 }
+                : m
+            )
+          );
+        }
+      )
+      // Feedback preference changed on a beta manuscript
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "manuscripts" },
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new as { id: string; requested_feedback: string | null };
+          if (!betaIds.has(row.id)) return;
+          setBetaItems((prev) =>
+            prev.map((m) =>
+              m.id === row.id ? { ...m, requested_feedback: row.requested_feedback } : m
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => { void supabase.removeChannel(ch); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, userId, betaItems.length]);
 
   async function leaveProject(manuscriptId: string) {
     const { data: auth } = await supabase.auth.getUser();
@@ -312,41 +420,78 @@ export default function ManuscriptsPage() {
                 <p className="text-sm text-neutral-300">None</p>
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2">
-                  {betaItems.map((m) => (
-                    <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
-                      <Link href={`/manuscripts/${m.id}`} className="group block w-full text-left">
-                        <div className="flex gap-3">
-                          <CoverThumb url={m.cover_url} title={m.title} />
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-medium text-white group-hover:underline">{m.title}</h3>
-                            <p className="mt-1 text-sm text-neutral-300">{m.genre ?? "Uncategorized"}</p>
+                  {betaItems.map((m) => {
+                    const badge = feedbackBadge(m.requested_feedback);
+                    const unread = m.total_chapters - m.read_chapters;
+                    return (
+                      <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
+
+                        {/* New chapters alert */}
+                        {m.new_chapters > 0 && (
+                          <div className="mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5">
+                            <svg className="h-3.5 w-3.5 shrink-0 text-violet-400" viewBox="0 0 14 14" fill="currentColor">
+                              <path d="M7 1l1.5 3.5L12 5.5l-2.5 2.5.6 3.5L7 9.8l-3.1 1.7.6-3.5L2 5.5l3.5-.5z" />
+                            </svg>
+                            <span className="text-xs font-medium text-violet-300">
+                              {m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added
+                            </span>
                           </div>
-                        </div>
-                      </Link>
-                      <div className="mt-3 flex flex-wrap items-center gap-4">
-                        <Link href={`/manuscripts/${m.id}`} className="text-xs text-[rgba(210,210,210,1)] hover:underline">
-                          Open Reader View
-                        </Link>
-                        {(m.owner_pen_name || m.owner_username) && (
-                          <span className="text-xs text-neutral-400">
-                            by{" "}
-                            <Link
-                              href={m.owner_username ? `/u/${m.owner_username}` : "#"}
-                              className="text-[rgba(210,210,210,0.85)] hover:underline"
-                            >
-                              {m.owner_pen_name || `@${m.owner_username}`}
-                            </Link>
-                          </span>
                         )}
-                        <button
-                          onClick={() => { if (confirm("Leave this project? Your slot will remain filled and the author cannot re-add you.")) void leaveProject(m.id); }}
-                          className="ml-auto inline-flex items-center rounded-full border border-neutral-600/60 bg-neutral-800/20 px-3 py-1 text-xs text-neutral-400/70 hover:border-neutral-500 hover:text-neutral-300 transition"
-                        >
-                          Leave project
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+
+                        <Link href={`/manuscripts/${m.id}`} className="group block w-full text-left">
+                          <div className="flex gap-3">
+                            <CoverThumb url={m.cover_url} title={m.title} />
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-lg font-medium text-white group-hover:underline">{m.title}</h3>
+                              <p className="mt-1 text-sm text-neutral-300">{m.genre ?? "Uncategorized"}</p>
+
+                              {/* Feedback level badge */}
+                              {badge && (
+                                <span className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${badge.cls}`}>
+                                  {badge.label} feedback
+                                </span>
+                              )}
+
+                              {/* Chapter progress */}
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
+                                <span>
+                                  {m.read_chapters} / {m.total_chapters} chapter{m.total_chapters !== 1 ? "s" : ""} read
+                                </span>
+                                {unread > 0 && (
+                                  <span className="rounded-full border border-neutral-700 bg-neutral-800/60 px-2 py-0.5 text-neutral-300">
+                                    {unread} unread
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-4">
+                          <Link href={`/manuscripts/${m.id}`} className="text-xs text-[rgba(210,210,210,1)] hover:underline">
+                            Open Reader View
+                          </Link>
+                          {(m.owner_pen_name || m.owner_username) && (
+                            <span className="text-xs text-neutral-400">
+                              by{" "}
+                              <Link
+                                href={m.owner_username ? `/u/${m.owner_username}` : "#"}
+                                className="text-[rgba(210,210,210,0.85)] hover:underline"
+                              >
+                                {m.owner_pen_name || `@${m.owner_username}`}
+                              </Link>
+                            </span>
+                          )}
+                          <button
+                            onClick={() => { if (confirm("Leave this project? Your slot will remain filled and the author cannot re-add you.")) void leaveProject(m.id); }}
+                            className="ml-auto inline-flex items-center rounded-full border border-neutral-600/60 bg-neutral-800/20 px-3 py-1 text-xs text-neutral-400/70 hover:border-neutral-500 hover:text-neutral-300 transition"
+                          >
+                            Leave project
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>
