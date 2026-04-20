@@ -35,6 +35,8 @@ const REASON_LABELS: Record<string, string> = {
   extra_reader_slot: "Extra reader slot",
   parent_gift: "Bloom Coins from parent",
   manuscript_upload_unlock: "Manuscript upload unlock",
+  referral_referrer_bonus: "Referral reward",
+  referral_signup_bonus: "Referral signup bonus",
 };
 
 const PACKAGES = [

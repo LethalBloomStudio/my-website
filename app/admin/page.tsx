@@ -149,6 +149,29 @@ type Stats = {
   ms_blacklisted: number;
   total_lifetime_suspensions: number;
   flagged_content: number;
+  total_referrals: number;
+  verified_referrals: number;
+  referrals_7d: number;
+};
+
+type ReferralEntry = {
+  id: string;
+  referred_user_id: string;
+  referrer_user_id: string | null;
+  referral_username_input: string;
+  status: string;
+  referrer_reward_coins: number;
+  referred_reward_coins: number;
+  verified_at: string | null;
+  created_at: string;
+  referred_name: string | null;
+  referred_email: string | null;
+  referred_username: string | null;
+  referred_pen_name: string | null;
+  referrer_name: string | null;
+  referrer_email: string | null;
+  referrer_username: string | null;
+  referrer_pen_name: string | null;
 };
 
 type ConductAppeal = {
@@ -235,7 +258,7 @@ type ParentReportAppeal = {
   created_at: string;
 };
 
-type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions";
+type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "referrals" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -331,7 +354,7 @@ function AdminPageInner() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get("tab");
-    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","appeals","deleted","parent_reports","feedback","promotions"];
+    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","referrals","appeals","deleted","parent_reports","feedback","promotions"];
     return valid.includes(t as Tab) ? (t as Tab) : "overview";
   });
 
@@ -342,6 +365,7 @@ function AdminPageInner() {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [transactions, setTransactions] = useState<PurchaseTransaction[]>([]);
   const [billingEvents, setBillingEvents] = useState<BillingEvent[]>([]);
+  const [referrals, setReferrals] = useState<ReferralEntry[]>([]);
   const [appeals, setAppeals] = useState<ConductAppeal[]>([]);
   const [modNotes, setModNotes] = useState<ModNote[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -435,6 +459,7 @@ function AdminPageInner() {
       auditLog?: AuditEntry[];
       announcements?: Announcement[];
       featureFlags?: FeatureFlag[];
+      referrals?: ReferralEntry[];
     } | null;
     if (!data) return;
     if (data.manuscripts) setManuscripts(data.manuscripts);
@@ -444,6 +469,7 @@ function AdminPageInner() {
     if (data.auditLog) setAuditLog(data.auditLog);
     if (data.announcements) setAnnouncements(data.announcements);
     if (data.featureFlags) setFeatureFlags(data.featureFlags);
+    if (data.referrals) setReferrals(data.referrals);
     await loadUsers();
   }
 
@@ -510,6 +536,11 @@ function AdminPageInner() {
     const data = await adminFetch("/api/admin/data?scope=transactions") as { transactions?: PurchaseTransaction[] } | null;
     if (data?.transactions) setTransactions(data.transactions);
     if ((data as { billingEvents?: BillingEvent[] } | null)?.billingEvents) setBillingEvents((data as { billingEvents?: BillingEvent[] }).billingEvents!);
+  }
+
+  async function loadReferrals() {
+    const data = await adminFetch("/api/admin/data?scope=referrals") as { referrals?: ReferralEntry[] } | null;
+    if (data?.referrals) setReferrals(data.referrals);
   }
 
   async function loadAppeals() {
@@ -882,6 +913,7 @@ function AdminPageInner() {
     feature_flags: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="16" cy="12" r="3" fill="currentColor" stroke="none"/></svg>,
     audit: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
     transactions: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+    referrals: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>,
     appeals: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M3 6l3 8H0l3-8z"/><path d="M15 6l3 8H12l3-8z"/></svg>,
     deleted: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
     parent_reports: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
@@ -900,6 +932,7 @@ function AdminPageInner() {
     { id: "feature_flags", label: "Feature Flags" },
     { id: "audit", label: "Audit Log" },
     { id: "transactions", label: "Transactions" },
+    { id: "referrals", label: "Referrals" },
     { id: "appeals", label: "Appeals", badge: pendingAppealsCount || undefined },
     { id: "deleted", label: "Deleted Accounts" },
     { id: "parent_reports", label: "Parent Reports", badge: pendingParentReportsCount || undefined },
@@ -933,6 +966,7 @@ function AdminPageInner() {
               <button key={t.id} onClick={() => {
                 setTab(t.id);
                 if (t.id === "transactions" && transactions.length === 0) void loadTransactions();
+                if (t.id === "referrals" && referrals.length === 0) void loadReferrals();
                 if (t.id === "appeals") void loadAppeals();
                 if (t.id === "deleted") void loadDeletedAccounts();
                 if (t.id === "parent_reports") void loadParentReports();
@@ -990,6 +1024,22 @@ function AdminPageInner() {
                     <p className={`text-xl font-bold ${s.value > 0 ? (s.color === "red" ? "text-red-400" : "text-amber-400") : "text-neutral-600"}`}>
                       {s.value.toLocaleString()}
                     </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-8 rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Referral Program</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: "Total Referral Attempts", value: stats.total_referrals, color: "text-neutral-100" },
+                  { label: "Verified Referrals", value: stats.verified_referrals, color: "text-emerald-300" },
+                  { label: "Verified (7 days)", value: stats.referrals_7d, color: "text-amber-300" },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-4 py-3">
+                    <p className="text-xs text-neutral-500">{item.label}</p>
+                    <p className={`mt-1 text-2xl font-semibold ${item.color}`}>{item.value.toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -1404,6 +1454,9 @@ function AdminPageInner() {
             featured_slot:          "Featured Slot",
             extra_reader_slot:      "Extra Reader Slot",
             admin_adjust:           "Admin Adjustment",
+            admin_adjustment:       "Admin Adjustment",
+            referral_referrer_bonus:"Referral Reward",
+            referral_signup_bonus:  "Referral Signup Bonus",
           };
           const PACKAGE_LABELS: Record<string, string> = {
             starter_100: "Bloom Pack (100)",
@@ -1556,6 +1609,79 @@ function AdminPageInner() {
         })()}
 
         {/* ── APPEALS ── */}
+        {tab === "referrals" && (() => {
+          const verifiedCount = referrals.filter((r) => r.status === "verified").length;
+          const invalidCount = referrals.length - verifiedCount;
+          return (
+            <div>
+              <div className="mb-4 flex flex-wrap gap-4">
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Referral Records</p>
+                  <p className="mt-0.5 text-xl font-semibold text-white">{referrals.length.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Verified</p>
+                  <p className="mt-0.5 text-xl font-semibold text-emerald-300">{verifiedCount.toLocaleString()}</p>
+                </div>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-4 py-3">
+                  <p className="text-xs text-neutral-500">Invalid</p>
+                  <p className="mt-0.5 text-xl font-semibold text-red-300">{invalidCount.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Referred User</th>
+                      <th className="px-4 py-3">Referrer</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Reward</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {referrals.length === 0 && (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No referrals yet.</td></tr>
+                    )}
+                    {referrals.map((ref) => {
+                      const referredLabel = ref.referred_pen_name || ref.referred_name || (ref.referred_username ? `@${ref.referred_username}` : ref.referred_user_id);
+                      const referrerLabel = ref.referrer_pen_name || ref.referrer_name || (ref.referrer_username ? `@${ref.referrer_username}` : (ref.referrer_user_id ?? `@${ref.referral_username_input}`));
+                      return (
+                        <tr key={ref.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
+                          <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(ref.created_at).toLocaleString()}</td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm text-neutral-100">{referredLabel}</p>
+                            {ref.referred_email && <p className="text-xs text-neutral-500">{ref.referred_email}</p>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm text-neutral-100">{referrerLabel}</p>
+                            <p className="text-xs text-neutral-500">{ref.referrer_email ?? `input: @${ref.referral_username_input}`}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            {ref.status === "verified" ? (
+                              <Badge label="Verified" color="green" />
+                            ) : ref.status === "invalid_self" ? (
+                              <Badge label="Invalid Self" color="amber" />
+                            ) : (
+                              <Badge label="Invalid Referrer" color="red" />
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-neutral-300">
+                            {ref.status === "verified"
+                              ? `${ref.referrer_reward_coins} to referrer / ${ref.referred_reward_coins} to signup`
+                              : "No coins awarded"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
+
         {tab === "appeals" && (
           <AppealsTab
             appeals={appeals}

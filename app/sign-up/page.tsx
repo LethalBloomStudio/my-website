@@ -24,6 +24,7 @@ export default function SignUpPage() {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const usernameTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [referralUsername, setReferralUsername] = useState("");
   const [dob, setDob] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,11 +75,13 @@ export default function SignUpPage() {
     const trimmedName = fullName.trim();
     const trimmedPenName = penName.trim();
     const trimmedUsername = username.trim().toLowerCase();
+    const trimmedReferralUsername = referralUsername.trim().replace(/^@+/, "").toLowerCase();
     if (!trimmedEmail) return setMsg("Enter your email.");
     if (!dob) return setMsg("Enter your date of birth.");
     if (!trimmedName) return setMsg("Enter your name.");
     if (password.length < 6) return setMsg("Password must be at least 6 characters.");
     if (trimmedUsername && !USERNAME_RE.test(trimmedUsername)) return setMsg("Username must be 3 to 20 characters: lowercase letters, numbers, and underscores only.");
+    if (trimmedReferralUsername && !USERNAME_RE.test(trimmedReferralUsername)) return setMsg("Referral username must be 3 to 20 characters: lowercase letters, numbers, and underscores only.");
     if (usernameStatus === "taken") return setMsg("That username is already taken. Please choose another.");
     if (usernameStatus === "checking") return setMsg("Still checking username availability. Please wait a moment.");
 
@@ -101,6 +104,7 @@ export default function SignUpPage() {
           age_category: age < 18 ? "youth_13_17" : "adult_18_plus",
           ...(trimmedUsername ? { username: trimmedUsername } : {}),
           ...(trimmedPenName ? { pen_name: trimmedPenName } : {}),
+          ...(trimmedReferralUsername ? { referral_username: trimmedReferralUsername } : {}),
         },
       },
     });
@@ -281,6 +285,25 @@ export default function SignUpPage() {
                 autoComplete="email"
                 required
               />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-sm text-neutral-300">Referral username <span className="text-neutral-500 text-xs">(optional)</span></span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 select-none">@</span>
+                <input
+                  className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 pl-7"
+                  type="text"
+                  placeholder="who referred you"
+                  value={referralUsername}
+                  onChange={(e) => setReferralUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                  autoComplete="off"
+                  maxLength={20}
+                />
+              </div>
+              <span className="text-xs text-neutral-500">
+                If this username is verified, they will receive 100 Bloom Coins and you will receive 50 Bloom Coins automatically.
+              </span>
             </label>
 
             <label className="block space-y-1">

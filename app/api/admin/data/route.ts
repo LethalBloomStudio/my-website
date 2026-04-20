@@ -66,7 +66,7 @@ export async function GET(req: Request) {
   }
 
   if (scope === "all" || scope === "stats") {
-    const [usersRes, msRes, reportsRes, flagsRes] = await Promise.all([
+    const [usersRes, msRes, reportsRes, flagsRes, referralsRes] = await Promise.all([
       supabase.from("accounts").select(
         "user_id, account_status, created_at, messaging_suspended_until, manuscript_suspended_until, blacklisted, manuscript_blacklisted, lifetime_suspension_count, manuscript_lifetime_suspension_count",
         { count: "exact" }
@@ -74,6 +74,7 @@ export async function GET(req: Request) {
       supabase.from("manuscripts").select("id", { count: "exact" }),
       supabase.from("content_reports").select("id", { count: "exact" }).eq("status", "pending"),
       supabase.from("manuscript_moderation_flags").select("id", { count: "exact" }).eq("status", "pending_owner_review"),
+      supabase.from("referrals").select("status, created_at"),
     ]);
     type StatUser = {
       account_status: string;
@@ -86,6 +87,7 @@ export async function GET(req: Request) {
       manuscript_lifetime_suspension_count: number | null;
     };
     const allUsers = (usersRes.data ?? []) as StatUser[];
+    const allReferrals = (referralsRes.data ?? []) as { status: string; created_at: string }[];
     const now = new Date().toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const msgSuspended = allUsers.filter(u => u.messaging_suspended_until && u.messaging_suspended_until > now).length;
@@ -109,7 +111,57 @@ export async function GET(req: Request) {
       ms_blacklisted: msBlacklisted,
       total_lifetime_suspensions: totalLifetimeSuspensions,
       flagged_content: flagsRes.count ?? 0,
+      total_referrals: allReferrals.length,
+      verified_referrals: allReferrals.filter((r) => r.status === "verified").length,
+      referrals_7d: allReferrals.filter((r) => r.status === "verified" && r.created_at >= sevenDaysAgo).length,
     };
+  }
+
+  if (scope === "all" || scope === "referrals") {
+    const { data: referralData } = await supabase
+      .from("referrals")
+      .select("id, referred_user_id, referrer_user_id, referral_username_input, status, referrer_reward_coins, referred_reward_coins, verified_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    const rows = (referralData ?? []) as {
+      id: string;
+      referred_user_id: string;
+      referrer_user_id: string | null;
+      referral_username_input: string;
+      status: string;
+      referrer_reward_coins: number;
+      referred_reward_coins: number;
+      verified_at: string | null;
+      created_at: string;
+    }[];
+
+    const userIds = [...new Set(rows.flatMap((r) => [r.referred_user_id, r.referrer_user_id].filter(Boolean) as string[]))];
+    const [{ data: accs }, { data: profiles }] = await Promise.all([
+      userIds.length ? supabase.from("accounts").select("user_id, full_name, email").in("user_id", userIds) : { data: [] },
+      userIds.length ? supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", userIds) : { data: [] },
+    ]);
+
+    const accMap: Record<string, { full_name: string | null; email: string | null }> = {};
+    ((accs ?? []) as { user_id: string; full_name: string | null; email: string | null }[]).forEach((a) => {
+      accMap[a.user_id] = { full_name: a.full_name, email: a.email };
+    });
+    const profileMap: Record<string, { username: string | null; pen_name: string | null }> = {};
+    ((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).forEach((p) => {
+      profileMap[p.user_id] = { username: p.username, pen_name: p.pen_name };
+    });
+
+    result.referrals = rows.map((r) => ({
+      ...r,
+      referred_name: accMap[r.referred_user_id]?.full_name ?? null,
+      referred_email: accMap[r.referred_user_id]?.email ?? null,
+      referred_username: profileMap[r.referred_user_id]?.username ?? null,
+      referred_pen_name: profileMap[r.referred_user_id]?.pen_name ?? null,
+      referrer_name: r.referrer_user_id ? (accMap[r.referrer_user_id]?.full_name ?? null) : null,
+      referrer_email: r.referrer_user_id ? (accMap[r.referrer_user_id]?.email ?? null) : null,
+      referrer_username: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.username ?? null) : null,
+      referrer_pen_name: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.pen_name ?? null) : null,
+    }));
   }
 
   if (scope === "all" || scope === "requests") {
