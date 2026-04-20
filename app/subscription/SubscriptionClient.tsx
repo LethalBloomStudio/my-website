@@ -7,14 +7,19 @@ type Plan = "lethal_member" | "lethal_member_annual" | "youth_lethal_member";
 export default function SubscriptionClient({
   currentStatus,
   youthLethalMode = false,
+  onActivePromo = false,
+  promotionExpiresAt = null,
 }: {
   currentStatus: string;
   youthLethalMode?: boolean;
+  onActivePromo?: boolean;
+  promotionExpiresAt?: string | null;
 }) {
   const isFree = !currentStatus || currentStatus === "free";
   const isMonthly = currentStatus === "lethal" || currentStatus === "lethal_member";
   const isAnnual = currentStatus === "lethal_annual" || currentStatus === "lethal_member_annual";
   const isLethal = isMonthly || isAnnual;
+  const isPromoOnly = onActivePromo && (isFree || (!isMonthly && !isAnnual));
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -61,14 +66,18 @@ export default function SubscriptionClient({
           <div>
             <p className="text-xs uppercase tracking-widest text-neutral-500">Current plan</p>
             <p className="mt-1 text-lg font-semibold text-neutral-100">
-              {isFree
+              {isPromoOnly
+                ? "Lethal Member - Promotional Access"
+                : isFree
                 ? "Bloom Member"
                 : isAnnual
                 ? "Lethal Member - Annual"
                 : "Lethal Member - Monthly"}
             </p>
             <p className="mt-0.5 text-sm text-neutral-400">
-              {isFree
+              {isPromoOnly
+                ? `Free promotional access · no charge${promotionExpiresAt ? ` · expires ${new Date(promotionExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}`
+                : isFree
                 ? "Free tier - limited uploads, earn coins to unlock more"
                 : isAnnual
                 ? "$100/year · billed annually · cancel anytime"
@@ -77,18 +86,20 @@ export default function SubscriptionClient({
           </div>
           <span
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-              isLethal
+              isPromoOnly
+                ? "border border-violet-700/50 bg-violet-950/30 text-violet-400"
+                : isLethal
                 ? "border border-emerald-700/50 bg-emerald-950/30 text-emerald-400"
                 : "border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.1)] text-neutral-400"
             }`}
           >
-            {isFree ? "Free" : "Active"}
+            {isPromoOnly ? "Promo" : isFree ? "Free" : "Active"}
           </span>
         </div>
       </div>
 
-      {/* Upgrade options (free users) */}
-      {isFree && (
+      {/* Upgrade options (free users without promo) */}
+      {isFree && !isPromoOnly && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
             {youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
@@ -188,8 +199,38 @@ export default function SubscriptionClient({
         </div>
       )}
 
-      {/* Active subscription management */}
-      {isLethal && (
+      {/* Promotional access info */}
+      {isPromoOnly && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
+            Promotional Access
+          </h2>
+          <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] px-5 py-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-neutral-400">Access</span>
+              <span className="text-sm text-neutral-200">Lethal Member (full access)</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-neutral-400">Billing</span>
+              <span className="text-sm text-violet-400">Free — no charge during promotion</span>
+            </div>
+            {promotionExpiresAt && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-neutral-400">Expires</span>
+                <span className="text-sm text-neutral-200">
+                  {new Date(promotionExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-neutral-500">
+            You are not being charged. When your promotional period ends, you can choose to subscribe to keep your Lethal Member benefits.
+          </p>
+        </div>
+      )}
+
+      {/* Active subscription management (paid subscribers only) */}
+      {isLethal && !isPromoOnly && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
             Manage Subscription

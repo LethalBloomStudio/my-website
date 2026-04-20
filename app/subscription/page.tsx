@@ -68,7 +68,8 @@ export default async function SubscriptionPage() {
   // Billing breakdown
   const isLethal = status === "lethal" || status === "lethal_annual" || status === "lethal_member" || status === "lethal_member_annual";
   const isAnnual = status === "lethal_annual" || status === "lethal_member_annual";
-  const baseMonthly = isLethal ? (isAnnual ? 100 : 10) : 0;
+  const isPromoOnly = onActivePromo && baseStatus === "free";
+  const baseMonthly = isLethal && !isPromoOnly ? (isAnnual ? 100 : 10) : 0;
   const unlimitedYouth = youthLinks.filter((l) => l.subscription_tier === "unlimited");
   const youthAddonMonthly = unlimitedYouth.length * 5;
 
@@ -85,7 +86,12 @@ export default async function SubscriptionPage() {
         {isYouth ? (
           !hasParentLink ? (
             /* Standalone youth (no parent link): independent $10/mo subscription */
-            <SubscriptionClient currentStatus={status} youthLethalMode />
+            <SubscriptionClient
+                currentStatus={status}
+                youthLethalMode
+                onActivePromo={onActivePromo}
+                promotionExpiresAt={account?.promotion_expires_at ?? null}
+              />
           ) : (
             /* Free and unlimited-add-on youth: subscription managed by parent */
             <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.1)] px-6 py-6 space-y-3">
@@ -116,7 +122,11 @@ export default async function SubscriptionPage() {
           )
         ) : (
           <>
-            <SubscriptionClient currentStatus={status} />
+            <SubscriptionClient
+                currentStatus={status}
+                onActivePromo={onActivePromo}
+                promotionExpiresAt={account?.promotion_expires_at ?? null}
+              />
 
             {/* Billing summary - always visible */}
             <section className="space-y-3">
@@ -128,16 +138,20 @@ export default async function SubscriptionPage() {
                   <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-[rgba(120,120,120,0.15)]">
                     <div>
                       <p className="text-sm text-neutral-200">
-                        {isLethal
+                        {isPromoOnly
+                          ? "Lethal Member - Promotional Access"
+                          : isLethal
                           ? isAnnual
                             ? "Lethal Member - Annual"
                             : "Lethal Member - Monthly"
                           : "Bloom Member"}
                       </p>
-                      <p className="text-xs text-neutral-500">{isLethal ? "Subscription" : "Base plan"}</p>
+                      <p className="text-xs text-neutral-500">
+                        {isPromoOnly ? "Promotional period" : isLethal ? "Subscription" : "Base plan"}
+                      </p>
                     </div>
-                    <span className="text-sm font-medium text-neutral-200 shrink-0">
-                      {isLethal ? (isAnnual ? "$100/yr" : "$10/mo") : "Free"}
+                    <span className={`text-sm font-medium shrink-0 ${isPromoOnly ? "text-violet-400" : "text-neutral-200"}`}>
+                      {isPromoOnly ? "Free" : isLethal ? (isAnnual ? "$100/yr" : "$10/mo") : "Free"}
                     </span>
                   </div>
 
@@ -176,8 +190,10 @@ export default async function SubscriptionPage() {
                         </span>
                       )}
                     </p>
-                    <span className="text-sm font-bold text-neutral-100 shrink-0">
-                      {isAnnual && youthAddonMonthly > 0
+                    <span className={`text-sm font-bold shrink-0 ${isPromoOnly && youthAddonMonthly === 0 ? "text-violet-400" : "text-neutral-100"}`}>
+                      {isPromoOnly && youthAddonMonthly === 0
+                        ? "Free"
+                        : isAnnual && youthAddonMonthly > 0
                         ? `$100/yr + $${youthAddonMonthly}/mo`
                         : isAnnual
                         ? "$100/yr"
