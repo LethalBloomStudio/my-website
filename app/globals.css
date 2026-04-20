@@ -1406,7 +1406,7 @@ html[data-theme="day"] textarea[class] {
 
   .navRight {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-end;
   }
 }
 
