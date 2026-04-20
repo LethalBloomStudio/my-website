@@ -45,16 +45,29 @@ export async function updateProfile(formData: FormData) {
   const publishingGoals = String(formData.get("publishing_goals") ?? "");
   const feedbackAreas = String(formData.get("feedback_areas") ?? "");
 
+  // Fetch existing profile so we never overwrite with blank if the form loaded without data
+  const { data: existing } = await supabase
+    .from("public_profiles")
+    .select("avatar_url, banner_url, bio, pen_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const existingRow = existing as { avatar_url?: string | null; banner_url?: string | null; bio?: string | null; pen_name?: string | null } | null;
+
+  const rawAvatarUrl = String(formData.get("avatar_url") ?? "").trim();
+  const rawBannerUrl = String(formData.get("banner_url") ?? "").trim();
+  const rawBio = String(formData.get("bio") ?? "");
+
   const payload = {
     user_id: user.id,
 
     // Only set these if provided so blanks don't overwrite existing values
     ...(usernameRaw ? { username: usernameRaw } : {}),
 
-    pen_name: penName,
-    bio: String(formData.get("bio") ?? ""),
-    avatar_url: String(formData.get("avatar_url") ?? "").trim(),
-    banner_url: String(formData.get("banner_url") ?? "").trim() || null,
+    pen_name: penName || existingRow?.pen_name || "",
+    bio: rawBio || existingRow?.bio || "",
+    // Never wipe avatar/banner with empty — fall back to existing DB value
+    avatar_url: rawAvatarUrl || existingRow?.avatar_url || "",
+    banner_url: rawBannerUrl || existingRow?.banner_url || null,
 
     writer_level: writerLevel,
     beta_reader_level: betaReaderLevel,
@@ -87,8 +100,6 @@ export async function updateProfile(formData: FormData) {
       social_facebook: String(formData.get("social_facebook") ?? "").trim().replace(/^@/, "") || null,
       social_x: String(formData.get("social_x") ?? "").trim().replace(/^@/, "") || null,
       social_snapchat: String(formData.get("social_snapchat") ?? "").trim().replace(/^@/, "") || null,
-      social_threads: String(formData.get("social_threads") ?? "").trim().replace(/^@/, "") || null,
-      social_lemon8: String(formData.get("social_lemon8") ?? "").trim().replace(/^@/, "") || null,
     } : {}),
   };
 

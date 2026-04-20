@@ -49,8 +49,6 @@ type ProfileData = {
   social_instagram: string | null;
   social_x: string | null;
   social_snapchat: string | null;
-  social_threads: string | null;
-  social_lemon8: string | null;
 };
 
 function formatLevel(value: string | null) {
@@ -76,7 +74,7 @@ export default async function ProfilePage() {
   const { data } = await supabase
     .from("public_profiles")
     .select(
-      "username, pen_name, avatar_url, banner_url, bio, writes_genres, writer_level, publishing_goals, feedback_areas, feedback_preference, is_public, highlighted_manuscript_id, social_tiktok, social_facebook, social_instagram, social_x, social_snapchat, social_threads, social_lemon8"
+      "username, pen_name, avatar_url, banner_url, bio, writes_genres, writer_level, publishing_goals, feedback_areas, feedback_preference, is_public, highlighted_manuscript_id, social_tiktok, social_facebook, social_instagram, social_x, social_snapchat"
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -231,20 +229,6 @@ export default async function ProfilePage() {
                     title={`Snapchat: @${p.social_snapchat}`}
                     className="social-badge social-badge--snapchat flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition hover:scale-110">
                     <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white stroke-black [stroke-width:1.1]" aria-hidden="true"><path d="M12.166.006c.127-.008.256-.006.38-.006 1.73 0 3.356.604 4.63 1.748C18.47 2.9 19.2 4.58 19.2 6.4v.803c0 .847.058 1.69.172 2.524.087.033.183.05.28.05.28 0 .567-.108.87-.217.152-.054.308-.11.467-.154a1.99 1.99 0 01.503-.066c.356 0 .695.103.957.29.308.219.478.522.478.848 0 .527-.44.993-1.309 1.386-.086.04-.197.08-.322.124-.39.137-.98.345-1.116.796-.062.208-.02.453.128.754.013.026.8 1.68 2.373 2.492.367.19.529.615.39.998-.057.161-.222.515-.676.804-.592.379-1.373.535-2.324.468-.104-.008-.21-.017-.316-.029l-.004.03c-.067.504-.137 1.026-.625 1.526-.454.469-1.114.73-2.016.8-.5.038-.893.178-1.264.31a5.9 5.9 0 01-.435.14c-.497.13-.929.196-1.32.196-.543 0-1.014-.115-1.447-.352a9.46 9.46 0 01-.773-.483c-.376-.252-.72-.482-1.08-.565a3.337 3.337 0 00-.73-.076c-.26 0-.518.026-.772.076-.36.082-.702.313-1.079.565-.247.166-.51.34-.775.484-.431.236-.9.351-1.443.351-.391 0-.824-.066-1.323-.196a5.995 5.995 0 01-.433-.14c-.37-.132-.763-.27-1.261-.308-.903-.072-1.564-.333-2.018-.802-.487-.5-.557-1.022-.624-1.526l-.004-.03a10.47 10.47 0 01-.316.029c-.95.066-1.732-.09-2.323-.469-.455-.288-.62-.643-.677-.804a.866.866 0 01.39-.998c1.575-.812 2.362-2.466 2.374-2.492.147-.301.189-.546.127-.754-.136-.45-.724-.659-1.115-.796-.124-.044-.235-.084-.32-.122C.44 11.4 0 10.934 0 10.407c0-.326.169-.63.476-.848.264-.188.604-.29.96-.29.17 0 .34.023.5.066.16.044.314.1.466.154.303.109.59.217.87.217.096 0 .192-.017.28-.05A18.55 18.55 0 014.8 7.203V6.4C4.8 4.58 5.53 2.9 6.824 1.748 8.099.604 9.721 0 11.451 0h.338c.125 0 .25.002.377.006z"/></svg>
-                  </a>
-                )}
-                {p?.social_threads && (
-                  <a href={`https://threads.net/@${p.social_threads}`} target="_blank" rel="noopener noreferrer"
-                    title={`Threads: @${p.social_threads}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-black backdrop-blur-sm transition hover:scale-110">
-                    <svg viewBox="0 0 192 192" className="h-4 w-4 fill-white" aria-hidden="true"><path d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.264-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.683 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.35-22.809-.169-40.06-7.484-51.275-21.742C35.236 139.966 29.808 120.682 29.605 96c.203-24.682 5.631-43.966 16.133-57.317C56.954 24.425 74.204 17.11 97.013 16.94c22.975.17 40.526 7.52 52.171 21.847 5.71 7.026 10.015 15.86 12.853 26.162l16.147-4.308c-3.44-12.68-8.853-23.606-16.219-32.668C147.036 9.607 125.202.195 97.07 0h-.113C68.882.195 47.292 9.642 32.788 28.08 19.882 44.485 13.224 67.315 13.001 95.932v.136c.223 28.617 6.881 51.447 19.787 67.854C47.292 182.358 68.882 191.805 96.957 192h.113c24.96-.173 42.554-6.708 57.048-21.189 18.963-18.945 18.392-42.692 12.142-57.27-4.484-10.454-13.033-18.945-24.723-24.553Z"/><path d="M96.33 120.664c-10.966.634-22.214-4.302-22.752-14.152-.388-7.249 5.154-15.348 26.208-16.572 2.288-.132 4.533-.197 6.733-.197 5.912 0 11.449.573 16.492 1.68-1.876 23.45-15.077 28.627-26.681 29.241Z"/></svg>
-                  </a>
-                )}
-                {p?.social_lemon8 && (
-                  <a href={`https://lemon8-app.com/@${p.social_lemon8}`} target="_blank" rel="noopener noreferrer"
-                    title={`Lemon8: @${p.social_lemon8}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition hover:scale-110" style={{ background: "linear-gradient(135deg,#f9e866,#f7c948,#e8833a,#d84e6f,#a83ab4)" }}>
-                    <svg viewBox="0 0 50 50" className="h-4 w-4 fill-white" aria-hidden="true"><path d="M25 3C12.85 3 3 12.85 3 25s9.85 22 22 22 22-9.85 22-22S37.15 3 25 3zm8.5 30.5h-17v-3h6.5v-11H17v-3h8.5v14h8.5v3z"/></svg>
                   </a>
                 )}
               </>

@@ -32,8 +32,6 @@ type ProfileData = {
   social_instagram: string | null;
   social_x: string | null;
   social_snapchat: string | null;
-  social_threads: string | null;
-  social_lemon8: string | null;
 };
 
 export default async function ProfileAccountPage({
@@ -71,8 +69,6 @@ export default async function ProfileAccountPage({
         "social_instagram",
         "social_x",
         "social_snapchat",
-        "social_threads",
-        "social_lemon8",
       ].join(",")
     )
     .eq("user_id", user.id)
@@ -379,43 +375,6 @@ export default async function ProfileAccountPage({
                   </div>
                 </label>
 
-                <label className="block">
-                  <div className="flex items-center gap-2 text-sm text-neutral-300">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black shrink-0" aria-hidden="true">
-                      <svg viewBox="0 0 192 192" className="h-3 w-3 fill-white"><path d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.264-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.683 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.35-22.809-.169-40.06-7.484-51.275-21.742C35.236 139.966 29.808 120.682 29.605 96c.203-24.682 5.631-43.966 16.133-57.317C56.954 24.425 74.204 17.11 97.013 16.94c22.975.17 40.526 7.52 52.171 21.847 5.71 7.026 10.015 15.86 12.853 26.162l16.147-4.308c-3.44-12.68-8.853-23.606-16.219-32.668C147.036 9.607 125.202.195 97.07 0h-.113C68.882.195 47.292 9.642 32.788 28.08 19.882 44.485 13.224 67.315 13.001 95.932v.136c.223 28.617 6.881 51.447 19.787 67.854C47.292 182.358 68.882 191.805 96.957 192h.113c24.96-.173 42.554-6.708 57.048-21.189 18.963-18.945 18.392-42.692 12.142-57.27-4.484-10.454-13.033-18.945-24.723-24.553Z"/><path d="M96.33 120.664c-10.966.634-22.214-4.302-22.752-14.152-.388-7.249 5.154-15.348 26.208-16.572 2.288-.132 4.533-.197 6.733-.197 5.912 0 11.449.573 16.492 1.68-1.876 23.45-15.077 28.627-26.681 29.241Z"/></svg>
-                    </span>
-                    <span>Threads</span>
-                    <span className="text-xs text-neutral-500">threads.net/@handle</span>
-                  </div>
-                  <div className="mt-2 flex items-center rounded-lg border border-[rgba(120,120,120,0.45)] bg-neutral-900/40 focus-within:border-[rgba(120,120,120,0.7)]">
-                    <span className="px-3 text-neutral-500 text-sm select-none">@</span>
-                    <input
-                      name="social_threads"
-                      defaultValue={profile?.social_threads ?? ""}
-                      placeholder="yourhandle"
-                      className="flex-1 bg-transparent py-3 pr-4 text-neutral-100 focus:outline-none text-sm"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <div className="flex items-center gap-2 text-sm text-neutral-300">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full shrink-0 overflow-hidden" style={{ background: "linear-gradient(135deg,#f9e866,#f7c948,#e8833a,#d84e6f,#a83ab4)" }} aria-hidden="true">
-                      <svg viewBox="0 0 24 24" className="h-3 w-3 fill-white"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 7.5h-2.25V8c0-.414.336-.75.75-.75h1.5V5.5H14.25A2.25 2.25 0 0 0 12 7.75V9.5H10.5V12H12v6.5h2.25V12h1.5l.75-2.5z"/></svg>
-                    </span>
-                    <span>Lemon8</span>
-                    <span className="text-xs text-neutral-500">lemon8-app.com/@handle</span>
-                  </div>
-                  <div className="mt-2 flex items-center rounded-lg border border-[rgba(120,120,120,0.45)] bg-neutral-900/40 focus-within:border-[rgba(120,120,120,0.7)]">
-                    <span className="px-3 text-neutral-500 text-sm select-none">@</span>
-                    <input
-                      name="social_lemon8"
-                      defaultValue={profile?.social_lemon8 ?? ""}
-                      placeholder="yourhandle"
-                      className="flex-1 bg-transparent py-3 pr-4 text-neutral-100 focus:outline-none text-sm"
-                    />
-                  </div>
-                </label>
               </section>
             )}
 
