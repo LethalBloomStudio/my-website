@@ -146,16 +146,30 @@ function Heart({ filled }: { filled: boolean }) {
 // ─── Comment row ─────────────────────────────────────────────────────────────
 
 function CommentRow({
-  comment, currentUserId, onLike, onReply, isReplying,
+  comment, currentUserId, onLike, onReply, isReplying, onSaveEdit,
 }: {
   comment: DiscussionComment;
   currentUserId: string | null;
   onLike: () => void;
   onReply: () => void;
   isReplying: boolean;
+  onSaveEdit: (newContent: string) => Promise<void>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
   const name = comment.author?.pen_name ?? comment.author?.username ?? "Member";
   const username = comment.author?.username;
+  const isOwn = comment.author_id === currentUserId;
+
+  async function handleSave() {
+    if (!draft.trim()) return;
+    setSaving(true);
+    await onSaveEdit(draft.trim());
+    setSaving(false);
+    setEditing(false);
+  }
+
   return (
     <div className="flex items-start gap-2">
       {username ? (
@@ -175,24 +189,54 @@ function CommentRow({
           )}
           <span className="text-[10px] text-neutral-400">{timeAgo(comment.created_at)}</span>
         </div>
-        <p className="mt-0.5 text-xs text-neutral-300 leading-relaxed break-words">{comment.content}</p>
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <button onClick={onLike} disabled={!currentUserId}
-            className={`flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${comment.user_liked
-              ? "border-rose-700/40 bg-rose-950/20 text-rose-400 hover:bg-rose-950/30"
-              : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white disabled:cursor-default"}`}>
-            <Heart filled={comment.user_liked} />
-            {comment.like_count > 0 && <span>{comment.like_count}</span>}
-          </button>
-          {currentUserId && (
-            <button onClick={onReply}
-              className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
-                ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
-                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
-              Reply
+        {editing ? (
+          <div className="mt-1 space-y-1">
+            <textarea
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              rows={2}
+              autoFocus
+              className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-2 py-1.5 text-xs text-neutral-200 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.55)] focus:outline-none"
+            />
+            <div className="flex gap-1.5">
+              <button onClick={() => void handleSave()} disabled={saving || !draft.trim()}
+                className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-2.5 py-0.5 text-[11px] text-white hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button onClick={() => setEditing(false)} disabled={saving}
+                className="rounded-lg border border-[rgba(120,120,120,0.25)] bg-transparent px-2.5 py-0.5 text-[11px] text-neutral-400 hover:text-neutral-200 transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-0.5 text-xs text-neutral-300 leading-relaxed break-words">{comment.content}</p>
+        )}
+        {!editing && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <button onClick={onLike} disabled={!currentUserId}
+              className={`flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${comment.user_liked
+                ? "border-rose-700/40 bg-rose-950/20 text-rose-400 hover:bg-rose-950/30"
+                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white disabled:cursor-default"}`}>
+              <Heart filled={comment.user_liked} />
+              {comment.like_count > 0 && <span>{comment.like_count}</span>}
             </button>
-          )}
-        </div>
+            {currentUserId && (
+              <button onClick={onReply}
+                className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
+                  ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
+                  : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
+                Reply
+              </button>
+            )}
+            {isOwn && (
+              <button onClick={() => { setDraft(comment.content); setEditing(true); }}
+                className="rounded-lg border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] px-2 py-0.5 text-[11px] text-neutral-400 hover:border-[rgba(120,120,120,0.45)] hover:text-white transition">
+                Edit
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -562,6 +606,20 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       ...p, user_vote: optionIndex,
       poll_votes: { ...p.poll_votes, [optionIndex]: (p.poll_votes[optionIndex] ?? 0) + 1 },
     } : p));
+  }
+
+  async function saveCommentEdit(postId: string, commentId: string, content: string) {
+    const res = await fetch("/api/community/edit-comment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment_id: commentId, content }),
+    });
+    if (res.ok) {
+      setComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] ?? []).map(c => c.id === commentId ? { ...c, content } : c),
+      }));
+    }
   }
 
   async function submitComment(postId: string) {
@@ -1011,7 +1069,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                                 <CommentRow comment={comment} currentUserId={currentUserId}
                                   onLike={() => void toggleCommentLike(post.id, comment.id)}
                                   onReply={() => setReplyingTo(replyingTo?.commentId === comment.id ? null : { postId: post.id, commentId: comment.id, authorName: commentAuthorName })}
-                                  isReplying={replyingTo?.commentId === comment.id} />
+                                  isReplying={replyingTo?.commentId === comment.id}
+                                  onSaveEdit={(content) => saveCommentEdit(post.id, comment.id, content)} />
 
                                 {/* Replies - indented with left border */}
                                 {(replies.length > 0 || replyInThisThread) && (
@@ -1022,7 +1081,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                                         <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId}
                                           onLike={() => void toggleCommentLike(post.id, reply.id)}
                                           onReply={() => setReplyingTo(replyingTo?.commentId === reply.id ? null : { postId: post.id, commentId: reply.id, authorName: replyAuthorName })}
-                                          isReplying={replyingTo?.commentId === reply.id} />
+                                          isReplying={replyingTo?.commentId === reply.id}
+                                          onSaveEdit={(content) => saveCommentEdit(post.id, reply.id, content)} />
                                       );
                                     })}
                                     {replyInThisThread && (

@@ -2188,12 +2188,20 @@ function PageInner() {
                                 <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
                                 <div className="flex gap-1 shrink-0 items-center">
                                   {f.reader_id === userId && (
-                                    <button
-                                      onClick={() => { setEditingFeedbackId(f.id); setEditFeedbackDraft(f.comment_text); }}
-                                      className="rounded-lg px-1.5 py-0.5 text-[10px] text-[rgba(210,210,210,0.7)] hover:bg-[rgba(120,120,120,0.2)] transition"
-                                    >
-                                      Edit
-                                    </button>
+                                    <>
+                                      <button
+                                        onClick={() => { setEditingFeedbackId(f.id); setEditFeedbackDraft(f.comment_text); }}
+                                        className="rounded-lg px-1.5 py-0.5 text-[10px] text-[rgba(210,210,210,0.7)] hover:bg-[rgba(120,120,120,0.2)] transition"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => void _deleteLineFeedback(f.id)}
+                                        className="rounded-lg px-1.5 py-0.5 text-[10px] text-red-400/70 hover:bg-[rgba(120,120,120,0.2)] hover:text-red-400 transition"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
                                   )}
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(null); }}
