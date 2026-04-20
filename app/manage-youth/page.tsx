@@ -103,7 +103,8 @@ useEffect(() => {
     }
 
     void init();
-  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: runs once on mount; loadLinks is a component function, not a reactive dep
+  }, [supabase]);
 
   async function loadLinks(uid: string) {
     const { data } = await supabase

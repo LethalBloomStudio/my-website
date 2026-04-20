@@ -407,7 +407,7 @@ function AdminPageInner() {
       setLoading(false);
     }
     void init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: runs once on mount; loadAll/loadAppeals are component functions, not reactive deps
   }, []);
 
   async function getToken(): Promise<string | null> {
@@ -2335,7 +2335,7 @@ function FlaggedContentTab({ adminFetch, onAudit, onMsg }: {
 
   useEffect(() => {
     void load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: runs once on mount; adminFetch prop is stable at runtime
   }, []);
 
   async function load() {

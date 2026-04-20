@@ -222,7 +222,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };
-  }, [supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [supabase, audience]);
 
   async function toggleLike(id: string) {
     if (!viewerId) return;

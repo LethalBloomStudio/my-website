@@ -394,7 +394,8 @@ const [now] = useState(() => Date.now());
       }
     }
     void init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: runs once on mount; loadSidebar/loadChat are component functions, not reactive deps
+  }, []);
 
   // Inbox watcher - updates sidebar unread badge when a message arrives from
   // someone other than the currently open conversation
@@ -418,7 +419,7 @@ const [now] = useState(() => Date.now());
     return () => {
       if (inboxChannelRef.current) void supabase.removeChannel(inboxChannelRef.current);
     };
-  }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [myId, withUser, supabase]);
 
   // When switching chats, only reload the messages - sidebar stays cached
   useEffect(() => {
@@ -437,7 +438,8 @@ const [now] = useState(() => Date.now());
       setWithUserAvatar(cached.avatarUrl);
     }
     void loadChat(withUser, excludedRef.current);
-  }, [withUser]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reload chat when conversation changes; friends is read optimistically and loadChat is a component function
+  }, [withUser]);
 
   // Realtime: new messages + typing indicator
   useEffect(() => {
@@ -479,7 +481,8 @@ const [now] = useState(() => Date.now());
       }
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
-  }, [myId, withUser, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: markAsRead is a component function; all reactive data deps are listed
+  }, [myId, withUser, supabase]);
 
   // Scroll to bottom on initial load; for subsequent updates (realtime) only
   // scroll if the user is already near the bottom so scrolling up through
@@ -537,7 +540,7 @@ const [now] = useState(() => Date.now());
     }
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => container.removeEventListener("scroll", onScroll);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: loadOlderMessages is a component function; all data it closes over is listed in deps
   }, [withUser, hasMoreMessages, loadingOlder, messages]);
 
   const peerAvatar =

@@ -111,8 +111,7 @@ export default function NewChapterPage() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscriptId]);
+  }, [manuscriptId, supabase, router]);
 
   useEffect(() => {
     if (!manuscriptId) return;

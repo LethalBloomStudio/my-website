@@ -338,8 +338,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setLoading(false);
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { void loadPosts(); }, [supabase]);
+  useEffect(() => { void loadPosts(); }, [supabase, community, currentUserId]);
 
   // Auto-expand and scroll to a deep-linked post (from notification reply link)
   useEffect(() => {
@@ -505,7 +504,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       setComments(prev => ({ ...prev, [expandedPostId]: built }));
       setLoadingComments(false);
     })();
-  }, [expandedPostId, supabase, currentUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expandedPostId, supabase, currentUserId]);
 
   // ── Actions ──
   async function togglePostLike(postId: string) {

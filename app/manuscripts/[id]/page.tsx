@@ -1023,8 +1023,7 @@ function PageInner() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscriptId, chapterId]);
+  }, [manuscriptId, chapterId, supabase]);
 
   // Measure text-marker positions so feedback cards align with their text
   useEffect(() => {
@@ -1040,7 +1039,7 @@ function PageInner() {
     }
     setMarkerTops(tops);
     setChapterHeight(section.offsetHeight);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // Recompute Range-API absolute marker positions when chapter or feedback changes
@@ -1048,7 +1047,7 @@ function PageInner() {
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
     const id = requestAnimationFrame(() => recomputeReaderMarkers(markerFeedback));
     return () => cancelAnimationFrame(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // Recompute on resize (e.g. window resize or font load)
@@ -1059,7 +1058,7 @@ function PageInner() {
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
     ro.observe(container);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // When a feedback card is selected, scroll the page to show the text marker
@@ -1091,7 +1090,7 @@ function PageInner() {
         container.scrollTop = cardEl.offsetTop - desiredRelativeTop;
       }
     }, 350);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: navH is a layout constant; markerInfos scroll is handled separately in the effect below
   }, [selectedFeedbackId]);
 
   // Auto-dismiss coin toast after 5 seconds

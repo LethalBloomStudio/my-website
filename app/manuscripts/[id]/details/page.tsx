@@ -262,8 +262,7 @@ export default function ManuscriptDetailsPage() {
     }, 2000);
 
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterEditorContent, chapterEditorTitle, chapterType, selectedChapterId]);
+  }, [chapterEditorContent, chapterEditorTitle, chapterType, selectedChapterId, supabase]);
 
   // ── Auto-save manuscript info fields ──────────────────────────────────────
   useEffect(() => {
@@ -303,8 +302,7 @@ export default function ManuscriptDetailsPage() {
       })();
     }, 1500);
     return () => { if (infoAutoSaveTimer.current) clearTimeout(infoAutoSaveTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscriptTitle, description, selectedCategories, isMatureContent, isPotentiallyTriggering, potentialTriggers, copyrightInfo, stage, requestedFeedback, manuscript]);
+  }, [manuscriptTitle, description, selectedCategories, isMatureContent, isPotentiallyTriggering, potentialTriggers, copyrightInfo, stage, requestedFeedback, manuscript, supabase]);
 
   function friendlyDbError(message: string) {
     const m = message.toLowerCase();
@@ -763,8 +761,8 @@ export default function ManuscriptDetailsPage() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscriptId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load is a component function; only re-run when manuscript changes
+  }, [manuscriptId, supabase]);
 
 
   // Apply ?chapter=&feedback= URL params after load; re-applies when params change (handles
@@ -786,7 +784,7 @@ export default function ManuscriptDetailsPage() {
         }
       }
     }
-  }, [loading, chapters, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading, chapters, searchParams]);
 
   // Parent view: always show chapters in read-only preview mode
   useEffect(() => {
@@ -1026,7 +1024,7 @@ export default function ManuscriptDetailsPage() {
       const markerDocY = wrapper.getBoundingClientRect().top + window.scrollY + info.top;
       window.scrollTo({ top: Math.max(0, markerDocY - window.innerHeight * 0.35), behavior: "smooth" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: markerInfos scroll is handled by the effect below; this only triggers on selection change
   }, [selectedFeedbackId]);
 
   // When "Show me" navigates to a chapter, markerInfos populates after render -
@@ -1043,7 +1041,6 @@ export default function ManuscriptDetailsPage() {
       }
     }
     prevMarkerInfosRef.current = markerInfos;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markerInfos, selectedFeedbackId]);
 
   // Track chapter section height
@@ -1129,7 +1126,7 @@ export default function ManuscriptDetailsPage() {
     // Wait one frame for the editor DOM to paint before measuring
     const id = requestAnimationFrame(recomputeMarkers);
     return () => cancelAnimationFrame(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeMarkers is a component function; all data deps are listed
   }, [selectedChapterId, feedbackItems]);
 
   useEffect(() => {
@@ -1138,7 +1135,7 @@ export default function ManuscriptDetailsPage() {
     const ro = new ResizeObserver(() => recomputeMarkers());
     ro.observe(wrapper);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeMarkers is a component function; selectedChapterId determines when to reattach the observer
   }, [selectedChapterId]);
 
   // Click anywhere outside the feedback aside and marker buttons to deselect

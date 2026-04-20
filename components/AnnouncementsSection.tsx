@@ -380,7 +380,7 @@ export default function AnnouncementsSection({
     setLoading(false);
   }
 
-  useEffect(() => { void loadPosts(); }, [profileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadPosts(); }, [profileUserId, supabase]);
 
   // ── Load owner's coin balance when opening challenge creator ──
   async function fetchUserCoins() {
@@ -447,7 +447,7 @@ export default function AnnouncementsSection({
       setComments(prev => ({ ...prev, [expandedPostId]: built }));
       setLoadingComments(false);
     })();
-  }, [expandedPostId, supabase, viewerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expandedPostId, supabase, viewerId]);
 
   // ── Actions ──
 

@@ -555,9 +555,8 @@ export default function NotificationsPage() {
   }
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void load();
+  }, [supabase]);
 
   // Realtime: reload when a new system_notification is inserted for this user
   useEffect(() => {
@@ -571,7 +570,7 @@ export default function NotificationsPage() {
       )
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load is a component function; subscription correctly restarts when userId/supabase change
   }, [userId, supabase]);
 
   useEffect(() => {
@@ -580,7 +579,6 @@ export default function NotificationsPage() {
       return;
     }
     setClientReadKeys(loadClientReadKeys(userId));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function markAllAsRead() {

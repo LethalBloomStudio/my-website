@@ -35,24 +35,25 @@ export default function NotesPanel({
   const [filter, setFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      const url = defaultManuscriptId
-        ? `/api/notes?manuscript_id=${encodeURIComponent(defaultManuscriptId)}`
-        : "/api/notes";
-      const res = await fetch(url);
-      const data = (await res.json()) as { notes?: Note[]; error?: string };
-      if (!res.ok) setError(data.error ?? "Failed to load notes.");
-      else setNotes(data.notes ?? []);
-    } catch {
-      setError("Could not connect. Check your connection.");
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const url = defaultManuscriptId
+          ? `/api/notes?manuscript_id=${encodeURIComponent(defaultManuscriptId)}`
+          : "/api/notes";
+        const res = await fetch(url);
+        const data = (await res.json()) as { notes?: Note[]; error?: string };
+        if (!res.ok) setError(data.error ?? "Failed to load notes.");
+        else setNotes(data.notes ?? []);
+      } catch {
+        setError("Could not connect. Check your connection.");
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }
-
-  useEffect(() => { void load(); }, [defaultManuscriptId]); // eslint-disable-line react-hooks/exhaustive-deps
+    void load();
+  }, [defaultManuscriptId]);
 
   const scheduleSave = useCallback((id: string, content: string, msId: string) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
