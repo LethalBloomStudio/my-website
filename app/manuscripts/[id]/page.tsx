@@ -1051,11 +1051,30 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
-  // Recompute Range-API absolute marker positions when chapter or feedback changes
+  // Recompute Range-API absolute marker positions when chapter or feedback changes.
+  // Wait for fonts to finish loading before measuring so Merriweather metrics are correct
+  // on first navigation (no-refresh). After fonts resolve, request one RAF then schedule
+  // a 500 ms retry to catch any layout pass that happens after the first frame.
   useEffect(() => {
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
-    const id = requestAnimationFrame(() => recomputeReaderMarkers(markerFeedback));
-    return () => cancelAnimationFrame(id);
+    let rafId: number;
+    let retryId: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    void document.fonts.ready.then(() => {
+      if (cancelled) return;
+      rafId = requestAnimationFrame(() => {
+        if (cancelled) return;
+        recomputeReaderMarkers(markerFeedback);
+        retryId = setTimeout(() => {
+          if (!cancelled) recomputeReaderMarkers(markerFeedback);
+        }, 500);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      clearTimeout(retryId);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
@@ -1071,12 +1090,22 @@ function PageInner() {
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // When a feedback card is selected, scroll the page to show the text marker
-  // then align the sidebar card beside it
+  // then align the sidebar card beside it.
+  // readerMarkerInfos is included so this re-runs once markers populate after
+  // first navigation (the URL param sets selectedFeedbackId before markers are ready).
+  // hasScrolledToSelectedRef prevents re-scrolling on subsequent recomputes.
   useEffect(() => {
     if (!selectedFeedbackId) return;
     const info = readerMarkerInfos[selectedFeedbackId];
     const container = textContainerRef.current;
+
+    // Skip if we already successfully scrolled to this exact id using Range-API marker info.
+    // This prevents re-scrolling every time readerMarkerInfos recomputes (e.g. on resize).
+    // The guard is cleared implicitly when selectedFeedbackId changes to a different value.
+    if (hasScrolledToSelectedRef.current === selectedFeedbackId && info) return;
+
     if (info && container) {
+      hasScrolledToSelectedRef.current = selectedFeedbackId;
       const markerDocY = container.getBoundingClientRect().top + window.scrollY + info.top;
       const targetScrollY = markerDocY - window.innerHeight * 0.35;
       window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
@@ -1091,16 +1120,16 @@ function PageInner() {
     // After page scroll animation, align sidebar card beside the marker
     setTimeout(() => {
       const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
-      const container = asideRef.current;
-      if (cardEl && container) {
+      const aside = asideRef.current;
+      if (cardEl && aside) {
         // Marker lands at ~35% from viewport top; aside sticky top = navH + 12
         const markerViewportY = window.innerHeight * 0.35;
         const desiredRelativeTop = Math.max(0, markerViewportY - navH - 12);
-        container.scrollTop = cardEl.offsetTop - desiredRelativeTop;
+        aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
       }
     }, 350);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: navH is a layout constant; markerInfos scroll is handled separately in the effect below
-  }, [selectedFeedbackId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: navH is a layout constant; readerMarkerInfos included to handle deferred marker population on first navigation
+  }, [selectedFeedbackId, readerMarkerInfos]);
 
   // Auto-dismiss coin toast after 5 seconds
   useEffect(() => {
@@ -1108,6 +1137,10 @@ function PageInner() {
     const t = setTimeout(() => setCoinToast(null), 5000);
     return () => clearTimeout(t);
   }, [coinToast]);
+
+  // Tracks whether we've already scrolled to the URL-param selectedFeedbackId so the
+  // readerMarkerInfos dependency below doesn't keep re-scrolling on subsequent recomputes
+  const hasScrolledToSelectedRef = useRef<string | null>(null);
 
   // Keep a stable ref to feedback IDs so the realtime effect doesn't re-run on every feedback update
   const feedbackIdsRef = useRef<string[]>([]);
