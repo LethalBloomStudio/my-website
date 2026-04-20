@@ -60,10 +60,10 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
 function feedbackBadge(value: string | null): { label: string; cls: string } | null {
   if (!value) return null;
   const v = value.toLowerCase();
-  if (v === "bloom" || v === "gentle") return { label: "Bloom", cls: "border-emerald-700/50 bg-emerald-950/30 text-emerald-400" };
-  if (v === "forge" || v === "balanced" || v === "line_edits") return { label: "Forge", cls: "border-blue-700/50 bg-blue-950/30 text-blue-400" };
-  if (v === "lethal" || v === "direct" || v === "blunt") return { label: "Lethal", cls: "border-rose-700/50 bg-rose-950/30 text-rose-400" };
-  if (v === "big_picture") return { label: "Big Picture", cls: "border-teal-700/50 bg-teal-950/30 text-teal-400" };
+  if (v === "bloom" || v === "gentle") return { label: "Bloom", cls: "border-[rgba(59,130,246,0.6)] bg-[rgba(59,130,246,0.12)] text-[#60a5fa]" };
+  if (v === "forge" || v === "balanced" || v === "line_edits") return { label: "Forge", cls: "border-[rgba(202,160,0,0.6)] bg-[rgba(202,160,0,0.12)] text-[#f5c518]" };
+  if (v === "lethal" || v === "direct" || v === "blunt") return { label: "Lethal", cls: "border-[rgba(220,38,38,0.6)] bg-[rgba(220,38,38,0.12)] text-[#f87171]" };
+  if (v === "big_picture") return { label: "Big Picture", cls: "border-[rgba(59,130,246,0.6)] bg-[rgba(59,130,246,0.12)] text-[#60a5fa]" };
   return null;
 }
 
@@ -426,7 +426,6 @@ export default function ManuscriptsPage() {
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {betaItems.map((m) => {
                     const badge = feedbackBadge(m.owner_feedback_preference);
-                    const unread = m.total_chapters - m.read_chapters;
                     return (
                       <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
 
@@ -460,15 +459,8 @@ export default function ManuscriptsPage() {
                               )}
 
                               {/* Chapter progress */}
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
-                                <span>
-                                  {m.read_chapters} / {m.total_chapters} chapter{m.total_chapters !== 1 ? "s" : ""} read
-                                </span>
-                                {unread > 0 && (
-                                  <span className="rounded-full border border-neutral-700 bg-neutral-800/60 px-2 py-0.5 text-neutral-300">
-                                    {unread} unread
-                                  </span>
-                                )}
+                              <div className="mt-2 text-xs text-neutral-400">
+                                {m.read_chapters} / {m.total_chapters} chapter{m.total_chapters !== 1 ? "s" : ""} read
                               </div>
                             </div>
                           </div>
