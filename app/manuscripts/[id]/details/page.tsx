@@ -103,7 +103,7 @@ export default function ManuscriptDetailsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const manuscriptId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const isParentView = searchParams?.get("from") === "parent";
-  const urlParamsApplied = useRef(false);
+  const urlParamsApplied = useRef<string>("");
 
   const [loading, setLoading] = useState(true);
   const [exportModal, setExportModal] = useState(false);
@@ -164,6 +164,7 @@ export default function ManuscriptDetailsPage() {
   const replyChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const chapterChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const feedbackChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [onlineReaderIds, setOnlineReaderIds] = useState<Set<string>>(new Set());
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
@@ -766,13 +767,16 @@ export default function ManuscriptDetailsPage() {
   }, [manuscriptId]);
 
 
-  // Apply ?chapter=&feedback= URL params once after initial load
+  // Apply ?chapter=&feedback= URL params after load; re-applies when params change (handles
+  // same-page navigation from notification links without a full remount)
   useEffect(() => {
-    if (loading || urlParamsApplied.current) return;
+    if (loading) return;
     const chapterParam = searchParams?.get("chapter");
     const feedbackParam = searchParams?.get("feedback");
     if (!chapterParam && !feedbackParam) return;
-    urlParamsApplied.current = true;
+    const paramKey = `${chapterParam ?? ""}|${feedbackParam ?? ""}`;
+    if (urlParamsApplied.current === paramKey) return;
+    urlParamsApplied.current = paramKey;
     if (chapterParam) {
       const exists = chapters.some((c) => c.id === chapterParam);
       if (exists) {
@@ -782,7 +786,7 @@ export default function ManuscriptDetailsPage() {
         }
       }
     }
-  }, [loading, chapters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading, chapters, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parent view: always show chapters in read-only preview mode
   useEffect(() => {
@@ -868,6 +872,40 @@ export default function ManuscriptDetailsPage() {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     };
   }, [authorUserId, manuscriptId, supabase]);
+
+  // Realtime - new feedback items from readers appear live without reload
+  useEffect(() => {
+    if (!manuscriptId || !authorUserId) return;
+    if (feedbackChannelRef.current) void supabase.removeChannel(feedbackChannelRef.current);
+    const ch = supabase
+      .channel(`line-feedback-${manuscriptId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "line_feedback", filter: `manuscript_id=eq.${manuscriptId}` },
+        async (payload: { new: Record<string, unknown> }) => {
+          const f = payload.new as LineFeedback;
+          setFeedbackItems((prev) => prev.some((p) => p.id === f.id) ? prev : [f, ...prev]);
+          setFeedbackNames((prev) => {
+            if (prev[f.reader_id]) return prev;
+            void supabase
+              .from("public_profiles")
+              .select("user_id, pen_name, username")
+              .eq("user_id", f.reader_id)
+              .maybeSingle()
+              .then((result: { data: unknown }) => {
+                if (result.data) {
+                  const p = result.data as { user_id: string; pen_name: string | null; username: string | null };
+                  setFeedbackNames((n) => ({ ...n, [p.user_id]: p.pen_name || (p.username ? `@${p.username}` : "Reader") }));
+                }
+              });
+            return prev;
+          });
+        },
+      )
+      .subscribe();
+    feedbackChannelRef.current = ch;
+    return () => { if (feedbackChannelRef.current) void supabase.removeChannel(feedbackChannelRef.current); };
+  }, [manuscriptId, authorUserId, supabase]);
 
   // Live chapter list — syncs additions from other tabs (e.g. chapters/new page)
   useEffect(() => {
