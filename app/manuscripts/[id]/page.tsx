@@ -461,13 +461,17 @@ function PageInner() {
   /**
    * Range API helpers for absolute-positioned overlay markers (same approach as details/page.tsx).
    */
-  function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
+  function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    const idx = fullText.indexOf(excerpt);
+    // Use stored offset to find the correct occurrence rather than always the first.
+    // Search from startOffset; fall back to plain indexOf for legacy items without offset.
+    const searchFrom = startOffset != null ? Math.max(0, startOffset) : 0;
+    let idx = fullText.indexOf(excerpt, searchFrom);
+    if (idx === -1) idx = fullText.indexOf(excerpt); // fallback for legacy feedback
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
@@ -491,7 +495,7 @@ function PageInner() {
     const newInfos: Record<string, ReaderMarkerInfo> = {};
     for (const f of markerFeedback) {
       if (!f.selection_excerpt) continue;
-      const range = findExcerptRange(container, f.selection_excerpt);
+      const range = findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
       if (!range) continue;
       const clientRects = Array.from(range.getClientRects());
       if (!clientRects.length) continue;
@@ -518,15 +522,20 @@ function PageInner() {
   function renderParagraphContent(
     html: string,
     markerItems: LineFeedback[],
+    paraCharOffset: number = 0,
   ): React.ReactNode {
     // Derive plain text (tag-stripped) for excerpt position searching
     const plainText = html.replace(/<[^>]+>/g, "");
 
-    // Find non-overlapping positions of each excerpt in the plain text
+    // Find non-overlapping positions of each excerpt in the plain text.
+    // Use start_offset (chapter-wide) minus paraCharOffset to find the correct
+    // occurrence within this paragraph rather than always the first occurrence.
     const found: { start: number; end: number; id: string }[] = [];
     for (const f of markerItems) {
       if (!f.selection_excerpt) continue;
-      const idx = plainText.indexOf(f.selection_excerpt);
+      const searchFrom = f.start_offset != null ? Math.max(0, f.start_offset - paraCharOffset) : 0;
+      let idx = plainText.indexOf(f.selection_excerpt, searchFrom);
+      if (idx === -1) idx = plainText.indexOf(f.selection_excerpt); // fallback
       if (idx === -1) continue;
       found.push({ start: idx, end: idx + f.selection_excerpt.length, id: f.id });
     }
@@ -1970,9 +1979,28 @@ function PageInner() {
                     <div className="relative z-[1] space-y-4">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+                        // Compute the plain-text character offset of each paragraph start
+                        // so we can assign feedback to the exact paragraph using start_offset.
+                        const paraPlainLengths = manuscriptParagraphs.map((p) => p.replace(/<[^>]+>/g, "").length);
+                        const paraCharOffsets: number[] = [];
+                        let cumCharOffset = 0;
+                        for (const len of paraPlainLengths) {
+                          paraCharOffsets.push(cumCharOffset);
+                          cumCharOffset += len;
+                        }
                         return manuscriptParagraphs.map((para, idx) => {
+                          const paraStart = paraCharOffsets[idx];
+                          const paraEnd = paraCharOffsets[idx + 1] ?? cumCharOffset;
                           const plainPara = para.replace(/<[^>]+>/g, "");
-                          const paraFeedbacks = markerFeedback.filter((f) => f.selection_excerpt && (para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt)));
+                          const paraFeedbacks = markerFeedback.filter((f) => {
+                            if (!f.selection_excerpt) return false;
+                            // Prefer start_offset for precise paragraph assignment
+                            if (f.start_offset != null) {
+                              return f.start_offset >= paraStart && f.start_offset < paraEnd;
+                            }
+                            // Fallback for legacy feedback without stored offsets
+                            return para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt);
+                          });
 
                           return (
                             <div key={idx} id={`para-${idx}`} className="relative">
@@ -1984,7 +2012,7 @@ function PageInner() {
                                 } : { textIndent: idx === 0 ? "0" : "1.5rem" }}
                               >
                                 {paraFeedbacks.length > 0
-                                  ? renderParagraphContent(para, paraFeedbacks)
+                                  ? renderParagraphContent(para, paraFeedbacks, paraStart)
                                   : <span dangerouslySetInnerHTML={{ __html: para }} />
                                 }
                               </p>

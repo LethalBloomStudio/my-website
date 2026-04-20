@@ -76,6 +76,7 @@ type LineFeedback = {
   created_at: string;
   resolved: boolean;
   author_response?: "agree" | "disagree" | null;
+  start_offset?: number | null;
 };
 type FeedbackReply = { id: string; feedback_id: string; replier_id: string; body: string; created_at: string };
 
@@ -685,7 +686,7 @@ export default function ManuscriptDetailsPage() {
     // Fetch line feedback for this manuscript
     const { data: fbData, error: fbError } = await supabase
       .from("line_feedback")
-      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response")
+      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset")
       .eq("manuscript_id", manuscriptId)
       .order("created_at", { ascending: false });
     if (fbError) {
@@ -1068,13 +1069,15 @@ export default function ManuscriptDetailsPage() {
   }, [selectedChapterId, markerInfos]);
 
   // Find the DOM Range for an excerpt inside a root element using a TreeWalker
-  function findExcerptRange(root: HTMLElement, excerpt: string): Range | null {
+  function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    const idx = fullText.indexOf(excerpt);
+    const searchFrom = startOffset != null ? Math.max(0, startOffset) : 0;
+    let idx = fullText.indexOf(excerpt, searchFrom);
+    if (idx === -1) idx = fullText.indexOf(excerpt); // fallback for legacy feedback
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
@@ -1101,7 +1104,7 @@ export default function ManuscriptDetailsPage() {
     const newInfos: Record<string, MarkerInfo> = {};
     for (const f of feedbackItems) {
       if (!f.selection_excerpt || f.resolved || !!f.author_response) continue;
-      const range = findExcerptRange(editorEl, f.selection_excerpt);
+      const range = findExcerptRange(editorEl, f.selection_excerpt, f.start_offset ?? undefined);
       if (!range) continue;
       const clientRects = Array.from(range.getClientRects());
       if (!clientRects.length) continue;
