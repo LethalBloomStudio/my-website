@@ -59,12 +59,6 @@ type Friend = {
   unreadCount: number;
 };
 
-type PendingRequest = {
-  senderId: string;
-  penName: string;
-  avatarUrl: string | null;
-  type: "friend" | "message";
-};
 
 const TRIGGER_LABELS: Record<string, string> = {
   solicitation: "Soliciting other members for paid work or external opportunities",
@@ -118,8 +112,6 @@ const [now] = useState(() => Date.now());
   const [prAppealSubmitting, setPrAppealSubmitting] = useState(false);
   const [prAppealMsg, setPrAppealMsg] = useState<string | null>(null);
   const [prAppealSubmitted, setPrAppealSubmitted] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
-  const [requestAction, setRequestAction] = useState<string | null>(null);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -182,17 +174,7 @@ const [now] = useState(() => Date.now());
   const activeTargetRef = useRef<string>("");
 
   async function loadSidebar(signedInUserId: string) {
-    const [friendReqRes, pendingReqRes, hiddenReqRes, blockedReqRes, statusRes] = await Promise.all([
-      supabase
-        .from("profile_friend_requests")
-        .select("sender_id, receiver_id, status")
-        .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
-        .eq("status", "accepted"),
-      supabase
-        .from("profile_friend_requests")
-        .select("sender_id, receiver_id, status")
-        .eq("receiver_id", signedInUserId)
-        .eq("status", "pending"),
+    const [hiddenReqRes, blockedReqRes, statusRes] = await Promise.all([
       supabase
         .from("profile_friend_requests")
         .select("sender_id, receiver_id, status")
@@ -229,31 +211,21 @@ const [now] = useState(() => Date.now());
 
     const excluded = statusJson.excludedFromMessaging ?? [];
 
-    // --- Pending requests ---
-    const pending = (pendingReqRes.data as FriendRequest[] | null) ?? [];
-    const accepted = (friendReqRes.data as FriendRequest[] | null) ?? [];
     const hiddenRows = (hiddenReqRes.data as FriendRequest[] | null) ?? [];
     const blockedRows = (blockedReqRes.data as FriendRequest[] | null) ?? [];
 
-    const friendIds = Array.from(new Set(
-      accepted.map((r) => (r.sender_id === signedInUserId ? r.receiver_id : r.sender_id))
-    ));
     const hiddenIds = Array.from(new Set(hiddenRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
     const blockedIds = Array.from(new Set(blockedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
-    const senderIds = pending.map((r) => r.sender_id);
 
     // Fetch conversation partners + supporting data in parallel
     // Uses an RPC to get distinct partners - avoids the PostgREST 1000-row cap
     // that caused old conversations to disappear.
-    const [hiddenProfilesRes, blockedProfilesRes, senderProfilesRes, partnersRes] = await Promise.all([
+    const [hiddenProfilesRes, blockedProfilesRes, partnersRes] = await Promise.all([
       hiddenIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", hiddenIds)
         : Promise.resolve({ data: [] }),
       blockedIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", blockedIds)
-        : Promise.resolve({ data: [] }),
-      senderIds.length > 0
-        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", senderIds)
         : Promise.resolve({ data: [] }),
       supabase.rpc("get_conversation_partners", { p_user_id: signedInUserId }),
     ]);
@@ -290,11 +262,6 @@ const [now] = useState(() => Date.now());
     mapped.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     setFriends(mapped);
 
-    const profileMap = new Map(((senderProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => [p.user_id, p]));
-    setPendingRequests(pending.map((r) => {
-      const p = profileMap.get(r.sender_id);
-      return { senderId: r.sender_id, penName: p?.pen_name || (p?.username ? `@${p.username}` : "Unknown"), avatarUrl: p?.avatar_url ?? null, type: "friend" as const };
-    }));
 
     setHiddenFriends(((hiddenProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
       userId: p.user_id, penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
@@ -566,30 +533,6 @@ const [now] = useState(() => Date.now());
       </div>
     );
 
-  async function acceptRequest(senderId: string) {
-    setRequestAction(senderId);
-    const { error } = await supabase
-      .from("profile_friend_requests")
-      .update({ status: "accepted" })
-      .eq("sender_id", senderId)
-      .eq("receiver_id", myId!);
-    setRequestAction(null);
-    if (error) return setMsg(error.message);
-    await loadSidebar(myId!);
-  }
-
-  async function denyRequest(senderId: string) {
-    setRequestAction(senderId);
-    const { error } = await supabase
-      .from("profile_friend_requests")
-      .update({ status: "denied" })
-      .eq("sender_id", senderId)
-      .eq("receiver_id", myId!);
-    setRequestAction(null);
-    if (error) return setMsg(error.message);
-    await loadSidebar(myId!);
-  }
-
   async function send() {
     if (sendingRef.current) return;
     sendingRef.current = true;
@@ -815,37 +758,6 @@ const [now] = useState(() => Date.now());
         <div className="mt-6 grid items-start gap-4 lg:grid-cols-[290px_minmax(0,1fr)_280px]">
           {/* ── Sidebar ── */}
           <aside className="space-y-4">
-            {/* Pending requests */}
-            {pendingRequests.length > 0 && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                <p className="text-sm font-medium text-amber-300">
-                  Requests <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs">{pendingRequests.length}</span>
-                </p>
-                <div className="mt-3 space-y-3">
-                  {pendingRequests.map((req) => (
-                    <div key={req.senderId} className="flex items-center gap-2">
-                      <Avatar name={req.penName} url={req.avatarUrl} />
-                      <span className="flex-1 truncate text-sm text-neutral-200">{req.penName}</span>
-                      <button
-                        onClick={() => void acceptRequest(req.senderId)}
-                        disabled={requestAction === req.senderId}
-                        className="h-7 rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.18)] px-2 text-xs text-white hover:border-[rgba(120,120,120,0.9)] disabled:opacity-50"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => void denyRequest(req.senderId)}
-                        disabled={requestAction === req.senderId}
-                        className="h-7 rounded-lg border border-neutral-700 bg-neutral-900/40 px-2 text-xs text-neutral-300 hover:border-neutral-500/50 hover:text-neutral-300 disabled:opacity-50"
-                      >
-                        Deny
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Conversations list */}
             <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <p className="text-sm font-medium text-neutral-100">Conversations</p>

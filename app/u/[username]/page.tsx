@@ -390,7 +390,7 @@ export default async function PublicProfilePage(props: {
               )}
             </div>
           )}
-          {/* Follow/friend buttons — bottom-right */}
+          {/* Follow/friend/message buttons — bottom-right */}
           {!profileOwnerIsYouth && viewerId && !isOwner && (
             <div className="absolute bottom-3 right-3 z-20 flex gap-2">
               <FollowButton
@@ -407,6 +407,14 @@ export default async function PublicProfilePage(props: {
                 ownerAgeCategory={accRowTyped?.age_category ?? null}
                 viewerAgeCategory={viewerAgeCategory}
               />
+              {viewerAgeCategory !== "youth_13_17" && (
+                <Link
+                  href={`/messages?with=${encodeURIComponent(p.user_id)}`}
+                  className="inline-flex h-9 items-center rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.18)] px-4 text-sm text-white hover:border-[rgba(120,120,120,0.9)] transition"
+                >
+                  Message
+                </Link>
+              )}
             </div>
           )}
 
