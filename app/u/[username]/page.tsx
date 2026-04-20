@@ -331,11 +331,9 @@ export default async function PublicProfilePage(props: {
             />
           )}
 
-          {/* Banner action bar — social icons left, follow/friend buttons right */}
+          {/* Social icons — bottom-left */}
           {!profileOwnerIsYouth && (
-            <div className="absolute bottom-3 left-3 right-3 z-20 flex items-end justify-between gap-2">
-              {/* Left: FriendsPanel + social icons */}
-              <div className="flex flex-wrap gap-2">
+            <div className="absolute bottom-3 left-3 z-20 flex flex-wrap gap-2">
               <FriendsPanel friends={friends} profileUserId={p.user_id} viewerUserId={viewerId} />
               {p.social_tiktok && (
                 <a href={`https://tiktok.com/@${p.social_tiktok}`} target="_blank" rel="noopener noreferrer"
@@ -390,26 +388,25 @@ export default async function PublicProfilePage(props: {
                   <svg viewBox="0 0 50 50" className="h-4 w-4 fill-white" aria-hidden="true"><path d="M25 3C12.85 3 3 12.85 3 25s9.85 22 22 22 22-9.85 22-22S37.15 3 25 3zm8.5 30.5h-17v-3h6.5v-11H17v-3h8.5v14h8.5v3z"/></svg>
                 </a>
               )}
-              </div>
-              {/* Right: follow/friend buttons */}
-              {viewerId && !isOwner && (
-                <div className="flex shrink-0 gap-2">
-                  <FollowButton
-                    viewerId={viewerId}
-                    profileUserId={p.user_id}
-                    initialFollowing={viewerFollows}
-                  />
-                  <FriendButton
-                    viewerId={viewerId}
-                    profileUserId={p.user_id}
-                    initialStatus={friendStatus}
-                    isAdminProfile={isAdminProfile}
-                    isParentProfile={isParentProfile}
-                    ownerAgeCategory={accRowTyped?.age_category ?? null}
-                    viewerAgeCategory={viewerAgeCategory}
-                  />
-                </div>
-              )}
+            </div>
+          )}
+          {/* Follow/friend buttons — bottom-right */}
+          {!profileOwnerIsYouth && viewerId && !isOwner && (
+            <div className="absolute bottom-3 right-3 z-20 flex gap-2">
+              <FollowButton
+                viewerId={viewerId}
+                profileUserId={p.user_id}
+                initialFollowing={viewerFollows}
+              />
+              <FriendButton
+                viewerId={viewerId}
+                profileUserId={p.user_id}
+                initialStatus={friendStatus}
+                isAdminProfile={isAdminProfile}
+                isParentProfile={isParentProfile}
+                ownerAgeCategory={accRowTyped?.age_category ?? null}
+                viewerAgeCategory={viewerAgeCategory}
+              />
             </div>
           )}
 
