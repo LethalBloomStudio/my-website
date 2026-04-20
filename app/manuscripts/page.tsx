@@ -33,6 +33,26 @@ type BetaManuscript = {
   new_chapters: number;
 };
 
+const betaProjectOpenedKey = (manuscriptId: string) => `lbs-beta-project-opened-${manuscriptId}`;
+
+function getBetaProjectOpenedAt(manuscriptId: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(betaProjectOpenedKey(manuscriptId));
+  } catch {
+    return null;
+  }
+}
+
+function markBetaProjectOpened(manuscriptId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(betaProjectOpenedKey(manuscriptId), new Date().toISOString());
+  } catch {
+    // Ignore localStorage failures and keep the banner behavior non-blocking.
+  }
+}
+
 type AppealStatus = {
   id: string;
   status: string;
@@ -88,6 +108,11 @@ export default function ManuscriptsPage() {
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
   const now = Date.now(); // eslint-disable-line react-hooks/purity
+
+  function handleBetaProjectOpen(manuscriptId: string) {
+    markBetaProjectOpened(manuscriptId);
+    setBetaItems((prev) => prev.map((m) => (m.id === manuscriptId ? { ...m, new_chapters: 0 } : m)));
+  }
 
   // Keep a ref so realtime handlers can access current betaItems without re-subscribing
   const betaItemsRef = useRef<BetaManuscript[]>([]);
@@ -217,7 +242,9 @@ export default function ManuscriptsPage() {
               const msCompletions = completionsByMs.get(r.id);
               const grantDate = grantDateMap.get(r.id) ?? new Date(0).toISOString();
               const lastReadDate = msCompletions?.latestAt ?? grantDate;
-              const newChapters = msChapters.filter((ch) => ch.created_at > lastReadDate).length;
+              const openedAt = getBetaProjectOpenedAt(r.id);
+              const seenAt = openedAt && openedAt > lastReadDate ? openedAt : lastReadDate;
+              const newChapters = msChapters.filter((ch) => ch.created_at > seenAt).length;
               return {
                 id: r.id,
                 title: r.title,
@@ -431,17 +458,17 @@ export default function ManuscriptsPage() {
 
                         {/* New chapters alert */}
                         {m.new_chapters > 0 && (
-                          <div className="mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5">
-                            <svg className="h-3.5 w-3.5 shrink-0 text-violet-400" viewBox="0 0 14 14" fill="currentColor">
+                          <div className="beta-new-chapters-banner mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5 text-violet-200 shadow-sm shadow-violet-950/20">
+                            <svg className="beta-new-chapters-banner__icon h-3.5 w-3.5 shrink-0 text-violet-400" viewBox="0 0 14 14" fill="currentColor">
                               <path d="M7 1l1.5 3.5L12 5.5l-2.5 2.5.6 3.5L7 9.8l-3.1 1.7.6-3.5L2 5.5l3.5-.5z" />
                             </svg>
-                            <span className="text-xs font-medium text-violet-300">
+                            <span className="text-xs font-semibold">
                               {m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added
                             </span>
                           </div>
                         )}
 
-                        <Link href={`/manuscripts/${m.id}`} className="group block w-full text-left">
+                        <Link href={`/manuscripts/${m.id}`} onClick={() => handleBetaProjectOpen(m.id)} className="group block w-full text-left">
                           <div className="flex gap-3">
                             <CoverThumb url={m.cover_url} title={m.title} />
                             <div className="min-w-0 flex-1">
@@ -467,7 +494,7 @@ export default function ManuscriptsPage() {
                         </Link>
 
                         <div className="mt-3 flex flex-wrap items-center gap-4">
-                          <Link href={`/manuscripts/${m.id}`} className="text-xs text-[rgba(210,210,210,1)] hover:underline">
+                          <Link href={`/manuscripts/${m.id}`} onClick={() => handleBetaProjectOpen(m.id)} className="text-xs text-[rgba(210,210,210,1)] hover:underline">
                             Open Reader View
                           </Link>
                           {(m.owner_pen_name || m.owner_username) && (
