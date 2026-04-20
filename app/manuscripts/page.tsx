@@ -451,7 +451,7 @@ export default function ManuscriptsPage() {
                               {/* Per-manuscript requested feedback level */}
                               {badge && (
                                 <div className="mt-2 flex items-center gap-1.5">
-                                  <span className="text-[11px] text-neutral-500">Author requests:</span>
+                                  <span className="text-[11px] text-neutral-500">Feedback Author Requests:</span>
                                   <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${badge.cls}`}>
                                     {badge.label}
                                   </span>
