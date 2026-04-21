@@ -49,7 +49,13 @@ export default function MobileNav() {
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
-        supabase.from("system_notifications").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("is_read", false),
+        supabase
+          .from("system_notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", uid)
+          .eq("is_read", false)
+          .neq("category", "messages")
+          .not("title", "like", "New message from%"),
         manuscriptIds.length > 0
           ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds)
           : Promise.resolve({ data: [] as Array<{ id: string }> }),
