@@ -303,7 +303,7 @@ select:focus-visible {
   }
 
   .navRight {
-    margin-left: auto;
+    margin-left: auto !important;
   }
 }
 
