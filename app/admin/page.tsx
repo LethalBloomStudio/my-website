@@ -396,6 +396,7 @@ function AdminPageInner() {
 
   // UI state
   const [msg, setMsg] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [userFilter, setUserFilter] = useState<"all" | "admin" | "youth" | "adult" | "banned">("all");
   const [contentSearch, setContentSearch] = useState("");
@@ -455,6 +456,7 @@ function AdminPageInner() {
 
   function handleTabSelect(nextTab: Tab) {
     setTab(nextTab);
+    setNavOpen(false);
     if (nextTab === "transactions" && transactions.length === 0) void loadTransactions();
     if (nextTab === "referrals" && referrals.length === 0) void loadReferrals();
     if (nextTab === "appeals") void loadAppeals();
@@ -956,10 +958,64 @@ function AdminPageInner() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
+      {navOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            aria-label="Close admin navigation"
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setNavOpen(false)}
+          />
+          <aside className="absolute left-0 top-0 h-full w-[min(86vw,22rem)] border-r border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.98)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.38)] backdrop-blur">
+            <div className="mb-3 flex items-start justify-between gap-3 px-1">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Navigation</p>
+                <p className="mt-1 text-[11px] text-neutral-400">Admin sections</p>
+              </div>
+              <button
+                onClick={() => setNavOpen(false)}
+                className="rounded-lg border border-[rgba(120,120,120,0.28)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1.5 text-xs text-neutral-300 transition hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex max-h-[calc(100vh-6rem)] flex-col gap-1 overflow-y-auto pr-1">
+              {TABS.map((t) => (
+                <button
+                  key={`mobile-${t.id}`}
+                  onClick={() => handleTabSelect(t.id)}
+                  className={`relative flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
+                >
+                  <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
+                    {TAB_ICONS[t.id]}
+                  </span>
+                  <span className="pr-8">{t.label}</span>
+                  {t.badge ? (
+                    <span className="absolute right-3 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
+                      {t.badge}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </aside>
+        </div>
+      ) : null}
+
       <div className="mx-auto w-full max-w-[1700px] px-4 py-10 sm:px-6">
 
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setNavOpen(true)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-200 transition hover:text-white lg:hidden"
+            aria-label="Open admin navigation"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
           <span className="rounded-lg bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">Admin</span>
           <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
         </div>
@@ -972,7 +1028,7 @@ function AdminPageInner() {
         )}
 
         <div className="flex items-start gap-4 lg:gap-6">
-          <aside className="sticky top-6 shrink-0 w-56 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2">
+          <aside className="sticky top-6 hidden shrink-0 w-56 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2 lg:block">
             <div className="mb-3 px-2 pt-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Navigation</p>
               <p className="mt-1 text-[11px] text-neutral-400">Admin sections</p>
