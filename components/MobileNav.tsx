@@ -34,6 +34,17 @@ export default function MobileNav() {
       const { data: manuscripts } = await supabase.from("manuscripts").select("id").eq("owner_id", uid);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
+      let dbReadKeys: string[] = [];
+      try {
+        const rkRes = await fetch("/api/notifications/read-keys");
+        if (rkRes.ok) {
+          const rkData = (await rkRes.json()) as { keys: string[] };
+          dbReadKeys = rkData.keys ?? [];
+        }
+      } catch {
+        dbReadKeys = [];
+      }
+
       const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
@@ -49,7 +60,8 @@ export default function MobileNav() {
       ]);
       if (cancelled) return;
 
-      const readKeySet = getReadKeySet(uid);
+      const localReadKeys = Array.from(getReadKeySet(uid));
+      const readKeySet = new Set([...dbReadKeys, ...localReadKeys]);
       const ownerFeedbackIds = ((ownerFeedback.data as Array<{ id: string }> | null) ?? []).map((f) => f.id);
       const accessIds = ((accessRequests.data as Array<{ id: string }> | null) ?? []).map((r) => r.id);
       const localKeys = [
