@@ -183,7 +183,11 @@ export default function UploadCarousel({ audience = "adult" }: { audience?: "adu
                       className="object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full bg-[rgba(120,120,120,0.1)]" />
+                    <div className="flex h-full w-full items-center justify-center bg-[rgba(120,120,120,0.1)] px-2 text-center">
+                      <span className="line-clamp-5 text-[10px] font-semibold leading-tight text-neutral-200">
+                        {item.title}
+                      </span>
+                    </div>
                   )}
                 </div>
               </Link>

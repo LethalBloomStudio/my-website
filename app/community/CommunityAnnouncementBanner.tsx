@@ -79,37 +79,37 @@ export default function CommunityAnnouncementBanner({
       ) : null}
 
       {isAdmin ? (
-        <div className="rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.92)] p-4">
-          <div className="mb-3">
+        <div className="rounded-xl border border-[rgba(120,120,120,0.24)] bg-[rgba(18,18,18,0.92)] px-3 py-2.5">
+          <div className="mb-2">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Admin Community Announcement</p>
-            <p className="mt-1 text-xs text-neutral-400">
+            <p className="mt-0.5 text-[11px] text-neutral-400">
               This banner appears under Recent Uploads and above the discussion board/community feed for everyone who can view this page.
             </p>
           </div>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="Write the community announcement text here..."
-            className="w-full resize-none rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] px-3 py-2.5 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
+            className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             <button
               onClick={() => void saveAnnouncement(true)}
               disabled={saving || !draft.trim()}
-              className="rounded-lg border border-violet-700/40 bg-violet-950/30 px-4 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-900/40 disabled:opacity-40"
+              className="rounded-lg border border-violet-700/40 bg-violet-950/30 px-3 py-1.5 text-xs font-medium text-violet-200 transition hover:bg-violet-900/40 disabled:opacity-40"
             >
               {saving ? "Saving..." : "Publish Banner"}
             </button>
             <button
               onClick={() => void saveAnnouncement(false)}
               disabled={saving || (!isActive && !message.trim())}
-              className="rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] px-4 py-2 text-sm text-neutral-300 transition hover:text-white disabled:opacity-40"
+              className="rounded-lg border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 transition hover:text-white disabled:opacity-40"
             >
               Hide Banner
             </button>
           </div>
-          {msg ? <p className="mt-3 text-xs text-neutral-400">{msg}</p> : null}
+          {msg ? <p className="mt-2 text-[11px] text-neutral-400">{msg}</p> : null}
         </div>
       ) : null}
 

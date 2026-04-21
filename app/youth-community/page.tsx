@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import UploadCarousel from "../community/UploadCarousel";
 import CommunityFeed from "../community/CommunityFeed";
 import DiscussionBoard from "../community/DiscussionBoard";
+import CommunityAnnouncementBanner from "../community/CommunityAnnouncementBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,14 @@ export default async function YouthCommunityPage() {
   const account = data as { age_category: string | null; is_admin?: boolean } | null;
   const isYouth = account?.age_category === "youth_13_17";
   const isAdmin = !!account?.is_admin;
+
+  const { data: announcementData } = await supabase
+    .from("community_announcements")
+    .select("message, is_active")
+    .eq("audience", "youth")
+    .maybeSingle();
+
+  const communityAnnouncement = announcementData as { message: string; is_active: boolean } | null;
 
   if (!isYouth && !isAdmin) {
     return (
@@ -43,7 +52,7 @@ export default async function YouthCommunityPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
+      <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Youth Community</h1>
           <p className="mt-2 text-sm text-neutral-400">Connect with fellow young authors and readers.</p>
@@ -53,6 +62,15 @@ export default async function YouthCommunityPage() {
         <div className="space-y-2">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Recent Uploads</h2>
           <UploadCarousel audience="youth" />
+        </div>
+
+        <div className="-mt-1 -mb-1">
+          <CommunityAnnouncementBanner
+            initialMessage={communityAnnouncement?.message ?? null}
+            initialActive={communityAnnouncement?.is_active ?? false}
+            isAdmin={isAdmin}
+            audience="youth"
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
