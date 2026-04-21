@@ -128,7 +128,7 @@ export async function GET(req: Request) {
   if (scope === "all" || scope === "referrals") {
     const { data: referralData } = await supabase
       .from("referrals")
-      .select("id, referred_user_id, referrer_user_id, referral_username_input, status, referrer_reward_coins, referred_reward_coins, verified_at, created_at")
+      .select("id, referred_user_id, referrer_user_id, referral_username_input, status, referrer_reward_coins, referred_reward_coins, verified_at, created_at, referred_email_snapshot, referred_name_snapshot, referred_username_snapshot, referred_pen_name_snapshot, referrer_email_snapshot, referrer_name_snapshot, referrer_username_snapshot, referrer_pen_name_snapshot")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -142,6 +142,14 @@ export async function GET(req: Request) {
       referred_reward_coins: number;
       verified_at: string | null;
       created_at: string;
+      referred_email_snapshot: string | null;
+      referred_name_snapshot: string | null;
+      referred_username_snapshot: string | null;
+      referred_pen_name_snapshot: string | null;
+      referrer_email_snapshot: string | null;
+      referrer_name_snapshot: string | null;
+      referrer_username_snapshot: string | null;
+      referrer_pen_name_snapshot: string | null;
     }[];
 
     const userIds = [...new Set(rows.flatMap((r) => [r.referred_user_id, r.referrer_user_id].filter(Boolean) as string[]))];
@@ -161,14 +169,14 @@ export async function GET(req: Request) {
 
     result.referrals = rows.map((r) => ({
       ...r,
-      referred_name: accMap[r.referred_user_id]?.full_name ?? null,
-      referred_email: accMap[r.referred_user_id]?.email ?? null,
-      referred_username: profileMap[r.referred_user_id]?.username ?? null,
-      referred_pen_name: profileMap[r.referred_user_id]?.pen_name ?? null,
-      referrer_name: r.referrer_user_id ? (accMap[r.referrer_user_id]?.full_name ?? null) : null,
-      referrer_email: r.referrer_user_id ? (accMap[r.referrer_user_id]?.email ?? null) : null,
-      referrer_username: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.username ?? null) : null,
-      referrer_pen_name: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.pen_name ?? null) : null,
+      referred_name: accMap[r.referred_user_id]?.full_name ?? r.referred_name_snapshot ?? null,
+      referred_email: accMap[r.referred_user_id]?.email ?? r.referred_email_snapshot ?? null,
+      referred_username: profileMap[r.referred_user_id]?.username ?? r.referred_username_snapshot ?? null,
+      referred_pen_name: profileMap[r.referred_user_id]?.pen_name ?? r.referred_pen_name_snapshot ?? null,
+      referrer_name: r.referrer_user_id ? (accMap[r.referrer_user_id]?.full_name ?? r.referrer_name_snapshot ?? null) : (r.referrer_name_snapshot ?? null),
+      referrer_email: r.referrer_user_id ? (accMap[r.referrer_user_id]?.email ?? r.referrer_email_snapshot ?? null) : (r.referrer_email_snapshot ?? null),
+      referrer_username: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.username ?? r.referrer_username_snapshot ?? null) : (r.referrer_username_snapshot ?? null),
+      referrer_pen_name: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.pen_name ?? r.referrer_pen_name_snapshot ?? null) : (r.referrer_pen_name_snapshot ?? null),
     }));
   }
 
