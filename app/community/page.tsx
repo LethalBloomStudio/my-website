@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import UploadCarousel from "./UploadCarousel";
 import CommunityFeed from "./CommunityFeed";
 import DiscussionBoard from "./DiscussionBoard";
+import CommunityAnnouncementBanner from "./CommunityAnnouncementBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,14 @@ export default async function CommunityPage() {
   const account = data as { age_category: string | null; is_admin?: boolean } | null;
   const isAdult = account?.age_category === "adult_18_plus";
   const isAdmin = !!account?.is_admin;
+
+  const { data: announcementData } = await supabase
+    .from("community_announcements")
+    .select("message, is_active")
+    .eq("audience", "adult")
+    .maybeSingle();
+
+  const communityAnnouncement = announcementData as { message: string; is_active: boolean } | null;
 
   if (!isAdult && !isAdmin) {
     return (
@@ -54,6 +63,13 @@ export default async function CommunityPage() {
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Recent Uploads</h2>
           <UploadCarousel audience="adult" />
         </div>
+
+        <CommunityAnnouncementBanner
+          initialMessage={communityAnnouncement?.message ?? null}
+          initialActive={communityAnnouncement?.is_active ?? false}
+          isAdmin={isAdmin}
+          audience="adult"
+        />
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
 
