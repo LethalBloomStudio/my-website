@@ -928,7 +928,7 @@ const [now] = useState(() => Date.now());
                   {showHidden && (
                     <div className="mt-2 space-y-2">
                       {hiddenFriends.map((f) => (
-                        <div key={f.userId} className="flex items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/20 px-3 py-2 text-sm">
+                        <div key={f.userId} className="flex items-center gap-1 rounded-xl border border-neutral-800 bg-neutral-900/20 px-3 py-2 text-sm">
                           <button
                             onClick={() => router.push(`/messages?with=${encodeURIComponent(f.userId)}`)}
                             className="flex flex-1 min-w-0 items-center gap-2 rounded-lg text-left opacity-70 hover:opacity-100 transition"

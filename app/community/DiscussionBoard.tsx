@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -323,6 +323,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   const [editingPost, setEditingPost] = useState<{ id: string; title: string; content: string } | null>(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const deepLinkedPostRef = useRef<string | null>(null);
+  const loadingCommentsPostRef = useRef<string | null>(null);
 
   // Live countdown ticker (updates every second)
   const [now, setNow] = useState(() => Date.now());
@@ -340,7 +342,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   }, [currentUserId]);
 
   // ── Load posts ──
-  async function loadPosts() {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     const { data: postRows } = await supabase
       .from("discussion_posts")
@@ -398,17 +400,27 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
     setPosts(sortPosts(built));
     setLoading(false);
-  }
+  }, [supabase, community, currentUserId]);
 
-  useEffect(() => { void loadPosts(); }, [supabase, community, currentUserId]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void loadPosts();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPosts]);
 
   // Auto-expand and scroll to a deep-linked post (from notification reply link)
   useEffect(() => {
     if (!deepLinkPostId || loading) return;
     const exists = posts.some(p => p.id === deepLinkPostId);
     if (!exists) return;
-    setExpandedPostId(deepLinkPostId);
-    setTimeout(() => {
+    if (deepLinkedPostRef.current === deepLinkPostId) return;
+    deepLinkedPostRef.current = deepLinkPostId;
+    window.setTimeout(() => {
+      setExpandedPostId(deepLinkPostId);
       const el = document.getElementById(`discussion-post-${deepLinkPostId}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 150);
@@ -536,51 +548,60 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   }, [supabase, currentUserId]);
 
   // ── Load comments when post expands ──
-  useEffect(() => {
-    if (!expandedPostId || comments[expandedPostId]) return;
+  const loadCommentsForPost = useCallback(async (postId: string) => {
+    loadingCommentsPostRef.current = postId;
     setLoadingComments(true);
-    (async () => {
-      const { data: commentRows } = await supabase
-        .from("discussion_comments")
-        .select("id, post_id, author_id, content, parent_id, reply_to_id, reply_to_author_id, created_at")
-        .eq("post_id", expandedPostId)
-        .order("created_at", { ascending: true });
+    const { data: commentRows } = await supabase
+      .from("discussion_comments")
+      .select("id, post_id, author_id, content, parent_id, reply_to_id, reply_to_author_id, created_at")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
 
-      if (!commentRows || commentRows.length === 0) {
-        setComments(prev => ({ ...prev, [expandedPostId]: [] }));
-        setLoadingComments(false);
-        return;
-      }
+    if (!commentRows || commentRows.length === 0) {
+      setComments(prev => ({ ...prev, [postId]: [] }));
+      if (loadingCommentsPostRef.current === postId) setLoadingComments(false);
+      return;
+    }
 
-      const rows = commentRows as { id: string; post_id: string; author_id: string; content: string; parent_id: string | null; reply_to_id: string | null; reply_to_author_id: string | null; created_at: string }[];
-      const authorIds = [...new Set([
-        ...rows.map(r => r.author_id),
-        ...rows.map(r => r.reply_to_author_id).filter(Boolean) as string[],
-      ])];
+    const rows = commentRows as { id: string; post_id: string; author_id: string; content: string; parent_id: string | null; reply_to_id: string | null; reply_to_author_id: string | null; created_at: string }[];
+    const authorIds = [...new Set([
+      ...rows.map(r => r.author_id),
+      ...rows.map(r => r.reply_to_author_id).filter(Boolean) as string[],
+    ])];
 
-      const [{ data: likesData }, { data: profileData }] = await Promise.all([
-        supabase.from("discussion_comment_likes").select("comment_id, user_id").in("comment_id", rows.map(r => r.id)),
-        supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", authorIds),
-      ]);
+    const [{ data: likesData }, { data: profileData }] = await Promise.all([
+      supabase.from("discussion_comment_likes").select("comment_id, user_id").in("comment_id", rows.map(r => r.id)),
+      supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", authorIds),
+    ]);
 
-      const likes = (likesData as { comment_id: string; user_id: string }[] | null) ?? [];
-      const profileMap = new Map(((profileData as AuthorInfo[] | null) ?? []).map(p => [p.user_id, p]));
+    const likes = (likesData as { comment_id: string; user_id: string }[] | null) ?? [];
+    const profileMap = new Map(((profileData as AuthorInfo[] | null) ?? []).map(p => [p.user_id, p]));
 
-      const built: DiscussionComment[] = rows.map(r => {
-        const replyAuthor = r.reply_to_author_id ? profileMap.get(r.reply_to_author_id) : null;
-        return {
-          ...r,
-          like_count: likes.filter(l => l.comment_id === r.id).length,
-          user_liked: currentUserId ? likes.some(l => l.comment_id === r.id && l.user_id === currentUserId) : false,
-          author: profileMap.get(r.author_id) ?? null,
-          reply_to_name: replyAuthor ? (replyAuthor.pen_name ?? replyAuthor.username) : null,
-        };
-      });
+    const built: DiscussionComment[] = rows.map(r => {
+      const replyAuthor = r.reply_to_author_id ? profileMap.get(r.reply_to_author_id) : null;
+      return {
+        ...r,
+        like_count: likes.filter(l => l.comment_id === r.id).length,
+        user_liked: currentUserId ? likes.some(l => l.comment_id === r.id && l.user_id === currentUserId) : false,
+        author: profileMap.get(r.author_id) ?? null,
+        reply_to_name: replyAuthor ? (replyAuthor.pen_name ?? replyAuthor.username) : null,
+      };
+    });
 
-      setComments(prev => ({ ...prev, [expandedPostId]: built }));
-      setLoadingComments(false);
-    })();
-  }, [expandedPostId, supabase, currentUserId]);
+    setComments(prev => ({ ...prev, [postId]: built }));
+    if (loadingCommentsPostRef.current === postId) setLoadingComments(false);
+  }, [supabase, currentUserId]);
+
+  useEffect(() => {
+    if (!expandedPostId || comments[expandedPostId] || loadingCommentsPostRef.current === expandedPostId) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void loadCommentsForPost(expandedPostId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedPostId, comments, loadCommentsForPost]);
 
   // ── Actions ──
   async function togglePostLike(postId: string) {
@@ -990,7 +1011,9 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                     </div>
 
                     {post.content && (
-                      <p className="mt-3 text-sm text-neutral-300 leading-relaxed">{post.content}</p>
+                      <div className="mt-3 whitespace-pre-wrap break-words text-sm text-neutral-300 leading-relaxed">
+                        {post.content}
+                      </div>
                     )}
 
                     {/* Giveaway */}

@@ -66,9 +66,9 @@ export default function CommunityAnnouncementBanner({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {showBanner ? (
-        <div className="overflow-hidden rounded-xl border border-violet-700/40 bg-violet-950/40 px-3 py-1.5 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-xl border border-violet-700/40 bg-violet-950/40 px-3 py-1 backdrop-blur-sm">
           <div className="community-announcement-marquee">
             <div className="community-announcement-marquee__track">
               <span className="community-announcement-marquee__copy">{marqueeText}</span>
@@ -122,7 +122,7 @@ export default function CommunityAnnouncementBanner({
         .community-announcement-marquee__track {
           display: inline-flex;
           min-width: 100%;
-          animation: community-marquee 42s linear infinite;
+          animation: community-marquee 58s linear infinite;
         }
 
         .community-announcement-marquee__copy {

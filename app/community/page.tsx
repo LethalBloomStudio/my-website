@@ -64,12 +64,14 @@ export default async function CommunityPage() {
           <UploadCarousel audience="adult" />
         </div>
 
-        <CommunityAnnouncementBanner
-          initialMessage={communityAnnouncement?.message ?? null}
-          initialActive={communityAnnouncement?.is_active ?? false}
-          isAdmin={isAdmin}
-          audience="adult"
-        />
+        <div className="-mt-1 -mb-1">
+          <CommunityAnnouncementBanner
+            initialMessage={communityAnnouncement?.message ?? null}
+            initialActive={communityAnnouncement?.is_active ?? false}
+            isAdmin={isAdmin}
+            audience="adult"
+          />
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
 
