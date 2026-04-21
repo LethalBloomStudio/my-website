@@ -962,56 +962,57 @@ function AdminPageInner() {
 
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setNavOpen((open) => !open)}
-            className="inline-flex items-center gap-2 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm font-medium text-neutral-200 transition hover:text-white"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-            {navOpen ? "Navigation Open" : "Open Navigation"}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNavOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm font-medium text-neutral-200 transition hover:text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+              Navigation
+            </button>
+            {navOpen ? (
+              <div className="absolute left-0 top-full z-30 mt-3 w-[min(86vw,21rem)] rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.98)] p-3 shadow-[0_20px_55px_rgba(0,0,0,0.35)] backdrop-blur">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Admin Navigation</p>
+                    <p className="mt-1 text-xs text-neutral-400">Choose a section</p>
+                  </div>
+                  <button
+                    onClick={() => setNavOpen(false)}
+                    className="rounded-lg border border-[rgba(120,120,120,0.28)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1.5 text-xs text-neutral-300 transition hover:text-white"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto pr-1">
+                  {TABS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => handleTabSelect(t.id)}
+                      className={`relative flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
+                    >
+                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
+                        {TAB_ICONS[t.id]}
+                      </span>
+                      <span className="pr-8">{t.label}</span>
+                      {t.badge ? (
+                        <span className="absolute right-3 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
+                          {t.badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
           <span className="rounded-lg bg-red-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">Admin</span>
           <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
         </div>
-
-        {navOpen ? (
-          <div className="mb-6 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Admin Navigation</p>
-                <p className="mt-1 text-sm text-neutral-300">Jump to any dashboard section without losing your place.</p>
-              </div>
-              <button
-                onClick={() => setNavOpen(false)}
-                className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-300 transition hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => handleTabSelect(t.id)}
-                  className={`relative flex min-h-[54px] items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
-                >
-                  <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
-                    {TAB_ICONS[t.id]}
-                  </span>
-                  <span className="pr-8">{t.label}</span>
-                  {t.badge ? (
-                    <span className="absolute right-3 top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
-                      {t.badge}
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
 
         {msg && (
           <div className="mb-5 rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 text-sm text-neutral-200 flex justify-between">
