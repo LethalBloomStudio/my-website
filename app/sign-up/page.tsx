@@ -11,6 +11,8 @@ import { resolvePostAuthPath } from "@/lib/postAuthRedirect";
 type ActivePromo = { name: string; duration_days: number; bonus_coins: number };
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
+const HEARD_ABOUT_OPTIONS = ["tiktok", "threads", "facebook", "instagram", "referral"] as const;
+type HeardAboutOption = typeof HEARD_ABOUT_OPTIONS[number];
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function SignUpPage() {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const usernameTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [heardAbout, setHeardAbout] = useState<HeardAboutOption | null>(null);
   const [referralUsername, setReferralUsername] = useState("");
   const [dob, setDob] = useState("");
   const [parentEmail, setParentEmail] = useState("");
@@ -81,6 +84,7 @@ export default function SignUpPage() {
     if (!trimmedName) return setMsg("Enter your name.");
     if (password.length < 6) return setMsg("Password must be at least 6 characters.");
     if (trimmedUsername && !USERNAME_RE.test(trimmedUsername)) return setMsg("Username must be 3 to 20 characters: lowercase letters, numbers, and underscores only.");
+    if (heardAbout === "referral" && !trimmedReferralUsername) return setMsg("Enter the username of the person who referred you.");
     if (trimmedReferralUsername && !USERNAME_RE.test(trimmedReferralUsername)) return setMsg("Referral username must be 3 to 20 characters: lowercase letters, numbers, and underscores only.");
     if (usernameStatus === "taken") return setMsg("That username is already taken. Please choose another.");
     if (usernameStatus === "checking") return setMsg("Still checking username availability. Please wait a moment.");
@@ -104,6 +108,7 @@ export default function SignUpPage() {
           age_category: age < 18 ? "youth_13_17" : "adult_18_plus",
           ...(trimmedUsername ? { username: trimmedUsername } : {}),
           ...(trimmedPenName ? { pen_name: trimmedPenName } : {}),
+          ...(heardAbout ? { heard_about: heardAbout } : {}),
           ...(trimmedReferralUsername ? { referral_username: trimmedReferralUsername } : {}),
         },
       },
@@ -124,6 +129,7 @@ export default function SignUpPage() {
         dob,
         age_category: age < 18 ? "youth_13_17" : "adult_18_plus",
         parental_consent: age >= 18,
+        heard_about_source: heardAbout,
         parent_email: age < 18 ? parentEmail.trim().toLowerCase() : null,
         updated_at: new Date().toISOString(),
         last_active_at: new Date().toISOString(),
@@ -287,24 +293,56 @@ export default function SignUpPage() {
               />
             </label>
 
-            <label className="block space-y-1">
-              <span className="text-sm text-neutral-300">Referral username <span className="text-neutral-500 text-xs">(optional)</span></span>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 select-none">@</span>
-                <input
-                  className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 pl-7"
-                  type="text"
-                  placeholder="who referred you"
-                  value={referralUsername}
-                  onChange={(e) => setReferralUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
-                  autoComplete="off"
-                  maxLength={20}
-                />
+            <div className="space-y-2">
+              <div>
+                <span className="text-sm text-neutral-300">How did you hear about us? <span className="text-neutral-500 text-xs">(optional)</span></span>
               </div>
-              <span className="text-xs text-neutral-500">
-                If this username is verified, they will receive 100 Bloom Coins and you will receive 50 Bloom Coins automatically.
-              </span>
-            </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {HEARD_ABOUT_OPTIONS.map((option) => {
+                  const active = heardAbout === option;
+                  const label = option.charAt(0).toUpperCase() + option.slice(1);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setHeardAbout((prev) => prev === option ? null : option);
+                        if (option !== "referral") setReferralUsername("");
+                      }}
+                      className={`rounded-lg border px-3 py-2 text-sm text-left transition ${
+                        active
+                          ? "border-[rgba(120,120,120,0.9)] bg-[rgba(120,120,120,0.22)] text-white"
+                          : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-[rgba(120,120,120,0.55)] hover:text-white"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-xs text-neutral-500">Choose one if you’d like. Selecting referral lets you enter the referring user’s @username.</span>
+            </div>
+
+            {heardAbout === "referral" ? (
+              <label className="block space-y-1">
+                <span className="text-sm text-neutral-300">Referral username</span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-500 select-none">@</span>
+                  <input
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 pl-7"
+                    type="text"
+                    placeholder="who referred you"
+                    value={referralUsername}
+                    onChange={(e) => setReferralUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                    autoComplete="off"
+                    maxLength={20}
+                  />
+                </div>
+                <span className="text-xs text-neutral-500">
+                  If this username is verified, they will receive 100 Bloom Coins and you will receive 50 Bloom Coins automatically.
+                </span>
+              </label>
+            ) : null}
 
             <label className="block space-y-1">
               <span className="text-sm text-neutral-300">Date of birth (private)</span>

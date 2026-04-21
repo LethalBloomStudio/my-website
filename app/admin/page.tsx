@@ -152,6 +152,7 @@ type Stats = {
   total_referrals: number;
   verified_referrals: number;
   referrals_7d: number;
+  heard_about_counts: Record<string, number>;
 };
 
 type ReferralEntry = {
@@ -1040,6 +1041,25 @@ function AdminPageInner() {
                   <div key={item.label} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-4 py-3">
                     <p className="text-xs text-neutral-500">{item.label}</p>
                     <p className={`mt-1 text-2xl font-semibold ${item.color}`}>{item.value.toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-8 rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">How Users Heard About Us</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[
+                  { label: "TikTok", key: "tiktok", color: "text-white" },
+                  { label: "Threads", key: "threads", color: "text-white" },
+                  { label: "Facebook", key: "facebook", color: "text-white" },
+                  { label: "Instagram", key: "instagram", color: "text-white" },
+                  { label: "Referral", key: "referral", color: "text-emerald-300" },
+                  { label: "Unknown", key: "unknown", color: "text-neutral-400" },
+                ].map((item) => (
+                  <div key={item.key} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.06)] px-4 py-3">
+                    <p className="text-xs text-neutral-500">{item.label}</p>
+                    <p className={`mt-1 text-2xl font-semibold ${item.color}`}>{(stats.heard_about_counts?.[item.key] ?? 0).toLocaleString()}</p>
                   </div>
                 ))}
               </div>

@@ -1,30 +1,3 @@
-create table if not exists public.referrals (
-  id uuid primary key default gen_random_uuid(),
-  referred_user_id uuid not null unique references auth.users(id) on delete cascade,
-  referrer_user_id uuid references auth.users(id) on delete set null,
-  referral_username_input text not null,
-  status text not null default 'verified',
-  referrer_reward_coins integer not null default 100,
-  referred_reward_coins integer not null default 50,
-  verified_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint referrals_status_check check (status in ('verified', 'invalid_referrer', 'invalid_self'))
-);
-
-create index if not exists referrals_referrer_user_id_idx
-on public.referrals (referrer_user_id, created_at desc);
-
-create index if not exists referrals_status_idx
-on public.referrals (status, created_at desc);
-
-alter table public.referrals enable row level security;
-
-drop policy if exists "referrals_select_own" on public.referrals;
-create policy "referrals_select_own"
-on public.referrals for select
-using (auth.uid() = referred_user_id or auth.uid() = referrer_user_id);
-
 create or replace function public.apply_signup_referral(
   p_referred_user_id uuid,
   p_referral_username text
@@ -166,62 +139,5 @@ begin
       'info',
       'referral-referred-' || p_referred_user_id::text
     );
-end;
-$function$;
-
-create or replace function public.handle_new_user_profiles()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $function$
-declare
-  v_age_cat public.age_category;
-begin
-  insert into public.profiles_private (user_id) values (new.id)
-  on conflict (user_id) do nothing;
-
-  insert into public.profiles_public (user_id) values (new.id)
-  on conflict (user_id) do nothing;
-
-  begin
-    v_age_cat := coalesce(
-      (new.raw_user_meta_data->>'age_category')::public.age_category,
-      'adult_18_plus'
-    );
-  exception when others then
-    v_age_cat := 'adult_18_plus';
-  end;
-
-  insert into public.accounts (
-    user_id,
-    email,
-    full_name,
-    dob,
-    age_category,
-    parental_consent,
-    last_active_at,
-    updated_at
-  )
-  values (
-    new.id,
-    new.email,
-    (new.raw_user_meta_data->>'full_name'),
-    case
-      when (new.raw_user_meta_data->>'dob') is not null
-       and (new.raw_user_meta_data->>'dob') ~ '^\d{4}-\d{2}-\d{2}$'
-      then (new.raw_user_meta_data->>'dob')::date
-      else null
-    end,
-    v_age_cat,
-    coalesce((new.raw_user_meta_data->>'parental_consent')::boolean, false),
-    now(),
-    now()
-  )
-  on conflict (user_id) do nothing;
-
-  perform public.apply_signup_referral(new.id, new.raw_user_meta_data->>'referral_username');
-
-  return new;
 end;
 $function$;
