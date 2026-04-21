@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +41,11 @@ type FriendRequest = {
   sender_id: string;
   receiver_id: string;
   status: string;
+};
+
+type HiddenThreadRow = {
+  partner_id: string;
+  hidden_at: string;
 };
 
 type PublicProfile = {
@@ -172,14 +176,14 @@ const [now] = useState(() => Date.now());
   const myIdRef = useRef<string | null>(null);
   const excludedRef = useRef<string[]>([]);
   const activeTargetRef = useRef<string>("");
+  const hiddenFriendsRef = useRef<Friend[]>([]);
 
   async function loadSidebar(signedInUserId: string) {
-    const [hiddenReqRes, blockedReqRes, statusRes] = await Promise.all([
+    const [hiddenThreadsRes, blockedReqRes, statusRes] = await Promise.all([
       supabase
-        .from("profile_friend_requests")
-        .select("sender_id, receiver_id, status")
-        .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
-        .eq("status", "unfriended"),
+        .from("hidden_message_threads")
+        .select("partner_id, hidden_at")
+        .eq("user_id", signedInUserId),
       supabase
         .from("profile_friend_requests")
         .select("sender_id, receiver_id, status")
@@ -211,19 +215,20 @@ const [now] = useState(() => Date.now());
 
     const excluded = statusJson.excludedFromMessaging ?? [];
 
-    const hiddenRows = (hiddenReqRes.data as FriendRequest[] | null) ?? [];
+    const hiddenRows = (hiddenThreadsRes.data as HiddenThreadRow[] | null) ?? [];
     const blockedRows = (blockedReqRes.data as FriendRequest[] | null) ?? [];
 
-    const hiddenIds = Array.from(new Set(hiddenRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
+    const hiddenMap = new Map<string, number>();
+    for (const row of hiddenRows) {
+      hiddenMap.set(row.partner_id, new Date(row.hidden_at).getTime());
+    }
+
     const blockedIds = Array.from(new Set(blockedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
 
     // Fetch conversation partners + supporting data in parallel
     // Uses an RPC to get distinct partners - avoids the PostgREST 1000-row cap
     // that caused old conversations to disappear.
-    const [hiddenProfilesRes, blockedProfilesRes, partnersRes] = await Promise.all([
-      hiddenIds.length > 0
-        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", hiddenIds)
-        : Promise.resolve({ data: [] }),
+    const [blockedProfilesRes, partnersRes] = await Promise.all([
       blockedIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", blockedIds)
         : Promise.resolve({ data: [] }),
@@ -242,15 +247,31 @@ const [now] = useState(() => Date.now());
       conversationPartnerIds.push(row.partner_id);
     }
 
-    // Filter out blocked and age-restricted users from conversation list
-    const activeConversationIds = conversationPartnerIds.filter(
-      (id) => !blockedIds.includes(id) && !excluded.includes(id)
-    );
+    // Filter out blocked and age-restricted users from conversation list.
+    // Hidden threads stay hidden until a newer message arrives after hidden_at.
+    const activeConversationIds = conversationPartnerIds.filter((id) => {
+      if (blockedIds.includes(id) || excluded.includes(id)) return false;
+      const hiddenAt = hiddenMap.get(id);
+      const lastMessageAt = lastMsgMap.get(id) ?? 0;
+      return !hiddenAt || lastMessageAt > hiddenAt;
+    });
+
+    const hiddenConversationIds = conversationPartnerIds.filter((id) => {
+      if (blockedIds.includes(id) || excluded.includes(id)) return false;
+      const hiddenAt = hiddenMap.get(id);
+      const lastMessageAt = lastMsgMap.get(id) ?? 0;
+      return !!hiddenAt && lastMessageAt <= hiddenAt;
+    });
 
     // Fetch profiles for all conversation partners regardless of friend status
-    const profilesRes = activeConversationIds.length > 0
-      ? await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", activeConversationIds)
-      : { data: [] };
+    const [profilesRes, hiddenProfilesRes] = await Promise.all([
+      activeConversationIds.length > 0
+        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", activeConversationIds)
+        : Promise.resolve({ data: [] }),
+      hiddenConversationIds.length > 0
+        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", hiddenConversationIds)
+        : Promise.resolve({ data: [] }),
+    ]);
 
     const mapped: Friend[] = ((profilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
       userId: p.user_id,
@@ -262,11 +283,12 @@ const [now] = useState(() => Date.now());
     mapped.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     setFriends(mapped);
 
-
-    setHiddenFriends(((hiddenProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
+    const nextHiddenFriends = ((hiddenProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
       userId: p.user_id, penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
-      avatarUrl: p.avatar_url ?? null, lastMessageAt: lastMsgMap.get(p.user_id) ?? 0, unreadCount: 0,
-    })));
+      avatarUrl: p.avatar_url ?? null, lastMessageAt: lastMsgMap.get(p.user_id) ?? 0, unreadCount: unreadMap.get(p.user_id) ?? 0,
+    }));
+    hiddenFriendsRef.current = nextHiddenFriends;
+    setHiddenFriends(nextHiddenFriends);
 
     setBlockedUsers(((blockedProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
       userId: p.user_id, penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
@@ -373,12 +395,38 @@ const [now] = useState(() => Date.now());
       .channel(`inbox-badge-${myId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${myId}` },
         (payload: { new: Record<string, unknown> }) => {
-          const m = payload.new as { sender_id: string; receiver_id: string; status: string };
+          const m = payload.new as { sender_id: string; receiver_id: string; status: string; created_at?: string };
+          const lastMessageAt = m.created_at ? new Date(m.created_at).getTime() : Date.now();
+          const revealHidden = hiddenFriendsRef.current.find((f) => f.userId === m.sender_id);
+          if (revealHidden) {
+            setHiddenFriends((prev) => {
+              const next = prev.filter((f) => f.userId !== m.sender_id);
+              hiddenFriendsRef.current = next;
+              return next;
+            });
+            setFriends((prev) => {
+              const existing = prev.find((f) => f.userId === m.sender_id);
+              const nextFriend = existing
+                ? { ...existing, lastMessageAt, unreadCount: existing.unreadCount + (m.sender_id !== withUser ? 1 : 0) }
+                : {
+                    ...revealHidden,
+                    lastMessageAt,
+                    unreadCount: m.sender_id !== withUser ? 1 : 0,
+                  };
+              return [nextFriend, ...prev.filter((f) => f.userId !== m.sender_id)];
+            });
+            return;
+          }
           // If the message is from someone other than the open chat, bump their badge
           if (m.sender_id !== withUser) {
-            setFriends((prev) => prev.map((f) =>
-              f.userId === m.sender_id ? { ...f, unreadCount: f.unreadCount + 1 } : f
-            ));
+            setFriends((prev) => {
+              const existing = prev.find((f) => f.userId === m.sender_id);
+              if (!existing) return prev;
+              return [
+                { ...existing, unreadCount: existing.unreadCount + 1, lastMessageAt },
+                ...prev.filter((f) => f.userId !== m.sender_id),
+              ];
+            });
           }
         }
       )
@@ -596,6 +644,13 @@ const [now] = useState(() => Date.now());
         // New conversation - add from currently loaded label/avatar
         return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
       });
+      setHiddenFriends((prev) => prev.filter((f) => f.userId !== withUser));
+      hiddenFriendsRef.current = hiddenFriendsRef.current.filter((f) => f.userId !== withUser);
+      await supabase
+        .from("hidden_message_threads")
+        .delete()
+        .eq("user_id", myId)
+        .eq("partner_id", withUser);
     }
     sendingRef.current = false;
   }
@@ -652,26 +707,38 @@ const [now] = useState(() => Date.now());
     setPrAppealSubmitted(true);
   }
 
-  async function unfriend(userId: string) {
-    if (!confirm("Disable chat with this person? Messages are preserved and you can undo this.")) return;
+  async function hideConversation(userId: string) {
+    if (!myId) return;
+    if (!confirm("Hide this conversation from your list? It will come back automatically if a new message arrives.")) return;
+    const hiddenAt = new Date().toISOString();
     await supabase
-      .from("profile_friend_requests")
-      .update({ status: "unfriended" })
-      .or(`and(sender_id.eq.${myId},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${myId})`);
+      .from("hidden_message_threads")
+      .upsert({ user_id: myId, partner_id: userId, hidden_at: hiddenAt, updated_at: hiddenAt }, { onConflict: "user_id,partner_id" });
     const moved = friends.find((f) => f.userId === userId);
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
-    if (moved) setHiddenFriends((prev) =>
-      prev.some((f) => f.userId === userId) ? prev : [...prev, { ...moved, unreadCount: 0 }]
-    );
+    if (moved) {
+      setHiddenFriends((prev) => {
+        if (prev.some((f) => f.userId === userId)) return prev;
+        const next = [...prev, { ...moved, unreadCount: 0 }];
+        hiddenFriendsRef.current = next;
+        return next;
+      });
+    }
     if (withUser === userId) router.replace("/messages");
   }
 
-  async function refriend(userId: string) {
+  async function unhideConversation(userId: string) {
+    if (!myId) return;
     await supabase
-      .from("profile_friend_requests")
-      .update({ status: "accepted" })
-      .or(`and(sender_id.eq.${myId},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${myId})`);
-    setHiddenFriends((prev) => prev.filter((f) => f.userId !== userId));
+      .from("hidden_message_threads")
+      .delete()
+      .eq("user_id", myId)
+      .eq("partner_id", userId);
+    setHiddenFriends((prev) => {
+      const next = prev.filter((f) => f.userId !== userId);
+      hiddenFriendsRef.current = next;
+      return next;
+    });
     await loadSidebar(myId!);
   }
 
@@ -713,7 +780,11 @@ const [now] = useState(() => Date.now());
       friends.find((f) => f.userId === userId) ??
       hiddenFriends.find((f) => f.userId === userId);
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
-    setHiddenFriends((prev) => prev.filter((f) => f.userId !== userId));
+    setHiddenFriends((prev) => {
+      const next = prev.filter((f) => f.userId !== userId);
+      hiddenFriendsRef.current = next;
+      return next;
+    });
     if (moved) setBlockedUsers((prev) =>
       prev.some((f) => f.userId === userId) ? prev : [...prev, { ...moved, unreadCount: 0 }]
     );
@@ -833,8 +904,8 @@ const [now] = useState(() => Date.now());
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1v14M3 1h9l-2 4 2 4H3"/></svg>
                       </button>
                       <button
-                        onClick={() => void unfriend(f.userId)}
-                        title="Disable chat"
+                        onClick={() => void hideConversation(f.userId)}
+                        title="Hide conversation"
                         className="shrink-0 flex h-6 w-6 items-center justify-center rounded-lg text-neutral-600 hover:text-neutral-400 transition"
                       >
                         <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -844,14 +915,14 @@ const [now] = useState(() => Date.now());
                 )}
               </div>
 
-              {/* Hidden (unfriended) users */}
+              {/* Hidden conversations */}
               {hiddenFriends.length > 0 && (
                 <div className="mt-3 border-t border-neutral-800 pt-3">
                   <button
                     onClick={() => setShowHidden((v) => !v)}
                     className="flex w-full items-center justify-between text-xs text-neutral-500 hover:text-neutral-300 transition"
                   >
-                    <span>Hidden ({hiddenFriends.length})</span>
+                    <span>Hidden Conversations ({hiddenFriends.length})</span>
                     <span>{showHidden ? "▲" : "▼"}</span>
                   </button>
                   {showHidden && (
@@ -860,17 +931,17 @@ const [now] = useState(() => Date.now());
                         <div key={f.userId} className="flex items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/20 px-3 py-2 text-sm">
                           <button
                             onClick={() => router.push(`/messages?with=${encodeURIComponent(f.userId)}`)}
-                            className="flex flex-1 min-w-0 items-center gap-2 rounded-lg text-left opacity-50"
+                            className="flex flex-1 min-w-0 items-center gap-2 rounded-lg text-left opacity-70 hover:opacity-100 transition"
                           >
                             <Avatar name={f.penName} url={f.avatarUrl} />
                             <span className="flex-1 truncate text-neutral-400">{f.penName}</span>
                           </button>
                           <button
-                            onClick={() => void refriend(f.userId)}
-                            title="Undo - re-enable chat"
+                            onClick={() => void unhideConversation(f.userId)}
+                            title="Show conversation again"
                             className="shrink-0 rounded-lg border border-neutral-700 px-2 py-0.5 text-[10px] text-neutral-500 hover:border-[rgba(120,120,120,0.6)] hover:text-neutral-200 transition"
                           >
-                            Undo
+                            Show
                           </button>
                         </div>
                       ))}
@@ -898,16 +969,12 @@ const [now] = useState(() => Date.now());
           </aside>
 
           {/* ── Main panel ── */}
-          {withUser && (hiddenFriends.some((f) => f.userId === withUser) || blockedUsers.some((f) => f.userId === withUser)) ? (
+          {withUser && blockedUsers.some((f) => f.userId === withUser) ? (
             <section className="flex h-[600px] flex-col rounded-xl border border-neutral-800 bg-[rgba(120,120,120,0.05)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <p className="flex-1 text-sm text-neutral-400">
-                  {blockedUsers.some((f) => f.userId === withUser) ? "Blocked: " : "Chat disabled with: "}
-                  <span className="text-neutral-300">{withUserLabel || "Selected user"}</span>
+                  Blocked: <span className="text-neutral-300">{withUserLabel || "Selected user"}</span>
                 </p>
-                {!blockedUsers.some((f) => f.userId === withUser) && (
-                  <button onClick={() => void refriend(withUser)} className="rounded-lg border border-[rgba(120,120,120,0.5)] px-3 py-1 text-xs text-neutral-300 hover:border-[rgba(120,120,120,0.8)] hover:text-white transition">Undo</button>
-                )}
                 <button onClick={() => router.replace("/messages")} className="text-xs text-neutral-300 hover:text-white transition border border-[rgba(120,120,120,0.4)] rounded-lg px-2 py-0.5">Close</button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-3 pr-1 opacity-60">
@@ -937,9 +1004,7 @@ const [now] = useState(() => Date.now());
                 <div ref={messagesEndRef} />
               </div>
               <p className="mt-3 shrink-0 text-xs text-neutral-400 italic">
-                {blockedUsers.some((f) => f.userId === withUser)
-                  ? "This user has been permanently blocked due to a report."
-                  : "Chat is disabled. Undo to resume messaging."}
+                This user has been permanently blocked due to a report.
               </p>
             </section>
           ) : targetIsYouth ? (
