@@ -122,6 +122,7 @@ const [now] = useState(() => Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
+  const forceScrollToBottomRef = useRef(false);
   const [sidebarLoading, setSidebarLoading] = useState(true);
   const [myManuscripts, setMyManuscripts] = useState<{ id: string; title: string }[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -475,6 +476,11 @@ const [now] = useState(() => Date.now());
           (m.sender_id === withUser && m.receiver_id === myId) ||
           (m.sender_id === myId && m.receiver_id === withUser)
         ) {
+          const container = messagesContainerRef.current;
+          if (container) {
+            const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+            forceScrollToBottomRef.current = distFromBottom < 150;
+          }
           setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
           if (m.sender_id === withUser) {
             setOtherTyping(false);
@@ -510,6 +516,12 @@ const [now] = useState(() => Date.now());
     if (!initialScrollDoneRef.current) {
       container.scrollTop = container.scrollHeight;
       initialScrollDoneRef.current = true;
+      forceScrollToBottomRef.current = false;
+      return;
+    }
+    if (forceScrollToBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+      forceScrollToBottomRef.current = false;
       return;
     }
     const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
@@ -630,6 +642,7 @@ const [now] = useState(() => Date.now());
     setText("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     if (json.message) {
+      forceScrollToBottomRef.current = true;
       setMessages((prev) => (prev.some((p) => p.id === json.message!.id) ? prev : [...prev, json.message!]));
       requestAnimationFrame(() => {
         const container = messagesContainerRef.current;
