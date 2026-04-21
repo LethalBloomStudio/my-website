@@ -930,7 +930,7 @@ const [now] = useState(() => Date.now());
 
               {/* Hidden conversations */}
               {hiddenFriends.length > 0 && (
-                <div className="mt-3 border-t border-neutral-800 pt-3">
+                <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900/10 p-3">
                   <button
                     onClick={() => setShowHidden((v) => !v)}
                     className="flex w-full items-center justify-between text-xs text-neutral-500 hover:text-neutral-300 transition"
