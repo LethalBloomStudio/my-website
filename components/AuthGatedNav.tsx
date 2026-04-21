@@ -6,6 +6,8 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import BetaReadersNavButton from "@/components/BetaReadersNavButton";
 import ManuscriptButton from "@/components/ManuscriptButton";
 import WalletNavButton from "@/components/WalletNavButton";
+import MessagesNavButton from "@/components/MessagesNavButton";
+import NotificationButton from "@/components/NotificationButton";
 
 export default function AuthGatedNav() {
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -98,6 +100,8 @@ export default function AuthGatedNav() {
           </svg>
         </Link>
       )}
+      <MessagesNavButton />
+      <NotificationButton />
     </>
   );
 }
