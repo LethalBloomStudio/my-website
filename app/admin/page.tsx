@@ -396,7 +396,6 @@ function AdminPageInner() {
 
   // UI state
   const [msg, setMsg] = useState<string | null>(null);
-  const [navOpen, setNavOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [userFilter, setUserFilter] = useState<"all" | "admin" | "youth" | "adult" | "banned">("all");
   const [contentSearch, setContentSearch] = useState("");
@@ -973,92 +972,31 @@ function AdminPageInner() {
         )}
 
         <div className="flex items-start gap-4 lg:gap-6">
-          <div className="sticky top-6 shrink-0">
-            <div className="flex items-start gap-3">
-              <aside className="w-16 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2">
-                <div className="mb-2 flex justify-center">
-                  <button
-                    onClick={() => setNavOpen((open) => !open)}
-                    aria-label={navOpen ? "Close navigation panel" : "Open navigation panel"}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(120,120,120,0.08)] text-neutral-300 transition hover:text-white"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      {navOpen ? (
-                        <>
-                          <line x1="15" y1="6" x2="9" y2="12" />
-                          <line x1="15" y1="18" x2="9" y2="12" />
-                        </>
-                      ) : (
-                        <>
-                          <line x1="9" y1="6" x2="15" y2="12" />
-                          <line x1="9" y1="18" x2="15" y2="12" />
-                        </>
-                      )}
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-1 overflow-y-auto">
-                  {TABS.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => handleTabSelect(t.id)}
-                      title={t.label}
-                      className={`relative flex w-full items-center justify-center rounded-xl border px-0 py-2.5 text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
-                    >
-                      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
-                        {TAB_ICONS[t.id]}
-                      </span>
-                      {t.badge ? (
-                        <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
-                          {t.badge}
-                        </span>
-                      ) : null}
-                    </button>
-                  ))}
-                </div>
-              </aside>
-
-              <aside className={`overflow-hidden rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] transition-all duration-200 ${navOpen ? "w-56 opacity-100" : "w-0 border-transparent opacity-0"}`}>
-                <div className={`h-full ${navOpen ? "p-3" : "p-0"}`}>
-                  {navOpen ? (
-                    <>
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Navigation</p>
-                          <p className="mt-1 text-[11px] text-neutral-400">Admin sections</p>
-                        </div>
-                        <button
-                          onClick={() => setNavOpen(false)}
-                          className="rounded-lg border border-[rgba(120,120,120,0.28)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1.5 text-xs text-neutral-300 transition hover:text-white"
-                        >
-                          Close
-                        </button>
-                      </div>
-                      <div className="flex max-h-[calc(100vh-12rem)] flex-col gap-1 overflow-y-auto pr-1">
-                        {TABS.map((t) => (
-                          <button
-                            key={`${t.id}-panel`}
-                            onClick={() => handleTabSelect(t.id)}
-                            className={`relative flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
-                          >
-                            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
-                              {TAB_ICONS[t.id]}
-                            </span>
-                            <span className="pr-8">{t.label}</span>
-                            {t.badge ? (
-                              <span className="absolute right-3 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
-                                {t.badge}
-                              </span>
-                            ) : null}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              </aside>
+          <aside className="sticky top-6 shrink-0 w-56 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2">
+            <div className="mb-3 px-2 pt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Navigation</p>
+              <p className="mt-1 text-[11px] text-neutral-400">Admin sections</p>
             </div>
-          </div>
+            <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-1 overflow-y-auto">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleTabSelect(t.id)}
+                  className={`relative flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition ${tab === t.id ? "border-[rgba(120,120,120,0.78)] bg-[rgba(120,120,120,0.22)] text-white" : "border-[rgba(120,120,120,0.26)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.48)] hover:text-white"}`}
+                >
+                  <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-[rgba(120,120,120,0.16)] bg-[rgba(120,120,120,0.08)] text-neutral-200">
+                    {TAB_ICONS[t.id]}
+                  </span>
+                  <span className="pr-8">{t.label}</span>
+                  {t.badge ? (
+                    <span className="absolute right-3 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold leading-none text-white">
+                      {t.badge}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </aside>
 
           <div className="min-w-0 flex-1 [&_.overflow-x-auto]:overflow-visible [&_table]:w-full [&_table]:table-fixed [&_th]:align-top [&_td]:align-top [&_th]:break-words [&_td]:break-words [&_td.whitespace-nowrap]:whitespace-normal [&_th.whitespace-nowrap]:whitespace-normal">
 
