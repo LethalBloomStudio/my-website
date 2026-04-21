@@ -9,17 +9,19 @@ export default function SubscriptionClient({
   youthLethalMode = false,
   onActivePromo = false,
   promotionExpiresAt = null,
+  hasBillingAccount = false,
 }: {
   currentStatus: string;
   youthLethalMode?: boolean;
   onActivePromo?: boolean;
   promotionExpiresAt?: string | null;
+  hasBillingAccount?: boolean;
 }) {
   const isFree = !currentStatus || currentStatus === "free";
   const isMonthly = currentStatus === "lethal" || currentStatus === "lethal_member";
   const isAnnual = currentStatus === "lethal_annual" || currentStatus === "lethal_member_annual";
   const isLethal = isMonthly || isAnnual;
-  const isPromoOnly = onActivePromo && (isFree || (!isMonthly && !isAnnual));
+  const isPromoOnly = onActivePromo;
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -98,11 +100,11 @@ export default function SubscriptionClient({
         </div>
       </div>
 
-      {/* Upgrade options (free users without promo) */}
-      {isFree && !isPromoOnly && (
+      {/* Upgrade options */}
+      {(isFree || isPromoOnly) && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
-            {youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
+            {isPromoOnly ? "Start Paid Subscription" : youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
           </h2>
 
           {youthLethalMode ? (
@@ -195,7 +197,11 @@ export default function SubscriptionClient({
           >
             {loading ? "Processing..." : youthLethalMode ? "Subscribe - $10/mo" : `Subscribe - ${selectedPlan === "lethal_member_annual" ? "$100/yr" : "$10/mo"}`}
           </button>
-          <p className="text-center text-xs text-neutral-500">Cancel anytime. No hidden fees.</p>
+          <p className="text-center text-xs text-neutral-500">
+            {isPromoOnly
+              ? "Promotional access is free, but you can start a paid subscription at any time."
+              : "Cancel anytime. No hidden fees."}
+          </p>
         </div>
       )}
 
@@ -229,8 +235,8 @@ export default function SubscriptionClient({
         </div>
       )}
 
-      {/* Active subscription management (paid subscribers only) */}
-      {isLethal && !isPromoOnly && (
+      {/* Active subscription management */}
+      {(isLethal || hasBillingAccount) && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
             Manage Subscription
@@ -240,18 +246,26 @@ export default function SubscriptionClient({
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-neutral-400">Plan</span>
               <span className="text-sm text-neutral-200">
-                {isAnnual ? "Lethal Member Annual" : "Lethal Member Monthly"}
+                {isPromoOnly
+                  ? "Promotional Access"
+                  : isAnnual
+                  ? "Lethal Member Annual"
+                  : isLethal
+                  ? "Lethal Member Monthly"
+                  : "Billing account on file"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-neutral-400">Billing</span>
               <span className="text-sm text-neutral-200">
-                {isAnnual ? "$100 / year" : "$10 / month"}
+                {isPromoOnly ? "Free" : isAnnual ? "$100 / year" : isLethal ? "$10 / month" : "Managed in Stripe"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-neutral-400">Status</span>
-              <span className="text-sm text-emerald-700 dark:text-emerald-400">Active</span>
+              <span className={`text-sm ${isPromoOnly ? "text-violet-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+                {isPromoOnly ? "Promotional access" : "Active"}
+              </span>
             </div>
           </div>
 

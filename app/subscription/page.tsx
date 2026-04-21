@@ -21,16 +21,23 @@ export default async function SubscriptionPage() {
 
   const { data } = await supabase
     .from("accounts")
-    .select("subscription_status, age_category, active_promotion_id, promotion_expires_at")
+    .select("subscription_status, age_category, active_promotion_id, promotion_expires_at, stripe_customer_id, stripe_subscription_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const account = data as { subscription_status: string | null; age_category: string | null; active_promotion_id: string | null; promotion_expires_at: string | null } | null;
+  const account = data as {
+    subscription_status: string | null;
+    age_category: string | null;
+    active_promotion_id: string | null;
+    promotion_expires_at: string | null;
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
+  } | null;
   const baseStatus = account?.subscription_status?.trim() || "free";
   const onActivePromo = !!(account?.active_promotion_id && account?.promotion_expires_at && new Date(account.promotion_expires_at) > new Date());
-  const status = onActivePromo && baseStatus === "free" ? "lethal" : baseStatus;
   const isYouth = account?.age_category === "youth_13_17";
   const admin = supabaseAdmin();
+  const hasBillingAccount = !!(account?.stripe_customer_id || account?.stripe_subscription_id);
 
   // For youth: check if they have an active parent link
   let parentUsername: string | null = null;
@@ -66,9 +73,9 @@ export default async function SubscriptionPage() {
   }
 
   // Billing breakdown
-  const isLethal = status === "lethal" || status === "lethal_annual" || status === "lethal_member" || status === "lethal_member_annual";
-  const isAnnual = status === "lethal_annual" || status === "lethal_member_annual";
-  const isPromoOnly = onActivePromo && baseStatus === "free";
+  const isLethal = baseStatus === "lethal" || baseStatus === "lethal_annual" || baseStatus === "lethal_member" || baseStatus === "lethal_member_annual";
+  const isAnnual = baseStatus === "lethal_annual" || baseStatus === "lethal_member_annual";
+  const isPromoOnly = onActivePromo;
   const baseMonthly = isLethal && !isPromoOnly ? (isAnnual ? 100 : 10) : 0;
   const unlimitedYouth = youthLinks.filter((l) => l.subscription_tier === "unlimited");
   const youthAddonMonthly = unlimitedYouth.length * 5;
@@ -87,10 +94,11 @@ export default async function SubscriptionPage() {
           !hasParentLink ? (
             /* Standalone youth (no parent link): independent $10/mo subscription */
             <SubscriptionClient
-                currentStatus={status}
+                currentStatus={baseStatus}
                 youthLethalMode
                 onActivePromo={onActivePromo}
                 promotionExpiresAt={account?.promotion_expires_at ?? null}
+                hasBillingAccount={hasBillingAccount}
               />
           ) : (
             /* Free and unlimited-add-on youth: subscription managed by parent */
@@ -123,9 +131,10 @@ export default async function SubscriptionPage() {
         ) : (
           <>
             <SubscriptionClient
-                currentStatus={status}
+                currentStatus={baseStatus}
                 onActivePromo={onActivePromo}
                 promotionExpiresAt={account?.promotion_expires_at ?? null}
+                hasBillingAccount={hasBillingAccount}
               />
 
             {/* Billing summary - always visible */}
@@ -193,6 +202,8 @@ export default async function SubscriptionPage() {
                     <span className={`text-sm font-bold shrink-0 ${isPromoOnly && youthAddonMonthly === 0 ? "text-violet-400" : "text-neutral-100"}`}>
                       {isPromoOnly && youthAddonMonthly === 0
                         ? "Free"
+                        : isPromoOnly
+                        ? `$${youthAddonMonthly}/mo`
                         : isAnnual && youthAddonMonthly > 0
                         ? `$100/yr + $${youthAddonMonthly}/mo`
                         : isAnnual
