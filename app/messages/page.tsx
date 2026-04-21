@@ -104,6 +104,7 @@ const [now] = useState(() => Date.now());
   const [hiddenFriends, setHiddenFriends] = useState<Friend[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<Friend[]>([]);
   const [showHidden, setShowHidden] = useState(false);
+  const [hideConfirmTarget, setHideConfirmTarget] = useState<{ userId: string; name: string } | null>(null);
   const [reportTarget, setReportTarget] = useState<{ userId: string; name: string } | null>(null);
   const [violationModal, setViolationModal] = useState<{ message: string; triggers: string[]; consequence: string } | null>(null);
   const [latestAppeal, setLatestAppeal] = useState<AppealStatus>(null);
@@ -709,7 +710,6 @@ const [now] = useState(() => Date.now());
 
   async function hideConversation(userId: string) {
     if (!myId) return;
-    if (!confirm("Hide this conversation from your list? It will come back automatically if a new message arrives.")) return;
     const hiddenAt = new Date().toISOString();
     await supabase
       .from("hidden_message_threads")
@@ -904,7 +904,7 @@ const [now] = useState(() => Date.now());
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1v14M3 1h9l-2 4 2 4H3"/></svg>
                       </button>
                       <button
-                        onClick={() => void hideConversation(f.userId)}
+                        onClick={() => setHideConfirmTarget({ userId: f.userId, name: f.penName })}
                         title="Hide conversation"
                         className="shrink-0 flex h-6 w-6 items-center justify-center rounded-lg text-neutral-600 hover:text-neutral-400 transition"
                       >
@@ -1250,6 +1250,36 @@ const [now] = useState(() => Date.now());
           onSubmit={(reason) => void submitReport(reason)}
           onCancel={() => setReportTarget(null)}
         />
+      )}
+
+      {hideConfirmTarget && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-950 p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-neutral-100 mb-1">Hide conversation?</h2>
+            <p className="text-sm text-neutral-400 mb-4">
+              This will remove <span className="text-neutral-200">{hideConfirmTarget.name}</span> from your visible conversation list.
+              If they send you a new message later, the conversation will automatically appear again.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setHideConfirmTarget(null)}
+                className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] px-4 py-2 text-sm text-neutral-300 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const target = hideConfirmTarget;
+                  setHideConfirmTarget(null);
+                  if (target) await hideConversation(target.userId);
+                }}
+                className="flex-1 rounded-lg bg-neutral-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-600"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {appealModal && (
