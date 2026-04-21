@@ -52,7 +52,7 @@ export default async function CommunityPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
+      <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Community</h1>
           <p className="mt-2 text-sm text-neutral-400">Connect with fellow authors and readers.</p>

@@ -25,6 +25,8 @@ type DiscussionPost = {
   content: string | null;
   poll_options: string[] | null;
   created_at: string;
+  is_pinned: boolean;
+  pinned_at: string | null;
   like_count: number;
   user_liked: boolean;
   comment_count: number;
@@ -141,6 +143,18 @@ function Heart({ filled }: { filled: boolean }) {
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
   );
+}
+
+function sortPosts(posts: DiscussionPost[]) {
+  return [...posts].sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+    if (a.is_pinned && b.is_pinned) {
+      const aPinned = a.pinned_at ? new Date(a.pinned_at).getTime() : 0;
+      const bPinned = b.pinned_at ? new Date(b.pinned_at).getTime() : 0;
+      if (aPinned !== bPinned) return bPinned - aPinned;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 }
 
 // ─── Comment row ─────────────────────────────────────────────────────────────
@@ -330,13 +344,15 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setLoading(true);
     const { data: postRows } = await supabase
       .from("discussion_posts")
-      .select("id, author_id, type, title, content, poll_options, created_at, coin_prize, ends_at, winner_id, winner_drawn")
+      .select("id, author_id, type, title, content, poll_options, created_at, is_pinned, pinned_at, coin_prize, ends_at, winner_id, winner_drawn")
       .eq("community", community)
+      .order("is_pinned", { ascending: false })
+      .order("pinned_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (!postRows || postRows.length === 0) { setPosts([]); setLoading(false); return; }
 
-    const rows = postRows as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean }[];
+    const rows = postRows as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; is_pinned: boolean | null; pinned_at: string | null; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean }[];
     const postIds = rows.map(r => r.id);
     const winnerIds = rows.map(r => r.winner_id).filter(Boolean) as string[];
     const authorIds = [...new Set([...rows.map(r => r.author_id), ...winnerIds])];
@@ -364,6 +380,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       return {
         id: r.id, author_id: r.author_id, type: r.type, title: r.title,
         content: r.content, poll_options: r.poll_options, created_at: r.created_at,
+        is_pinned: !!r.is_pinned,
+        pinned_at: r.pinned_at ?? null,
         like_count: postLikes.length,
         user_liked: currentUserId ? postLikes.some(l => l.user_id === currentUserId) : false,
         comment_count: commentCountByPost[r.id] ?? 0,
@@ -378,7 +396,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       };
     });
 
-    setPosts(built);
+    setPosts(sortPosts(built));
     setLoading(false);
   }
 
@@ -439,7 +457,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     const channel = supabase
       .channel(`discussion-posts-realtime-${community}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "discussion_posts", filter: `community=eq.${community}` }, async (payload: { new: Record<string, unknown> }) => {
-        const row = payload.new as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; coin_prize?: number | null; ends_at?: string | null };
+        const row = payload.new as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; is_pinned?: boolean | null; pinned_at?: string | null; coin_prize?: number | null; ends_at?: string | null };
         const { data: prof } = await supabase
           .from("public_profiles")
           .select("user_id, username, pen_name, avatar_url")
@@ -449,14 +467,28 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
           id: row.id, author_id: row.author_id, type: row.type,
           title: row.title, content: row.content, poll_options: row.poll_options,
           created_at: row.created_at,
+          is_pinned: !!row.is_pinned,
+          pinned_at: row.pinned_at ?? null,
           like_count: 0, user_liked: false, comment_count: 0,
           user_vote: null, poll_votes: {},
           author: (prof as AuthorInfo | null),
           coin_prize: row.coin_prize ?? null, ends_at: row.ends_at ?? null,
           winner_id: null, winner_drawn: false, winner_name: null,
         };
-        setPosts(prev => [newPost, ...prev]);
+        setPosts(prev => sortPosts([newPost, ...prev]));
         setVisibleCount(n => n + 1);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "discussion_posts", filter: `community=eq.${community}` }, async (payload: { new: Record<string, unknown> }) => {
+        const row = payload.new as { id: string; is_pinned?: boolean | null; pinned_at?: string | null; title?: string; content?: string | null };
+        setPosts(prev => sortPosts(prev.map((post) => post.id === row.id
+          ? {
+              ...post,
+              title: row.title ?? post.title,
+              content: row.content ?? post.content,
+              is_pinned: !!row.is_pinned,
+              pinned_at: row.pinned_at ?? null,
+            }
+          : post)));
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
@@ -717,6 +749,45 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setEditSubmitting(false);
   }
 
+  async function togglePinned(postId: string, nextPinned: boolean) {
+    if (!isAdmin) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    const targetPost = posts.find((post) => post.id === postId);
+    const updates = {
+      is_pinned: nextPinned,
+      pinned_at: nextPinned ? new Date().toISOString() : null,
+    };
+
+    await fetch("/api/admin/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({
+        type: "update",
+        table: "discussion_posts",
+        id_column: "id",
+        id_value: postId,
+        updates,
+      }),
+    });
+
+    await fetch("/api/admin/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({
+        type: "audit",
+        action: nextPinned ? "pin_discussion_post" : "unpin_discussion_post",
+        target_type: "discussion_post",
+        target_id: postId,
+        notes: `${nextPinned ? "Pinned" : "Unpinned"} post: "${targetPost?.title ?? postId}"`,
+      }),
+    });
+
+    setPosts((prev) => sortPosts(prev.map((post) => post.id === postId
+      ? { ...post, is_pinned: nextPinned, pinned_at: nextPinned ? updates.pinned_at : null }
+      : post)));
+  }
+
   // ── Delete post ──
   async function confirmDelete() {
     if (!deletingPostId) return;
@@ -771,21 +842,21 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     const { data, error } = await supabase
       .from("discussion_posts")
       .insert(payload)
-      .select("id, author_id, type, title, content, poll_options, created_at, coin_prize, ends_at, winner_id, winner_drawn")
+      .select("id, author_id, type, title, content, poll_options, created_at, is_pinned, pinned_at, coin_prize, ends_at, winner_id, winner_drawn")
       .single();
 
     if (error) { setPostError(error.message); setSubmittingPost(false); return; }
 
     if (data) {
-      const row = data as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean };
+      const row = data as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; is_pinned: boolean | null; pinned_at: string | null; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean };
       const { data: prof } = await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").eq("user_id", currentUserId).maybeSingle();
       const newPost: DiscussionPost = {
-        ...row, like_count: 0, user_liked: false, comment_count: 0,
+        ...row, is_pinned: !!row.is_pinned, pinned_at: row.pinned_at ?? null, like_count: 0, user_liked: false, comment_count: 0,
         user_vote: null, poll_votes: {}, author: (prof as AuthorInfo | null),
         coin_prize: row.coin_prize ?? null, ends_at: row.ends_at ?? null,
         winner_id: null, winner_drawn: false, winner_name: null,
       };
-      setPosts(prev => [newPost, ...prev]);
+      setPosts(prev => sortPosts([newPost, ...prev]));
       setShowCreator(false);
 
       // Notify about the new post (fire-and-forget)
@@ -899,6 +970,11 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {post.is_pinned ? (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-amber-950/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                              📌 Pinned
+                            </span>
+                          ) : null}
                           <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_COLORS[post.type]}`}>
                             {cat?.emoji} {cat?.label}
                           </span>
@@ -1027,6 +1103,15 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                     </button>
                     {isAdmin && (
                       <div className="ml-auto flex items-center gap-1">
+                        <button
+                          onClick={() => void togglePinned(post.id, !post.is_pinned)}
+                          title={post.is_pinned ? "Unpin post" : "Pin post"}
+                          className={`rounded px-2 py-1 text-[11px] transition ${post.is_pinned ? "text-amber-300 hover:text-amber-200" : "text-neutral-400 hover:text-amber-300"}`}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 17v5" />
+                            <path d="M8 3h8l-1 6 3 3H6l3-3-1-6z" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => setEditingPost({ id: post.id, title: post.title, content: post.content ?? "" })}
                           title="Edit post"
