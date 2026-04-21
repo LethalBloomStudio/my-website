@@ -19,6 +19,7 @@ import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
+import { getPromotionState } from "@/lib/promotionState";
 import NotesPanel from "@/components/NotesPanel";
 
 type Manuscript = {
@@ -497,9 +498,19 @@ export default function ManuscriptDetailsPage() {
       .eq("user_id", userId)
       .maybeSingle();
     const accountRow = (account as { age_category?: string | null; subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
-    const ageCategory = accountRow?.age_category;
+    const promoState = getPromotionState(accountRow);
+    if (promoState.shouldClearPromotion) {
+      await supabase
+        .from("accounts")
+        .update({ active_promotion_id: null, promotion_expires_at: null })
+        .eq("user_id", userId);
+    }
+    const normalizedAccountRow = promoState.shouldClearPromotion && accountRow
+      ? { ...accountRow, active_promotion_id: null, promotion_expires_at: null }
+      : accountRow;
+    const ageCategory = normalizedAccountRow?.age_category;
     setProfileAgeCategory(ageCategory === "youth_13_17" ? "youth_13_17" : "adult_18_plus");
-    setCoinBalance(Number(accountRow?.bloom_coins ?? 0));
+    setCoinBalance(Number(normalizedAccountRow?.bloom_coins ?? 0));
 
     const { data: profile } = await supabase
       .from("public_profiles")
@@ -513,8 +524,8 @@ export default function ManuscriptDetailsPage() {
     setProfileFeedbackPreference(feedbackPref);
     // memberTier is based on subscription_status OR an active promotion
     // writer_level is the user's self-selected writing experience - unrelated to subscription
-    const subscription = (accountRow?.subscription_status ?? "").toLowerCase().trim();
-    const onActivePromo = !!(accountRow?.active_promotion_id && accountRow?.promotion_expires_at && new Date(accountRow.promotion_expires_at) > new Date());
+    const subscription = (normalizedAccountRow?.subscription_status ?? "").toLowerCase().trim();
+    const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
     setMemberTier(
       subscription === "lethal" || subscription.includes("lethal") || onActivePromo ? "lethal" :
       subscription === "forge" || subscription.includes("forge") ? "forge" :

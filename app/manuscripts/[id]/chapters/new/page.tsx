@@ -9,6 +9,7 @@ import ChapterEditor from "@/components/ChapterEditor";
 import FormatPicker from "@/components/FormatPicker";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { normalizeChapterText } from "@/lib/format/chapterNormalize";
+import { getPromotionState } from "@/lib/promotionState";
 
 type Manuscript = {
   id: string;
@@ -58,7 +59,17 @@ export default function NewChapterPage() {
       .eq("user_id", userId)
       .maybeSingle();
     const accountRow = (account as { subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
-    setCoinBalance(Number(accountRow?.bloom_coins ?? 0));
+    const promoState = getPromotionState(accountRow);
+    if (promoState.shouldClearPromotion) {
+      await supabase
+        .from("accounts")
+        .update({ active_promotion_id: null, promotion_expires_at: null })
+        .eq("user_id", userId);
+    }
+    const normalizedAccountRow = promoState.shouldClearPromotion && accountRow
+      ? { ...accountRow, active_promotion_id: null, promotion_expires_at: null }
+      : accountRow;
+    setCoinBalance(Number(normalizedAccountRow?.bloom_coins ?? 0));
 
     const { data: profile } = await supabase
       .from("public_profiles")
@@ -66,9 +77,9 @@ export default function NewChapterPage() {
       .eq("user_id", userId)
       .maybeSingle();
     const writerLevel = (profile as { writer_level?: string | null } | null)?.writer_level;
-    const subscription = (accountRow?.subscription_status ?? "").toLowerCase();
+    const subscription = (normalizedAccountRow?.subscription_status ?? "").toLowerCase();
     const lethalFromSubscription = subscription.includes("lethal");
-    const onActivePromo = !!(accountRow?.active_promotion_id && accountRow?.promotion_expires_at && new Date(accountRow.promotion_expires_at) > new Date());
+    const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
     setMemberTier(
       writerLevel === "lethal" || lethalFromSubscription || onActivePromo
         ? "lethal"

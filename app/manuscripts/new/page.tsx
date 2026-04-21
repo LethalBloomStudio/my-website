@@ -15,6 +15,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { ageCategoryFromDob } from "@/lib/contentPolicy";
 import { genreOptionsForAgeCategory } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
+import { getPromotionState } from "@/lib/promotionState";
 
 const REQUESTED_FEEDBACK_DESCRIPTIONS: Record<"bloom" | "forge" | "lethal", string> = {
   bloom: "Encouraging, supportive feedback focused on clarity, flow, and what is already working.",
@@ -68,19 +69,29 @@ function NewManuscriptInner() {
         .maybeSingle();
 
       const row = data as { age_category?: string | null; dob?: string | null; bloom_coins?: number | null; subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null;
+      const promoState = getPromotionState(row);
+      if (auth.user.id && promoState.shouldClearPromotion) {
+        await supabase
+          .from("accounts")
+          .update({ active_promotion_id: null, promotion_expires_at: null })
+          .eq("user_id", auth.user.id);
+      }
+      const normalizedRow = promoState.shouldClearPromotion && row
+        ? { ...row, active_promotion_id: null, promotion_expires_at: null }
+        : row;
       const inferred =
-        row?.age_category === "youth_13_17" || row?.age_category === "adult_18_plus"
-          ? row.age_category
-          : ageCategoryFromDob(row?.dob ?? null);
+        normalizedRow?.age_category === "youth_13_17" || normalizedRow?.age_category === "adult_18_plus"
+          ? normalizedRow.age_category
+          : ageCategoryFromDob(normalizedRow?.dob ?? null);
       setProfileAgeCategory(inferred);
-      setCoinBalance(Number(row?.bloom_coins ?? 0));
+      setCoinBalance(Number(normalizedRow?.bloom_coins ?? 0));
 
       const { data: profile } = await supabase.from("public_profiles").select("writer_level, feedback_preference").eq("user_id", auth.user.id).maybeSingle();
       const writerLevel = (profile as { writer_level?: string | null; feedback_preference?: string | null } | null)?.writer_level;
       const profileFeedback = (profile as { writer_level?: string | null; feedback_preference?: string | null } | null)?.feedback_preference;
-      const subscription = (row?.subscription_status ?? "").toLowerCase();
+      const subscription = (normalizedRow?.subscription_status ?? "").toLowerCase();
       const lethalFromSubscription = subscription.includes("lethal");
-      const onActivePromo = !!(row?.active_promotion_id && row?.promotion_expires_at && new Date(row.promotion_expires_at) > new Date());
+      const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
       setMemberTier(writerLevel === "lethal" || lethalFromSubscription || onActivePromo ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
 
       // Map profile feedback_preference to manuscript requested_feedback values

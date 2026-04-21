@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
+import { getPromotionState } from "@/lib/promotionState";
 import SubscriptionClient from "./SubscriptionClient";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +34,20 @@ export default async function SubscriptionPage() {
     stripe_customer_id: string | null;
     stripe_subscription_id: string | null;
   } | null;
-  const baseStatus = account?.subscription_status?.trim() || "free";
-  const onActivePromo = !!(account?.active_promotion_id && account?.promotion_expires_at && new Date(account.promotion_expires_at) > new Date());
-  const isYouth = account?.age_category === "youth_13_17";
   const admin = supabaseAdmin();
+  const promoState = getPromotionState(account);
+  if (user.id && promoState.shouldClearPromotion) {
+    await admin
+      .from("accounts")
+      .update({ active_promotion_id: null, promotion_expires_at: null })
+      .eq("user_id", user.id);
+  }
+  const normalizedAccount = promoState.shouldClearPromotion && account
+    ? { ...account, active_promotion_id: null, promotion_expires_at: null }
+    : account;
+  const baseStatus = normalizedAccount?.subscription_status?.trim() || "free";
+  const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
+  const isYouth = normalizedAccount?.age_category === "youth_13_17";
   const hasBillingAccount = !!(account?.stripe_customer_id || account?.stripe_subscription_id);
 
   // For youth: check if they have an active parent link
@@ -97,7 +108,7 @@ export default async function SubscriptionPage() {
                 currentStatus={baseStatus}
                 youthLethalMode
                 onActivePromo={onActivePromo}
-                promotionExpiresAt={account?.promotion_expires_at ?? null}
+                promotionExpiresAt={normalizedAccount?.promotion_expires_at ?? null}
                 hasBillingAccount={hasBillingAccount}
               />
           ) : (
@@ -133,7 +144,7 @@ export default async function SubscriptionPage() {
             <SubscriptionClient
                 currentStatus={baseStatus}
                 onActivePromo={onActivePromo}
-                promotionExpiresAt={account?.promotion_expires_at ?? null}
+                promotionExpiresAt={normalizedAccount?.promotion_expires_at ?? null}
                 hasBillingAccount={hasBillingAccount}
               />
 

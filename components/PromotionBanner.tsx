@@ -2,22 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
+import { getPromotionState } from "@/lib/promotionState";
 
 type EnrolledPromo = {
   promotion_expires_at: string;
   promotion_name: string | null;
+  days_left: number;
 };
 
 export default function PromotionBanner() {
   const [promo, setPromo] = useState<EnrolledPromo | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("promo_banner_dismissed") === "1";
+  });
   const supabase = supabaseBrowser();
 
   useEffect(() => {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("promo_banner_dismissed")) {
-      setDismissed(true);
-      return;
-    }
+    if (dismissed) return;
 
     async function check() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -30,10 +32,15 @@ export default function PromotionBanner() {
         .maybeSingle();
 
       const row = acct as { active_promotion_id: string | null; promotion_expires_at: string | null } | null;
-      if (!row?.active_promotion_id || !row.promotion_expires_at) return;
-
-      const expires = new Date(row.promotion_expires_at);
-      if (expires <= new Date()) return;
+      const promoState = getPromotionState(row);
+      if (promoState.shouldClearPromotion) {
+        await supabase
+          .from("accounts")
+          .update({ active_promotion_id: null, promotion_expires_at: null })
+          .eq("user_id", user.id);
+        return;
+      }
+      if (!row?.active_promotion_id || !row.promotion_expires_at || !promoState.onActivePromo) return;
 
       // Fetch the promotion name
       const { data: promoData } = await supabase
@@ -45,11 +52,12 @@ export default function PromotionBanner() {
       setPromo({
         promotion_expires_at: row.promotion_expires_at,
         promotion_name: (promoData as { name?: string } | null)?.name ?? null,
+        days_left: Math.max(1, Math.ceil((new Date(row.promotion_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))),
       });
     }
 
     void check();
-  }, [supabase]);
+  }, [dismissed, supabase]);
 
   function dismiss() {
     setDismissed(true);
@@ -57,10 +65,6 @@ export default function PromotionBanner() {
   }
 
   if (!promo || dismissed) return null;
-
-  const expires = new Date(promo.promotion_expires_at);
-  const msLeft = expires.getTime() - Date.now();
-  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
 
   return (
     <div className="relative z-40 w-full border-b border-violet-700/40 bg-violet-950/40 px-4 py-2.5 text-center text-sm backdrop-blur-sm">
@@ -70,7 +74,7 @@ export default function PromotionBanner() {
         </span>
         You have full Lethal Member access.{" "}
         <span className="font-medium text-violet-100">
-          {daysLeft === 1 ? "Expires tomorrow." : `${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining.`}
+          {promo.days_left === 1 ? "Expires tomorrow." : `${promo.days_left} day${promo.days_left !== 1 ? "s" : ""} remaining.`}
         </span>
       </span>
       <button

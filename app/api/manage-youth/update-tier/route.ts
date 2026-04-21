@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
+import { getPromotionState } from "@/lib/promotionState";
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -34,13 +35,17 @@ export async function POST(req: Request) {
       .select("subscription_status, active_promotion_id, promotion_expires_at")
       .eq("user_id", parentId)
       .maybeSingle();
-    const parentStatus = ((parentAcct as { subscription_status?: string | null } | null)?.subscription_status ?? "").toLowerCase();
+    const parentAccount = parentAcct as { subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null;
+    const promoState = getPromotionState(parentAccount);
+    if (promoState.shouldClearPromotion) {
+      await admin
+        .from("accounts")
+        .update({ active_promotion_id: null, promotion_expires_at: null })
+        .eq("user_id", parentId);
+    }
+    const parentStatus = (parentAccount?.subscription_status ?? "").toLowerCase();
     const parentIsLethal = parentStatus.includes("lethal");
-    const onPromo = !!(
-      (parentAcct as { active_promotion_id?: string | null; promotion_expires_at?: string | null } | null)?.active_promotion_id &&
-      (parentAcct as { promotion_expires_at?: string | null } | null)?.promotion_expires_at &&
-      new Date((parentAcct as { promotion_expires_at: string }).promotion_expires_at) > new Date()
-    );
+    const onPromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
     if (!parentIsLethal && !onPromo) {
       return NextResponse.json(
         { error: "You must have an active Lethal Member subscription to add the Unlimited add-on for a youth account." },
