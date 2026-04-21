@@ -933,7 +933,7 @@ const [now] = useState(() => Date.now());
                 <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900/10 p-3">
                   <button
                     onClick={() => setShowHidden((v) => !v)}
-                    className="flex w-full items-center justify-between text-xs text-neutral-500 hover:text-neutral-300 transition"
+                    className="flex w-full items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/20 px-3 py-2 text-xs text-neutral-500 hover:text-neutral-300 transition"
                   >
                     <span>Hidden Conversations ({hiddenFriends.length})</span>
                     <span>{showHidden ? "▲" : "▼"}</span>
