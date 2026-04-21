@@ -1393,26 +1393,25 @@ html[data-theme="day"] textarea[class] {
 /* ---------- Mobile Navbar ---------- */
 @media (max-width: 900px) {
   .navInner {
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    justify-content: space-between;
   }
 
   .brand {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    justify-content: flex-start;
   }
 
   .tabs {
-    width: 100%;
     margin-left: 0;
-    justify-content: center;
-    flex-wrap: wrap;
-    white-space: normal;
+    justify-content: flex-start;
   }
 
   .navRight {
-    width: 100%;
+    width: auto;
+    margin-left: auto;
     justify-content: flex-end;
+    flex-wrap: nowrap;
   }
 }
 
