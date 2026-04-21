@@ -344,6 +344,7 @@ select:focus-visible {
   align-items: center;
   gap: 10px;
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 /* ---------- Button Tabs ---------- */
