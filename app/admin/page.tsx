@@ -959,7 +959,7 @@ function AdminPageInner() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       {navOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 2xl:hidden">
           <button
             aria-label="Close admin navigation"
             className="absolute inset-0 bg-black/60"
@@ -1007,7 +1007,7 @@ function AdminPageInner() {
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <button
             onClick={() => setNavOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-200 transition hover:text-white lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-200 transition hover:text-white 2xl:hidden"
             aria-label="Open admin navigation"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1028,7 +1028,7 @@ function AdminPageInner() {
         )}
 
         <div className="flex items-start gap-4 lg:gap-6">
-          <aside className="sticky top-6 hidden shrink-0 w-56 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2 lg:block">
+          <aside className="sticky top-6 hidden shrink-0 w-56 rounded-2xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.96)] p-2 2xl:block">
             <div className="mb-3 px-2 pt-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Navigation</p>
               <p className="mt-1 text-[11px] text-neutral-400">Admin sections</p>
