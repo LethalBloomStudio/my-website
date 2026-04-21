@@ -173,6 +173,8 @@ type ReferralEntry = {
   referrer_email: string | null;
   referrer_username: string | null;
   referrer_pen_name: string | null;
+  referred_referral_access_disabled: boolean;
+  referrer_referral_access_disabled: boolean;
 };
 
 type ConductAppeal = {
@@ -1632,6 +1634,12 @@ function AdminPageInner() {
         {tab === "referrals" && (() => {
           const verifiedCount = referrals.filter((r) => r.status === "verified").length;
           const invalidCount = referrals.length - verifiedCount;
+          const referralUsageCount = referrals.reduce<Record<string, number>>((acc, r) => {
+            const key = r.referrer_user_id ?? r.referrer_username ?? r.referrer_email ?? r.referral_username_input;
+            if (!key) return acc;
+            acc[key] = (acc[key] ?? 0) + 1;
+            return acc;
+          }, {});
           return (
             <div>
               <div className="mb-4 flex flex-wrap gap-4">
@@ -1658,29 +1666,63 @@ function AdminPageInner() {
                       <th className="px-4 py-3">Referrer</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Reward</th>
+                      <th className="px-4 py-3">Referral Access</th>
                     </tr>
                   </thead>
                   <tbody>
                     {referrals.length === 0 && (
-                      <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No referrals yet.</td></tr>
+                      <tr><td colSpan={6} className="px-4 py-8 text-center text-neutral-500">No referrals yet.</td></tr>
                     )}
                     {referrals.map((ref) => {
                       const referredLabel = ref.referred_pen_name || ref.referred_name || (ref.referred_username ? `@${ref.referred_username}` : ref.referred_user_id);
                       const referrerLabel = ref.referrer_pen_name || ref.referrer_name || (ref.referrer_username ? `@${ref.referrer_username}` : (ref.referrer_user_id ?? `@${ref.referral_username_input}`));
+                      const referrerCountKey = ref.referrer_user_id ?? ref.referrer_username ?? ref.referrer_email ?? ref.referral_username_input;
+                      const referrerCount = referrerCountKey ? (referralUsageCount[referrerCountKey] ?? 0) : 0;
                       return (
                         <tr key={ref.id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
                           <td className="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">{new Date(ref.created_at).toLocaleString()}</td>
                           <td className="px-4 py-3">
                             <p className="text-sm text-neutral-100">{referredLabel}</p>
                             {ref.referred_email && <p className="text-xs text-neutral-500">{ref.referred_email}</p>}
+                            {ref.referred_user_id ? (
+                              <button
+                                onClick={async () => {
+                                  const disable = !ref.referred_referral_access_disabled;
+                                  const ok = await adminUpdate("accounts", "user_id", ref.referred_user_id, { referral_access_disabled: disable });
+                                  if (ok) {
+                                    setMsg(disable ? "Referred user referral access disabled." : "Referred user referral access enabled.");
+                                    await audit(
+                                      disable ? "disable_referral_access" : "enable_referral_access",
+                                      "user",
+                                      ref.referred_user_id,
+                                      { referral_access_disabled: !disable },
+                                      { referral_access_disabled: disable }
+                                    );
+                                    await loadReferrals();
+                                  } else {
+                                    setMsg("Failed to update referred user referral access.");
+                                  }
+                                }}
+                                className={`mt-2 rounded-lg border px-3 py-1.5 text-xs transition ${
+                                  ref.referred_referral_access_disabled
+                                    ? "border-emerald-700/40 bg-emerald-950/10 text-emerald-300 hover:bg-emerald-950/30"
+                                    : "border-red-700/40 bg-red-950/10 text-red-300 hover:bg-red-950/30"
+                                }`}
+                              >
+                                {ref.referred_referral_access_disabled ? "Enable User" : "Disable User"}
+                              </button>
+                            ) : null}
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-sm text-neutral-100">{referrerLabel}</p>
                             <p className="text-xs text-neutral-500">{ref.referrer_email ?? `input: @${ref.referral_username_input}`}</p>
+                            <p className="mt-1 text-[11px] text-amber-300">Used {referrerCount.toLocaleString()} time{referrerCount === 1 ? "" : "s"}</p>
                           </td>
                           <td className="px-4 py-3">
                             {ref.status === "verified" ? (
                               <Badge label="Verified" color="green" />
+                            ) : ref.status === "blocked" ? (
+                              <Badge label="Blocked" color="red" />
                             ) : ref.status === "invalid_self" ? (
                               <Badge label="Invalid Self" color="amber" />
                             ) : (
@@ -1691,6 +1733,38 @@ function AdminPageInner() {
                             {ref.status === "verified"
                               ? `${ref.referrer_reward_coins} to referrer / ${ref.referred_reward_coins} to signup`
                               : "No coins awarded"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {ref.referrer_user_id ? (
+                              <button
+                                onClick={async () => {
+                                  const disable = !ref.referrer_referral_access_disabled;
+                                  const ok = await adminUpdate("accounts", "user_id", ref.referrer_user_id!, { referral_access_disabled: disable });
+                                  if (ok) {
+                                    setMsg(disable ? "Referrer referral access disabled." : "Referrer referral access enabled.");
+                                    await audit(
+                                      disable ? "disable_referral_access" : "enable_referral_access",
+                                      "user",
+                                      ref.referrer_user_id!,
+                                      { referral_access_disabled: !disable },
+                                      { referral_access_disabled: disable }
+                                    );
+                                    await loadReferrals();
+                                  } else {
+                                    setMsg("Failed to update referrer referral access.");
+                                  }
+                                }}
+                                className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+                                  ref.referrer_referral_access_disabled
+                                    ? "border-emerald-700/40 bg-emerald-950/10 text-emerald-300 hover:bg-emerald-950/30"
+                                    : "border-red-700/40 bg-red-950/10 text-red-300 hover:bg-red-950/30"
+                                }`}
+                              >
+                                {ref.referrer_referral_access_disabled ? "Enable Referrer" : "Disable Referrer"}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-neutral-500">No live referrer account</span>
+                            )}
                           </td>
                         </tr>
                       );

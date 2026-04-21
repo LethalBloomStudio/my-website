@@ -154,13 +154,13 @@ export async function GET(req: Request) {
 
     const userIds = [...new Set(rows.flatMap((r) => [r.referred_user_id, r.referrer_user_id].filter(Boolean) as string[]))];
     const [{ data: accs }, { data: profiles }] = await Promise.all([
-      userIds.length ? supabase.from("accounts").select("user_id, full_name, email").in("user_id", userIds) : { data: [] },
+      userIds.length ? supabase.from("accounts").select("user_id, full_name, email, referral_access_disabled").in("user_id", userIds) : { data: [] },
       userIds.length ? supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", userIds) : { data: [] },
     ]);
 
-    const accMap: Record<string, { full_name: string | null; email: string | null }> = {};
-    ((accs ?? []) as { user_id: string; full_name: string | null; email: string | null }[]).forEach((a) => {
-      accMap[a.user_id] = { full_name: a.full_name, email: a.email };
+    const accMap: Record<string, { full_name: string | null; email: string | null; referral_access_disabled: boolean | null }> = {};
+    ((accs ?? []) as { user_id: string; full_name: string | null; email: string | null; referral_access_disabled: boolean | null }[]).forEach((a) => {
+      accMap[a.user_id] = { full_name: a.full_name, email: a.email, referral_access_disabled: a.referral_access_disabled };
     });
     const profileMap: Record<string, { username: string | null; pen_name: string | null }> = {};
     ((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).forEach((p) => {
@@ -173,10 +173,12 @@ export async function GET(req: Request) {
       referred_email: accMap[r.referred_user_id]?.email ?? r.referred_email_snapshot ?? null,
       referred_username: profileMap[r.referred_user_id]?.username ?? r.referred_username_snapshot ?? null,
       referred_pen_name: profileMap[r.referred_user_id]?.pen_name ?? r.referred_pen_name_snapshot ?? null,
+      referred_referral_access_disabled: accMap[r.referred_user_id]?.referral_access_disabled ?? false,
       referrer_name: r.referrer_user_id ? (accMap[r.referrer_user_id]?.full_name ?? r.referrer_name_snapshot ?? null) : (r.referrer_name_snapshot ?? null),
       referrer_email: r.referrer_user_id ? (accMap[r.referrer_user_id]?.email ?? r.referrer_email_snapshot ?? null) : (r.referrer_email_snapshot ?? null),
       referrer_username: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.username ?? r.referrer_username_snapshot ?? null) : (r.referrer_username_snapshot ?? null),
       referrer_pen_name: r.referrer_user_id ? (profileMap[r.referrer_user_id]?.pen_name ?? r.referrer_pen_name_snapshot ?? null) : (r.referrer_pen_name_snapshot ?? null),
+      referrer_referral_access_disabled: r.referrer_user_id ? (accMap[r.referrer_user_id]?.referral_access_disabled ?? false) : false,
     }));
   }
 
