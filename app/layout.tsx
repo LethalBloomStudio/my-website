@@ -8,6 +8,7 @@ import HomeNavButton from "@/components/HomeNavButton";
 import AuthButton from "@/components/AuthButton";
 import AuthGatedNav from "@/components/AuthGatedNav";
 import MessagesNavButton from "@/components/MessagesNavButton";
+import NotificationButton from "@/components/NotificationButton";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
@@ -204,6 +205,7 @@ export default function RootLayout({
             <div className="navRight">
               <div className="desktopNav" style={{ display: "contents" }}>
                 <MessagesNavButton />
+                <NotificationButton />
               </div>
               <ThemeToggle />
               <AuthButton />
