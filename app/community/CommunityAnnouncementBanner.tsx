@@ -122,7 +122,7 @@ export default function CommunityAnnouncementBanner({
         .community-announcement-marquee__track {
           display: inline-flex;
           min-width: 100%;
-          animation: community-marquee 24s linear infinite;
+          animation: community-marquee 42s linear infinite;
         }
 
         .community-announcement-marquee__copy {
