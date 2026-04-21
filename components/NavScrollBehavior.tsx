@@ -29,8 +29,6 @@ export default function NavScrollBehavior() {
         showNav();
       } else if (currentY > lastScrollY + 4) {
         hideNav();
-      } else if (currentY < lastScrollY - 4) {
-        showNav();
       }
       lastScrollY = currentY;
     };
