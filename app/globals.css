@@ -301,6 +301,10 @@ select:focus-visible {
     display: inline-flex;
     align-items: center;
   }
+
+  .navRight {
+    margin-left: auto;
+  }
 }
 
 /* Force chapter layout to stack when running as a standalone/PWA to prevent overlap. */
@@ -344,7 +348,7 @@ select:focus-visible {
   align-items: center;
   gap: 10px;
   flex: 0 0 auto;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 /* ---------- Button Tabs ---------- */
