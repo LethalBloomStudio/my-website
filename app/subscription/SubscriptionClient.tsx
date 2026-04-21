@@ -38,7 +38,11 @@ export default function SubscriptionClient({
         body: JSON.stringify({ type: "subscription", plan: selectedPlan }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
-      if (!data.url) { setMsg(data.error ?? "Failed to start checkout."); setLoading(false); return; }
+      if (!data.url) {
+        setMsg(data.error ?? "Failed to start checkout.");
+        setLoading(false);
+        return;
+      }
       window.location.href = data.url;
     } catch {
       setMsg("Something went wrong.");
@@ -52,7 +56,11 @@ export default function SubscriptionClient({
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = (await res.json()) as { url?: string; error?: string };
-      if (!data.url) { setMsg(data.error ?? "Could not open billing portal."); setLoading(false); return; }
+      if (!data.url) {
+        setMsg(data.error ?? "Could not open billing portal.");
+        setLoading(false);
+        return;
+      }
       window.location.href = data.url;
     } catch {
       setMsg("Something went wrong.");
@@ -62,7 +70,6 @@ export default function SubscriptionClient({
 
   return (
     <div className="space-y-6">
-      {/* Current plan status banner */}
       <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.12)] px-5 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -100,7 +107,6 @@ export default function SubscriptionClient({
         </div>
       </div>
 
-      {/* Upgrade options */}
       {(isFree || isPromoOnly) && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
@@ -108,7 +114,6 @@ export default function SubscriptionClient({
           </h2>
 
           {youthLethalMode ? (
-            /* Youth Lethal: single fixed plan, no annual option */
             <div className="rounded-xl border border-red-700/40 bg-red-950/10 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-neutral-100">Youth Lethal Member</span>
@@ -120,7 +125,6 @@ export default function SubscriptionClient({
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {/* Monthly */}
               <button
                 type="button"
                 onClick={() => setSelectedPlan("lethal_member")}
@@ -142,7 +146,6 @@ export default function SubscriptionClient({
                 <p className="mt-1 text-xs text-neutral-400">Billed monthly · cancel anytime</p>
               </button>
 
-              {/* Annual */}
               <button
                 type="button"
                 onClick={() => setSelectedPlan("lethal_member_annual")}
@@ -154,7 +157,7 @@ export default function SubscriptionClient({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-neutral-100">Annual</span>
-                  <span className="rounded-lg bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-800/40">
+                  <span className="rounded-lg border border-emerald-800/40 bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
                     Save $20
                   </span>
                 </div>
@@ -166,9 +169,8 @@ export default function SubscriptionClient({
             </div>
           )}
 
-          {/* What you get */}
           <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
               What you get
             </p>
             <ul className="space-y-2 text-sm text-neutral-300">
@@ -205,37 +207,6 @@ export default function SubscriptionClient({
         </div>
       )}
 
-      {/* Promotional access info */}
-      {isPromoOnly && (
-        <div className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
-            Promotional Access
-          </h2>
-          <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] px-5 py-4 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-neutral-400">Access</span>
-              <span className="text-sm text-neutral-200">Lethal Member (full access)</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-neutral-400">Billing</span>
-              <span className="text-sm text-violet-400">Free — no charge during promotion</span>
-            </div>
-            {promotionExpiresAt && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-neutral-400">Expires</span>
-                <span className="text-sm text-neutral-200">
-                  {new Date(promotionExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                </span>
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-neutral-500">
-            You are not being charged. When your promotional period ends, you can choose to subscribe to keep your Lethal Member benefits.
-          </p>
-        </div>
-      )}
-
-      {/* Active subscription management */}
       {(isLethal || hasBillingAccount) && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
@@ -271,14 +242,13 @@ export default function SubscriptionClient({
 
           {msg && <p className="text-sm text-red-400">{msg}</p>}
 
-          {/* Manage via Stripe portal (cancel, switch plan, update payment) */}
           <button
             type="button"
             onClick={() => void openPortal()}
             disabled={loading}
             className="h-9 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.14)] px-4 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.24)] transition disabled:opacity-50"
           >
-            {loading ? "Opening…" : "Manage billing / Cancel subscription"}
+            {loading ? "Opening..." : "Manage billing / Cancel subscription"}
           </button>
           <p className="text-xs text-neutral-500">
             Switch plans, update payment method, or cancel - all handled securely through Stripe.
