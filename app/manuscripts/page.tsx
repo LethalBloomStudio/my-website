@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
@@ -32,6 +32,13 @@ type BetaManuscript = {
   total_chapters: number;
   read_chapters: number;
   new_chapters: number;
+};
+
+type BetaChapterRow = {
+  id: string;
+  manuscript_id: string;
+  created_at: string;
+  published_at?: string | null;
 };
 
 const betaProjectOpenedKey = (manuscriptId: string) => `lbs-beta-project-opened-${manuscriptId}`;
@@ -119,47 +126,80 @@ export default function ManuscriptsPage() {
     setBetaItems((prev) => prev.map((m) => (m.id === manuscriptId ? { ...m, new_chapters: 0 } : m)));
   }
 
+  const loadPublishedChapters = useCallback(async (manuscriptIds: string[]): Promise<BetaChapterRow[]> => {
+    if (manuscriptIds.length === 0) return [];
+
+    const baseQuery = supabase
+      .from("manuscript_chapters")
+      .in("manuscript_id", manuscriptIds)
+      .eq("is_private", false)
+      .eq("chapter_type", "chapter");
+
+    const { data, error } = await baseQuery.select("id, manuscript_id, created_at, published_at");
+    if (!error) {
+      return (data ?? []) as BetaChapterRow[];
+    }
+
+    const message = error.message.toLowerCase();
+    if (!message.includes("published_at")) {
+      throw error;
+    }
+
+    const fallback = await supabase
+      .from("manuscript_chapters")
+      .select("id, manuscript_id, created_at")
+      .in("manuscript_id", manuscriptIds)
+      .eq("is_private", false)
+      .eq("chapter_type", "chapter");
+    if (fallback.error) {
+      throw fallback.error;
+    }
+
+    return (((fallback.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string }>).map((chapter) => ({
+      ...chapter,
+      published_at: null,
+    })));
+  }, [supabase]);
+
   async function refreshBetaManuscript(manuscriptId: string, readerId: string) {
     const current = betaItemsRef.current.find((m) => m.id === manuscriptId);
     if (!current) return;
 
-    const [chaptersRes, completionsRes] = await Promise.all([
-      supabase
-        .from("manuscript_chapters")
-        .select("id, created_at, published_at")
-        .eq("manuscript_id", manuscriptId)
-        .eq("is_private", false)
-        .eq("chapter_type", "chapter"),
-      supabase
-        .from("chapter_read_completions")
-        .select("chapter_id, completed_at")
-        .eq("manuscript_id", manuscriptId)
-        .eq("reader_id", readerId),
-    ]);
+    try {
+      const [chapters, completionsRes] = await Promise.all([
+        loadPublishedChapters([manuscriptId]),
+        supabase
+          .from("chapter_read_completions")
+          .select("chapter_id, completed_at")
+          .eq("manuscript_id", manuscriptId)
+          .eq("reader_id", readerId),
+      ]);
 
-    const chapters = (chaptersRes.data ?? []) as Array<{ id: string; created_at: string; published_at?: string | null }>;
-    const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; completed_at: string }>;
-    const latestReadAt = completions.reduce<string | null>(
-      (latest, completion) => (!latest || completion.completed_at > latest ? completion.completed_at : latest),
-      null,
-    );
-    const openedAt = getBetaProjectOpenedAt(manuscriptId);
-    const seenAtBase = latestReadAt ?? current.grant_created_at;
-    const seenAt = openedAt && openedAt > seenAtBase ? openedAt : seenAtBase;
-    const newChapters = chapters.filter((chapter) => chapterAvailableAt(chapter) > seenAt).length;
+      const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; completed_at: string }>;
+      const latestReadAt = completions.reduce<string | null>(
+        (latest, completion) => (!latest || completion.completed_at > latest ? completion.completed_at : latest),
+        null,
+      );
+      const openedAt = getBetaProjectOpenedAt(manuscriptId);
+      const seenAtBase = latestReadAt ?? current.grant_created_at;
+      const seenAt = openedAt && openedAt > seenAtBase ? openedAt : seenAtBase;
+      const newChapters = chapters.filter((chapter) => chapterAvailableAt(chapter) > seenAt).length;
 
-    setBetaItems((prev) =>
-      prev.map((item) =>
-        item.id === manuscriptId
-          ? {
-              ...item,
-              total_chapters: chapters.length,
-              read_chapters: completions.length,
-              new_chapters: newChapters,
-            }
-          : item,
-      ),
-    );
+      setBetaItems((prev) =>
+        prev.map((item) =>
+          item.id === manuscriptId
+            ? {
+                ...item,
+                total_chapters: chapters.length,
+                read_chapters: completions.length,
+                new_chapters: newChapters,
+              }
+            : item,
+        ),
+      );
+    } catch {
+      // Leave the existing card state alone if the refresh query fails.
+    }
   }
 
   // Keep a ref so realtime handlers can access current betaItems without re-subscribing
@@ -231,18 +271,13 @@ export default function ManuscriptsPage() {
       const grantDateMap = new Map(grantList.map((g) => [g.manuscript_id, g.created_at]));
 
       if (grantedIds.length > 0) {
-        const [betaDataRes, chaptersRes, completionsRes] = await Promise.all([
+        const [betaDataRes, chapters, completionsRes] = await Promise.all([
           supabase
             .from("manuscripts")
             .select("id, title, genre, cover_url, owner_id")
             .in("id", grantedIds)
             .neq("owner_id", uid),
-          supabase
-            .from("manuscript_chapters")
-            .select("id, manuscript_id, created_at, published_at")
-            .in("manuscript_id", grantedIds)
-            .eq("is_private", false)
-            .eq("chapter_type", "chapter"),
+          loadPublishedChapters(grantedIds),
           supabase
             .from("chapter_read_completions")
             .select("chapter_id, manuscript_id, completed_at")
@@ -251,14 +286,13 @@ export default function ManuscriptsPage() {
         ]);
 
         const betaRows = (betaDataRes.data as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string }> | null) ?? [];
-        const chapters = (chaptersRes.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string; published_at?: string | null }>;
         const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; manuscript_id: string; completed_at: string }>;
 
         // Group chapters by manuscript_id
-        const chaptersByMs = new Map<string, Array<{ id: string; created_at: string; published_at?: string | null }>>();
+        const chaptersByMs = new Map<string, BetaChapterRow[]>();
         for (const ch of chapters) {
           if (!chaptersByMs.has(ch.manuscript_id)) chaptersByMs.set(ch.manuscript_id, []);
-          chaptersByMs.get(ch.manuscript_id)!.push({ id: ch.id, created_at: ch.created_at, published_at: ch.published_at ?? null });
+          chaptersByMs.get(ch.manuscript_id)!.push(ch);
         }
 
         // Group completions by manuscript_id, track count + most recent date
@@ -314,7 +348,7 @@ export default function ManuscriptsPage() {
 
       setLoading(false);
     })();
-  }, [supabase]);
+  }, [supabase, loadPublishedChapters]);
 
   // Realtime: update chapter counts and feedback preference live
   useEffect(() => {
