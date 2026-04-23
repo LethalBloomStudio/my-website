@@ -210,11 +210,12 @@ export default function ManuscriptsPage() {
     (async () => {
       setLoading(true);
       setMsg(null);
+      try {
 
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
         setItems([]);
-        setLoading(false);
+        setBetaItems([]);
         setMsg("Please sign in to view your manuscripts.");
         return;
       }
@@ -261,16 +262,22 @@ export default function ManuscriptsPage() {
       }
 
       // Manuscripts accepted to beta read (approved access grants, not own) — include grant created_at
-      const { data: grantRows } = await supabase
+      const { data: grantRows, error: grantError } = await supabase
         .from("manuscript_access_grants")
         .select("manuscript_id, created_at")
         .eq("reader_id", uid);
+
+      if (grantError) {
+        setBetaItems([]);
+        return;
+      }
 
       const grantList = (grantRows ?? []) as Array<{ manuscript_id: string; created_at: string }>;
       const grantedIds = grantList.map((r) => r.manuscript_id);
       const grantDateMap = new Map(grantList.map((g) => [g.manuscript_id, g.created_at]));
 
       if (grantedIds.length > 0) {
+        try {
         const [betaDataRes, chapters, completionsRes] = await Promise.all([
           supabase
             .from("manuscripts")
@@ -343,10 +350,24 @@ export default function ManuscriptsPage() {
               };
             })
           );
+        } else {
+          setBetaItems([]);
         }
+        } catch {
+          setBetaItems([]);
+        }
+      } else {
+        setBetaItems([]);
       }
 
-      setLoading(false);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load manuscripts.";
+        setItems([]);
+        setBetaItems([]);
+        setMsg(message);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [supabase, loadPublishedChapters]);
 
