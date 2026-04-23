@@ -59,6 +59,8 @@ function BetaReadersPageInner() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   useDeactivationGuard(supabase);
   const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
+  const isYouthView = viewParam === "youth";
 
   const initLevel = searchParams.get("level") ?? "";
   const initGenres = searchParams.get("genres") ?? "";
@@ -96,8 +98,7 @@ function BetaReadersPageInner() {
     const uid = auth.session?.user?.id ?? null;
     setCurrentUserId(uid);
 
-    const viewParam = searchParams.get("view");
-    const profilesUrl = viewParam === "youth" ? "/api/beta-reader-profiles?view=youth" : "/api/beta-reader-profiles";
+    const profilesUrl = isYouthView ? "/api/beta-reader-profiles?view=youth" : "/api/beta-reader-profiles";
     const [profilesRes, ownerRes] = await Promise.all([
       fetch(profilesUrl),
       fetch("/api/owner-profiles"),
@@ -123,11 +124,17 @@ function BetaReadersPageInner() {
     }
 
     setLoading(false);
-  }, [supabase]);
+  }, [isYouthView, supabase]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setInviteTarget(null);
+    setInviteMsg(null);
+    setVisibleCount(15);
+  }, [isYouthView]);
 
   async function openInviteModal(reader: ReaderProfile) {
     setInviteTarget(reader);
@@ -266,9 +273,11 @@ function BetaReadersPageInner() {
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Find Beta Readers</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{isYouthView ? "Youth Beta Readers" : "Find Beta Readers"}</h1>
             <p className="mt-2 text-sm text-neutral-300">
-              Browse readers available to beta read your manuscript. Filter by feedback level and genre.
+              {isYouthView
+                ? "Browse the youth-safe beta readers list available to youth accounts. Filter by feedback level and genre."
+                : "Browse readers available to beta read your manuscript. Filter by feedback level and genre."}
             </p>
           </div>
           <Link

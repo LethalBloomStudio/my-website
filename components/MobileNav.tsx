@@ -188,6 +188,9 @@ export default function MobileNav() {
           <div className="mobileNavDivider" />
           <Link href="/discover" className="mobileNavLink" onClick={close}>Discover</Link>
           <Link href="/beta-readers" className="mobileNavLink" onClick={close}>Beta Readers</Link>
+          {isAdmin && (
+            <Link href="/beta-readers?view=youth" className="mobileNavLink" onClick={close}>Youth Beta Readers</Link>
+          )}
           <Link href="/manuscripts" className="mobileNavLink" onClick={close}>Manuscripts</Link>
           <Link href="/wallet" className="mobileNavLink" onClick={close}>Wallet</Link>
           <Link href="/messages" className="mobileNavLink" onClick={close} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
