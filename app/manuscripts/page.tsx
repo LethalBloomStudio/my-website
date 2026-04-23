@@ -129,27 +129,32 @@ export default function ManuscriptsPage() {
   const loadPublishedChapters = useCallback(async (manuscriptIds: string[]): Promise<BetaChapterRow[]> => {
     if (manuscriptIds.length === 0) return [];
 
-    try {
-      const { data } = await supabase
-        .from("manuscript_chapters")
-        .select("id, manuscript_id, created_at, published_at")
-        .in("manuscript_id", manuscriptIds)
-        .eq("is_private", false)
-        .eq("chapter_type", "chapter");
-      return (data ?? []) as BetaChapterRow[];
-    } catch {
-      const fallback = await supabase
-        .from("manuscript_chapters")
-        .select("id, manuscript_id, created_at")
-        .in("manuscript_id", manuscriptIds)
-        .eq("is_private", false)
-        .eq("chapter_type", "chapter");
+    const primary = await supabase
+      .from("manuscript_chapters")
+      .select("id, manuscript_id, created_at, published_at")
+      .in("manuscript_id", manuscriptIds)
+      .eq("is_private", false)
+      .eq("chapter_type", "chapter");
 
-      return (((fallback.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string }>).map((chapter) => ({
-        ...chapter,
-        published_at: null,
-      })));
+    if (!primary.error) {
+      return (primary.data ?? []) as BetaChapterRow[];
     }
+
+    const fallback = await supabase
+      .from("manuscript_chapters")
+      .select("id, manuscript_id, created_at")
+      .in("manuscript_id", manuscriptIds)
+      .eq("is_private", false)
+      .eq("chapter_type", "chapter");
+
+    if (fallback.error) {
+      throw fallback.error;
+    }
+
+    return (((fallback.data ?? []) as Array<{ id: string; manuscript_id: string; created_at: string }>).map((chapter) => ({
+      ...chapter,
+      published_at: null,
+    })));
   }, [supabase]);
 
   async function refreshBetaManuscript(manuscriptId: string, readerId: string) {
