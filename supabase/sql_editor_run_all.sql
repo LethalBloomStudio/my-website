@@ -199,8 +199,29 @@ create table if not exists public.manuscript_chapters (
   title text not null default 'Chapter 1',
   content text not null,
   is_private boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  published_at timestamptz
 );
+
+create or replace function public.set_manuscript_chapter_published_at()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.is_private = false then
+    if tg_op = 'INSERT' then
+      new.published_at := coalesce(new.published_at, now());
+    elsif old.is_private is distinct from new.is_private and old.is_private = true then
+      new.published_at := now();
+    elsif new.published_at is null then
+      new.published_at := now();
+    end if;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists manuscript_chapters_set_published_at on public.manuscript_chapters;
+create trigger manuscript_chapters_set_published_at
+before insert or update on public.manuscript_chapters
+for each row execute function public.set_manuscript_chapter_published_at();
 
 alter table public.manuscripts add column if not exists cover_url text;
 alter table public.manuscripts add column if not exists description text;
