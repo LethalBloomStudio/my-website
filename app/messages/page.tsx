@@ -14,9 +14,12 @@ import NotesPanel from "@/components/NotesPanel";
 type Msg = {
   id: string;
   sender_id: string;
-  receiver_id: string;
+  receiver_id?: string;
+  conversation_id?: string;
   body: string;
   created_at: string;
+  sender_name?: string;
+  sender_avatar_url?: string | null;
 };
 
 type ModerationStatus = {
@@ -63,6 +66,21 @@ type Friend = {
   unreadCount: number;
 };
 
+type GroupParticipant = {
+  user_id: string;
+  label: string;
+  avatar_url: string | null;
+};
+
+type GroupConversation = {
+  id: string;
+  title: string;
+  unreadCount: number;
+  lastMessageAt: number;
+  memberCount: number;
+  participants: GroupParticipant[];
+};
+
 
 const TRIGGER_LABELS: Record<string, string> = {
   solicitation: "Soliciting other members for paid work or external opportunities",
@@ -88,6 +106,8 @@ function MessagesPageInner() {
   useDeactivationGuard(supabase);
   const searchParams = useSearchParams();
   const withUser = searchParams.get("with") ?? "";
+  const groupId = searchParams.get("group") ?? "";
+  const isGroupChat = !!groupId;
   const [myId, setMyId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -97,8 +117,16 @@ const [msg, setMsg] = useState<string | null>(null);
 const [status, setStatus] = useState<ModerationStatus>(null);
 const [now] = useState(() => Date.now());
   const [recipientInput, setRecipientInput] = useState("");
+  const [groupRecipientInput, setGroupRecipientInput] = useState("");
+  const [groupTitleInput, setGroupTitleInput] = useState("");
+  const [groupDraftMembers, setGroupDraftMembers] = useState<GroupParticipant[]>([]);
+  const [groupSubmitting, setGroupSubmitting] = useState(false);
   const [withUserLabel, setWithUserLabel] = useState<string>("");
   const [withUserAvatar, setWithUserAvatar] = useState<string | null>(null);
+  const [groupLabel, setGroupLabel] = useState<string>("");
+  const [groupParticipants, setGroupParticipants] = useState<GroupParticipant[]>([]);
+  const [hasLeftGroup, setHasLeftGroup] = useState(false);
+  const [groupConversations, setGroupConversations] = useState<GroupConversation[]>([]);
   const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [hiddenFriends, setHiddenFriends] = useState<Friend[]>([]);
@@ -230,11 +258,16 @@ const [now] = useState(() => Date.now());
     // Fetch conversation partners + supporting data in parallel
     // Uses an RPC to get distinct partners - avoids the PostgREST 1000-row cap
     // that caused old conversations to disappear.
-    const [blockedProfilesRes, partnersRes] = await Promise.all([
+    const [blockedProfilesRes, partnersRes, groupConversationsRes, groupMembersRes] = await Promise.all([
       blockedIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", blockedIds)
         : Promise.resolve({ data: [] }),
       supabase.rpc("get_conversation_partners", { p_user_id: signedInUserId }),
+      supabase.rpc("get_group_message_conversations", { p_user_id: signedInUserId }),
+      supabase
+        .from("group_message_members")
+        .select("conversation_id, user_id, left_at")
+        .is("left_at", null),
     ]);
 
     type PartnerRow = { partner_id: string; last_message_at: string; unread_count: number };
@@ -297,6 +330,48 @@ const [now] = useState(() => Date.now());
       avatarUrl: p.avatar_url ?? null, lastMessageAt: 0, unreadCount: 0,
     })));
 
+    type GroupConversationRow = {
+      conversation_id: string;
+      title: string;
+      unread_count: number;
+      last_message_at: string | null;
+      member_count: number;
+    };
+
+    const groupRows = (groupConversationsRes.data as GroupConversationRow[] | null) ?? [];
+    const activeMemberships = ((groupMembersRes.data as Array<{ conversation_id: string; user_id: string; left_at: string | null }> | null) ?? []);
+    const conversationIds = Array.from(new Set(groupRows.map((row) => row.conversation_id)));
+    const memberIds = Array.from(new Set(activeMemberships.map((row) => row.user_id)));
+    const { data: groupProfilesRes } = memberIds.length > 0
+      ? await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", memberIds)
+      : { data: [] as PublicProfile[] };
+    const profileMap = new Map(
+      (((groupProfilesRes as unknown as PublicProfile[]) ?? []) as PublicProfile[]).map((profile) => [profile.user_id, profile])
+    );
+    const participantMap = new Map<string, GroupParticipant[]>();
+    for (const membership of activeMemberships) {
+      if (!conversationIds.includes(membership.conversation_id)) continue;
+      const profile = profileMap.get(membership.user_id);
+      const next = participantMap.get(membership.conversation_id) ?? [];
+      next.push({
+        user_id: membership.user_id,
+        label: profile?.pen_name || (profile?.username ? `@${profile.username}` : "User"),
+        avatar_url: profile?.avatar_url ?? null,
+      });
+      participantMap.set(membership.conversation_id, next);
+    }
+
+    setGroupConversations(
+      groupRows.map((row) => ({
+        id: row.conversation_id,
+        title: row.title,
+        unreadCount: row.unread_count ?? 0,
+        lastMessageAt: row.last_message_at ? new Date(row.last_message_at).getTime() : 0,
+        memberCount: row.member_count ?? (participantMap.get(row.conversation_id)?.length ?? 0),
+        participants: (participantMap.get(row.conversation_id) ?? []).sort((a, b) => a.label.localeCompare(b.label)),
+      }))
+    );
+
     sidebarLoadedRef.current = true;
     setSidebarLoading(false);
   }
@@ -352,6 +427,47 @@ const [now] = useState(() => Date.now());
     void markAsRead(targetId);
   }
 
+  async function loadGroupChat(targetGroupId: string) {
+    activeTargetRef.current = targetGroupId;
+    setTargetIsYouth(false);
+    setMessages([]);
+    setHasLeftGroup(false);
+
+    const threadRes = await fetch(`/api/messages/thread?group=${encodeURIComponent(targetGroupId)}`);
+    const json = (await threadRes.json()) as {
+      messages?: Msg[];
+      error?: string;
+      hasMore?: boolean;
+      conversation?: { id: string; title: string } | null;
+      participants?: GroupParticipant[];
+      hasLeft?: boolean;
+    };
+
+    if (activeTargetRef.current !== targetGroupId) return;
+    if (!threadRes.ok) {
+      setMsg(json.error ?? "Failed to load group chat.");
+      return;
+    }
+
+    setGroupLabel(json.conversation?.title ?? "Group chat");
+    setGroupParticipants(json.participants ?? []);
+    setMessages(json.messages ?? []);
+    setHasMoreMessages(json.hasMore ?? false);
+    setHasLeftGroup(!!json.hasLeft);
+    setGroupConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === targetGroupId
+          ? {
+              ...conversation,
+              unreadCount: 0,
+              title: json.conversation?.title ?? conversation.title,
+              participants: json.participants ?? conversation.participants,
+            }
+          : conversation
+      )
+    );
+  }
+
   // Initial load: auth + sidebar + first chat
   useEffect(() => {
     async function init() {
@@ -378,10 +494,15 @@ const [now] = useState(() => Date.now());
       if (withUser) {
         initialScrollDoneRef.current = false;
         await loadChat(withUser, excludedRef.current);
+      } else if (groupId) {
+        initialScrollDoneRef.current = false;
+        await loadGroupChat(groupId);
       } else {
         setMessages([]);
         setWithUserLabel("");
         setWithUserAvatar(null);
+        setGroupLabel("");
+        setGroupParticipants([]);
       }
     }
     void init();
@@ -442,10 +563,22 @@ const [now] = useState(() => Date.now());
   useEffect(() => {
     if (!sidebarLoadedRef.current) return; // initial load handles this
     initialScrollDoneRef.current = false;
-    if (!withUser) {
+    if (!withUser && !groupId) {
       setMessages([]);
       setWithUserLabel("");
       setWithUserAvatar(null);
+      setGroupLabel("");
+      setGroupParticipants([]);
+      setHasLeftGroup(false);
+      return;
+    }
+    if (groupId) {
+      const cachedGroup = groupConversations.find((conversation) => conversation.id === groupId);
+      if (cachedGroup) {
+        setGroupLabel(cachedGroup.title);
+        setGroupParticipants(cachedGroup.participants);
+      }
+      void loadGroupChat(groupId);
       return;
     }
     // Optimistically set label from cached friends list before fetch completes
@@ -456,7 +589,7 @@ const [now] = useState(() => Date.now());
     }
     void loadChat(withUser, excludedRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reload chat when conversation changes; friends is read optimistically and loadChat is a component function
-  }, [withUser]);
+  }, [withUser, groupId]);
 
   // Realtime: new messages + typing indicator
   useEffect(() => {
@@ -465,7 +598,7 @@ const [now] = useState(() => Date.now());
       channelRef.current = null;
     }
     setOtherTyping(false);
-    if (!myId || !withUser) return;
+    if (!myId || !withUser || groupId) return;
 
     const chanName = ["dm", ...[myId, withUser].sort()].join(":");
     const ch = supabase
@@ -504,7 +637,38 @@ const [now] = useState(() => Date.now());
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: markAsRead is a component function; all reactive data deps are listed
-  }, [myId, withUser, supabase]);
+  }, [myId, withUser, groupId, supabase]);
+
+  useEffect(() => {
+    if (groupId && channelRef.current) {
+      void supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    if (!myId || !groupId) return;
+
+    const ch = supabase
+      .channel(`group:${groupId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_messages", filter: `conversation_id=eq.${groupId}` }, (payload: { new: Record<string, unknown> }) => {
+        const m = payload.new as Msg;
+        const container = messagesContainerRef.current;
+        if (container) {
+          const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+          forceScrollToBottomRef.current = distFromBottom < 150;
+        }
+        if (m.sender_id !== myId) {
+          void loadGroupChat(groupId);
+        }
+      })
+      .subscribe();
+
+    channelRef.current = ch;
+    return () => {
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [groupId, myId, supabase]);
 
   // Scroll to bottom on initial load; for subsequent updates (realtime) only
   // scroll if the user is already near the bottom so scrolling up through
@@ -531,12 +695,15 @@ const [now] = useState(() => Date.now());
   }, [messages]);
 
   async function loadOlderMessages() {
-    if (!withUser || loadingOlder || !hasMoreMessages) return;
+    if ((!withUser && !groupId) || loadingOlder || !hasMoreMessages) return;
     const oldest = messages[0];
     if (!oldest) return;
     setLoadingOlder(true);
     try {
-      const res = await fetch(`/api/messages/thread?with=${encodeURIComponent(withUser)}&before=${encodeURIComponent(oldest.created_at)}`);
+      const query = groupId
+        ? `/api/messages/thread?group=${encodeURIComponent(groupId)}&before=${encodeURIComponent(oldest.created_at)}`
+        : `/api/messages/thread?with=${encodeURIComponent(withUser)}&before=${encodeURIComponent(oldest.created_at)}`;
+      const res = await fetch(query);
       const json = (await res.json()) as { messages?: Msg[]; hasMore?: boolean; error?: string };
       if (!res.ok || !json.messages) { setLoadingOlder(false); return; }
       // Preserve scroll position when prepending older messages
@@ -569,7 +736,8 @@ const [now] = useState(() => Date.now());
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => container.removeEventListener("scroll", onScroll);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: loadOlderMessages is a component function; all data it closes over is listed in deps
-  }, [withUser, hasMoreMessages, loadingOlder, messages]);
+  }, [withUser, groupId, hasMoreMessages, loadingOlder, messages]);
+ 
 
   const peerAvatar =
     withUserAvatar ??
@@ -599,7 +767,7 @@ const [now] = useState(() => Date.now());
     sendingRef.current = true;
     setMsg(null);
     if (youthLocked) { sendingRef.current = false; return setMsg("Messaging is unavailable for youth profiles."); }
-    if (!withUser) { sendingRef.current = false; return setMsg("No recipient selected."); }
+    if (!withUser && !groupId) { sendingRef.current = false; return setMsg("No recipient selected."); }
     if (text.trim().length < 1) { sendingRef.current = false; return; }
     if (status?.blacklisted) { sendingRef.current = false; return setMsg("Messaging is blocked while your account is blacklisted."); }
 
@@ -616,7 +784,7 @@ const [now] = useState(() => Date.now());
       res = await fetch("/api/messages/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to_user_id: withUser, content: text }),
+        body: JSON.stringify(groupId ? { group_id: groupId, content: text } : { to_user_id: withUser, content: text }),
       });
     } catch {
       setMsg("Message failed to send. Check your connection and try again.");
@@ -648,23 +816,34 @@ const [now] = useState(() => Date.now());
         const container = messagesContainerRef.current;
         if (container) container.scrollTop = container.scrollHeight;
       });
-      // Keep sidebar in sync - bump existing entry or add new conversation
       const sentAt = Date.now();
-      setFriends((prev) => {
-        const exists = prev.find((f) => f.userId === withUser);
-        if (exists) {
-          return [{ ...exists, lastMessageAt: sentAt }, ...prev.filter((f) => f.userId !== withUser)];
-        }
-        // New conversation - add from currently loaded label/avatar
-        return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
-      });
-      setHiddenFriends((prev) => prev.filter((f) => f.userId !== withUser));
-      hiddenFriendsRef.current = hiddenFriendsRef.current.filter((f) => f.userId !== withUser);
-      await supabase
-        .from("hidden_message_threads")
-        .delete()
-        .eq("user_id", myId)
-        .eq("partner_id", withUser);
+      if (groupId) {
+        setGroupConversations((prev) =>
+          prev
+            .map((conversation) =>
+              conversation.id === groupId
+                ? { ...conversation, lastMessageAt: sentAt, unreadCount: 0 }
+                : conversation
+            )
+            .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
+        );
+      } else {
+        // Keep sidebar in sync - bump existing entry or add new conversation
+        setFriends((prev) => {
+          const exists = prev.find((f) => f.userId === withUser);
+          if (exists) {
+            return [{ ...exists, lastMessageAt: sentAt }, ...prev.filter((f) => f.userId !== withUser)];
+          }
+          return [{ userId: withUser, penName: withUserLabel || "User", avatarUrl: withUserAvatar, lastMessageAt: sentAt, unreadCount: 0 }, ...prev];
+        });
+        setHiddenFriends((prev) => prev.filter((f) => f.userId !== withUser));
+        hiddenFriendsRef.current = hiddenFriendsRef.current.filter((f) => f.userId !== withUser);
+        await supabase
+          .from("hidden_message_threads")
+          .delete()
+          .eq("user_id", myId)
+          .eq("partner_id", withUser);
+      }
     }
     sendingRef.current = false;
   }
@@ -834,6 +1013,108 @@ const [now] = useState(() => Date.now());
     setRecipientInput("");
   }
 
+  async function addGroupMemberFromInput() {
+    setMsg(null);
+    if (youthLocked) return setMsg("Messaging is unavailable for youth profiles.");
+    const raw = groupRecipientInput.trim();
+    if (!raw) return setMsg("Enter a username to add to the group.");
+    const normalized = raw.startsWith("@") ? raw.slice(1) : raw;
+
+    const { data: profile, error } = await supabase
+      .from("public_profiles")
+      .select("user_id, username, pen_name, avatar_url")
+      .eq("username", normalized.toLowerCase())
+      .maybeSingle();
+
+    if (error) return setMsg(error.message);
+    const target = (profile as PublicProfile | null) ?? null;
+    if (!target?.user_id) return setMsg("User not found.");
+    if (target.user_id === myId) return setMsg("You're already in the group.");
+    if (groupDraftMembers.some((member) => member.user_id === target.user_id)) {
+      return setMsg("That user is already selected.");
+    }
+
+    const { data: targetAccount } = await supabase
+      .from("accounts")
+      .select("age_category")
+      .eq("user_id", target.user_id)
+      .maybeSingle();
+    const targetAge = (targetAccount as { age_category?: string | null } | null)?.age_category ?? null;
+    if (targetAge === "youth_13_17") return setMsg("You cannot add youth profiles to a group chat.");
+
+    setGroupDraftMembers((prev) => [
+      ...prev,
+      {
+        user_id: target.user_id,
+        label: target.pen_name || (target.username ? `@${target.username}` : "User"),
+        avatar_url: target.avatar_url ?? null,
+      },
+    ]);
+    setGroupRecipientInput("");
+  }
+
+  async function createGroupChat() {
+    if (groupSubmitting) return;
+    setMsg(null);
+    if (groupDraftMembers.length < 2) {
+      return setMsg("Add at least two other users to start a group chat.");
+    }
+    setGroupSubmitting(true);
+    try {
+      const res = await fetch("/api/messages/group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: groupTitleInput.trim(),
+          user_ids: groupDraftMembers.map((member) => member.user_id),
+        }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        conversation?: { id: string; title: string; participants: GroupParticipant[] };
+      };
+      if (!res.ok || !json.conversation) {
+        setMsg(json.error ?? "Failed to create group chat.");
+        return;
+      }
+      const participantCount = json.conversation.participants.length;
+      setGroupConversations((prev) => [
+        {
+          id: json.conversation!.id,
+          title: json.conversation!.title,
+          unreadCount: 0,
+          lastMessageAt: Date.now(),
+          memberCount: participantCount,
+          participants: json.conversation!.participants,
+        },
+        ...prev,
+      ]);
+      setGroupDraftMembers([]);
+      setGroupTitleInput("");
+      setGroupRecipientInput("");
+      router.push(`/messages?group=${encodeURIComponent(json.conversation.id)}`);
+    } finally {
+      setGroupSubmitting(false);
+    }
+  }
+
+  async function leaveGroupChat() {
+    if (!groupId) return;
+    const res = await fetch("/api/messages/group/leave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group_id: groupId }),
+    });
+    const json = (await res.json()) as { ok?: boolean; error?: string };
+    if (!res.ok) {
+      setMsg(json.error ?? "Failed to leave group chat.");
+      return;
+    }
+    setGroupConversations((prev) => prev.filter((conversation) => conversation.id !== groupId));
+    router.replace("/messages");
+  }
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto max-w-[1440px] px-6 py-16">
@@ -861,6 +1142,59 @@ const [now] = useState(() => Date.now());
                   className="h-10 rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
                 >
                   Open
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900/20 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">New Group Chat</p>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={groupRecipientInput}
+                    onChange={(e) => setGroupRecipientInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void addGroupMemberFromInput()}
+                    placeholder="Add @username"
+                    disabled={youthLocked}
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
+                  />
+                  <button
+                    onClick={() => void addGroupMemberFromInput()}
+                    disabled={youthLocked}
+                    className="h-9 rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
+                  >
+                    Add
+                  </button>
+                </div>
+                <input
+                  value={groupTitleInput}
+                  onChange={(e) => setGroupTitleInput(e.target.value)}
+                  placeholder="Group name (optional)"
+                  disabled={youthLocked}
+                  className="mt-2 h-9 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {groupDraftMembers.length === 0 ? (
+                    <p className="text-xs text-neutral-500">Add at least two members to start a group.</p>
+                  ) : (
+                    groupDraftMembers.map((member) => (
+                      <span key={member.user_id} className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900/60 px-2.5 py-1 text-xs text-neutral-200">
+                        <span>{member.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => setGroupDraftMembers((prev) => prev.filter((item) => item.user_id !== member.user_id))}
+                          className="text-neutral-500 hover:text-white transition"
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+                <button
+                  onClick={() => void createGroupChat()}
+                  disabled={youthLocked || groupSubmitting}
+                  className="mt-3 h-9 w-full rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
+                >
+                  {groupSubmitting ? "Creating..." : "Create group"}
                 </button>
               </div>
 
@@ -928,6 +1262,58 @@ const [now] = useState(() => Date.now());
                 )}
               </div>
 
+              <div className="mt-4 border-t border-neutral-800 pt-4">
+                <p className="text-sm font-medium text-neutral-100">Groups</p>
+                <div className="mt-3 space-y-2">
+                  {sidebarLoading ? (
+                    <>
+                      {[1, 2].map((i) => (
+                        <div key={`group-skel-${i}`} className="h-10 rounded-lg bg-neutral-800/50 animate-pulse" />
+                      ))}
+                    </>
+                  ) : groupConversations.length === 0 ? (
+                    <p className="text-xs text-neutral-400">No group chats yet.</p>
+                  ) : (
+                    groupConversations.map((conversation) => (
+                      <button
+                        key={conversation.id}
+                        onClick={() => {
+                          initialScrollDoneRef.current = false;
+                          router.push(`/messages?group=${encodeURIComponent(conversation.id)}`);
+                          setGroupLabel(conversation.title);
+                          setGroupParticipants(conversation.participants);
+                        }}
+                        className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${
+                          groupId === conversation.id
+                            ? "border-[rgba(120,120,120,0.9)] bg-[rgba(120,120,120,0.25)]"
+                            : "border-neutral-800 bg-neutral-900/40"
+                        }`}
+                      >
+                        <div className="relative flex h-7 w-7 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/70 text-[11px] font-semibold text-neutral-200">
+                          {Math.min(conversation.memberCount, 99)}
+                          {conversation.unreadCount > 0 && groupId !== conversation.id && (
+                            <span className="msgUnreadBadge absolute -right-1 -top-1 flex min-w-[16px] items-center justify-center rounded-full bg-[#ef4444] px-1 py-px text-[9px] font-bold leading-none ring-1 ring-neutral-900">
+                              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-neutral-200">{conversation.title}</span>
+                          <span className="block truncate text-[10px] text-neutral-500">
+                            {conversation.participants.map((participant) => participant.label).join(", ")}
+                          </span>
+                        </span>
+                        {conversation.lastMessageAt > 0 && (
+                          <span className="shrink-0 text-[10px] text-neutral-500">
+                            {new Date(conversation.lastMessageAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
               {/* Hidden conversations */}
               {hiddenFriends.length > 0 && (
                 <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900/10 p-3">
@@ -982,7 +1368,7 @@ const [now] = useState(() => Date.now());
           </aside>
 
           {/* ── Main panel ── */}
-          {withUser && blockedUsers.some((f) => f.userId === withUser) ? (
+          {!isGroupChat && withUser && blockedUsers.some((f) => f.userId === withUser) ? (
             <section className="flex h-[600px] flex-col rounded-xl border border-neutral-800 bg-[rgba(120,120,120,0.05)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <p className="flex-1 text-sm text-neutral-400">
@@ -1020,12 +1406,12 @@ const [now] = useState(() => Date.now());
                 This user has been permanently blocked due to a report.
               </p>
             </section>
-          ) : targetIsYouth ? (
+          ) : !isGroupChat && targetIsYouth ? (
             <section className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
               <p className="text-sm font-semibold text-neutral-100">Messaging unavailable</p>
               <p className="mt-2 text-sm text-neutral-400">Direct messaging between adult and youth profiles is disabled for safety. This applies to all youth accounts, including linked profiles.</p>
             </section>
-          ) : !withUser || youthLocked ? (
+          ) : (!withUser && !groupId) || youthLocked ? (
             <section className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
               <h2 className="text-lg font-semibold">Chat Rules</h2>
               {youthLocked ? (
@@ -1127,7 +1513,24 @@ const [now] = useState(() => Date.now());
           ) : (
             <section className="flex flex-col w-full rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
-                <p className="flex-1 text-sm text-neutral-300">Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span></p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-neutral-300">
+                    {isGroupChat ? "Group chat:" : "Chatting with:"} <span className="text-white">{isGroupChat ? (groupLabel || "Group chat") : (withUserLabel || "Selected user")}</span>
+                  </p>
+                  {isGroupChat ? (
+                    <p className="mt-1 truncate text-xs text-neutral-500">
+                      {groupParticipants.map((participant) => participant.label).join(", ")}
+                    </p>
+                  ) : null}
+                </div>
+                {isGroupChat ? (
+                  <button
+                    onClick={() => void leaveGroupChat()}
+                    className="text-xs text-amber-300 hover:text-amber-200 transition border border-amber-800/50 rounded-lg px-2 py-0.5"
+                  >
+                    Leave group
+                  </button>
+                ) : null}
                 <button
                   onClick={() => router.replace("/messages")}
                   className="text-xs text-neutral-300 hover:text-white transition border border-[rgba(120,120,120,0.4)] rounded-lg px-2 py-0.5"
@@ -1153,11 +1556,11 @@ const [now] = useState(() => Date.now());
                   </div>
                 )}
                 {messages.length === 0 ? (
-                  <p className="text-sm text-neutral-300">No messages yet.</p>
+                  <p className="text-sm text-neutral-300">{hasLeftGroup ? "You left this group chat." : "No messages yet."}</p>
                 ) : (
                   messages.map((m) => (
                     <div key={m.id} className={`flex items-end gap-2 ${m.sender_id === myId ? "justify-end" : "justify-start"}`}>
-                      {m.sender_id !== myId && renderAvatar(peerAvatar, withUserLabel || "User")}
+                      {m.sender_id !== myId && renderAvatar(isGroupChat ? (m.sender_avatar_url ?? null) : peerAvatar, isGroupChat ? (m.sender_name || "User") : (withUserLabel || "User"))}
                       <div
                         className={`rounded-lg p-3 text-sm ${
                           m.sender_id === myId
@@ -1165,6 +1568,9 @@ const [now] = useState(() => Date.now());
                             : "mr-auto max-w-[75%] border border-neutral-800 bg-neutral-900/40"
                         }`}
                       >
+                        {isGroupChat && m.sender_id !== myId ? (
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{m.sender_name || "User"}</p>
+                        ) : null}
                         <p className="whitespace-pre-wrap break-words hyphens-auto">{m.body}</p>
                         <p className="mt-1 text-xs text-neutral-300">{new Date(m.created_at).toLocaleString()}</p>
                       </div>
@@ -1200,7 +1606,7 @@ const [now] = useState(() => Date.now());
                     }
                   }}
                   placeholder="Type a message... (Shift+Enter for new line)"
-                  disabled={youthLocked}
+                  disabled={youthLocked || hasLeftGroup}
                   className="msg-input flex-1 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2.5 resize-none overflow-y-auto min-h-[72px] max-h-48"
                   style={{ lineHeight: "1.5" }}
                 />
@@ -1208,7 +1614,7 @@ const [now] = useState(() => Date.now());
                   <button
                     type="button"
                     onClick={() => setShowEmojis((v) => !v)}
-                    disabled={youthLocked}
+                    disabled={youthLocked || hasLeftGroup}
                     className="h-11 w-11 rounded-lg border border-neutral-700 text-lg disabled:opacity-50 hover:border-[rgba(120,120,120,0.6)] transition"
                     title="Emoji"
                   >
@@ -1233,20 +1639,26 @@ const [now] = useState(() => Date.now());
                 </div>
                 <button
                   onClick={send}
-                  disabled={blocked || youthLocked}
+                  disabled={blocked || youthLocked || hasLeftGroup}
                   className="h-11 rounded-lg border border-neutral-700 px-4 text-sm disabled:opacity-50"
                 >
                   Send
                 </button>
               </div>
-              <p className={`mt-1 shrink-0 text-xs text-neutral-300 italic flex items-center gap-1 transition-opacity duration-200 ${otherTyping ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-                {withUserLabel} is typing
-                <span className="flex items-center gap-[3px] ml-0.5">
-                  <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:300ms]" />
-                </span>
-              </p>
+              {!isGroupChat ? (
+                <p className={`mt-1 shrink-0 text-xs text-neutral-300 italic flex items-center gap-1 transition-opacity duration-200 ${otherTyping ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                  {withUserLabel} is typing
+                  <span className="flex items-center gap-[3px] ml-0.5">
+                    <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:0ms]" />
+                    <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:150ms]" />
+                    <span className="h-1 w-1 rounded-full bg-neutral-300 animate-bounce [animation-delay:300ms]" />
+                  </span>
+                </p>
+              ) : hasLeftGroup ? (
+                <p className="mt-1 shrink-0 text-xs text-neutral-400 italic">
+                  You left this group. You can still review earlier messages, but you will not receive future ones.
+                </p>
+              ) : null}
               {msg ? <p className="mt-2 shrink-0 text-sm text-red-300">{msg}</p> : null}
             </section>
           )}
