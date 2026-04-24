@@ -66,6 +66,12 @@ type Friend = {
   unreadCount: number;
 };
 
+type FriendOption = {
+  userId: string;
+  penName: string;
+  avatarUrl: string | null;
+};
+
 type GroupParticipant = {
   user_id: string;
   label: string;
@@ -127,6 +133,7 @@ const [now] = useState(() => Date.now());
   const [groupParticipants, setGroupParticipants] = useState<GroupParticipant[]>([]);
   const [hasLeftGroup, setHasLeftGroup] = useState(false);
   const [groupConversations, setGroupConversations] = useState<GroupConversation[]>([]);
+  const [friendOptions, setFriendOptions] = useState<FriendOption[]>([]);
   const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [hiddenFriends, setHiddenFriends] = useState<Friend[]>([]);
@@ -209,7 +216,7 @@ const [now] = useState(() => Date.now());
   const hiddenFriendsRef = useRef<Friend[]>([]);
 
   async function loadSidebar(signedInUserId: string) {
-    const [hiddenThreadsRes, blockedReqRes, statusRes] = await Promise.all([
+    const [hiddenThreadsRes, blockedReqRes, acceptedReqRes, statusRes] = await Promise.all([
       supabase
         .from("hidden_message_threads")
         .select("partner_id, hidden_at")
@@ -219,6 +226,11 @@ const [now] = useState(() => Date.now());
         .select("sender_id, receiver_id, status")
         .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
         .eq("status", "blocked"),
+      supabase
+        .from("profile_friend_requests")
+        .select("sender_id, receiver_id, status")
+        .or(`sender_id.eq.${signedInUserId},receiver_id.eq.${signedInUserId}`)
+        .eq("status", "accepted"),
       fetch("/api/messages/status"),
     ]);
 
@@ -247,6 +259,7 @@ const [now] = useState(() => Date.now());
 
     const hiddenRows = (hiddenThreadsRes.data as HiddenThreadRow[] | null) ?? [];
     const blockedRows = (blockedReqRes.data as FriendRequest[] | null) ?? [];
+    const acceptedRows = (acceptedReqRes.data as FriendRequest[] | null) ?? [];
 
     const hiddenMap = new Map<string, number>();
     for (const row of hiddenRows) {
@@ -254,11 +267,14 @@ const [now] = useState(() => Date.now());
     }
 
     const blockedIds = Array.from(new Set(blockedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)));
+    const acceptedIds = Array.from(new Set(
+      acceptedRows.map((r) => r.sender_id === signedInUserId ? r.receiver_id : r.sender_id)
+    )).filter((id) => !blockedIds.includes(id) && !excluded.includes(id));
 
     // Fetch conversation partners + supporting data in parallel
     // Uses an RPC to get distinct partners - avoids the PostgREST 1000-row cap
     // that caused old conversations to disappear.
-    const [blockedProfilesRes, partnersRes, groupConversationsRes, groupMembersRes] = await Promise.all([
+    const [blockedProfilesRes, partnersRes, groupConversationsRes, groupMembersRes, acceptedProfilesRes] = await Promise.all([
       blockedIds.length > 0
         ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", blockedIds)
         : Promise.resolve({ data: [] }),
@@ -268,6 +284,9 @@ const [now] = useState(() => Date.now());
         .from("group_message_members")
         .select("conversation_id, user_id, left_at")
         .is("left_at", null),
+      acceptedIds.length > 0
+        ? supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", acceptedIds)
+        : Promise.resolve({ data: [] }),
     ]);
 
     type PartnerRow = { partner_id: string; last_message_at: string; unread_count: number };
@@ -329,6 +348,13 @@ const [now] = useState(() => Date.now());
       userId: p.user_id, penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
       avatarUrl: p.avatar_url ?? null, lastMessageAt: 0, unreadCount: 0,
     })));
+    setFriendOptions(
+      (((acceptedProfilesRes.data as PublicProfile[] | null) ?? []).map((p) => ({
+        userId: p.user_id,
+        penName: p.pen_name || (p.username ? `@${p.username}` : "Friend"),
+        avatarUrl: p.avatar_url ?? null,
+      }))).sort((a, b) => a.penName.localeCompare(b.penName))
+    );
 
     type GroupConversationRow = {
       conversation_id: string;
@@ -762,6 +788,27 @@ const [now] = useState(() => Date.now());
       </div>
     );
 
+  const groupFriendResults = friendOptions.filter((friend) => {
+    if (groupDraftMembers.some((member) => member.user_id === friend.userId)) return false;
+    if (!groupRecipientInput.trim()) return true;
+    const query = groupRecipientInput.trim().toLowerCase();
+    return friend.penName.toLowerCase().includes(query);
+  }).slice(0, 8);
+
+  function addGroupMember(target: { user_id: string; label: string; avatar_url: string | null }) {
+    if (target.user_id === myId) {
+      setMsg("You're already in the group.");
+      return;
+    }
+    if (groupDraftMembers.some((member) => member.user_id === target.user_id)) {
+      setMsg("That user is already selected.");
+      return;
+    }
+    setMsg(null);
+    setGroupDraftMembers((prev) => [...prev, target]);
+    setGroupRecipientInput("");
+  }
+
   async function send() {
     if (sendingRef.current) return;
     sendingRef.current = true;
@@ -1029,10 +1076,6 @@ const [now] = useState(() => Date.now());
     if (error) return setMsg(error.message);
     const target = (profile as PublicProfile | null) ?? null;
     if (!target?.user_id) return setMsg("User not found.");
-    if (target.user_id === myId) return setMsg("You're already in the group.");
-    if (groupDraftMembers.some((member) => member.user_id === target.user_id)) {
-      return setMsg("That user is already selected.");
-    }
 
     const { data: targetAccount } = await supabase
       .from("accounts")
@@ -1041,16 +1084,11 @@ const [now] = useState(() => Date.now());
       .maybeSingle();
     const targetAge = (targetAccount as { age_category?: string | null } | null)?.age_category ?? null;
     if (targetAge === "youth_13_17") return setMsg("You cannot add youth profiles to a group chat.");
-
-    setGroupDraftMembers((prev) => [
-      ...prev,
-      {
-        user_id: target.user_id,
-        label: target.pen_name || (target.username ? `@${target.username}` : "User"),
-        avatar_url: target.avatar_url ?? null,
-      },
-    ]);
-    setGroupRecipientInput("");
+    addGroupMember({
+      user_id: target.user_id,
+      label: target.pen_name || (target.username ? `@${target.username}` : "User"),
+      avatar_url: target.avatar_url ?? null,
+    });
   }
 
   async function createGroupChat() {
@@ -1145,8 +1183,11 @@ const [now] = useState(() => Date.now());
                 </button>
               </div>
 
-              <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900/20 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">New Group Chat</p>
+              <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900/20 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">New Group Chat</p>
+                  <p className="text-[10px] text-neutral-600">Add 2+ people</p>
+                </div>
                 <div className="mt-2 flex gap-2">
                   <input
                     value={groupRecipientInput}
@@ -1164,6 +1205,36 @@ const [now] = useState(() => Date.now());
                     Add
                   </button>
                 </div>
+                <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-950/40 p-1.5">
+                  <p className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
+                    {groupRecipientInput.trim() ? "Matching friends" : "Pick from friends"}
+                  </p>
+                  <div className="mt-1 max-h-28 space-y-1 overflow-y-auto pr-1">
+                    {groupFriendResults.length === 0 ? (
+                      <p className="px-2 py-1 text-[11px] text-neutral-500">
+                        {friendOptions.length === 0
+                          ? "No accepted friends available yet."
+                          : "No friends match that name."}
+                      </p>
+                    ) : (
+                      groupFriendResults.map((friend) => (
+                        <button
+                          key={friend.userId}
+                          type="button"
+                          onClick={() => addGroupMember({
+                            user_id: friend.userId,
+                            label: friend.penName,
+                            avatar_url: friend.avatarUrl,
+                          })}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] text-neutral-300 transition hover:bg-[rgba(120,120,120,0.16)] hover:text-white"
+                        >
+                          <Avatar name={friend.penName} url={friend.avatarUrl} />
+                          <span className="truncate">{friend.penName}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
                 <input
                   value={groupTitleInput}
                   onChange={(e) => setGroupTitleInput(e.target.value)}
@@ -1171,28 +1242,30 @@ const [now] = useState(() => Date.now());
                   disabled={youthLocked}
                   className="mt-2 h-9 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
                 />
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 max-h-20 overflow-y-auto">
                   {groupDraftMembers.length === 0 ? (
-                    <p className="text-xs text-neutral-500">Add at least two members to start a group.</p>
+                    <p className="text-[11px] text-neutral-500">Add at least two members to start a group.</p>
                   ) : (
-                    groupDraftMembers.map((member) => (
-                      <span key={member.user_id} className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900/60 px-2.5 py-1 text-xs text-neutral-200">
-                        <span>{member.label}</span>
-                        <button
-                          type="button"
-                          onClick={() => setGroupDraftMembers((prev) => prev.filter((item) => item.user_id !== member.user_id))}
-                          className="text-neutral-500 hover:text-white transition"
-                        >
-                          x
-                        </button>
-                      </span>
-                    ))
+                    <div className="flex flex-wrap gap-1.5 pr-1">
+                      {groupDraftMembers.map((member) => (
+                        <span key={member.user_id} className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-[11px] text-neutral-200">
+                          <span className="max-w-[120px] truncate">{member.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => setGroupDraftMembers((prev) => prev.filter((item) => item.user_id !== member.user_id))}
+                            className="text-neutral-500 hover:text-white transition"
+                          >
+                            x
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <button
                   onClick={() => void createGroupChat()}
                   disabled={youthLocked || groupSubmitting}
-                  className="mt-3 h-9 w-full rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
+                  className="mt-2 h-8 w-full rounded-lg border border-neutral-700 px-3 text-[11px] disabled:opacity-50"
                 >
                   {groupSubmitting ? "Creating..." : "Create group"}
                 </button>
