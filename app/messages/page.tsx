@@ -127,6 +127,7 @@ const [now] = useState(() => Date.now());
   const [groupTitleInput, setGroupTitleInput] = useState("");
   const [groupDraftMembers, setGroupDraftMembers] = useState<GroupParticipant[]>([]);
   const [groupSubmitting, setGroupSubmitting] = useState(false);
+  const [groupComposerOpen, setGroupComposerOpen] = useState(false);
   const [withUserLabel, setWithUserLabel] = useState<string>("");
   const [withUserAvatar, setWithUserAvatar] = useState<string | null>(null);
   const [groupLabel, setGroupLabel] = useState<string>("");
@@ -1131,6 +1132,7 @@ const [now] = useState(() => Date.now());
       setGroupDraftMembers([]);
       setGroupTitleInput("");
       setGroupRecipientInput("");
+      setGroupComposerOpen(false);
       router.push(`/messages?group=${encodeURIComponent(json.conversation.id)}`);
     } finally {
       setGroupSubmitting(false);
@@ -1183,92 +1185,118 @@ const [now] = useState(() => Date.now());
                 </button>
               </div>
 
-              <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900/20 p-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">New Group Chat</p>
-                  <p className="text-[10px] text-neutral-600">Add 2+ people</p>
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <input
-                    value={groupRecipientInput}
-                    onChange={(e) => setGroupRecipientInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void addGroupMemberFromInput()}
-                    placeholder="Add @username"
-                    disabled={youthLocked}
-                    className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
-                  />
-                  <button
-                    onClick={() => void addGroupMemberFromInput()}
-                    disabled={youthLocked}
-                    className="h-9 rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-950/40 p-1.5">
-                  <p className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
-                    {groupRecipientInput.trim() ? "Matching friends" : "Pick from friends"}
-                  </p>
-                  <div className="mt-1 max-h-28 space-y-1 overflow-y-auto pr-1">
-                    {groupFriendResults.length === 0 ? (
-                      <p className="px-2 py-1 text-[11px] text-neutral-500">
-                        {friendOptions.length === 0
-                          ? "No accepted friends available yet."
-                          : "No friends match that name."}
-                      </p>
-                    ) : (
-                      groupFriendResults.map((friend) => (
-                        <button
-                          key={friend.userId}
-                          type="button"
-                          onClick={() => addGroupMember({
-                            user_id: friend.userId,
-                            label: friend.penName,
-                            avatar_url: friend.avatarUrl,
-                          })}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] text-neutral-300 transition hover:bg-[rgba(120,120,120,0.16)] hover:text-white"
-                        >
-                          <Avatar name={friend.penName} url={friend.avatarUrl} />
-                          <span className="truncate">{friend.penName}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-                <input
-                  value={groupTitleInput}
-                  onChange={(e) => setGroupTitleInput(e.target.value)}
-                  placeholder="Group name (optional)"
-                  disabled={youthLocked}
-                  className="mt-2 h-9 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
-                />
-                <div className="mt-2 max-h-20 overflow-y-auto">
-                  {groupDraftMembers.length === 0 ? (
-                    <p className="text-[11px] text-neutral-500">Add at least two members to start a group.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5 pr-1">
-                      {groupDraftMembers.map((member) => (
-                        <span key={member.user_id} className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-[11px] text-neutral-200">
-                          <span className="max-w-[120px] truncate">{member.label}</span>
-                          <button
-                            type="button"
-                            onClick={() => setGroupDraftMembers((prev) => prev.filter((item) => item.user_id !== member.user_id))}
-                            className="text-neutral-500 hover:text-white transition"
-                          >
-                            x
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className="mt-3">
                 <button
-                  onClick={() => void createGroupChat()}
-                  disabled={youthLocked || groupSubmitting}
-                  className="mt-2 h-8 w-full rounded-lg border border-neutral-700 px-3 text-[11px] disabled:opacity-50"
+                  type="button"
+                  onClick={() => setGroupComposerOpen((prev) => !prev)}
+                  disabled={youthLocked}
+                  className="flex h-9 w-full items-center justify-between rounded-lg border border-neutral-800 bg-neutral-900/20 px-3 text-left text-xs text-neutral-300 transition hover:border-neutral-700 hover:text-white disabled:opacity-50"
                 >
-                  {groupSubmitting ? "Creating..." : "Create group"}
+                  <span>{groupDraftMembers.length > 0 ? `New group (${groupDraftMembers.length})` : "New group chat"}</span>
+                  <span className="text-[10px] text-neutral-500">{groupComposerOpen ? "Hide" : "Open"}</span>
                 </button>
+
+                {groupComposerOpen ? (
+                  <div className="mt-2 rounded-xl border border-neutral-800 bg-neutral-900/20 p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Build Group</p>
+                      <p className="text-[10px] text-neutral-600">Add 2+ people</p>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        value={groupRecipientInput}
+                        onChange={(e) => setGroupRecipientInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && void addGroupMemberFromInput()}
+                        placeholder="Add @username"
+                        disabled={youthLocked}
+                        className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
+                      />
+                      <button
+                        onClick={() => void addGroupMemberFromInput()}
+                        disabled={youthLocked}
+                        className="h-9 rounded-lg border border-neutral-700 px-3 text-xs disabled:opacity-50"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="mt-2 rounded-lg border border-neutral-800 bg-neutral-950/40 p-1.5">
+                      <p className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">
+                        {groupRecipientInput.trim() ? "Matching friends" : "Pick from friends"}
+                      </p>
+                      <div className="mt-1 max-h-24 space-y-1 overflow-y-auto pr-1">
+                        {groupFriendResults.length === 0 ? (
+                          <p className="px-2 py-1 text-[11px] text-neutral-500">
+                            {friendOptions.length === 0
+                              ? "No accepted friends available yet."
+                              : "No friends match that name."}
+                          </p>
+                        ) : (
+                          groupFriendResults.map((friend) => (
+                            <button
+                              key={friend.userId}
+                              type="button"
+                              onClick={() => addGroupMember({
+                                user_id: friend.userId,
+                                label: friend.penName,
+                                avatar_url: friend.avatarUrl,
+                              })}
+                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] text-neutral-300 transition hover:bg-[rgba(120,120,120,0.16)] hover:text-white"
+                            >
+                              <Avatar name={friend.penName} url={friend.avatarUrl} />
+                              <span className="truncate">{friend.penName}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      value={groupTitleInput}
+                      onChange={(e) => setGroupTitleInput(e.target.value)}
+                      placeholder="Group name (optional)"
+                      disabled={youthLocked}
+                      className="mt-2 h-9 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 text-sm"
+                    />
+                    <div className="mt-2 max-h-16 overflow-y-auto">
+                      {groupDraftMembers.length === 0 ? (
+                        <p className="text-[11px] text-neutral-500">Add at least two members to start a group.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5 pr-1">
+                          {groupDraftMembers.map((member) => (
+                            <span key={member.user_id} className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900/60 px-2 py-1 text-[11px] text-neutral-200">
+                              <span className="max-w-[120px] truncate">{member.label}</span>
+                              <button
+                                type="button"
+                                onClick={() => setGroupDraftMembers((prev) => prev.filter((item) => item.user_id !== member.user_id))}
+                                className="text-neutral-500 hover:text-white transition"
+                              >
+                                x
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGroupComposerOpen(false);
+                          setGroupRecipientInput("");
+                        }}
+                        className="h-8 flex-1 rounded-lg border border-neutral-800 px-3 text-[11px] text-neutral-400 transition hover:text-white"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={() => void createGroupChat()}
+                        disabled={youthLocked || groupSubmitting}
+                        className="h-8 flex-1 rounded-lg border border-neutral-700 px-3 text-[11px] disabled:opacity-50"
+                      >
+                        {groupSubmitting ? "Creating..." : "Create group"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-3 space-y-2">
