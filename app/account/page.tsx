@@ -9,6 +9,7 @@ import { requestAppeal, updateAccount } from "./actions";
 import BlockedUsersPanel from "@/components/BlockedUsersPanel";
 import ThemeToggle from "@/components/ThemeToggle";
 import AccountDangerZone from "./AccountDangerZone";
+import ChangePasswordCard from "./ChangePasswordCard";
 import SignOutButton from "./SignOutButton";
 
 type AccountData = {
@@ -321,6 +322,8 @@ export default async function AccountPage({
           </button>
         </form>
         ) : null}
+
+        <ChangePasswordCard email={email === "-" ? "" : email} />
 
         <BlockedUsersPanel />
 
