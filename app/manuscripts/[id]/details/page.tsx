@@ -1185,10 +1185,11 @@ export default function ManuscriptDetailsPage() {
     const wrapper = editorWrapperRef.current;
     if (!wrapper) return;
     const editorEl = wrapper.querySelector(".chapter-editor") as HTMLElement | null;
-    if (!editorEl) return;
+    if (!editorEl || !selectedChapterId) return;
     const wrapperRect = wrapper.getBoundingClientRect();
     const newInfos: Record<string, MarkerInfo> = {};
     for (const f of feedbackItems) {
+      if (f.chapter_id !== selectedChapterId) continue;
       if (!f.selection_excerpt || f.resolved || !!f.author_response) continue;
       const range = findExcerptRange(editorEl, f.selection_excerpt, f.start_offset ?? undefined);
       if (!range) continue;
