@@ -278,7 +278,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
             <div key={item.id} className="community-feed-card rounded-lg border border-black bg-[#2a2a2a] px-2.5 py-1.5">
               {/* Author + badge + timestamp */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   {username ? (
                     <Link href={`/u/${username}`} className="shrink-0">
                       <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
@@ -286,15 +286,15 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
                   ) : (
                     <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
                   )}
-                  <div className="min-w-0 flex items-baseline gap-1.5">
+                  <div className="min-w-0 flex-1">
                     {username ? (
-                      <Link href={`/u/${username}`} className="block truncate text-[11px] font-medium text-neutral-200 hover:text-white transition">
+                      <Link href={`/u/${username}`} className="block text-[11px] font-medium text-neutral-200 hover:text-white transition">
                         {displayName}
                       </Link>
                     ) : (
-                      <span className="block truncate text-[11px] font-medium text-neutral-200">{displayName}</span>
+                      <span className="block text-[11px] font-medium text-neutral-200">{displayName}</span>
                     )}
-                    <p className="truncate text-[10px] text-neutral-400">posted an announcement</p>
+                    <p className="text-[10px] leading-none text-neutral-400">posted an announcement</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
