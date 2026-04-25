@@ -275,9 +275,9 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
           const preview = item.content ? (item.content.length > 100 ? item.content.slice(0, 100).trimEnd() + "…" : item.content) : null;
 
           return (
-            <div key={item.id} className="community-feed-card rounded-lg border border-black bg-[#2a2a2a] px-2.5 py-2">
+            <div key={item.id} className="community-feed-card rounded-lg border border-black bg-[#2a2a2a] px-2.5 py-1.5">
               {/* Author + badge + timestamp */}
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   {username ? (
                     <Link href={`/u/${username}`} className="shrink-0">
@@ -286,7 +286,7 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
                   ) : (
                     <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex items-baseline gap-1.5">
                     {username ? (
                       <Link href={`/u/${username}`} className="block truncate text-[11px] font-medium text-neutral-200 hover:text-white transition">
                         {displayName}
@@ -294,10 +294,10 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
                     ) : (
                       <span className="block truncate text-[11px] font-medium text-neutral-200">{displayName}</span>
                     )}
-                    <p className="text-[10px] text-neutral-400">posted an announcement</p>
+                    <p className="truncate text-[10px] text-neutral-400">posted an announcement</p>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <span className={`inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${badgeClass}`}>
                     {cat.emoji} {cat.label}
                   </span>
@@ -307,14 +307,14 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
 
               {/* Title + preview */}
               {(item.title || preview) && (
-                <div className="mt-1 pl-[26px]">
+                <div className="mt-0.5 pl-[26px]">
                   {item.title && <p className="text-[11px] font-semibold text-neutral-100 leading-snug">{item.title}</p>}
                   {preview && <p className="text-[11px] text-neutral-300 leading-snug truncate">{preview}</p>}
                 </div>
               )}
 
               {/* Like */}
-              <div className="mt-1 pl-[22px] flex items-center">
+              <div className="mt-0.5 pl-[22px] flex items-center">
                 <button onClick={() => void toggleLike(item.id)} disabled={!viewerId}
                   title={viewerId ? (item.user_liked ? "Unlike" : "Like") : "Sign in to like"}
                   className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium transition ${
