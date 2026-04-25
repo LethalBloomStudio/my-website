@@ -2255,17 +2255,22 @@ function PageInner() {
                     }
 
                     return (
-                      <div className="p-3 space-y-3">
+                      <div className="relative min-h-full px-2 py-2" style={{ minHeight: chapterHeight || undefined }}>
                         {allFeedback.map((f) => {
                           const isSelected = selectedFeedbackId === f.id;
                           const cardReplies = replies.filter((r) => r.feedback_id === f.id);
+                          const info = readerMarkerInfos[f.id];
+                          const cardStyle: React.CSSProperties = info
+                            ? { position: "absolute", top: info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
+                            : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
 
                           if (!isSelected) {
                             return (
                               <div
                                 key={f.id}
                                 id={`feedback-item-${f.id}`}
-                                className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3 hover:border-[rgba(120,120,120,0.55)] hover:bg-[rgba(120,120,120,0.12)] transition"
+                                style={cardStyle}
+                                className="group cursor-pointer rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(20,20,20,0.70)] px-2.5 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition hover:border-[rgba(120,120,120,0.45)] hover:bg-[rgba(20,20,20,0.88)]"
                                 onClick={(e) => {
                                   if ((e.target as HTMLElement).closest("button,textarea")) return;
                                   setClickedMarkerTop(null);
@@ -2273,21 +2278,10 @@ function PageInner() {
                                   document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "instant", block: "nearest" });
                                 }}
                               >
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">You</p>
-                                  <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-                                    <span>{new Date(f.created_at).toLocaleDateString()}</span>
-                                    {cardReplies.length > 0 && (
-                                      <span>{cardReplies.length} repl{cardReplies.length === 1 ? "y" : "ies"}</span>
-                                    )}
-                                  </div>
+                                <div className="flex min-w-0 items-center gap-1.5">
+                                  <span className="shrink-0 text-[10px] font-semibold text-neutral-400">You</span>
+                                  <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
                                 </div>
-                                {f.selection_excerpt && (
-                                  <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400 line-clamp-2">
-                                    &ldquo;{f.selection_excerpt}&rdquo;
-                                  </blockquote>
-                                )}
-                                <p className="mt-1.5 text-sm leading-relaxed text-neutral-200 line-clamp-3">{f.comment_text}</p>
                               </div>
                             );
                           }
@@ -2297,14 +2291,15 @@ function PageInner() {
                             <div
                               key={f.id}
                               id={`feedback-item-${f.id}`}
-                              className="rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)] p-3 shadow-[0_8px_24px_rgba(120,120,120,0.15)]"
+                              style={cardStyle}
+                              className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(20,20,20,0.97)] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-all duration-200"
                               onClick={(e) => {
                                 if ((e.target as HTMLElement).closest("button,textarea")) return;
                                 setSelectedFeedbackId(null);
                               }}
                             >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">You</p>
+                              <div className="mb-1.5 flex items-center justify-between gap-2">
+                                <p className="text-[11px] font-medium text-[rgba(210,210,210,0.85)]">You</p>
                                 <div className="flex gap-1 shrink-0 items-center">
                                   {f.reader_id === userId && (
                                     <>
