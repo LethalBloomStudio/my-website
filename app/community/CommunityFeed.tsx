@@ -63,6 +63,13 @@ type FeedItem = {
   author: Author | null;
 };
 
+function firstNonEmpty(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -260,8 +267,8 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
     <>
       <div className="space-y-2">
         {items.map((item) => {
-          const displayName = item.author?.pen_name ?? item.author?.username ?? "Member";
-          const username = item.author?.username;
+          const displayName = firstNonEmpty(item.author?.pen_name, item.author?.username) ?? "Member";
+          const username = firstNonEmpty(item.author?.username);
           const cat = TYPE_LABELS[item.type] ?? TYPE_LABELS.update;
           const badgeClass = TYPE_BADGE[item.type] ?? TYPE_BADGE.update;
           const _borderClass = CARD_BORDER[item.type] ?? CARD_BORDER.update;
@@ -269,26 +276,33 @@ export default function CommunityFeed({ viewerId, audience = "adult" }: { viewer
 
           return (
             <div key={item.id} className="community-feed-card rounded-lg border border-black bg-[#2a2a2a] px-2.5 py-2">
-              {/* Author + badge + timestamp on one line */}
-              <div className="flex items-center gap-2 min-w-0">
-                {username ? (
-                  <Link href={`/u/${username}`} className="shrink-0">
+              {/* Author + badge + timestamp */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  {username ? (
+                    <Link href={`/u/${username}`} className="shrink-0">
+                      <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
+                    </Link>
+                  ) : (
                     <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
-                  </Link>
-                ) : (
-                  <Avatar url={item.author?.avatar_url ?? null} name={displayName} size={18} />
-                )}
-                {username ? (
-                  <Link href={`/u/${username}`} className="text-[11px] font-medium text-neutral-200 hover:text-white transition truncate shrink-0">
-                    {displayName}
-                  </Link>
-                ) : (
-                  <span className="text-[11px] font-medium text-neutral-200 truncate shrink-0">{displayName}</span>
-                )}
-                <span className={`shrink-0 inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${badgeClass}`}>
-                  {cat.emoji} {cat.label}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-neutral-300">{timeAgo(item.created_at)}</span>
+                  )}
+                  <div className="min-w-0">
+                    {username ? (
+                      <Link href={`/u/${username}`} className="block truncate text-[11px] font-medium text-neutral-200 hover:text-white transition">
+                        {displayName}
+                      </Link>
+                    ) : (
+                      <span className="block truncate text-[11px] font-medium text-neutral-200">{displayName}</span>
+                    )}
+                    <p className="text-[10px] text-neutral-400">posted an announcement</p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className={`inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${badgeClass}`}>
+                    {cat.emoji} {cat.label}
+                  </span>
+                  <span className="text-[10px] text-neutral-300">{timeAgo(item.created_at)}</span>
+                </div>
               </div>
 
               {/* Title + preview */}

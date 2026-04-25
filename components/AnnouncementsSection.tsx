@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import ReportModal from "@/components/ReportModal";
 
@@ -158,13 +159,14 @@ function Heart({ filled }: { filled: boolean }) {
 
 // ─── Comment row ──────────────────────────────────────────────────────────────
 
-function CommentRow({ comment, currentUserId, onLike, onReply, isReplying, onSaveEdit }: {
+function CommentRow({ comment, currentUserId, onLike, onReply, isReplying, onSaveEdit, highlight = false }: {
   comment: AnnComment;
   currentUserId: string | null;
   onLike: () => void;
   onReply: () => void;
   isReplying: boolean;
   onSaveEdit: (newContent: string) => Promise<void>;
+  highlight?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -182,13 +184,17 @@ function CommentRow({ comment, currentUserId, onLike, onReply, isReplying, onSav
   }
 
   return (
-    <div className="flex items-start gap-2">
-      {username ? (
-        <Link href={`/u/${username}`} className="shrink-0 mt-0.5"><Avatar url={comment.author?.avatar_url ?? null} name={name} size={22} /></Link>
-      ) : (
-        <div className="mt-0.5"><Avatar url={comment.author?.avatar_url ?? null} name={name} size={22} /></div>
-      )}
-      <div className="min-w-0 flex-1">
+    <div
+      id={`announcement-comment-${comment.id}`}
+      className={`scroll-mt-28 rounded-lg p-2 transition ${highlight ? "bg-amber-950/30 ring-1 ring-amber-500/50" : ""}`}
+    >
+      <div className="flex items-start gap-2">
+        {username ? (
+          <Link href={`/u/${username}`} className="shrink-0 mt-0.5"><Avatar url={comment.author?.avatar_url ?? null} name={name} size={22} /></Link>
+        ) : (
+          <div className="mt-0.5"><Avatar url={comment.author?.avatar_url ?? null} name={name} size={22} /></div>
+        )}
+        <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5 flex-wrap">
           {username ? (
             <Link href={`/u/${username}`} className="text-xs font-semibold text-neutral-200 hover:text-white transition">{name}</Link>
@@ -249,6 +255,7 @@ function CommentRow({ comment, currentUserId, onLike, onReply, isReplying, onSav
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -291,6 +298,10 @@ export default function AnnouncementsSection({
   ownerUsername,
 }: Props) {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const searchParams = useSearchParams();
+  const targetAnnouncementId = searchParams.get("announcement");
+  const targetCommentId = searchParams.get("comment");
+  const announcementRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Posts
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -426,6 +437,22 @@ export default function AnnouncementsSection({
 
   useEffect(() => { void loadPosts(); }, [profileUserId, supabase]);
 
+  useEffect(() => {
+    if (!targetAnnouncementId || announcements.length === 0) return;
+    const targetIndex = announcements.findIndex((ann) => ann.id === targetAnnouncementId);
+    if (targetIndex === -1) return;
+    if (visibleCount < targetIndex + 1) setVisibleCount(targetIndex + 1);
+    if (expandedPostId !== targetAnnouncementId) setExpandedPostId(targetAnnouncementId);
+  }, [announcements, expandedPostId, targetAnnouncementId, visibleCount]);
+
+  useEffect(() => {
+    if (!targetAnnouncementId) return;
+    if (expandedPostId !== targetAnnouncementId) return;
+    const target = announcementRefs.current[targetAnnouncementId];
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [expandedPostId, targetAnnouncementId, visibleCount]);
+
   // ── Load owner's coin balance when opening challenge creator ──
   async function fetchUserCoins() {
     if (!viewerId) return;
@@ -491,7 +518,17 @@ export default function AnnouncementsSection({
       setComments(prev => ({ ...prev, [expandedPostId]: built }));
       setLoadingComments(false);
     })();
-  }, [expandedPostId, supabase, viewerId]);
+  }, [comments, expandedPostId, supabase, viewerId]);
+
+  useEffect(() => {
+    if (!targetAnnouncementId || !targetCommentId) return;
+    if (expandedPostId !== targetAnnouncementId) return;
+    const postComments = comments[targetAnnouncementId];
+    if (!postComments?.some((comment) => comment.id === targetCommentId)) return;
+    const el = document.getElementById(`announcement-comment-${targetCommentId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [comments, expandedPostId, targetAnnouncementId, targetCommentId]);
 
   // ── Actions ──
 
@@ -821,7 +858,12 @@ export default function AnnouncementsSection({
               if (challengeEnded && ann.type === "challenge" && !ann.winner_drawn) void drawChallenge(ann.id);
 
               return (
-                <div key={ann.id} className={`rounded-xl border overflow-hidden ${CARD_COLORS[ann.type]}`}>
+                <div
+                  key={ann.id}
+                  id={`announcement-${ann.id}`}
+                  ref={(node) => { announcementRefs.current[ann.id] = node; }}
+                  className={`scroll-mt-28 rounded-xl border overflow-hidden ${CARD_COLORS[ann.type]} ${targetAnnouncementId === ann.id ? "ring-1 ring-amber-500/50" : ""}`}
+                >
 
                   {/* Post body */}
                   <div className="px-4 pt-4 pb-3">
@@ -999,7 +1041,8 @@ export default function AnnouncementsSection({
                                       : { annId: ann.id, commentId: comment.id, authorName: commentAuthorName }
                                   )}
                                   isReplying={replyingTo?.commentId === comment.id}
-                                  onSaveEdit={(content) => saveCommentEdit(ann.id, comment.id, content)} />
+                                  onSaveEdit={(content) => saveCommentEdit(ann.id, comment.id, content)}
+                                  highlight={targetCommentId === comment.id} />
                                 {(replies.length > 0 || replyInThisThread) && (
                                   <div className="ml-7 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
                                     {replies.map(reply => {
@@ -1012,7 +1055,8 @@ export default function AnnouncementsSection({
                                               : { annId: ann.id, commentId: reply.id, authorName: replyAuthorName }
                                           )}
                                           isReplying={replyingTo?.commentId === reply.id}
-                                          onSaveEdit={(content) => saveCommentEdit(ann.id, reply.id, content)} />
+                                          onSaveEdit={(content) => saveCommentEdit(ann.id, reply.id, content)}
+                                          highlight={targetCommentId === reply.id} />
                                       );
                                     })}
                                     {replyInThisThread && (

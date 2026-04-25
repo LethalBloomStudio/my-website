@@ -46,7 +46,20 @@ type SystemNotification = {
   body: string;
   is_read: boolean;
   created_at: string;
-  metadata?: { announcement_id?: string; reward_coins?: number; giveaway_post_id?: string; post_id?: string; community?: string; profile_username?: string; manuscript_id?: string; chapter_id?: string; feedback_id?: string } | null;
+  metadata?: {
+    announcement_id?: string;
+    announcement_comment_id?: string;
+    reward_coins?: number;
+    giveaway_post_id?: string;
+    post_id?: string;
+    community?: string;
+    profile_username?: string;
+    manuscript_id?: string;
+    chapter_id?: string;
+    feedback_id?: string;
+    link?: string;
+    link_label?: string;
+  } | null;
 };
 type ManuscriptInvitation = {
   id: string;
@@ -1345,13 +1358,13 @@ export default function NotificationsPage() {
               Mark as read
             </button>
           )}
-          {(n.metadata as { link?: string } | null)?.link && (
+          {(n.metadata as { link?: string; link_label?: string } | null)?.link && (
             <Link
               href={(n.metadata as { link: string }).link}
               onClick={() => void markOneAsRead(item)}
               className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition ${CAT_BTN[cat]}`}
             >
-              View Message →
+              {(n.metadata as { link?: string; link_label?: string } | null)?.link_label ?? "View Message"} →
             </Link>
           )}
           {(n.title === "Someone replied to your comment" || n.title === "New reply on your discussion post") && n.metadata?.post_id && (
