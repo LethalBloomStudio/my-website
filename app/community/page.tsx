@@ -64,7 +64,7 @@ export default async function CommunityPage() {
           <UploadCarousel audience="adult" />
         </div>
 
-        <div className="-mt-1 -mb-1">
+        <div>
           <CommunityAnnouncementBanner
             initialMessage={communityAnnouncement?.message ?? null}
             initialActive={communityAnnouncement?.is_active ?? false}

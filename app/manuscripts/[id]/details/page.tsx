@@ -1086,9 +1086,13 @@ export default function ManuscriptDetailsPage() {
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    const searchFrom = startOffset != null ? Math.max(0, startOffset) : 0;
-    let idx = fullText.indexOf(excerpt, searchFrom);
-    if (idx === -1) idx = fullText.indexOf(excerpt); // fallback for legacy feedback
+    let idx = -1;
+    if (startOffset != null) {
+      const searchFrom = Math.max(0, startOffset);
+      idx = fullText.indexOf(excerpt, searchFrom);
+    } else {
+      idx = fullText.indexOf(excerpt);
+    }
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
@@ -2634,8 +2638,8 @@ export default function ManuscriptDetailsPage() {
             const chapterFeedback = feedbackItems
               .filter((f) => f.chapter_id === selectedChapterId)
               .sort((a, b) => {
-                const ia = a.selection_excerpt ? plainChapterText.indexOf(a.selection_excerpt) : Infinity;
-                const ib = b.selection_excerpt ? plainChapterText.indexOf(b.selection_excerpt) : Infinity;
+                const ia = a.start_offset ?? (a.selection_excerpt ? plainChapterText.indexOf(a.selection_excerpt) : Infinity);
+                const ib = b.start_offset ?? (b.selection_excerpt ? plainChapterText.indexOf(b.selection_excerpt) : Infinity);
                 return ia - ib;
               });
             const activeFeedback = chapterFeedback.find((f) => f.id === selectedFeedbackId) ?? null;

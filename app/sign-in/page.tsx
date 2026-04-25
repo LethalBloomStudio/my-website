@@ -26,6 +26,9 @@ export default function SignInPage() {
     if (m.includes("email not confirmed")) {
       return "Your email is not confirmed yet. Check your inbox for the confirmation link.";
     }
+    if (m.includes("signups not allowed for otp") || m.includes("user not found")) {
+      return "No account exists for that email. Use Sign up first.";
+    }
     return message;
   }
 
@@ -85,11 +88,14 @@ export default function SignInPage() {
       typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      options: {
+        shouldCreateUser: false,
+        ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+      },
     });
     setSendingLink(false);
     if (error) {
-      setMsg(error.message);
+      setMsg(friendlyAuthError(error.message));
       return;
     }
     setMsg("Sign-in link sent. Check your email and open the link on this device.");

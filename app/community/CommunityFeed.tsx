@@ -106,7 +106,8 @@ async function buildItems(
   ]);
 
   const likes = (likesData as { announcement_id: string; user_id: string }[] | null) ?? [];
-  const profileMap = new Map(((profileData as Author[] | null) ?? []).map((p) => [p.user_id, p]));
+  const profileRows = (profileData as Author[] | null) ?? [];
+  const profileMap = new Map(profileRows.map((p) => [p.user_id, p]));
 
   return rows.map((r) => ({
     id: r.id,

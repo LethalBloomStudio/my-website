@@ -467,11 +467,16 @@ function PageInner() {
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    // Use stored offset to find the correct occurrence rather than always the first.
-    // Search from startOffset; fall back to plain indexOf for legacy items without offset.
-    const searchFrom = startOffset != null ? Math.max(0, startOffset) : 0;
-    let idx = fullText.indexOf(excerpt, searchFrom);
-    if (idx === -1) idx = fullText.indexOf(excerpt); // fallback for legacy feedback
+    // If we have a stored offset, only anchor to that exact occurrence.
+    // Falling back to the first text match can attach markers to a repeated
+    // phrase in the wrong place or even the wrong chapter.
+    let idx = -1;
+    if (startOffset != null) {
+      const searchFrom = Math.max(0, startOffset);
+      idx = fullText.indexOf(excerpt, searchFrom);
+    } else {
+      idx = fullText.indexOf(excerpt);
+    }
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
@@ -533,9 +538,13 @@ function PageInner() {
     const found: { start: number; end: number; id: string }[] = [];
     for (const f of markerItems) {
       if (!f.selection_excerpt) continue;
-      const searchFrom = f.start_offset != null ? Math.max(0, f.start_offset - paraCharOffset) : 0;
-      let idx = plainText.indexOf(f.selection_excerpt, searchFrom);
-      if (idx === -1) idx = plainText.indexOf(f.selection_excerpt); // fallback
+      let idx = -1;
+      if (f.start_offset != null) {
+        const searchFrom = Math.max(0, f.start_offset - paraCharOffset);
+        idx = plainText.indexOf(f.selection_excerpt, searchFrom);
+      } else {
+        idx = plainText.indexOf(f.selection_excerpt);
+      }
       if (idx === -1) continue;
       found.push({ start: idx, end: idx + f.selection_excerpt.length, id: f.id });
     }
