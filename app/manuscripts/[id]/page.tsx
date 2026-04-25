@@ -456,6 +456,7 @@ function PageInner() {
     const ta = replyTextareaRefs.current.get(f.id);
     if (ta) { ta.style.height = "auto"; }
     if (json.reply) setReplies((prev) => [...prev, json.reply!]);
+    void refreshRepliesForCurrentFeedback();
   }
 
   /**
@@ -1158,6 +1159,19 @@ function PageInner() {
     feedbackIdsRef.current = Array.from(new Set(allIds));
   }, [feedback, myAllFeedback]);
 
+  async function refreshRepliesForCurrentFeedback() {
+    const ids = feedbackIdsRef.current;
+    if (ids.length === 0) {
+      setReplies([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("line_feedback_replies")
+      .select("id, feedback_id, replier_id, body, created_at")
+      .in("feedback_id", ids);
+    setReplies((data as FeedbackReply[] | null) ?? []);
+  }
+
   // Realtime - live feedback replies and resolution updates
   // No polling: realtime INSERT/UPDATE events handle all live updates
   useEffect(() => {
@@ -1168,7 +1182,9 @@ function PageInner() {
       .channel(`feedback-replies-${manuscriptId}-reader`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
+        if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
         setReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
+        void refreshRepliesForCurrentFeedback();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "line_feedback" }, (payload: { new: Record<string, unknown> }) => {
         const updated = payload.new as LineFeedback;

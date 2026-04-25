@@ -175,6 +175,7 @@ export default function ManuscriptDetailsPage() {
   const [overviewExpandedIds, setOverviewExpandedIds] = useState<Set<string>>(new Set());
   const [feedbackNames, setFeedbackNames] = useState<Record<string, string>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const feedbackIdsRef = useRef<string[]>([]);
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [editorOffsetY, setEditorOffsetY] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
@@ -184,6 +185,52 @@ export default function ManuscriptDetailsPage() {
   const chapterSectionRef = useRef<HTMLElement>(null);
   const [chapterSectionH, setChapterSectionH] = useState(0);
   const prevMarkerInfosRef = useRef<Record<string, unknown>>({});
+
+  useEffect(() => {
+    feedbackIdsRef.current = feedbackItems.map((f) => f.id);
+  }, [feedbackItems]);
+
+  async function refreshFeedbackReplies() {
+    const ids = feedbackIdsRef.current;
+    if (ids.length === 0) {
+      setFeedbackReplies([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("line_feedback_replies")
+      .select("id, feedback_id, replier_id, body, created_at")
+      .in("feedback_id", ids);
+    setFeedbackReplies((data as FeedbackReply[] | null) ?? []);
+  }
+
+  async function refreshFeedbackItems() {
+    if (!manuscriptId) return;
+    const { data: fbData, error: fbError } = await supabase
+      .from("line_feedback")
+      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset")
+      .eq("manuscript_id", manuscriptId)
+      .order("created_at", { ascending: false });
+    if (fbError) return;
+
+    const rows = (fbData as LineFeedback[] | null) ?? [];
+    setFeedbackItems(rows);
+
+    const readerIds = Array.from(new Set(rows.map((f) => f.reader_id)));
+    if (readerIds.length === 0) {
+      setFeedbackNames({});
+      return;
+    }
+
+    const { data: profiles } = await supabase
+      .from("public_profiles")
+      .select("user_id, pen_name, username")
+      .in("user_id", readerIds);
+    const nextNames: Record<string, string> = {};
+    ((profiles as { user_id: string; pen_name: string | null; username: string | null }[] | null) ?? []).forEach((p) => {
+      nextNames[p.user_id] = p.pen_name || (p.username ? `@${p.username}` : "Reader");
+    });
+    setFeedbackNames(nextNames);
+  }
   const [navH, setNavH] = useState(0);
   type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
@@ -331,6 +378,7 @@ export default function ManuscriptDetailsPage() {
     const ta = replyTextareaRefs.current.get(feedbackId);
     if (ta) { ta.style.height = "auto"; }
     if (json.reply) setFeedbackReplies((p) => [...p, json.reply!]);
+    void refreshFeedbackReplies();
   }
 
   async function resolveFeedback(feedbackId: string, response: "agree" | "disagree") {
@@ -873,7 +921,9 @@ export default function ManuscriptDetailsPage() {
       .channel(`feedback-replies-${manuscriptId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
+        if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
         setFeedbackReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
+        void refreshFeedbackReplies();
       })
       .subscribe();
     replyChannelRef.current = ch;
@@ -895,6 +945,7 @@ export default function ManuscriptDetailsPage() {
         async (payload: { new: Record<string, unknown> }) => {
           const f = payload.new as LineFeedback;
           setFeedbackItems((prev) => prev.some((p) => p.id === f.id) ? prev : [f, ...prev]);
+          void refreshFeedbackItems();
           setFeedbackNames((prev) => {
             if (prev[f.reader_id]) return prev;
             void supabase
