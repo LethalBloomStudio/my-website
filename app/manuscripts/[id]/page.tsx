@@ -462,22 +462,42 @@ function PageInner() {
   /**
    * Range API helpers for absolute-positioned overlay markers (same approach as details/page.tsx).
    */
+  function findNearestExcerptIndex(text: string, excerpt: string, targetOffset?: number) {
+    if (!excerpt) return -1;
+    if (targetOffset == null) return text.indexOf(excerpt);
+
+    const matches: number[] = [];
+    let fromIndex = 0;
+    while (fromIndex <= text.length) {
+      const idx = text.indexOf(excerpt, fromIndex);
+      if (idx === -1) break;
+      matches.push(idx);
+      fromIndex = idx + 1;
+    }
+    if (matches.length === 0) return -1;
+
+    let bestIdx = matches[0];
+    let bestDistance = Math.abs(matches[0] - targetOffset);
+    for (const idx of matches) {
+      const distance = Math.abs(idx - targetOffset);
+      if (distance < bestDistance) {
+        bestIdx = idx;
+        bestDistance = distance;
+      }
+    }
+    return bestIdx;
+  }
+
   function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    // If we have a stored offset, only anchor to that exact occurrence.
-    // Falling back to the first text match can attach markers to a repeated
-    // phrase in the wrong place or even the wrong chapter.
-    let idx = -1;
-    if (startOffset != null) {
-      const searchFrom = Math.max(0, startOffset);
-      idx = fullText.indexOf(excerpt, searchFrom);
-    } else {
-      idx = fullText.indexOf(excerpt);
-    }
+    // Prefer the occurrence nearest the stored offset. This keeps repeated
+    // phrases anchored correctly while tolerating small offset drift caused by
+    // formatting or text normalization.
+    const idx = findNearestExcerptIndex(fullText, excerpt, startOffset != null ? Math.max(0, startOffset) : undefined);
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
@@ -539,13 +559,11 @@ function PageInner() {
     const found: { start: number; end: number; id: string }[] = [];
     for (const f of markerItems) {
       if (!f.selection_excerpt) continue;
-      let idx = -1;
-      if (f.start_offset != null) {
-        const searchFrom = Math.max(0, f.start_offset - paraCharOffset);
-        idx = plainText.indexOf(f.selection_excerpt, searchFrom);
-      } else {
-        idx = plainText.indexOf(f.selection_excerpt);
-      }
+      const idx = findNearestExcerptIndex(
+        plainText,
+        f.selection_excerpt,
+        f.start_offset != null ? Math.max(0, f.start_offset - paraCharOffset) : undefined,
+      );
       if (idx === -1) continue;
       found.push({ start: idx, end: idx + f.selection_excerpt.length, id: f.id });
     }

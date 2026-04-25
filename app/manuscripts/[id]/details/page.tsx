@@ -1131,19 +1131,39 @@ export default function ManuscriptDetailsPage() {
   }, [selectedChapterId, markerInfos]);
 
   // Find the DOM Range for an excerpt inside a root element using a TreeWalker
+  function findNearestExcerptIndex(text: string, excerpt: string, targetOffset?: number) {
+    if (!excerpt) return -1;
+    if (targetOffset == null) return text.indexOf(excerpt);
+
+    const matches: number[] = [];
+    let fromIndex = 0;
+    while (fromIndex <= text.length) {
+      const idx = text.indexOf(excerpt, fromIndex);
+      if (idx === -1) break;
+      matches.push(idx);
+      fromIndex = idx + 1;
+    }
+    if (matches.length === 0) return -1;
+
+    let bestIdx = matches[0];
+    let bestDistance = Math.abs(matches[0] - targetOffset);
+    for (const idx of matches) {
+      const distance = Math.abs(idx - targetOffset);
+      if (distance < bestDistance) {
+        bestIdx = idx;
+        bestDistance = distance;
+      }
+    }
+    return bestIdx;
+  }
+
   function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let n: Node | null;
     while ((n = walker.nextNode())) textNodes.push(n as Text);
     const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    let idx = -1;
-    if (startOffset != null) {
-      const searchFrom = Math.max(0, startOffset);
-      idx = fullText.indexOf(excerpt, searchFrom);
-    } else {
-      idx = fullText.indexOf(excerpt);
-    }
+    const idx = findNearestExcerptIndex(fullText, excerpt, startOffset != null ? Math.max(0, startOffset) : undefined);
     if (idx === -1) return null;
     let cumul = 0;
     let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
