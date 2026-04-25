@@ -2140,9 +2140,22 @@ function PageInner() {
                   className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
                   style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}
                 >
+                  <div className="shrink-0 border-b border-[rgba(120,120,120,0.2)] px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Chapter Feedback
+                        <span className="ml-2 rounded-full bg-[rgba(120,120,120,0.2)] px-2 py-0.5 text-[10px] font-normal text-[rgba(210,210,210,0.8)]">
+                          {myChapterFeedback.length}
+                        </span>
+                      </h2>
+                      {activeChapter?.chapter_type === "trigger_page" && (
+                        <span className="text-[10px] text-neutral-500">No coin reward</span>
+                      )}
+                    </div>
+                  </div>
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && activeChapter?.chapter_type !== "trigger_page" && (
-                    <div className="shrink-0 px-3 py-2 border-b border-[rgba(120,120,120,0.2)]">
+                    <div className="shrink-0 px-3 py-2">
                       {(() => {
                         const totalWords = myChapterFeedback.reduce((sum, f) => sum + (f.word_count ?? 0), 0);
                         const isCompleted = activeChapter ? completedChapterIds.has(activeChapter.id) : false;
@@ -2252,7 +2265,7 @@ function PageInner() {
                               <div
                                 key={f.id}
                                 id={`feedback-item-${f.id}`}
-                                className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-2.5 hover:border-[rgba(120,120,120,0.6)] transition"
+                                className="cursor-pointer rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3 hover:border-[rgba(120,120,120,0.55)] hover:bg-[rgba(120,120,120,0.12)] transition"
                                 onClick={(e) => {
                                   if ((e.target as HTMLElement).closest("button,textarea")) return;
                                   setClickedMarkerTop(null);
@@ -2260,19 +2273,21 @@ function PageInner() {
                                   document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "instant", block: "nearest" });
                                 }}
                               >
-                                <div className="flex items-center justify-between gap-1">
-                                  <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
-                                  <span className="text-[10px] text-neutral-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">You</p>
+                                  <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                                    <span>{new Date(f.created_at).toLocaleDateString()}</span>
+                                    {cardReplies.length > 0 && (
+                                      <span>{cardReplies.length} repl{cardReplies.length === 1 ? "y" : "ies"}</span>
+                                    )}
+                                  </div>
                                 </div>
                                 {f.selection_excerpt && (
-                                  <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
+                                  <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400 line-clamp-2">
                                     &ldquo;{f.selection_excerpt}&rdquo;
                                   </blockquote>
                                 )}
-                                <p className="mt-1 text-[11px] leading-relaxed text-neutral-300 line-clamp-2">{f.comment_text}</p>
-                                {cardReplies.length > 0 && (
-                                  <p className="mt-1 text-[10px] text-neutral-500">{cardReplies.length} repl{cardReplies.length === 1 ? "y" : "ies"}</p>
-                                )}
+                                <p className="mt-1.5 text-sm leading-relaxed text-neutral-200 line-clamp-3">{f.comment_text}</p>
                               </div>
                             );
                           }
@@ -2282,14 +2297,14 @@ function PageInner() {
                             <div
                               key={f.id}
                               id={`feedback-item-${f.id}`}
-                              className="rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)] p-2.5 shadow-[0_8px_24px_rgba(120,120,120,0.15)]"
+                              className="rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.14)] p-3 shadow-[0_8px_24px_rgba(120,120,120,0.15)]"
                               onClick={(e) => {
                                 if ((e.target as HTMLElement).closest("button,textarea")) return;
                                 setSelectedFeedbackId(null);
                               }}
                             >
-                              <div className="flex items-center justify-between gap-1">
-                                <p className="text-[11px] font-medium text-[rgba(210,210,210,0.8)]">{names[f.reader_id] || "Reader"}</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">You</p>
                                 <div className="flex gap-1 shrink-0 items-center">
                                   {f.reader_id === userId && (
                                     <>
@@ -2319,7 +2334,7 @@ function PageInner() {
                               {f.selection_excerpt && !manuscriptParagraphs.some((p) => p.includes(f.selection_excerpt)) ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
                               ) : (
-                                <blockquote className="mt-1 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
+                                <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
                                   &ldquo;{f.selection_excerpt}&rdquo;
                                 </blockquote>
                               )}
@@ -2348,28 +2363,29 @@ function PageInner() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="mt-1.5 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                                  <div className={`flex ${f.reader_id === userId ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${f.reader_id === userId ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
-                                      <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{names[f.reader_id] || "Reader"}</p>
-                                      <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
-                                    </div>
+                                <div className="mt-2 space-y-2">
+                                  <div className="rounded-lg bg-neutral-950/50 px-3 py-2">
+                                    <p className="mb-0.5 text-[10px] font-semibold text-[rgba(210,210,210,0.7)]">You</p>
+                                    <p className="text-[11px] leading-relaxed text-neutral-300 break-words">{f.comment_text}</p>
                                   </div>
                                   {f.author_response && (
-                                    <p className={`text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
+                                    <p className={`text-[10px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
                                       {f.author_response === "agree" ? "✓ Author agreed" : "✗ Author disagreed"}
                                     </p>
                                   )}
                                   {cardReplies.map((r) => {
                                     const isMe = r.replier_id === userId;
                                     return (
-                                      <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
-                                          <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
-                                            {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
-                                          </p>
-                                          <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
-                                        </div>
+                                      <div
+                                        key={r.id}
+                                        className={`rounded-lg px-3 py-2 text-[11px] ${
+                                          isMe ? "bg-[rgba(120,120,120,0.12)]" : "bg-[rgba(255,255,255,0.04)]"
+                                        }`}
+                                      >
+                                        <span className="mr-1 text-[10px] font-semibold text-[rgba(210,210,210,0.7)]">
+                                          {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}:
+                                        </span>
+                                        <span className="text-neutral-300">{r.body}</span>
                                       </div>
                                     );
                                   })}
