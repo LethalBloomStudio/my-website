@@ -2976,7 +2976,11 @@ export default function ManuscriptDetailsPage() {
                   <div ref={rightColumnRef} className="w-72 shrink-0 relative" style={{ minHeight: chapterSectionH || undefined }}>
                     {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
                     {(() => {
-                      const filtered = chapterFeedback.filter((f) => !f.resolved && !f.author_response && !!markerInfos[f.id]);
+                      const filtered = chapterFeedback.filter((f) => {
+                        if (f.resolved || !!f.author_response) return false;
+                        if (!f.selection_excerpt) return true;
+                        return plainChapterText.includes(f.selection_excerpt);
+                      });
                       if (filtered.length === 0) return (
                         <p className="text-[11px] text-neutral-600 italic mt-2">No unresolved feedback on this chapter yet.</p>
                       );
