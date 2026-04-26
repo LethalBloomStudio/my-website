@@ -1,7 +1,38 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
+import { supabaseAdmin } from "@/lib/Supabase/admin";
 
 const PAGE_SIZE = 50;
+
+async function ensureCreatorMembership(groupId: string, userId: string) {
+  const admin = supabaseAdmin();
+  const { data: conversation } = await admin
+    .from("group_message_conversations")
+    .select("id, created_by, created_at")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  const convo = (conversation as { id: string; created_by: string; created_at: string } | null) ?? null;
+  if (!convo || convo.created_by !== userId) return null;
+
+  const joinedAt = convo.created_at ?? new Date().toISOString();
+  const { error } = await admin
+    .from("group_message_members")
+    .upsert(
+      {
+        conversation_id: groupId,
+        user_id: userId,
+        joined_at: joinedAt,
+        left_at: null,
+        last_read_at: joinedAt,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "conversation_id,user_id" }
+    );
+
+  if (error) return null;
+  return { joined_at: joinedAt, left_at: null as string | null };
+}
 
 export async function GET(req: Request) {
   const supabase = await supabaseServer();
@@ -32,12 +63,16 @@ export async function GET(req: Request) {
   }
 
   if (groupId) {
-    const { data: membership } = await supabase
+    let { data: membership } = await supabase
       .from("group_message_members")
       .select("joined_at, left_at")
       .eq("conversation_id", groupId)
       .eq("user_id", userId)
       .maybeSingle();
+
+    if (!membership) {
+      membership = await ensureCreatorMembership(groupId, userId);
+    }
 
     if (!membership) {
       return NextResponse.json({ error: "Group chat not found." }, { status: 404 });

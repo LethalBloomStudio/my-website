@@ -95,6 +95,7 @@ function PageInner() {
   const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
   const [editFeedbackDraft, setEditFeedbackDraft] = useState("");
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(feedbackParam);
+  const [unreadReplyCounts, setUnreadReplyCounts] = useState<Record<string, number>>({});
   const [selectedOwnerFeedbackId, setSelectedOwnerFeedbackId] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState(false);
   const [myRequestStatus, setMyRequestStatus] = useState<string | null>(null);
@@ -135,6 +136,7 @@ function PageInner() {
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
+  const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
 
   function handleSelectionUp() {
     if (!canLeaveLineEdits) return;
@@ -1145,19 +1147,12 @@ function PageInner() {
         window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
       }
     }
-    // After page scroll animation, align sidebar card beside the marker
-    setTimeout(() => {
-      const cardEl = document.getElementById(`feedback-item-${selectedFeedbackId}`);
-      const aside = asideRef.current;
-      if (cardEl && aside) {
-        // Marker lands at ~35% from viewport top; aside sticky top = navH + 12
-        const markerViewportY = window.innerHeight * 0.35;
-        const desiredRelativeTop = Math.max(0, markerViewportY - navH - 12);
-        aside.scrollTop = cardEl.offsetTop - desiredRelativeTop;
-      }
-    }, 350);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: navH is a layout constant; readerMarkerInfos included to handle deferred marker population on first navigation
   }, [selectedFeedbackId, readerMarkerInfos]);
+
+  useEffect(() => {
+    selectedFeedbackIdRef.current = selectedFeedbackId;
+    if (selectedFeedbackId) markFeedbackRepliesRead(selectedFeedbackId);
+  }, [selectedFeedbackId]);
 
   // Auto-dismiss coin toast after 5 seconds
   useEffect(() => {
@@ -1190,6 +1185,15 @@ function PageInner() {
     setReplies((data as FeedbackReply[] | null) ?? []);
   }
 
+  function markFeedbackRepliesRead(feedbackId: string) {
+    setUnreadReplyCounts((prev) => {
+      if (!prev[feedbackId]) return prev;
+      const next = { ...prev };
+      delete next[feedbackId];
+      return next;
+    });
+  }
+
   // Realtime - live feedback replies and resolution updates
   // No polling: realtime INSERT/UPDATE events handle all live updates
   useEffect(() => {
@@ -1202,6 +1206,9 @@ function PageInner() {
         const r = payload.new as FeedbackReply;
         if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
         setReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
+        if (r.replier_id !== userId && selectedFeedbackIdRef.current !== r.feedback_id) {
+          setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
+        }
         void refreshRepliesForCurrentFeedback();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "line_feedback" }, (payload: { new: Record<string, unknown> }) => {
@@ -2133,14 +2140,15 @@ function PageInner() {
                 </div>
               </section>
 
-              {/* Feedback column - sticky alongside the chapter text (hidden for owner) */}
+              {/* Feedback column - free-floating alongside the chapter text (hidden for owner) */}
               {canRead && !isOwner && (
                 <div
                   ref={asideRef}
-                  className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] shadow-[0_24px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden"
-                  style={{ position: "sticky", top: navH + 12, maxHeight: `calc(100vh - ${navH + 24}px)` }}
+                  className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 relative"
+                  style={{ minHeight: chapterHeight || undefined }}
                 >
-                  <div className="shrink-0 border-b border-[rgba(120,120,120,0.2)] px-3 py-2">
+                  <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 space-y-2">
+                  <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.88)] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                         Chapter Feedback
@@ -2155,7 +2163,7 @@ function PageInner() {
                   </div>
                   {/* Total word count for this reader's feedback + coin progress */}
                   {canLeaveLineEdits && !isOwner && activeChapter?.chapter_type !== "trigger_page" && (
-                    <div className="shrink-0 px-3 py-2">
+                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.24)] bg-[rgba(18,18,18,0.84)] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-sm">
                       {(() => {
                         const totalWords = myChapterFeedback.reduce((sum, f) => sum + (f.word_count ?? 0), 0);
                         const isCompleted = activeChapter ? completedChapterIds.has(activeChapter.id) : false;
@@ -2195,7 +2203,7 @@ function PageInner() {
 
                   {/* Submission form pinned at top when text is highlighted */}
                   {pendingSelection && canLeaveLineEdits && (
-                    <div className="shrink-0 p-3 border-b border-[rgba(120,120,120,0.2)]">
+                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.94)] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.32)] backdrop-blur-sm">
                       <blockquote className="mb-2 border-l-2 border-[rgba(120,120,120,0.6)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
                         &ldquo;{pendingSelection.text}&rdquo;
                       </blockquote>
@@ -2228,8 +2236,10 @@ function PageInner() {
                     </div>
                   )}
 
-                  {/* Card area - running log, always visible */}
-                  <div ref={cardAreaRef} className="flex-1 overflow-y-auto">
+                  </div>
+
+                  {/* Card area - floating cards aligned to the text markers */}
+                  <div ref={cardAreaRef} className="relative min-h-full">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
                     const plainActiveText = activeText.replace(/<[^>]+>/g, "");
@@ -2259,6 +2269,7 @@ function PageInner() {
                         {allFeedback.map((f) => {
                           const isSelected = selectedFeedbackId === f.id;
                           const cardReplies = replies.filter((r) => r.feedback_id === f.id);
+                          const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
                           const info = readerMarkerInfos[f.id];
                           const cardStyle: React.CSSProperties = info
                             ? { position: "absolute", top: info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
@@ -2278,9 +2289,16 @@ function PageInner() {
                                   document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "instant", block: "nearest" });
                                 }}
                               >
-                                <div className="flex min-w-0 items-center gap-1.5">
-                                  <span className="shrink-0 text-[10px] font-semibold text-neutral-400">You</span>
-                                  <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
+                                <div className="flex min-w-0 items-center justify-between gap-2">
+                                  <div className="flex min-w-0 items-center gap-1.5">
+                                    <span className="shrink-0 text-[10px] font-semibold text-neutral-400">You</span>
+                                    <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
+                                  </div>
+                                  {unreadReplyCount > 0 && (
+                                    <span className="shrink-0 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300">
+                                      {unreadReplyCount === 1 ? "New reply" : `${unreadReplyCount} new`}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             );
