@@ -2061,7 +2061,11 @@ function PageInner() {
                   ) : (
                     <div className="relative z-[1] space-y-4">
                       {(() => {
-                        const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+                        const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
+                          if (f.resolved) return false;
+                          if (!f.selection_excerpt) return false;
+                          return activeText.replace(/<[^>]+>/g, "").includes(f.selection_excerpt);
+                        });
                         // Compute the plain-text character offset of each paragraph start
                         // so we can assign feedback to the exact paragraph using start_offset.
                         const paraPlainLengths = manuscriptParagraphs.map((p) => p.replace(/<[^>]+>/g, "").length);
@@ -2244,7 +2248,11 @@ function PageInner() {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
                     const plainActiveText = activeText.replace(/<[^>]+>/g, "");
                     const allFeedback = chapterFeedbackSource
-                      .filter((f) => !f.resolved)
+                      .filter((f) => {
+                        if (f.resolved) return false;
+                        if (!f.selection_excerpt) return true;
+                        return plainActiveText.includes(f.selection_excerpt);
+                      })
                       .sort((a, b) => {
                         // Prefer stored start_offset; fall back to text search position
                         const ia = (a.start_offset ?? 0) > 0
