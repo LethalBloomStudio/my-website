@@ -234,6 +234,30 @@ export default function ManuscriptDetailsPage() {
   const [navH, setNavH] = useState(0);
   type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
+  const markerOffsets = useMemo(() => {
+    const entries = Object.entries(markerInfos)
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => (a.top - b.top) || (a.left - b.left));
+    const groups: { ids: string[] }[] = [];
+    for (const entry of entries) {
+      const last = groups[groups.length - 1];
+      const lastEntry = last ? entries.find((candidate) => candidate.id === last.ids[last.ids.length - 1]) : null;
+      if (last && lastEntry && Math.abs(lastEntry.top - entry.top) <= 14 && Math.abs(lastEntry.left - entry.left) <= 26) {
+        last.ids.push(entry.id);
+      } else {
+        groups.push({ ids: [entry.id] });
+      }
+    }
+    const offsets: Record<string, number> = {};
+    for (const group of groups) {
+      const spacing = 16;
+      const start = -((group.ids.length - 1) * spacing) / 2;
+      group.ids.forEach((id, index) => {
+        offsets[id] = start + index * spacing;
+      });
+    }
+    return offsets;
+  }, [markerInfos]);
 
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterEditorTitle, setChapterEditorTitle] = useState("");
@@ -2898,6 +2922,7 @@ export default function ManuscriptDetailsPage() {
                           {/* Speech-bubble markers - same size and style as reader view */}
                           {Object.entries(markerInfos).map(([fid, info]) => {
                             const isSelected = selectedFeedbackId === fid;
+                            const offsetX = markerOffsets[fid] ?? 0;
                             return (
                               <button
                                 key={fid}
@@ -2912,7 +2937,7 @@ export default function ManuscriptDetailsPage() {
                                 style={{
                                   position: "absolute",
                                   top: info.top,
-                                  left: info.left,
+                                  left: info.left + offsetX,
                                   zIndex: 10,
                                 }}
                                 className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
@@ -2983,11 +3008,30 @@ export default function ManuscriptDetailsPage() {
                       if (filtered.length === 0) return (
                         <p className="text-[11px] text-neutral-600 italic mt-2">No unresolved feedback on this chapter yet.</p>
                       );
-                      return filtered.map((f) => {
+                      const clusters: LineFeedback[][] = [];
+                      for (const item of filtered) {
+                        const info = markerInfos[item.id];
+                        const last = clusters[clusters.length - 1];
+                        const lastInfo = last ? markerInfos[last[0].id] : undefined;
+                        if (info && last && lastInfo && Math.abs(lastInfo.top - info.top) <= 18) {
+                          last.push(item);
+                        } else {
+                          clusters.push([item]);
+                        }
+                      }
+                      return clusters.map((cluster) => {
+                        const activeFeedback = cluster.find((item) => item.id === selectedFeedbackId) ?? cluster[0];
+                        const activeIndex = cluster.findIndex((item) => item.id === activeFeedback.id);
+                        const f = activeFeedback;
                         const info = markerInfos[f.id];
                         const isSelected = selectedFeedbackId === f.id;
                         const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
+                        const hasStack = cluster.length > 1;
+                        const moveInStack = (direction: -1 | 1) => {
+                          const nextIndex = (activeIndex + direction + cluster.length) % cluster.length;
+                          setSelectedFeedbackId(cluster[nextIndex].id);
+                        };
                         // Resolved/unmatched feedback has no marker — render in normal flow at top of column
                         const cardStyle: React.CSSProperties = info
                           ? { position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
@@ -3007,9 +3051,32 @@ export default function ManuscriptDetailsPage() {
                           >
                             {/* Collapsed: single-line pill */}
                             {!isExpanded && (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="shrink-0 text-[10px] font-semibold text-neutral-400">{readerName}</span>
-                                <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
+                              <div className="flex items-center justify-between gap-2 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="shrink-0 text-[10px] font-semibold text-neutral-400">{readerName}</span>
+                                  <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
+                                </div>
+                                {hasStack && (
+                                  <div className="flex shrink-0 items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
+                                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                      title="Previous stacked feedback"
+                                    >
+                                      ‹
+                                    </button>
+                                    <span className="text-[9px] font-semibold text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
+                                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                      title="Next stacked feedback"
+                                    >
+                                      ›
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -3019,7 +3086,30 @@ export default function ManuscriptDetailsPage() {
                             {/* Header */}
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <p className="text-[11px] font-medium text-[rgba(210,210,210,0.85)]">{readerName}</p>
-                              <span className="text-[10px] text-neutral-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                              <div className="flex items-center gap-1.5">
+                                {hasStack && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
+                                      className="rounded-lg px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.2)] hover:text-neutral-200 transition"
+                                      title="Previous stacked feedback"
+                                    >
+                                      ‹
+                                    </button>
+                                    <span className="text-[10px] text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
+                                      className="rounded-lg px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.2)] hover:text-neutral-200 transition"
+                                      title="Next stacked feedback"
+                                    >
+                                      ›
+                                    </button>
+                                  </>
+                                )}
+                                <span className="text-[10px] text-neutral-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                              </div>
                             </div>
 
                             {/* Excerpt */}

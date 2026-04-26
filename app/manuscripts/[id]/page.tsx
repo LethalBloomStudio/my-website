@@ -139,6 +139,31 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
 
+  const readerMarkerOffsets = useMemo(() => {
+    const entries = Object.entries(readerMarkerInfos)
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => (a.top - b.top) || (a.left - b.left));
+    const groups: { ids: string[] }[] = [];
+    for (const entry of entries) {
+      const last = groups[groups.length - 1];
+      const lastEntry = last ? entries.find((candidate) => candidate.id === last.ids[last.ids.length - 1]) : null;
+      if (last && lastEntry && Math.abs(lastEntry.top - entry.top) <= 14 && Math.abs(lastEntry.left - entry.left) <= 26) {
+        last.ids.push(entry.id);
+      } else {
+        groups.push({ ids: [entry.id] });
+      }
+    }
+    const offsets: Record<string, number> = {};
+    for (const group of groups) {
+      const spacing = 16;
+      const start = -((group.ids.length - 1) * spacing) / 2;
+      group.ids.forEach((id, index) => {
+        offsets[id] = start + index * spacing;
+      });
+    }
+    return offsets;
+  }, [readerMarkerInfos]);
+
   function handleSelectionUp() {
     if (!canLeaveLineEdits) return;
     const sel = window.getSelection();
@@ -2142,10 +2167,11 @@ function PageInner() {
                   {/* Absolute-positioned speech-bubble marker buttons */}
                   {Object.entries(readerMarkerInfos).map(([fid, info]) => {
                     const isSelected = selectedFeedbackId === fid;
+                    const offsetX = readerMarkerOffsets[fid] ?? 0;
                     return (
                       <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                         onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                        style={{ position: "absolute", top: info.top, left: info.left, zIndex: 10 }}
+                        style={{ position: "absolute", top: info.top, left: info.left + offsetX, zIndex: 10 }}
                         className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
                           isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                      : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
@@ -2290,11 +2316,32 @@ function PageInner() {
 
                     return (
                       <div className="relative min-h-full px-2 py-2" style={{ minHeight: chapterHeight || undefined }}>
-                        {allFeedback.map((f) => {
+                        {(() => {
+                          const clusters: LineFeedback[][] = [];
+                          for (const item of allFeedback) {
+                            const info = readerMarkerInfos[item.id];
+                            const last = clusters[clusters.length - 1];
+                            const lastInfo = last ? readerMarkerInfos[last[0].id] : undefined;
+                            if (info && last && lastInfo && Math.abs(lastInfo.top - info.top) <= 18) {
+                              last.push(item);
+                            } else {
+                              clusters.push([item]);
+                            }
+                          }
+                          return clusters.map((cluster) => {
+                            const activeFeedback = cluster.find((item) => item.id === selectedFeedbackId) ?? cluster[0];
+                            const activeIndex = cluster.findIndex((item) => item.id === activeFeedback.id);
+                            const f = activeFeedback;
                           const isSelected = selectedFeedbackId === f.id;
                           const cardReplies = replies.filter((r) => r.feedback_id === f.id);
                           const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
                           const info = readerMarkerInfos[f.id];
+                          const hasStack = cluster.length > 1;
+                          const moveInStack = (direction: -1 | 1) => {
+                            const nextIndex = (activeIndex + direction + cluster.length) % cluster.length;
+                            setSelectedFeedbackId(cluster[nextIndex].id);
+                            setClickedMarkerTop(null);
+                          };
                           const cardStyle: React.CSSProperties = info
                             ? { position: "absolute", top: readerColumnOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
                             : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
@@ -2318,11 +2365,34 @@ function PageInner() {
                                     <span className="shrink-0 text-[10px] font-semibold text-neutral-400">You</span>
                                     <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
                                   </div>
-                                  {unreadReplyCount > 0 && (
-                                    <span className="shrink-0 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300">
-                                      {unreadReplyCount === 1 ? "New reply" : `${unreadReplyCount} new`}
-                                    </span>
-                                  )}
+                                  <div className="flex shrink-0 items-center gap-1">
+                                    {hasStack && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
+                                          className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                          title="Previous stacked feedback"
+                                        >
+                                          ‹
+                                        </button>
+                                        <span className="text-[9px] font-semibold text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
+                                          className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                          title="Next stacked feedback"
+                                        >
+                                          ›
+                                        </button>
+                                      </>
+                                    )}
+                                    {unreadReplyCount > 0 && (
+                                      <span className="shrink-0 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300">
+                                        {unreadReplyCount === 1 ? "New reply" : `${unreadReplyCount} new`}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -2343,6 +2413,27 @@ function PageInner() {
                               <div className="mb-1.5 flex items-center justify-between gap-2">
                                 <p className="text-[11px] font-medium text-[rgba(210,210,210,0.85)]">You</p>
                                 <div className="flex gap-1 shrink-0 items-center">
+                                  {hasStack && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
+                                        className="rounded-lg px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.2)] hover:text-neutral-200 transition"
+                                        title="Previous stacked feedback"
+                                      >
+                                        ‹
+                                      </button>
+                                      <span className="text-[10px] text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
+                                        className="rounded-lg px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-[rgba(120,120,120,0.2)] hover:text-neutral-200 transition"
+                                        title="Next stacked feedback"
+                                      >
+                                        ›
+                                      </button>
+                                    </>
+                                  )}
                                   {f.reader_id === userId && (
                                     <>
                                       <button
@@ -2473,7 +2564,8 @@ function PageInner() {
                               )}
                             </div>
                           );
-                        })}
+                        });
+                        })()}
                       </div>
                     );
                   })()}
