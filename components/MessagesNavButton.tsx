@@ -14,6 +14,10 @@ export default function MessagesNavButton() {
     let userId: string | null = null;
     let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
+    type GroupConversationUnreadRow = {
+      unread_count?: number | null;
+    };
+
     async function load() {
       const { data: auth } = await supabase.auth.getSession();
       userId = auth.session?.user?.id ?? null;
@@ -76,18 +80,49 @@ export default function MessagesNavButton() {
               if (mounted) void refreshCount(userId!);
             }
           )
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "group_messages",
+            },
+            () => {
+              if (mounted) void refreshCount(userId!);
+            }
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "group_message_members",
+              filter: `user_id=eq.${userId}`,
+            },
+            () => {
+              if (mounted) void refreshCount(userId!);
+            }
+          )
           .subscribe();
       }
     }
 
     async function refreshCount(uid: string) {
-      const { count } = await supabase
-        .from("direct_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("receiver_id", uid)
-        .eq("status", "sent");
+      const [{ count: directCount }, { data: groupRows }] = await Promise.all([
+        supabase
+          .from("direct_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("receiver_id", uid)
+          .eq("status", "sent"),
+        supabase.rpc("get_group_message_conversations", { p_user_id: uid }),
+      ]);
 
-      if (mounted) setCount(count ?? 0);
+      const groupUnreadCount = ((groupRows as GroupConversationUnreadRow[] | null) ?? []).reduce(
+        (sum, row) => sum + Math.max(0, row.unread_count ?? 0),
+        0
+      );
+
+      if (mounted) setCount((directCount ?? 0) + groupUnreadCount);
     }
 
     void load();
@@ -96,10 +131,16 @@ export default function MessagesNavButton() {
       void load();
     });
 
+    function onBadgeRefresh() {
+      if (userId) void refreshCount(userId);
+    }
+    window.addEventListener("notif-badge-refresh", onBadgeRefresh);
+
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
+      window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
   }, [supabase]);
 

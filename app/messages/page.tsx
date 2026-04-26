@@ -493,6 +493,7 @@ const [now] = useState(() => Date.now());
           : conversation
       )
     );
+    window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
   }
 
   // Initial load: auth + sidebar + first chat
@@ -1299,7 +1300,7 @@ const [now] = useState(() => Date.now());
                 ) : null}
               </div>
 
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 max-h-[20.5rem] space-y-2 overflow-y-auto pr-1">
                 {sidebarLoading ? (
                   <>
                     {[1, 2, 3].map((i) => (
@@ -1312,7 +1313,7 @@ const [now] = useState(() => Date.now());
                   friends.map((f) => (
                     <div
                       key={f.userId}
-                      className={`flex items-center gap-1 rounded-lg border px-3 py-2 text-sm transition ${
+                      className={`flex min-h-[3rem] items-center gap-1 rounded-lg border px-3 py-2 text-sm transition ${
                         withUser === f.userId
                           ? "border-[rgba(120,120,120,0.9)] bg-[rgba(120,120,120,0.25)]"
                           : "border-neutral-800 bg-neutral-900/40"

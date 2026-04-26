@@ -22,6 +22,10 @@ export default function MobileNav() {
     let userId: string | null = null;
     let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
+    type GroupConversationUnreadRow = {
+      unread_count?: number | null;
+    };
+
     function getReadKeySet(uid: string): Set<string> {
       try {
         const raw = typeof window !== "undefined" ? window.localStorage.getItem(`notif_read_keys_${uid}`) : null;
@@ -45,7 +49,7 @@ export default function MobileNav() {
         dbReadKeys = [];
       }
 
-      const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations] = await Promise.all([
+      const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, groupConversations] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
@@ -63,6 +67,7 @@ export default function MobileNav() {
           ? supabase.from("manuscript_access_requests").select("id").in("manuscript_id", manuscriptIds).eq("status", "pending")
           : Promise.resolve({ data: [] as Array<{ id: string }> }),
         supabase.from("manuscript_invitations").select("*", { count: "exact", head: true }).eq("reader_id", uid).eq("status", "pending"),
+        supabase.rpc("get_group_message_conversations", { p_user_id: uid }),
       ]);
       if (cancelled) return;
 
@@ -75,8 +80,12 @@ export default function MobileNav() {
         ...accessIds.map((id) => `request-${id}`),
       ];
       const unreadLocal = localKeys.filter((k) => !readKeySet.has(k)).length;
+      const groupUnreadCount = ((groupConversations.data as GroupConversationUnreadRow[] | null) ?? []).reduce(
+        (sum, row) => sum + Math.max(0, row.unread_count ?? 0),
+        0
+      );
 
-      setMsgCount((friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0));
+      setMsgCount((friendReq.count ?? 0) + (contactReq.count ?? 0) + (unreadMessages.count ?? 0) + groupUnreadCount);
       setNotifCount(unreadLocal + (systemUpdates.count ?? 0) + (pendingInvitations.count ?? 0));
     }
 
@@ -114,6 +123,10 @@ export default function MobileNav() {
           .on("postgres_changes", { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
             () => { if (!cancelled && userId) void refreshCounts(userId); })
           .on("postgres_changes", { event: "UPDATE", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
+            () => { if (!cancelled && userId) void refreshCounts(userId); })
+          .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_messages" },
+            () => { if (!cancelled && userId) void refreshCounts(userId); })
+          .on("postgres_changes", { event: "UPDATE", schema: "public", table: "group_message_members", filter: `user_id=eq.${userId}` },
             () => { if (!cancelled && userId) void refreshCounts(userId); })
           .subscribe();
       }
