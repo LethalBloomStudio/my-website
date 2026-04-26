@@ -2443,9 +2443,7 @@ export default function ManuscriptDetailsPage() {
                 </div>
                 {(() => {
                   const overviewFiltered = feedbackItems.filter((f) => {
-                    const chObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
-                    const detached = !!f.selection_excerpt && !!chObj && !(chObj.content ?? "").includes(f.selection_excerpt);
-                    const isResolved = f.resolved || !!f.author_response || detached;
+                    const isResolved = f.resolved || !!f.author_response;
                     return overviewFeedbackFilter === "all" ? true :
                       overviewFeedbackFilter === "resolved" ? isResolved : !isResolved;
                   });
@@ -2978,7 +2976,7 @@ export default function ManuscriptDetailsPage() {
                   <div ref={rightColumnRef} className="w-72 shrink-0 relative" style={{ minHeight: chapterSectionH || undefined }}>
                     {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
                     {(() => {
-                      const filtered = chapterFeedback.filter((f) => !f.resolved && !f.author_response);
+                      const filtered = chapterFeedback.filter((f) => !f.resolved && !f.author_response && !!markerInfos[f.id]);
                       if (filtered.length === 0) return (
                         <p className="text-[11px] text-neutral-600 italic mt-2">No unresolved feedback on this chapter yet.</p>
                       );
