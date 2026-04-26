@@ -136,6 +136,7 @@ function PageInner() {
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
+  const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
 
   function handleSelectionUp() {
@@ -1080,6 +1081,21 @@ function PageInner() {
     setChapterHeight(section.offsetHeight);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
+
+  // Measure the vertical gap between the feedback column top and the protected text box.
+  // Reader-side cards need this offset because their marker Y is measured inside textContainerRef.
+  useEffect(() => {
+    function measure() {
+      const textBox = textContainerRef.current;
+      const col = asideRef.current;
+      if (!textBox || !col) return;
+      setReaderColumnOffsetY(textBox.getBoundingClientRect().top - col.getBoundingClientRect().top);
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (chapterSectionRef.current) ro.observe(chapterSectionRef.current);
+    return () => ro.disconnect();
+  }, [activeChapter?.id, readerMarkerInfos]);
 
   // Recompute Range-API absolute marker positions when chapter or feedback changes.
   // Wait for fonts to finish loading before measuring so Merriweather metrics are correct
@@ -2280,7 +2296,7 @@ function PageInner() {
                           const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
                           const info = readerMarkerInfos[f.id];
                           const cardStyle: React.CSSProperties = info
-                            ? { position: "absolute", top: info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
+                            ? { position: "absolute", top: readerColumnOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
                             : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
 
                           if (!isSelected) {
