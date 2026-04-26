@@ -1197,9 +1197,8 @@ export default function ManuscriptDetailsPage() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        // Place the bubble just above the text ascender (superscript position)
-        // so it sits in the line-height gap and doesn't cover any words
-        top: lastRect.top - wrapperRect.top - 4,
+        // Keep the card close to the marker line without drifting too high above it.
+        top: lastRect.top - wrapperRect.top - 1,
         left: lastRect.right - wrapperRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - wrapperRect.top,

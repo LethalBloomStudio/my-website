@@ -529,7 +529,7 @@ function PageInner() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        top: lastRect.top - containerRect.top - 4,
+        top: lastRect.top - containerRect.top - 1,
         left: lastRect.right - containerRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - containerRect.top,
