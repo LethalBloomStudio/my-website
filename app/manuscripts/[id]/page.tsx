@@ -141,7 +141,8 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const canLeaveLineEditsRef = useRef(false);
-  const selectionArmedRef = useRef(false);
+  const isDraggingFromProseRef = useRef(false);
+  const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -168,19 +169,7 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
-    if (!canLeaveLineEditsRef.current) return;
-    const target = e.target as HTMLElement;
-    if (target.closest("button, textarea, [data-feedback-marker]")) {
-      selectionArmedRef.current = false;
-      return;
-    }
-    if (proseContentRef.current && !proseContentRef.current.contains(target)) {
-      selectionArmedRef.current = false;
-      return;
-    }
-    selectionArmedRef.current = true;
-  }
+  
 
   // Document-level mouseup: fires even when the user releases outside textContainerRef
   // (e.g. drags into the sidebar). Only TEXT_NODE start containers are accepted so that
@@ -188,42 +177,73 @@ function PageInner() {
   // over-sized selections. Popup interactions have onMouseUp stopPropagation so they
   // don't dismiss the popup.
   useEffect(() => {
-    function onDocMouseUp() {
+    function onDocMouseDown(e: MouseEvent) {
+      isDraggingFromProseRef.current = false;
       if (!canLeaveLineEditsRef.current) return;
-      if (!selectionArmedRef.current) return;
-      selectionArmedRef.current = false;
-      const sel = window.getSelection();
-      const container = proseContentRef.current;
-      if (!sel || !sel.rangeCount || sel.isCollapsed || !container) { setPendingSelection(null); return; }
-      const text = sel.toString().trim();
-      if (!text) { setPendingSelection(null); return; }
-      const range = sel.getRangeAt(0);
-      if (range.startContainer.nodeType !== Node.TEXT_NODE || range.endContainer.nodeType !== Node.TEXT_NODE) {
-        setPendingSelection(null);
-        return;
-      }
+      const target = e.target as HTMLElement;
+      if (target.closest("button, textarea, [data-feedback-marker]")) return;
+      if (!proseContentRef.current?.contains(target)) return;
+      isDraggingFromProseRef.current = true;
+    }
+
+    function onDocMouseUp() {
+      const startedInProse = isDraggingFromProseRef.current;
+      isDraggingFromProseRef.current = false;
+      if (!canLeaveLineEditsRef.current || !startedInProse) return;
+      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+      selectionFrameRef.current = requestAnimationFrame(() => {
+        selectionFrameRef.current = null;
+        const sel = window.getSelection();
+        const container = proseContentRef.current;
+        if (!sel || !sel.rangeCount || !container || sel.isCollapsed) {
+          setPendingSelection(null);
+          return;
+        }
+        const text = sel.toString().trim();
+        if (!text) {
+          sel.removeAllRanges();
+          setPendingSelection(null);
+          return;
+        }
+        const range = sel.getRangeAt(0);
       // Reject if anchor is not on actual text — drags starting in padding, gaps, or
       // indent space produce an element node anchor that covers way more than intended.
-      const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
-      const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
-      if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
-        setPendingSelection(null);
-        return;
-      }
-      const rect = range.getBoundingClientRect();
-      if (!rect.width && !rect.height) { setPendingSelection(null); return; }
-      const preRange = document.createRange();
-      preRange.selectNodeContents(container);
-      preRange.setEnd(range.startContainer, range.startOffset);
-      const start = preRange.toString().length;
-      const centerX = rect.left + (rect.right - rect.left) / 2;
-      const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-      const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-      setLineEditDraft("");
-      setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+        const startParent = range.startContainer.nodeType === Node.TEXT_NODE
+          ? range.startContainer.parentNode
+          : range.startContainer;
+        if (!(startParent instanceof Node) || !container.contains(startParent)) {
+          sel.removeAllRanges();
+          setPendingSelection(null);
+          return;
+        }
+        const rect = range.getBoundingClientRect();
+        if (!rect.width && !rect.height) {
+          sel.removeAllRanges();
+          setPendingSelection(null);
+          return;
+        }
+        const preRange = document.createRange();
+        preRange.selectNodeContents(container);
+        preRange.setEnd(range.startContainer, range.startOffset);
+        const start = preRange.toString().length;
+        const centerX = rect.left + (rect.right - rect.left) / 2;
+        const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+        const popupY = Math.min(rect.bottom, window.innerHeight - 220);
+        sel.removeAllRanges();
+        setLineEditDraft("");
+        setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+      });
     }
-    document.addEventListener("mouseup", onDocMouseUp);
-    return () => document.removeEventListener("mouseup", onDocMouseUp);
+    document.addEventListener("mousedown", onDocMouseDown, true);
+    document.addEventListener("mouseup", onDocMouseUp, true);
+    return () => {
+      document.removeEventListener("mousedown", onDocMouseDown, true);
+      document.removeEventListener("mouseup", onDocMouseUp, true);
+      if (selectionFrameRef.current != null) {
+        cancelAnimationFrame(selectionFrameRef.current);
+        selectionFrameRef.current = null;
+      }
+    };
   }, []); // stable: reads via refs; setters are stable
 
   const PARENT_DISABLE_REASONS = [
@@ -2123,7 +2143,6 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
-                    onMouseDown={handleSelectionDown}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
