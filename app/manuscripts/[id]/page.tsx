@@ -138,6 +138,7 @@ function PageInner() {
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -164,22 +165,51 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  function handleSelectionUp() {
+  const capturePendingSelection = useCallback(() => {
     if (!canLeaveLineEdits) return;
+    const container = textContainerRef.current;
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.rangeCount) { setPendingSelection(null); return; }
-    const text = sel.toString().trim();
-    if (!text || !textContainerRef.current) { setPendingSelection(null); return; }
+    if (!container || !sel || sel.isCollapsed || !sel.rangeCount) {
+      setPendingSelection(null);
+      return;
+    }
+
     const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
+    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
+    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
+    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const rawText = sel.toString();
+    const trimmedText = rawText.trim();
+    if (!trimmedText) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const leadingWhitespace = rawText.match(/^\s*/)?.[0].length ?? 0;
+    const trailingWhitespace = rawText.match(/\s*$/)?.[0].length ?? 0;
     const preRange = document.createRange();
-    preRange.setStart(textContainerRef.current, 0);
+    preRange.setStart(container, 0);
     preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
-    const centerX = rect.left + (rect.right - rect.left) / 2;
-    // Clamp so the 288px-wide popup (w-72) stays within the viewport
+    const start = preRange.toString().length + leadingWhitespace;
+    const end = preRange.toString().length + rawText.length - trailingWhitespace;
+    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+    const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
+    const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: rect.top });
+
+    setPendingSelection({ text: trimmedText, start, end, x: clampedX, y: anchorRect.top });
+  }, [canLeaveLineEdits]);
+
+  function handleSelectionUp() {
+    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
+      capturePendingSelection();
+    });
   }
 
   const PARENT_DISABLE_REASONS = [
