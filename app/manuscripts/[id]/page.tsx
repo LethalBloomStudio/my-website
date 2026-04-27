@@ -2171,7 +2171,7 @@ function PageInner() {
                     return (
                       <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                         onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                        style={{ position: "absolute", top: info.top - 1, left: info.left + offsetX - 7, zIndex: 10 }}
+                        style={{ position: "absolute", top: info.top - 3, left: info.left + offsetX - 7, zIndex: 10 }}
                         className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                           isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                      : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
