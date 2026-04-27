@@ -171,6 +171,7 @@ function PageInner() {
     if (!canLeaveLineEdits) return;
     const target = e.target as HTMLElement;
     if (target.closest("button, textarea, [data-feedback-marker]")) return;
+    if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
 
@@ -547,7 +548,7 @@ function PageInner() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        top: lastRect.top - containerRect.top - 1,
+        top: lastRect.bottom - containerRect.top - Math.min(10, Math.max(6, lastRect.height * 0.45)),
         left: lastRect.right - containerRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - containerRect.top,
@@ -2139,7 +2140,7 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`relative select-none rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
                   style={readerFormat ? {
                     fontFamily: readerFormat.editorFont,
                     fontSize: readerFormat.editorSize,
@@ -2183,7 +2184,7 @@ function PageInner() {
                   {manuscriptParagraphs.length === 0 ? (
                     <p className="text-sm text-neutral-400">No manuscript text yet.</p>
                   ) : (
-                    <div ref={proseContentRef} className="relative z-[1] space-y-4">
+                    <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
