@@ -177,24 +177,37 @@ function PageInner() {
     if (!canLeaveLineEdits) return;
     const sel = window.getSelection();
     const container = proseContentRef.current;
-    if (!sel || sel.isCollapsed || !sel.rangeCount || !container) {
+    if (!sel || !sel.rangeCount || !container) {
+      setPendingSelection(null);
+      return;
+    }
+    if (sel.isCollapsed) {
+      // Plain click — dismiss any open popup but leave the page's selection alone
       setPendingSelection(null);
       return;
     }
     const text = sel.toString().trim();
     if (!text) {
+      sel.removeAllRanges();
       setPendingSelection(null);
       return;
     }
     const range = sel.getRangeAt(0);
-    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
-    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
-    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
+    // Only require the selection START to be inside the prose container.
+    // We intentionally skip the endParent check: dragging past a floating marker
+    // button (which is inside textContainerRef but outside proseContentRef) used
+    // to make the whole capture fail even though the selected text is valid prose.
+    const startParent = range.startContainer.nodeType === Node.TEXT_NODE
+      ? range.startContainer.parentNode
+      : range.startContainer;
+    if (!(startParent instanceof Node) || !container.contains(startParent)) {
+      // Selection started outside the prose — don't interfere with it
       setPendingSelection(null);
       return;
     }
     const rect = range.getBoundingClientRect();
     if (!rect.width && !rect.height) {
+      sel.removeAllRanges();
       setPendingSelection(null);
       return;
     }
@@ -204,9 +217,9 @@ function PageInner() {
     const start = preRange.toString().length;
     const centerX = rect.left + (rect.right - rect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-    // Position popup below the selection, clamped so it doesn't leave the viewport
+    // Position popup below the selection, clamped so it stays in the viewport
     const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-    // Clear the native browser selection so it doesn't linger and re-trigger the popup
+    // Clear native browser selection so it doesn't linger visually
     sel.removeAllRanges();
     setLineEditDraft("");
     setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
