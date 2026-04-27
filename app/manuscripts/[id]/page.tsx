@@ -142,7 +142,6 @@ function PageInner() {
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
   const selectionGestureRef = useRef<{ startX: number; startY: number } | null>(null);
-  const selectionSnapshotRef = useRef<{ text: string; start: number; end: number; x: number; y: number } | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -176,7 +175,6 @@ function PageInner() {
     if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
     setPendingSelection(null);
     setLineEditDraft("");
-    selectionSnapshotRef.current = null;
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
 
@@ -677,19 +675,15 @@ function PageInner() {
     return base?.closest("[id^='para-']") as HTMLElement | null;
   }
 
-  function getProseTextOffset(container: HTMLElement, targetNode: Node, targetOffset: number) {
-    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-    let total = 0;
-    let current = walker.nextNode();
-    while (current) {
-      const textLength = current.textContent?.length ?? 0;
-      if (current === targetNode) {
-        return total + Math.min(targetOffset, textLength);
-      }
-      total += textLength;
-      current = walker.nextNode();
+  function getProseTextOffset(container: HTMLElement, range: Range, edge: "start" | "end") {
+    const offsetRange = document.createRange();
+    offsetRange.selectNodeContents(container);
+    if (edge === "start") {
+      offsetRange.setEnd(range.startContainer, range.startOffset);
+    } else {
+      offsetRange.setEnd(range.endContainer, range.endOffset);
     }
-    return null;
+    return offsetRange.toString().length;
   }
 
   const readCurrentSelection = useCallback(() => {
@@ -711,9 +705,9 @@ function PageInner() {
       return null;
     }
 
-    const start = getProseTextOffset(container, range.startContainer, range.startOffset);
-    const end = getProseTextOffset(container, range.endContainer, range.endOffset);
-    if (start == null || end == null || end <= start) {
+    const start = getProseTextOffset(container, range, "start");
+    const end = getProseTextOffset(container, range, "end");
+    if (end <= start) {
       return null;
     }
 
@@ -742,19 +736,15 @@ function PageInner() {
 
   const capturePendingSelection = useCallback(() => {
     if (!canLeaveLineEdits) return;
-    const next = selectionSnapshotRef.current ?? readCurrentSelection();
-    selectionSnapshotRef.current = null;
+    const next = readCurrentSelection();
     setPendingSelection(next);
-    clearNativeSelection();
+    if (next) {
+      clearNativeSelection();
+    }
   }, [canLeaveLineEdits, readCurrentSelection]);
 
   useEffect(() => {
     if (!canLeaveLineEdits) return;
-
-    function onSelectionChange() {
-      if (!selectionGestureRef.current) return;
-      selectionSnapshotRef.current = readCurrentSelection();
-    }
 
     function onDocMouseUp(e: MouseEvent) {
       const gesture = selectionGestureRef.current;
@@ -768,13 +758,11 @@ function PageInner() {
       });
     }
 
-    document.addEventListener("selectionchange", onSelectionChange);
     document.addEventListener("mouseup", onDocMouseUp, true);
     return () => {
-      document.removeEventListener("selectionchange", onSelectionChange);
       document.removeEventListener("mouseup", onDocMouseUp, true);
     };
-  }, [canLeaveLineEdits, capturePendingSelection, readCurrentSelection]);
+  }, [canLeaveLineEdits, capturePendingSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
