@@ -138,9 +138,11 @@ function PageInner() {
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
+  const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
   const selectionGestureRef = useRef<{ startX: number; startY: number } | null>(null);
+  const selectionSnapshotRef = useRef<{ text: string; start: number; end: number; x: number; y: number } | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -175,6 +177,7 @@ function PageInner() {
     setPendingSelection(null);
     setLineEditDraft("");
     window.getSelection()?.removeAllRanges();
+    selectionSnapshotRef.current = null;
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
 
@@ -680,36 +683,31 @@ function PageInner() {
     return null;
   }
 
-  const capturePendingSelection = useCallback(() => {
-    if (!canLeaveLineEdits) return;
+  const readCurrentSelection = useCallback(() => {
     const container = proseContentRef.current;
     const sel = window.getSelection();
     if (!container || !sel || sel.isCollapsed || !sel.rangeCount) {
-      setPendingSelection(null);
-      return;
+      return null;
     }
 
     const range = sel.getRangeAt(0);
     const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
     const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
     if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
-      setPendingSelection(null);
-      return;
+      return null;
     }
 
     const start = getProseTextOffset(container, range.startContainer, range.startOffset);
     const end = getProseTextOffset(container, range.endContainer, range.endOffset);
     if (start == null || end == null || end <= start) {
-      setPendingSelection(null);
-      return;
+      return null;
     }
 
     const proseText = container.textContent ?? "";
     const selectedFromProse = proseText.slice(start, end);
     const trimmedText = selectedFromProse.trim();
     if (!trimmedText) {
-      setPendingSelection(null);
-      return;
+      return null;
     }
 
     const leadingWhitespace = selectedFromProse.match(/^\s*/)?.[0].length ?? 0;
@@ -717,8 +715,7 @@ function PageInner() {
     const normalizedStart = start + leadingWhitespace;
     const normalizedEnd = end - trailingWhitespace;
     if (normalizedEnd <= normalizedStart) {
-      setPendingSelection(null);
-      return;
+      return null;
     }
 
     const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
@@ -726,11 +723,23 @@ function PageInner() {
     const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
 
-    setPendingSelection({ text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: anchorRect.top });
-  }, [canLeaveLineEdits]);
+    return { text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: anchorRect.top };
+  }, []);
+
+  const capturePendingSelection = useCallback(() => {
+    if (!canLeaveLineEdits) return;
+    const next = selectionSnapshotRef.current ?? readCurrentSelection();
+    selectionSnapshotRef.current = null;
+    setPendingSelection(next);
+  }, [canLeaveLineEdits, readCurrentSelection]);
 
   useEffect(() => {
     if (!canLeaveLineEdits) return;
+
+    function onSelectionChange() {
+      if (!selectionGestureRef.current) return;
+      selectionSnapshotRef.current = readCurrentSelection();
+    }
 
     function onDocMouseUp(e: MouseEvent) {
       const gesture = selectionGestureRef.current;
@@ -744,9 +753,13 @@ function PageInner() {
       });
     }
 
+    document.addEventListener("selectionchange", onSelectionChange);
     document.addEventListener("mouseup", onDocMouseUp, true);
-    return () => document.removeEventListener("mouseup", onDocMouseUp, true);
-  }, [canLeaveLineEdits, capturePendingSelection]);
+    return () => {
+      document.removeEventListener("selectionchange", onSelectionChange);
+      document.removeEventListener("mouseup", onDocMouseUp, true);
+    };
+  }, [canLeaveLineEdits, capturePendingSelection, readCurrentSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -1195,6 +1208,11 @@ function PageInner() {
       const anchor = proseBox ?? textBox;
       if (!anchor || !col) return;
       setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      if (textBox && proseBox) {
+        setReaderOverlayOffsetY(proseBox.getBoundingClientRect().top - textBox.getBoundingClientRect().top);
+      } else {
+        setReaderOverlayOffsetY(0);
+      }
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -2236,7 +2254,7 @@ function PageInner() {
                     const isSelected = selectedFeedbackId === fid;
                     return info.highlightRects.map((r, i) => (
                       <div key={`${fid}-hl-${i}`} style={{
-                        position: "absolute", top: r.top, left: r.left, width: r.width, height: r.height,
+                        position: "absolute", top: readerOverlayOffsetY + r.top, left: r.left, width: r.width, height: r.height,
                         backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                         borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
                         pointerEvents: "none", zIndex: 5,
@@ -2251,7 +2269,7 @@ function PageInner() {
                     return (
                       <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                         onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                        style={{ position: "absolute", top: info.top - 3, left: info.left + offsetX - 7, zIndex: 10 }}
+                        style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 3, left: info.left + offsetX - 7, zIndex: 10 }}
                         className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                           isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                      : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
