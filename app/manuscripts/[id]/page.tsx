@@ -169,6 +169,22 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
+  function getCaretRangeAtPoint(x: number, y: number): Range | null {
+    if (typeof document.caretRangeFromPoint === "function") {
+      return document.caretRangeFromPoint(x, y);
+    }
+    if (typeof document.caretPositionFromPoint === "function") {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (pos?.offsetNode) {
+        const range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+        return range;
+      }
+    }
+    return null;
+  }
+
   
 
   // Document-level mouseup: fires even when the user releases outside textContainerRef
@@ -183,6 +199,9 @@ function PageInner() {
       const target = e.target as HTMLElement;
       if (target.closest("button, textarea, [data-feedback-marker]")) return;
       if (!proseContentRef.current?.contains(target)) return;
+      const pointRange = getCaretRangeAtPoint(e.clientX, e.clientY);
+      if (!pointRange || pointRange.startContainer.nodeType !== Node.TEXT_NODE) return;
+      if (!proseContentRef.current.contains(pointRange.startContainer)) return;
       isDraggingFromProseRef.current = true;
     }
 
