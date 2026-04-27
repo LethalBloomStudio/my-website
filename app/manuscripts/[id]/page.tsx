@@ -668,6 +668,10 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
+  function clearNativeSelection() {
+    window.getSelection()?.removeAllRanges();
+  }
+
   function getProseTextOffset(container: HTMLElement, targetNode: Node, targetOffset: number) {
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let total = 0;
@@ -731,6 +735,7 @@ function PageInner() {
     const next = selectionSnapshotRef.current ?? readCurrentSelection();
     selectionSnapshotRef.current = null;
     setPendingSelection(next);
+    clearNativeSelection();
   }, [canLeaveLineEdits, readCurrentSelection]);
 
   useEffect(() => {
