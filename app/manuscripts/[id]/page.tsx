@@ -2177,7 +2177,7 @@ function PageInner() {
                       }
                     }}
                     tabIndex={(isOwner || isParentView) ? undefined : 0}
-                    className="relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
+                    className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
                     style={readerFormat ? {
                       fontFamily: readerFormat.editorFont,
                       fontSize: readerFormat.editorSize,
@@ -2185,8 +2185,12 @@ function PageInner() {
                       letterSpacing: readerFormat.letterSpacing,
                     } : { fontFamily: "'Merriweather', Georgia, serif", fontSize: "1.0625rem", lineHeight: "1.9" }}
                   >
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-xl bg-[rgba(18,18,18,0.9)]"
+                    />
                     {manuscriptParagraphs.length === 0 ? (
-                      <p className="text-sm text-neutral-400">No manuscript text yet.</p>
+                      <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
                       <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
                       {(() => {
