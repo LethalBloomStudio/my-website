@@ -2111,7 +2111,7 @@ function PageInner() {
                   {!isOwner && (
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden rounded-xl"
+                      className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}
                     >
                       {Array.from({ length: 16 }).map((_, row) =>
@@ -2143,6 +2143,7 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
+                    className="relative z-[1] rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2163,7 +2164,6 @@ function PageInner() {
                       }
                     }}
                     tabIndex={(isOwner || isParentView) ? undefined : 0}
-                    className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
                     style={readerFormat ? {
                       fontFamily: readerFormat.editorFont,
                       fontSize: readerFormat.editorSize,
