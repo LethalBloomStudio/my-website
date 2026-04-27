@@ -140,6 +140,7 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  const canLeaveLineEditsRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -166,29 +167,39 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  function handleSelectionUp() {
-    if (!canLeaveLineEdits) return;
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.rangeCount) { setPendingSelection(null); return; }
-    const text = sel.toString().trim();
-    if (!text || !textContainerRef.current) { setPendingSelection(null); return; }
-    const range = sel.getRangeAt(0);
-    const startNode = range.startContainer.nodeType === Node.TEXT_NODE
-      ? range.startContainer.parentNode as Node
-      : range.startContainer;
-    if (!textContainerRef.current.contains(startNode)) { setPendingSelection(null); return; }
-    const rect = range.getBoundingClientRect();
-    if (!rect.width && !rect.height) { setPendingSelection(null); return; }
-    const preRange = document.createRange();
-    preRange.setStart(textContainerRef.current, 0);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
-    const centerX = rect.left + (rect.right - rect.left) / 2;
-    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-    const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-    setLineEditDraft("");
-    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
-  }
+  // Document-level mouseup: fires even when the user releases outside textContainerRef
+  // (e.g. drags into the sidebar). Only TEXT_NODE start containers are accepted so that
+  // drags starting in empty space (paragraph gaps, text-indent area) don't produce
+  // over-sized selections. Popup interactions have onMouseUp stopPropagation so they
+  // don't dismiss the popup.
+  useEffect(() => {
+    function onDocMouseUp() {
+      if (!canLeaveLineEditsRef.current) return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount || sel.isCollapsed) { setPendingSelection(null); return; }
+      const text = sel.toString().trim();
+      if (!text || !textContainerRef.current) { setPendingSelection(null); return; }
+      const range = sel.getRangeAt(0);
+      // Reject if anchor is not on actual text — drags starting in padding, gaps, or
+      // indent space produce an element node anchor that covers way more than intended.
+      if (range.startContainer.nodeType !== Node.TEXT_NODE) { setPendingSelection(null); return; }
+      if (!textContainerRef.current.contains(range.startContainer)) { setPendingSelection(null); return; }
+      const rect = range.getBoundingClientRect();
+      if (!rect.width && !rect.height) { setPendingSelection(null); return; }
+      const preRange = document.createRange();
+      preRange.setStart(textContainerRef.current, 0);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const centerX = rect.left + (rect.right - rect.left) / 2;
+      const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+      const popupY = Math.min(rect.bottom, window.innerHeight - 220);
+      setLineEditDraft("");
+      setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+    }
+    document.addEventListener("mouseup", onDocMouseUp);
+    return () => document.removeEventListener("mouseup", onDocMouseUp);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // stable: reads via refs; setters are stable
 
   const PARENT_DISABLE_REASONS = [
     "Inappropriate content",
@@ -678,6 +689,7 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
+  canLeaveLineEditsRef.current = canLeaveLineEdits;
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -2086,7 +2098,6 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
-                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2272,7 +2283,8 @@ function PageInner() {
 
                   {/* Submission form pinned at top when text is highlighted */}
                   {pendingSelection && canLeaveLineEdits && (
-                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.94)] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.32)] backdrop-blur-sm">
+                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.94)] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.32)] backdrop-blur-sm"
+                      onMouseUp={(e) => e.stopPropagation()}>
                       <blockquote className="mb-2 border-l-2 border-[rgba(120,120,120,0.6)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
                         &ldquo;{pendingSelection.text}&rdquo;
                       </blockquote>
