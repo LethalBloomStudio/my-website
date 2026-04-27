@@ -172,6 +172,9 @@ function PageInner() {
     const target = e.target as HTMLElement;
     if (target.closest("button, textarea, [data-feedback-marker]")) return;
     if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
+    setPendingSelection(null);
+    setLineEditDraft("");
+    window.getSelection()?.removeAllRanges();
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
 
@@ -733,13 +736,6 @@ function PageInner() {
       const gesture = selectionGestureRef.current;
       if (!gesture) return;
       selectionGestureRef.current = null;
-
-      const moved = Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY);
-      const intentionalSelection = moved >= 4 || e.detail >= 2;
-      if (!intentionalSelection) {
-        setPendingSelection(null);
-        return;
-      }
 
       if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
       selectionFrameRef.current = requestAnimationFrame(() => {
