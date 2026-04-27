@@ -176,7 +176,6 @@ function PageInner() {
     if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
     setPendingSelection(null);
     setLineEditDraft("");
-    window.getSelection()?.removeAllRanges();
     selectionSnapshotRef.current = null;
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
@@ -2170,7 +2169,7 @@ function PageInner() {
                     }
                   }}
                   tabIndex={(isOwner || isParentView) ? undefined : 0}
-                  className={`relative select-none rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
+                  className={`relative rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]${(!isOwner && !isParentView) ? " chapter-protected" : ""}`}
                   style={readerFormat ? {
                     fontFamily: readerFormat.editorFont,
                     fontSize: readerFormat.editorSize,
