@@ -38,12 +38,21 @@ export async function GET(req: Request) {
       .order("created_at", { ascending: false });
     const rows = (msData ?? []) as { owner_id: string; [k: string]: unknown }[];
     const ownerIds = [...new Set(rows.map(r => r.owner_id))];
-    const { data: owners } = ownerIds.length
-      ? await supabase.from("public_profiles").select("user_id, pen_name, username").in("user_id", ownerIds)
-      : { data: [] };
+    const [{ data: owners }, { data: ownerAccounts }] = await Promise.all([
+      ownerIds.length
+        ? supabase.from("public_profiles").select("user_id, pen_name, username").in("user_id", ownerIds)
+        : Promise.resolve({ data: [] }),
+      ownerIds.length
+        ? supabase.from("accounts").select("user_id, full_name, email").in("user_id", ownerIds)
+        : Promise.resolve({ data: [] }),
+    ]);
     const ownerMap: Record<string, string | null> = {};
     ((owners ?? []) as { user_id: string; pen_name: string | null; username: string | null }[]).forEach(o => {
-      ownerMap[o.user_id] = o.pen_name ?? (o.username ? `@${o.username}` : null);
+      ownerMap[o.user_id] = o.pen_name?.trim() || (o.username ? `@${o.username}` : null);
+    });
+    ((ownerAccounts ?? []) as { user_id: string; full_name: string | null; email: string | null }[]).forEach(o => {
+      if (ownerMap[o.user_id]) return;
+      ownerMap[o.user_id] = o.full_name?.trim() || o.email?.trim() || null;
     });
     result.manuscripts = rows.map(r => ({ ...r, owner_name: ownerMap[r.owner_id] ?? null }));
   }
