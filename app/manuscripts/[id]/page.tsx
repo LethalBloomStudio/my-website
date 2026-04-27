@@ -672,6 +672,12 @@ function PageInner() {
     window.getSelection()?.removeAllRanges();
   }
 
+  function getParagraphContainer(node: Node | null): HTMLElement | null {
+    if (!node) return null;
+    const base = node.nodeType === Node.TEXT_NODE ? node.parentElement : node instanceof HTMLElement ? node : null;
+    return base?.closest("[id^='para-']") as HTMLElement | null;
+  }
+
   function getProseTextOffset(container: HTMLElement, targetNode: Node, targetOffset: number) {
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let total = 0;
@@ -700,6 +706,11 @@ function PageInner() {
     if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
       return null;
     }
+    const startParagraph = getParagraphContainer(range.startContainer);
+    const endParagraph = getParagraphContainer(range.endContainer);
+    if (!startParagraph || !endParagraph || startParagraph !== endParagraph) {
+      return null;
+    }
 
     const start = getProseTextOffset(container, range.startContainer, range.startOffset);
     const end = getProseTextOffset(container, range.endContainer, range.endOffset);
@@ -710,7 +721,8 @@ function PageInner() {
     const proseText = container.textContent ?? "";
     const selectedFromProse = proseText.slice(start, end);
     const trimmedText = selectedFromProse.trim();
-    if (!trimmedText) {
+    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+    if (!trimmedText || trimmedText.length > 600 || rects.length > 12) {
       return null;
     }
 
@@ -722,7 +734,6 @@ function PageInner() {
       return null;
     }
 
-    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
     const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
     const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
