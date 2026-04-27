@@ -140,6 +140,7 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  const selectionFrameRef = useRef<number | null>(null);
   const selectionGestureRef = useRef<{ startX: number; startY: number } | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
@@ -175,12 +176,6 @@ function PageInner() {
     setPendingSelection(null);
     setLineEditDraft("");
     selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
-  }
-
-  function handleSelectionUp() {
-    if (!selectionGestureRef.current) return;
-    selectionGestureRef.current = null;
-    capturePendingSelection();
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -747,6 +742,32 @@ function PageInner() {
       clearNativeSelection();
     }
   }, [canLeaveLineEdits, readCurrentSelection]);
+
+  useEffect(() => {
+    if (!canLeaveLineEdits) return;
+
+    function onDocMouseUp() {
+      if (!selectionGestureRef.current) return;
+      selectionGestureRef.current = null;
+
+      if (selectionFrameRef.current != null) {
+        cancelAnimationFrame(selectionFrameRef.current);
+      }
+      selectionFrameRef.current = requestAnimationFrame(() => {
+        selectionFrameRef.current = null;
+        capturePendingSelection();
+      });
+    }
+
+    document.addEventListener("mouseup", onDocMouseUp, true);
+    return () => {
+      document.removeEventListener("mouseup", onDocMouseUp, true);
+      if (selectionFrameRef.current != null) {
+        cancelAnimationFrame(selectionFrameRef.current);
+        selectionFrameRef.current = null;
+      }
+    };
+  }, [canLeaveLineEdits, capturePendingSelection]);
 
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
@@ -2156,7 +2177,6 @@ function PageInner() {
                   <div
                     ref={textContainerRef}
                     onMouseDown={handleSelectionDown}
-                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
