@@ -141,6 +141,7 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const canLeaveLineEditsRef = useRef(false);
+  const selectionArmedRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -167,6 +168,20 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
+  function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
+    if (!canLeaveLineEditsRef.current) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, textarea, [data-feedback-marker]")) {
+      selectionArmedRef.current = false;
+      return;
+    }
+    if (proseContentRef.current && !proseContentRef.current.contains(target)) {
+      selectionArmedRef.current = false;
+      return;
+    }
+    selectionArmedRef.current = true;
+  }
+
   // Document-level mouseup: fires even when the user releases outside textContainerRef
   // (e.g. drags into the sidebar). Only TEXT_NODE start containers are accepted so that
   // drags starting in empty space (paragraph gaps, text-indent area) don't produce
@@ -175,12 +190,18 @@ function PageInner() {
   useEffect(() => {
     function onDocMouseUp() {
       if (!canLeaveLineEditsRef.current) return;
+      if (!selectionArmedRef.current) return;
+      selectionArmedRef.current = false;
       const sel = window.getSelection();
       const container = proseContentRef.current;
       if (!sel || !sel.rangeCount || sel.isCollapsed || !container) { setPendingSelection(null); return; }
       const text = sel.toString().trim();
       if (!text) { setPendingSelection(null); return; }
       const range = sel.getRangeAt(0);
+      if (range.startContainer.nodeType !== Node.TEXT_NODE || range.endContainer.nodeType !== Node.TEXT_NODE) {
+        setPendingSelection(null);
+        return;
+      }
       // Reject if anchor is not on actual text — drags starting in padding, gaps, or
       // indent space produce an element node anchor that covers way more than intended.
       const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
@@ -2102,6 +2123,7 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
+                    onMouseDown={handleSelectionDown}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
