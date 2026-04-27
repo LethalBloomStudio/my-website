@@ -140,6 +140,7 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
+  const selectionGestureRef = useRef<{ startX: number; startY: number } | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -166,12 +167,11 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  function handleSelectionUp() {
-    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-    selectionFrameRef.current = requestAnimationFrame(() => {
-      selectionFrameRef.current = null;
-      capturePendingSelection();
-    });
+  function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
+    if (!canLeaveLineEdits) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, textarea, [data-feedback-marker]")) return;
+    selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -724,6 +724,32 @@ function PageInner() {
 
     setPendingSelection({ text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: anchorRect.top });
   }, [canLeaveLineEdits]);
+
+  useEffect(() => {
+    if (!canLeaveLineEdits) return;
+
+    function onDocMouseUp(e: MouseEvent) {
+      const gesture = selectionGestureRef.current;
+      if (!gesture) return;
+      selectionGestureRef.current = null;
+
+      const moved = Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY);
+      const intentionalSelection = moved >= 4 || e.detail >= 2;
+      if (!intentionalSelection) {
+        setPendingSelection(null);
+        return;
+      }
+
+      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+      selectionFrameRef.current = requestAnimationFrame(() => {
+        selectionFrameRef.current = null;
+        capturePendingSelection();
+      });
+    }
+
+    document.addEventListener("mouseup", onDocMouseUp, true);
+    return () => document.removeEventListener("mouseup", onDocMouseUp, true);
+  }, [canLeaveLineEdits, capturePendingSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -2092,7 +2118,7 @@ function PageInner() {
                 )}
                 <div
                   ref={textContainerRef}
-                  onMouseUp={handleSelectionUp}
+                  onMouseDown={handleSelectionDown}
                   onClick={(e) => {
                     if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                       setSelectedFeedbackId(null);
