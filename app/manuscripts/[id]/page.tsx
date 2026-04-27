@@ -194,14 +194,22 @@ function PageInner() {
       return;
     }
     const rect = range.getBoundingClientRect();
+    if (!rect.width && !rect.height) {
+      setPendingSelection(null);
+      return;
+    }
     const preRange = document.createRange();
     preRange.selectNodeContents(container);
     preRange.setEnd(range.startContainer, range.startOffset);
     const start = preRange.toString().length;
     const centerX = rect.left + (rect.right - rect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+    // Position popup below the selection, clamped so it doesn't leave the viewport
+    const popupY = Math.min(rect.bottom, window.innerHeight - 220);
+    // Clear the native browser selection so it doesn't linger and re-trigger the popup
+    sel.removeAllRanges();
     setLineEditDraft("");
-    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: rect.top });
+    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -332,6 +340,7 @@ function PageInner() {
     const inserted = json.feedback;
     setPendingSelection(null);
     setLineEditDraft("");
+    window.getSelection()?.removeAllRanges();
     if (inserted) {
       const newItem = inserted as LineFeedback;
       setMyChapterFeedback((prev) => [newItem, ...prev]);
@@ -2309,7 +2318,7 @@ function PageInner() {
                           {submittingLineEdit ? "Saving…" : "Submit"}
                         </button>
                         <button
-                          onClick={() => { setPendingSelection(null); setLineEditDraft(""); }}
+                          onClick={() => { setPendingSelection(null); setLineEditDraft(""); window.getSelection()?.removeAllRanges(); }}
                           className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 transition"
                         >
                           Cancel
@@ -2638,11 +2647,12 @@ function PageInner() {
         <div
           className="feedback-inline-popup fixed z-50 w-72 rounded-xl border border-[rgba(120,120,120,0.6)] shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3"
           style={{
-            top: pendingSelection.y + 24,
+            top: pendingSelection.y + 8,
             left: pendingSelection.x,
             transform: "translateX(-50%)",
           }}
           onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
         >
           <blockquote className="mb-2 border-l-2 border-[rgba(120,120,120,0.6)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
             &ldquo;{pendingSelection.text}&rdquo;
@@ -2668,7 +2678,7 @@ function PageInner() {
               {submittingLineEdit ? "Saving…" : "Submit"}
             </button>
             <button
-              onClick={() => { setPendingSelection(null); setLineEditDraft(""); }}
+              onClick={() => { setPendingSelection(null); setLineEditDraft(""); window.getSelection()?.removeAllRanges(); }}
               className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 transition"
             >
               Cancel
