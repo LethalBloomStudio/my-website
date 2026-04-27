@@ -171,8 +171,6 @@ function PageInner() {
     const target = e.target as HTMLElement;
     if (target.closest("button, textarea, [data-feedback-marker]")) return;
     if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
-    setPendingSelection(null);
-    setLineEditDraft("");
   }
 
   function handleSelectionUp() {
@@ -202,6 +200,7 @@ function PageInner() {
     const start = preRange.toString().length;
     const centerX = rect.left + (rect.right - rect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+    setLineEditDraft("");
     setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: rect.top });
   }
 
