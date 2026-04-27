@@ -140,9 +140,6 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
-  const isDraggingFromProseRef = useRef(false);
-  const selectionFrameRef = useRef<number | null>(null);
-  const canLeaveLineEditsRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -169,73 +166,29 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  // Native document-level listeners avoid React synthetic event delegation,
-  // which was causing the browser to misplace the selection anchor.
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      isDraggingFromProseRef.current = false;
-      if (!canLeaveLineEditsRef.current) return;
-      const target = e.target as HTMLElement;
-      if (target.closest("button, textarea, [data-feedback-marker]")) return;
-      if (!proseContentRef.current?.contains(target)) return;
-      isDraggingFromProseRef.current = true;
-    }
-
-    function onDocMouseUp() {
-      const startedInProse = isDraggingFromProseRef.current;
-      isDraggingFromProseRef.current = false;
-      if (!canLeaveLineEditsRef.current || !startedInProse) return;
-      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-      selectionFrameRef.current = requestAnimationFrame(() => {
-        selectionFrameRef.current = null;
-        const sel = window.getSelection();
-        const container = proseContentRef.current;
-        if (!sel || !sel.rangeCount || !container || sel.isCollapsed) {
-          setPendingSelection(null);
-          return;
-        }
-        const text = sel.toString().trim();
-        if (!text) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
-        }
-        const range = sel.getRangeAt(0);
-        const startParent = range.startContainer.nodeType === Node.TEXT_NODE
-          ? range.startContainer.parentNode
-          : range.startContainer;
-        if (!(startParent instanceof Node) || !container.contains(startParent)) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
-        }
-        const rect = range.getBoundingClientRect();
-        if (!rect.width && !rect.height) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
-        }
-        const preRange = document.createRange();
-        preRange.selectNodeContents(container);
-        preRange.setEnd(range.startContainer, range.startOffset);
-        const start = preRange.toString().length;
-        const centerX = rect.left + (rect.right - rect.left) / 2;
-        const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-        const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-        sel.removeAllRanges();
-        setLineEditDraft("");
-        setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
-      });
-    }
-
-    document.addEventListener("mousedown", onDocMouseDown);
-    document.addEventListener("mouseup", onDocMouseUp);
-    return () => {
-      document.removeEventListener("mousedown", onDocMouseDown);
-      document.removeEventListener("mouseup", onDocMouseUp);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // stable: reads current values through refs; setters are stable
+  function handleSelectionUp() {
+    if (!canLeaveLineEdits) return;
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) { setPendingSelection(null); return; }
+    const text = sel.toString().trim();
+    if (!text || !textContainerRef.current) { setPendingSelection(null); return; }
+    const range = sel.getRangeAt(0);
+    const startNode = range.startContainer.nodeType === Node.TEXT_NODE
+      ? range.startContainer.parentNode as Node
+      : range.startContainer;
+    if (!textContainerRef.current.contains(startNode)) { setPendingSelection(null); return; }
+    const rect = range.getBoundingClientRect();
+    if (!rect.width && !rect.height) { setPendingSelection(null); return; }
+    const preRange = document.createRange();
+    preRange.setStart(textContainerRef.current, 0);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const start = preRange.toString().length;
+    const centerX = rect.left + (rect.right - rect.left) / 2;
+    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+    const popupY = Math.min(rect.bottom, window.innerHeight - 220);
+    setLineEditDraft("");
+    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+  }
 
   const PARENT_DISABLE_REASONS = [
     "Inappropriate content",
@@ -725,7 +678,6 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
-  canLeaveLineEditsRef.current = canLeaveLineEdits;
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -1224,12 +1176,6 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
-  // Cancel any pending selection rAF on unmount
-  useEffect(() => {
-    return () => {
-      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-    };
-  }, []);
 
   // When a feedback card is selected, scroll the page to show the text marker
   // then align the sidebar card beside it.
@@ -2140,6 +2086,7 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
+                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2175,7 +2122,7 @@ function PageInner() {
                     {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div ref={proseContentRef} className="relative z-[1] space-y-4">
+                      <div ref={proseContentRef} className="relative space-y-4">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
