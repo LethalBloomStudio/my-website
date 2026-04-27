@@ -165,45 +165,6 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  const capturePendingSelection = useCallback(() => {
-    if (!canLeaveLineEdits) return;
-    const container = textContainerRef.current;
-    const sel = window.getSelection();
-    if (!container || !sel || sel.isCollapsed || !sel.rangeCount) {
-      setPendingSelection(null);
-      return;
-    }
-
-    const range = sel.getRangeAt(0);
-    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
-    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
-    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
-      setPendingSelection(null);
-      return;
-    }
-
-    const rawText = sel.toString();
-    const trimmedText = rawText.trim();
-    if (!trimmedText) {
-      setPendingSelection(null);
-      return;
-    }
-
-    const leadingWhitespace = rawText.match(/^\s*/)?.[0].length ?? 0;
-    const trailingWhitespace = rawText.match(/\s*$/)?.[0].length ?? 0;
-    const preRange = document.createRange();
-    preRange.setStart(container, 0);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length + leadingWhitespace;
-    const end = preRange.toString().length + rawText.length - trailingWhitespace;
-    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
-    const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
-    const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
-    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-
-    setPendingSelection({ text: trimmedText, start, end, x: clampedX, y: anchorRect.top });
-  }, [canLeaveLineEdits]);
-
   function handleSelectionUp() {
     if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
     selectionFrameRef.current = requestAnimationFrame(() => {
@@ -699,6 +660,44 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
+  const capturePendingSelection = useCallback(() => {
+    if (!canLeaveLineEdits) return;
+    const container = textContainerRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || sel.isCollapsed || !sel.rangeCount) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
+    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
+    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const rawText = sel.toString();
+    const trimmedText = rawText.trim();
+    if (!trimmedText) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const leadingWhitespace = rawText.match(/^\s*/)?.[0].length ?? 0;
+    const trailingWhitespace = rawText.match(/\s*$/)?.[0].length ?? 0;
+    const preRange = document.createRange();
+    preRange.setStart(container, 0);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const start = preRange.toString().length + leadingWhitespace;
+    const end = preRange.toString().length + rawText.length - trailingWhitespace;
+    const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+    const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
+    const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
+    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+
+    setPendingSelection({ text: trimmedText, start, end, x: clampedX, y: anchorRect.top });
+  }, [canLeaveLineEdits]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
