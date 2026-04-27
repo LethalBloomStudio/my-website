@@ -128,6 +128,7 @@ function PageInner() {
     manuscript_lifetime_suspension_count: number;
   } | null>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
+  const proseContentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
@@ -534,7 +535,7 @@ function PageInner() {
   }
 
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const newInfos: Record<string, ReaderMarkerInfo> = {};
@@ -662,7 +663,7 @@ function PageInner() {
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
   const capturePendingSelection = useCallback(() => {
     if (!canLeaveLineEdits) return;
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
     const sel = window.getSelection();
     if (!container || !sel || sel.isCollapsed || !sel.rangeCount) {
       setPendingSelection(null);
@@ -1141,9 +1142,11 @@ function PageInner() {
   useEffect(() => {
     function measure() {
       const textBox = textContainerRef.current;
+      const proseBox = proseContentRef.current;
       const col = asideRef.current;
-      if (!textBox || !col) return;
-      setReaderColumnOffsetY(textBox.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      const anchor = proseBox ?? textBox;
+      if (!anchor || !col) return;
+      setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -1180,7 +1183,7 @@ function PageInner() {
 
   // Recompute on resize (e.g. window resize or font load)
   useEffect(() => {
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
     if (!container) return;
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
@@ -1197,7 +1200,7 @@ function PageInner() {
   useEffect(() => {
     if (!selectedFeedbackId) return;
     const info = readerMarkerInfos[selectedFeedbackId];
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
 
     // Skip if we already successfully scrolled to this exact id using Range-API marker info.
     // This prevents re-scrolling every time readerMarkerInfos recomputes (e.g. on resize).
@@ -2129,7 +2132,7 @@ function PageInner() {
                   {manuscriptParagraphs.length === 0 ? (
                     <p className="text-sm text-neutral-400">No manuscript text yet.</p>
                   ) : (
-                    <div className="relative z-[1] space-y-4">
+                    <div ref={proseContentRef} className="relative z-[1] space-y-4">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
