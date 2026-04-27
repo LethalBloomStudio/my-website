@@ -661,6 +661,21 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
+  function getProseTextOffset(container: HTMLElement, targetNode: Node, targetOffset: number) {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let total = 0;
+    let current = walker.nextNode();
+    while (current) {
+      const textLength = current.textContent?.length ?? 0;
+      if (current === targetNode) {
+        return total + Math.min(targetOffset, textLength);
+      }
+      total += textLength;
+      current = walker.nextNode();
+    }
+    return null;
+  }
+
   const capturePendingSelection = useCallback(() => {
     if (!canLeaveLineEdits) return;
     const container = proseContentRef.current;
@@ -678,26 +693,36 @@ function PageInner() {
       return;
     }
 
-    const rawText = sel.toString();
-    const trimmedText = rawText.trim();
+    const start = getProseTextOffset(container, range.startContainer, range.startOffset);
+    const end = getProseTextOffset(container, range.endContainer, range.endOffset);
+    if (start == null || end == null || end <= start) {
+      setPendingSelection(null);
+      return;
+    }
+
+    const proseText = container.textContent ?? "";
+    const selectedFromProse = proseText.slice(start, end);
+    const trimmedText = selectedFromProse.trim();
     if (!trimmedText) {
       setPendingSelection(null);
       return;
     }
 
-    const leadingWhitespace = rawText.match(/^\s*/)?.[0].length ?? 0;
-    const trailingWhitespace = rawText.match(/\s*$/)?.[0].length ?? 0;
-    const preRange = document.createRange();
-    preRange.setStart(container, 0);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length + leadingWhitespace;
-    const end = preRange.toString().length + rawText.length - trailingWhitespace;
+    const leadingWhitespace = selectedFromProse.match(/^\s*/)?.[0].length ?? 0;
+    const trailingWhitespace = selectedFromProse.match(/\s*$/)?.[0].length ?? 0;
+    const normalizedStart = start + leadingWhitespace;
+    const normalizedEnd = end - trailingWhitespace;
+    if (normalizedEnd <= normalizedStart) {
+      setPendingSelection(null);
+      return;
+    }
+
     const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
     const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
     const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
 
-    setPendingSelection({ text: trimmedText, start, end, x: clampedX, y: anchorRect.top });
+    setPendingSelection({ text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: anchorRect.top });
   }, [canLeaveLineEdits]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
