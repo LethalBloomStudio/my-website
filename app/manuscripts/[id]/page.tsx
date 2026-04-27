@@ -141,7 +141,6 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
-  const selectionGestureRef = useRef<{ startX: number; startY: number } | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -175,7 +174,17 @@ function PageInner() {
     if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
     setPendingSelection(null);
     setLineEditDraft("");
-    selectionGestureRef.current = { startX: e.clientX, startY: e.clientY };
+  }
+
+  function handleSelectionUp() {
+    if (!canLeaveLineEdits) return;
+    if (selectionFrameRef.current != null) {
+      cancelAnimationFrame(selectionFrameRef.current);
+    }
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
+      capturePendingSelection();
+    });
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -744,30 +753,13 @@ function PageInner() {
   }, [canLeaveLineEdits, readCurrentSelection]);
 
   useEffect(() => {
-    if (!canLeaveLineEdits) return;
-
-    function onDocMouseUp() {
-      if (!selectionGestureRef.current) return;
-      selectionGestureRef.current = null;
-
-      if (selectionFrameRef.current != null) {
-        cancelAnimationFrame(selectionFrameRef.current);
-      }
-      selectionFrameRef.current = requestAnimationFrame(() => {
-        selectionFrameRef.current = null;
-        capturePendingSelection();
-      });
-    }
-
-    document.addEventListener("mouseup", onDocMouseUp, true);
     return () => {
-      document.removeEventListener("mouseup", onDocMouseUp, true);
       if (selectionFrameRef.current != null) {
         cancelAnimationFrame(selectionFrameRef.current);
         selectionFrameRef.current = null;
       }
     };
-  }, [canLeaveLineEdits, capturePendingSelection]);
+  }, []);
 
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
@@ -2144,7 +2136,7 @@ function PageInner() {
                   {!isOwner && (
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
+                      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden rounded-xl"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}
                     >
                       {Array.from({ length: 16 }).map((_, row) =>
@@ -2177,6 +2169,7 @@ function PageInner() {
                   <div
                     ref={textContainerRef}
                     onMouseDown={handleSelectionDown}
+                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2207,7 +2200,7 @@ function PageInner() {
                   >
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 rounded-xl bg-[rgba(18,18,18,0.9)]"
+                      className="pointer-events-none absolute inset-0 z-0 rounded-xl bg-[rgba(18,18,18,0.72)]"
                     />
                     {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
