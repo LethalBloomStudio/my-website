@@ -140,6 +140,8 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  const isDraggingFromProseRef = useRef(false);
+  const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -167,62 +169,63 @@ function PageInner() {
   }, [readerMarkerInfos]);
 
   function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
+    isDraggingFromProseRef.current = false;
     if (!canLeaveLineEdits) return;
     const target = e.target as HTMLElement;
     if (target.closest("button, textarea, [data-feedback-marker]")) return;
-    if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
+    if (!proseContentRef.current?.contains(target)) return;
+    isDraggingFromProseRef.current = true;
   }
 
   function handleSelectionUp() {
-    if (!canLeaveLineEdits) return;
-    const sel = window.getSelection();
-    const container = proseContentRef.current;
-    if (!sel || !sel.rangeCount || !container) {
-      setPendingSelection(null);
-      return;
+    const startedInProse = isDraggingFromProseRef.current;
+    isDraggingFromProseRef.current = false;
+    if (!canLeaveLineEdits || !startedInProse) return;
+    // Cancel any pending rAF from a previous quick mouseup
+    if (selectionFrameRef.current != null) {
+      cancelAnimationFrame(selectionFrameRef.current);
     }
-    if (sel.isCollapsed) {
-      // Plain click — dismiss any open popup but leave the page's selection alone
-      setPendingSelection(null);
-      return;
-    }
-    const text = sel.toString().trim();
-    if (!text) {
+    // Defer one frame so the browser finalises the selection before we read it
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
+      const sel = window.getSelection();
+      const container = proseContentRef.current;
+      if (!sel || !sel.rangeCount || !container || sel.isCollapsed) {
+        setPendingSelection(null);
+        return;
+      }
+      const text = sel.toString().trim();
+      if (!text) {
+        sel.removeAllRanges();
+        setPendingSelection(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      const startParent = range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentNode
+        : range.startContainer;
+      if (!(startParent instanceof Node) || !container.contains(startParent)) {
+        sel.removeAllRanges();
+        setPendingSelection(null);
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      if (!rect.width && !rect.height) {
+        sel.removeAllRanges();
+        setPendingSelection(null);
+        return;
+      }
+      const preRange = document.createRange();
+      preRange.selectNodeContents(container);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const centerX = rect.left + (rect.right - rect.left) / 2;
+      const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+      const popupY = Math.min(rect.bottom, window.innerHeight - 220);
       sel.removeAllRanges();
-      setPendingSelection(null);
-      return;
-    }
-    const range = sel.getRangeAt(0);
-    // Only require the selection START to be inside the prose container.
-    // We intentionally skip the endParent check: dragging past a floating marker
-    // button (which is inside textContainerRef but outside proseContentRef) used
-    // to make the whole capture fail even though the selected text is valid prose.
-    const startParent = range.startContainer.nodeType === Node.TEXT_NODE
-      ? range.startContainer.parentNode
-      : range.startContainer;
-    if (!(startParent instanceof Node) || !container.contains(startParent)) {
-      // Selection started outside the prose — don't interfere with it
-      setPendingSelection(null);
-      return;
-    }
-    const rect = range.getBoundingClientRect();
-    if (!rect.width && !rect.height) {
-      sel.removeAllRanges();
-      setPendingSelection(null);
-      return;
-    }
-    const preRange = document.createRange();
-    preRange.selectNodeContents(container);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
-    const centerX = rect.left + (rect.right - rect.left) / 2;
-    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-    // Position popup below the selection, clamped so it stays in the viewport
-    const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-    // Clear native browser selection so it doesn't linger visually
-    sel.removeAllRanges();
-    setLineEditDraft("");
-    setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+      setLineEditDraft("");
+      setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
+    });
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -1210,6 +1213,13 @@ function PageInner() {
     return () => ro.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
+
+  // Cancel any pending selection rAF on unmount
+  useEffect(() => {
+    return () => {
+      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+    };
+  }, []);
 
   // When a feedback card is selected, scroll the page to show the text marker
   // then align the sidebar card beside it.
