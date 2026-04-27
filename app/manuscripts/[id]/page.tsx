@@ -176,18 +176,23 @@ function PageInner() {
     function onDocMouseUp() {
       if (!canLeaveLineEditsRef.current) return;
       const sel = window.getSelection();
-      if (!sel || !sel.rangeCount || sel.isCollapsed) { setPendingSelection(null); return; }
+      const container = proseContentRef.current;
+      if (!sel || !sel.rangeCount || sel.isCollapsed || !container) { setPendingSelection(null); return; }
       const text = sel.toString().trim();
-      if (!text || !textContainerRef.current) { setPendingSelection(null); return; }
+      if (!text) { setPendingSelection(null); return; }
       const range = sel.getRangeAt(0);
       // Reject if anchor is not on actual text — drags starting in padding, gaps, or
       // indent space produce an element node anchor that covers way more than intended.
-      if (range.startContainer.nodeType !== Node.TEXT_NODE) { setPendingSelection(null); return; }
-      if (!textContainerRef.current.contains(range.startContainer)) { setPendingSelection(null); return; }
+      const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
+      const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
+      if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) {
+        setPendingSelection(null);
+        return;
+      }
       const rect = range.getBoundingClientRect();
       if (!rect.width && !rect.height) { setPendingSelection(null); return; }
       const preRange = document.createRange();
-      preRange.setStart(textContainerRef.current, 0);
+      preRange.selectNodeContents(container);
       preRange.setEnd(range.startContainer, range.startOffset);
       const start = preRange.toString().length;
       const centerX = rect.left + (rect.right - rect.left) / 2;
@@ -198,7 +203,6 @@ function PageInner() {
     }
     document.addEventListener("mouseup", onDocMouseUp);
     return () => document.removeEventListener("mouseup", onDocMouseUp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // stable: reads via refs; setters are stable
 
   const PARENT_DISABLE_REASONS = [
