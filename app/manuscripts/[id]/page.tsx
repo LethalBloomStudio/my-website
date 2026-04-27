@@ -4,7 +4,7 @@
 export const dynamic = "force-dynamic";
 
 import React, { Suspense } from "react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
@@ -722,7 +722,7 @@ function PageInner() {
     ? manuscript.word_count
     : 0;
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!manuscriptId) {
       setMsg("Missing manuscript id.");
       setLoading(false);
@@ -1084,11 +1084,11 @@ function PageInner() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [chapterId, fromParam, manuscript, manuscriptId, router, supabase]);
 
   useEffect(() => {
     void load();
-  }, [manuscriptId, chapterId, supabase]);
+  }, [load]);
 
   // Measure text-marker positions so feedback cards align with their text
   useEffect(() => {
@@ -1213,7 +1213,7 @@ function PageInner() {
     feedbackIdsRef.current = Array.from(new Set(allIds));
   }, [feedback, myAllFeedback]);
 
-  async function refreshRepliesForCurrentFeedback() {
+  const refreshRepliesForCurrentFeedback = useCallback(async () => {
     const ids = feedbackIdsRef.current;
     if (ids.length === 0) {
       setReplies([]);
@@ -1224,7 +1224,7 @@ function PageInner() {
       .select("id, feedback_id, replier_id, body, created_at")
       .in("feedback_id", ids);
     setReplies((data as FeedbackReply[] | null) ?? []);
-  }
+  }, [supabase]);
 
   function markFeedbackRepliesRead(feedbackId: string) {
     setUnreadReplyCounts((prev) => {
@@ -1264,7 +1264,7 @@ function PageInner() {
     return () => {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     };
-  }, [userId, manuscriptId, supabase]);
+  }, [manuscriptId, refreshRepliesForCurrentFeedback, supabase, userId]);
 
   // Broadcast reader presence so author workspace can show online status
   useEffect(() => {
@@ -2171,13 +2171,13 @@ function PageInner() {
                     return (
                       <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                         onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                        style={{ position: "absolute", top: info.top, left: info.left + offsetX, zIndex: 10 }}
-                        className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
+                        style={{ position: "absolute", top: info.top + 6, left: info.left + offsetX, zIndex: 10 }}
+                        className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                           isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                      : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
                         }`}
                       >
-                        <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
+                        <svg width="8" height="8" viewBox="0 0 9 9" fill="currentColor">
                           <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                         </svg>
                       </button>
