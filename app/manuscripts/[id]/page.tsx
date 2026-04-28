@@ -2212,7 +2212,7 @@ function PageInner() {
                     {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
+                      <div ref={proseContentRef} className="relative space-y-4 select-text">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
@@ -2271,7 +2271,7 @@ function PageInner() {
                           position: "absolute", top: readerOverlayOffsetY + r.top, left: r.left, width: r.width, height: r.height,
                           backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                           borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
-                          pointerEvents: "none", zIndex: 5, userSelect: "none",
+                          pointerEvents: "none",
                         }} />
                       ));
                     })}
@@ -2283,7 +2283,7 @@ function PageInner() {
                       return (
                         <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                           onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 3, left: info.left + offsetX - 7, zIndex: 10, userSelect: "none" }}
+                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 3, left: info.left + offsetX - 7, userSelect: "none" }}
                           className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                             isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                        : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
