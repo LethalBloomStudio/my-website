@@ -731,7 +731,7 @@ function PageInner() {
     const ownerLabel = names[manuscript.owner_id] || "Author";
     const ownerDate = manuscript.created_at ? new Date(manuscript.created_at).toLocaleDateString() : "";
     const accessDate = new Date().toLocaleDateString();
-    const color = theme === "day" ? "rgba(228,232,240,0.16)" : "rgba(188,194,204,0.18)";
+    const color = theme === "day" ? "rgba(166,172,184,0.26)" : "rgba(188,194,204,0.18)";
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240">
         <g transform="rotate(-28 260 120)">
