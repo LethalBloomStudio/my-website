@@ -74,6 +74,31 @@ export function createRangeFromTextOffsets(root: HTMLElement, start: number, end
   return range;
 }
 
+export function readTextFromOffsets(root: HTMLElement, start: number, end: number): string | null {
+  const text = root.textContent ?? "";
+  if (start < 0 || end <= start || end > text.length) return null;
+  return text.slice(start, end);
+}
+
+export function buildStoredFeedbackRange(
+  root: HTMLElement,
+  excerpt: string | null | undefined,
+  startOffset: number | null | undefined,
+  endOffset: number | null | undefined,
+): Range | null {
+  if (typeof startOffset === "number" && typeof endOffset === "number" && endOffset > startOffset) {
+    const exactRange = createRangeFromTextOffsets(root, startOffset, endOffset);
+    if (exactRange) {
+      const exactText = exactRange.toString().trim();
+      const expected = (excerpt ?? "").trim();
+      if (!expected || exactText === expected) {
+        return exactRange;
+      }
+    }
+  }
+  return null;
+}
+
 export function buildDragSelection(root: HTMLElement, startOffset: number, endOffset: number, viewportWidth: number): DragSelectionResult | null {
   let start = Math.min(startOffset, endOffset);
   let end = Math.max(startOffset, endOffset);

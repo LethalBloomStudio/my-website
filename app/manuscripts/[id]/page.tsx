@@ -12,7 +12,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildDragSelection, buildStoredFeedbackRange, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -539,7 +539,9 @@ function PageInner() {
     const newInfos: Record<string, ReaderMarkerInfo> = {};
     for (const f of markerFeedback) {
       if (!f.selection_excerpt) continue;
-      const range = findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
+      const range =
+        buildStoredFeedbackRange(container, f.selection_excerpt, f.start_offset, f.end_offset) ??
+        findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
       if (!range) continue;
       const clientRects = Array.from(range.getClientRects());
       if (!clientRects.length) continue;
@@ -684,6 +686,19 @@ function PageInner() {
     });
   }, [canLeaveLineEdits]);
 
+  const updateDragPreview = useCallback((clientX: number, clientY: number) => {
+    const prose = proseContentRef.current;
+    const startOffset = selectionDragStartOffsetRef.current;
+    if (!canLeaveLineEdits || !prose || startOffset == null) return;
+    const endInfo = getCaretPointFromClientPoint(prose, clientX, clientY);
+    if (!endInfo) {
+      setPendingSelectionRects([]);
+      return;
+    }
+    const previewSelection = buildDragSelection(prose, startOffset, endInfo.offset, window.innerWidth);
+    setPendingSelectionRects(previewSelection?.rects ?? []);
+  }, [canLeaveLineEdits]);
+
   const handleSelectionDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!canLeaveLineEdits) return;
     const prose = proseContentRef.current;
@@ -698,18 +713,28 @@ function PageInner() {
     }
     event.preventDefault();
     window.getSelection()?.removeAllRanges();
+    setPendingSelection(null);
+    setLineEditDraft("");
+    setPendingSelectionRects([]);
     selectionDragStartOffsetRef.current = startInfo.offset;
     setSelectionDragActive(true);
   }, [canLeaveLineEdits]);
 
   useEffect(() => {
     if (!selectionDragActive) return;
+    function onMouseMove(event: MouseEvent) {
+      updateDragPreview(event.clientX, event.clientY);
+    }
     function onMouseUp(event: MouseEvent) {
       finishCustomSelection(event.clientX, event.clientY);
     }
+    document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("mouseup", onMouseUp, true);
-    return () => document.removeEventListener("mouseup", onMouseUp, true);
-  }, [finishCustomSelection, selectionDragActive]);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove, true);
+      document.removeEventListener("mouseup", onMouseUp, true);
+    };
+  }, [finishCustomSelection, selectionDragActive, updateDragPreview]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -2154,6 +2179,7 @@ function PageInner() {
                           backgroundColor: "rgba(251,191,36,0.22)",
                           borderBottom: "2px dotted rgba(251,191,36,0.95)",
                           pointerEvents: "none",
+                          zIndex: 4,
                         }}
                       />
                     ))}
@@ -2167,6 +2193,7 @@ function PageInner() {
                           backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                           borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
                           pointerEvents: "none",
+                          zIndex: 5,
                         }} />
                       ));
                     })}
@@ -2178,7 +2205,7 @@ function PageInner() {
                       return (
                         <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                           onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top, left: info.left + offsetX - 7, userSelect: "none" }}
+                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top, left: info.left + offsetX - 7, userSelect: "none", zIndex: 10 }}
                           className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                             isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                        : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
