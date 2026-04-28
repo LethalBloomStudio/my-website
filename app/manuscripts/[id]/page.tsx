@@ -143,6 +143,9 @@ function PageInner() {
   const [readerOverlayOffsetX, setReaderOverlayOffsetX] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionDragStartOffsetRef = useRef<number | null>(null);
+  const selectionPreviewRafRef = useRef<number | null>(null);
+  const pendingPreviewPointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPreviewEndOffsetRef = useRef<number | null>(null);
   const [selectionDragActive, setSelectionDragActive] = useState(false);
 
   const readerMarkerOffsets = useMemo(() => {
@@ -667,6 +670,12 @@ function PageInner() {
     const prose = proseContentRef.current;
     const startOffset = selectionDragStartOffsetRef.current;
     selectionDragStartOffsetRef.current = null;
+    pendingPreviewPointRef.current = null;
+    if (selectionPreviewRafRef.current != null) {
+      cancelAnimationFrame(selectionPreviewRafRef.current);
+      selectionPreviewRafRef.current = null;
+    }
+    lastPreviewEndOffsetRef.current = null;
     setSelectionDragActive(false);
     if (!canLeaveLineEdits || !prose || startOffset == null) return;
     const endInfo = getCaretPointFromClientPoint(prose, clientX, clientY);
@@ -701,6 +710,8 @@ function PageInner() {
       setPendingSelectionRects([]);
       return;
     }
+    if (lastPreviewEndOffsetRef.current === endInfo.offset) return;
+    lastPreviewEndOffsetRef.current = endInfo.offset;
     const previewSelection = buildDragSelection(prose, startOffset, endInfo.offset, window.innerWidth);
     setPendingSelectionRects(previewSelection?.rects ?? []);
   }, [canLeaveLineEdits]);
@@ -723,13 +734,28 @@ function PageInner() {
     setLineEditDraft("");
     setPendingSelectionRects([]);
     selectionDragStartOffsetRef.current = startInfo.offset;
+    lastPreviewEndOffsetRef.current = startInfo.offset;
+    pendingPreviewPointRef.current = null;
+    if (selectionPreviewRafRef.current != null) {
+      cancelAnimationFrame(selectionPreviewRafRef.current);
+      selectionPreviewRafRef.current = null;
+    }
     setSelectionDragActive(true);
   }, [canLeaveLineEdits]);
 
   useEffect(() => {
     if (!selectionDragActive) return;
+    function flushPreview() {
+      selectionPreviewRafRef.current = null;
+      const point = pendingPreviewPointRef.current;
+      if (!point) return;
+      updateDragPreview(point.x, point.y);
+    }
     function onMouseMove(event: MouseEvent) {
-      updateDragPreview(event.clientX, event.clientY);
+      pendingPreviewPointRef.current = { x: event.clientX, y: event.clientY };
+      if (selectionPreviewRafRef.current == null) {
+        selectionPreviewRafRef.current = requestAnimationFrame(flushPreview);
+      }
     }
     function onMouseUp(event: MouseEvent) {
       finishCustomSelection(event.clientX, event.clientY);
@@ -737,6 +763,11 @@ function PageInner() {
     document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("mouseup", onMouseUp, true);
     return () => {
+      pendingPreviewPointRef.current = null;
+      if (selectionPreviewRafRef.current != null) {
+        cancelAnimationFrame(selectionPreviewRafRef.current);
+        selectionPreviewRafRef.current = null;
+      }
       document.removeEventListener("mousemove", onMouseMove, true);
       document.removeEventListener("mouseup", onMouseUp, true);
     };
