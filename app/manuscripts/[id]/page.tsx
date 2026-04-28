@@ -171,13 +171,17 @@ function PageInner() {
 
   function getTextNodeAtPoint(x: number, y: number, container: HTMLElement): Text | null {
     if (typeof document === "undefined") return null;
-    if ("caretPositionFromPoint" in document) {
-      const pos = document.caretPositionFromPoint(x, y);
+    const docWithCaret = document as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node | null } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    if (docWithCaret.caretPositionFromPoint) {
+      const pos = docWithCaret.caretPositionFromPoint(x, y);
       const node = pos?.offsetNode ?? null;
       return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
     }
-    if ("caretRangeFromPoint" in document) {
-      const range = document.caretRangeFromPoint(x, y);
+    if (docWithCaret.caretRangeFromPoint) {
+      const range = docWithCaret.caretRangeFromPoint(x, y);
       const node = range?.startContainer ?? null;
       return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
     }
