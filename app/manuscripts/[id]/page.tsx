@@ -250,7 +250,12 @@ function PageInner() {
     }
   }
 
-  function triggerCopyWarning() {
+  const lastCopyWarningAtRef = useRef(0);
+
+  const triggerCopyWarning = useCallback(() => {
+    const now = Date.now();
+    if (now - lastCopyWarningAtRef.current < 400) return;
+    lastCopyWarningAtRef.current = now;
     setCopyWarning(true);
     setCopyConsequence(null);
     void fetch("/api/manuscript/copy-attempt", {
@@ -266,7 +271,7 @@ function PageInner() {
         router.replace("/manuscripts");
       }
     });
-  }
+  }, [manuscript?.title, manuscriptId, router]);
 
   async function submitLineEdit() {
     if (!pendingSelection || !lineEditDraft.trim() || !userId) return;
@@ -736,6 +741,7 @@ function PageInner() {
       document.removeEventListener("mouseup", onMouseUp, true);
     };
   }, [finishCustomSelection, selectionDragActive, updateDragPreview]);
+
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -772,6 +778,52 @@ function PageInner() {
     `.trim();
     return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
   }, [isOwner, manuscript, myDisplayName, names, theme]);
+
+  useEffect(() => {
+    if (isOwner || isParentView || !activeChapter) return;
+
+    function selectionTouchesProtectedText() {
+      const container = textContainerRef.current;
+      if (!container) return false;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return false;
+      const range = selection.getRangeAt(0);
+      return container.contains(range.commonAncestorContainer);
+    }
+
+    function activeElementInsideProtectedText() {
+      const container = textContainerRef.current;
+      const activeEl = document.activeElement;
+      return !!container && !!activeEl && container.contains(activeEl);
+    }
+
+    function shouldBlockProtectedCopy() {
+      return selectionTouchesProtectedText() || activeElementInsideProtectedText();
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      const ctrl = event.ctrlKey || event.metaKey;
+      if (!ctrl || !["c", "C"].includes(event.key)) return;
+      if (!shouldBlockProtectedCopy()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      triggerCopyWarning();
+    }
+
+    function onCopy(event: ClipboardEvent) {
+      if (!shouldBlockProtectedCopy()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      triggerCopyWarning();
+    }
+
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("copy", onCopy, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("copy", onCopy, true);
+    };
+  }, [activeChapter, isOwner, isParentView, triggerCopyWarning]);
 
   // Sum word counts across all chapters for the "About" section
   const displayedWordCount = chapters.length > 0
