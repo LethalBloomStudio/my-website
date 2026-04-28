@@ -700,30 +700,31 @@ function PageInner() {
     const sel = window.getSelection();
     if (!container || !sel || sel.isCollapsed || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
-    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
-    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
-    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) return null;
-    const startParagraph = getParagraphContainer(range.startContainer);
-    const endParagraph = getParagraphContainer(range.endContainer);
-    if (!startParagraph || !endParagraph || startParagraph !== endParagraph) return null;
+    // Selection must be within the prose area
+    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return null;
     const start = getProseTextOffset(container, range, "start");
     const end = getProseTextOffset(container, range, "end");
     if (end <= start) return null;
     const proseText = container.textContent ?? "";
-    const selectedFromProse = proseText.slice(start, end);
-    const trimmedText = selectedFromProse.trim();
-    const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 || r.height > 0);
-    if (!trimmedText || trimmedText.length > 600 || rects.length > 12) return null;
-    const leadingWS = selectedFromProse.match(/^\s*/)?.[0].length ?? 0;
-    const trailingWS = selectedFromProse.match(/\s*$/)?.[0].length ?? 0;
+    const rawText = proseText.slice(start, end);
+    // Trim surrounding whitespace from the stored text and offsets
+    const leadingWS = rawText.length - rawText.trimStart().length;
+    const trailingWS = rawText.length - rawText.trimEnd().length;
     const normalizedStart = start + leadingWS;
     const normalizedEnd = end - trailingWS;
-    if (normalizedEnd <= normalizedStart) return null;
+    const trimmedText = rawText.trim();
+    // Use raw text if trimming removed everything (e.g. pure whitespace / single space)
+    const storedText = trimmedText || rawText;
+    const storedStart = trimmedText ? normalizedStart : start;
+    const storedEnd = trimmedText ? normalizedEnd : end;
+    if (!storedText || storedEnd <= storedStart) return null;
+    const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 || r.height > 0);
     const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
+    if (!anchorRect.width && !anchorRect.height) return null;
     const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
     const popupY = Math.min(anchorRect.bottom, window.innerHeight - 220);
-    return { text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: popupY };
+    return { text: storedText, start: storedStart, end: storedEnd, x: clampedX, y: popupY };
   }, []);
 
   const capturePendingSelection = useCallback(() => {
