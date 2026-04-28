@@ -10,9 +10,9 @@ import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
-import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, buildStoredFeedbackRange, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildReaderPreviewModel, renderReaderPreviewBlocks } from "@/lib/manuscript/readerPreviewModel";
+import { buildDragSelection, buildStoredFeedbackSelection, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -506,55 +506,18 @@ function PageInner() {
     return bestIdx;
   }
 
-  function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) textNodes.push(n as Text);
-    const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    // Prefer the occurrence nearest the stored offset. This keeps repeated
-    // phrases anchored correctly while tolerating small offset drift caused by
-    // formatting or text normalization.
-    const idx = findNearestExcerptIndex(fullText, excerpt, startOffset != null ? Math.max(0, startOffset) : undefined);
-    if (idx === -1) return null;
-    let cumul = 0;
-    let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
-    for (const t of textNodes) {
-      const len = (t.textContent ?? "").length;
-      if (!startNode && cumul + len > idx) { startNode = t; startOff = idx - cumul; }
-      if (!endNode && cumul + len >= idx + excerpt.length) { endNode = t; endOff = idx + excerpt.length - cumul; break; }
-      cumul += len;
-    }
-    if (!startNode || !endNode) return null;
-    const range = document.createRange();
-    range.setStart(startNode, startOff);
-    range.setEnd(endNode, endOff);
-    return range;
-  }
-
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
     const container = proseContentRef.current;
     if (!container) return;
-    const containerRect = container.getBoundingClientRect();
     const newInfos: Record<string, ReaderMarkerInfo> = {};
     for (const f of markerFeedback) {
       if (!f.selection_excerpt) continue;
-      const range =
-        buildStoredFeedbackRange(container, f.selection_excerpt, f.start_offset, f.end_offset) ??
-        findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
-      if (!range) continue;
-      const clientRects = Array.from(range.getClientRects());
-      if (!clientRects.length) continue;
-      const lastRect = clientRects[clientRects.length - 1];
+      const selection = buildStoredFeedbackSelection(container, f.selection_excerpt, f.start_offset, f.end_offset);
+      if (!selection) continue;
       newInfos[f.id] = {
-        top: lastRect.top - containerRect.top - 1,
-        left: lastRect.right - containerRect.left + 1,
-        highlightRects: clientRects.map((r) => ({
-          top: r.top - containerRect.top,
-          left: r.left - containerRect.left,
-          width: r.width,
-          height: r.height,
-        })),
+        top: selection.top - 1,
+        left: selection.left + 1,
+        highlightRects: selection.rects,
       };
     }
     setReaderMarkerInfos(newInfos);
@@ -746,8 +709,8 @@ function PageInner() {
     youthAudienceCategory && myAge === "adult_18_plus" && ages[readerId] === "youth_13_17";
   const activeChapter = chapterId ? (chapters.find((c) => c.id === chapterId) ?? null) : null;
   const activeText = activeChapter?.content ?? "";
-  const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
-  const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, ""), [activeText]);
+  const readerPreviewModel = useMemo(() => buildReaderPreviewModel(activeText), [activeText]);
+  const activePlainText = useMemo(() => readerPreviewModel.visibleText, [readerPreviewModel.visibleText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -1189,7 +1152,6 @@ function PageInner() {
       cancelAnimationFrame(rafId);
       clearTimeout(retryId);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // Recompute on resize (e.g. window resize or font load)
@@ -1200,7 +1162,6 @@ function PageInner() {
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
     ro.observe(container);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
 
@@ -2152,19 +2113,21 @@ function PageInner() {
                         }}
                       />
                     )}
-                    {!readerPreviewHtml ? (
+                    {readerPreviewModel.blocks.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
                       <div
                         ref={proseContentRef}
+                        data-reader-visible-text={readerPreviewModel.visibleText}
                         onMouseDown={handleSelectionDown}
-                        className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
+                        className="relative z-[1] select-none [&>p]:mb-[0.55em] [&>p:last-child]:mb-0"
                         style={{
                           ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
                           ["--ms-text-align" as string]: readerFormat?.textAlign ?? "left",
                         }}
-                        dangerouslySetInnerHTML={{ __html: readerPreviewHtml }}
-                      />
+                      >
+                        {renderReaderPreviewBlocks(readerPreviewModel)}
+                      </div>
                     )}
 
                     {pendingSelectionRects.map((r, i) => (
@@ -2288,7 +2251,7 @@ function PageInner() {
                   <div ref={cardAreaRef} className="relative min-h-full">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
-                    const plainActiveText = activeText.replace(/<[^>]+>/g, "");
+                    const plainActiveText = readerPreviewModel.visibleText;
                     const allFeedback = chapterFeedbackSource
                       .filter((f) => {
                         if (f.resolved) return false;
