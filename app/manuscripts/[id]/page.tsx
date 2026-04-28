@@ -2379,42 +2379,6 @@ function PageInner() {
                     </div>
                   )}
 
-                  {/* Submission form pinned at top when text is highlighted */}
-                  {pendingSelection && canLeaveLineEdits && (
-                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.94)] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.32)] backdrop-blur-sm"
-                      onMouseUp={(e) => e.stopPropagation()}>
-                      <blockquote className="mb-2 border-l-2 border-[rgba(120,120,120,0.6)] pl-2 text-[11px] italic text-neutral-400 line-clamp-2">
-                        &ldquo;{pendingSelection.text}&rdquo;
-                      </blockquote>
-                      <textarea
-                        rows={3}
-                        placeholder="Your feedback on this selection..."
-                        value={lineEditDraft}
-                        onChange={(e) => setLineEditDraft(e.target.value)}
-                        onPaste={(e) => { e.preventDefault(); setPasteBlocked(true); setTimeout(() => setPasteBlocked(false), 3000); }}
-                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900/80 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
-                      />
-                      {pasteBlocked && (
-                        <p className="mt-1 text-xs text-amber-400">Pasting is not allowed - feedback must be typed manually.</p>
-                      )}
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          onClick={submitLineEdit}
-                          disabled={submittingLineEdit || !lineEditDraft.trim()}
-                          className="flex-1 rounded-lg border border-[rgba(120,120,120,0.7)] bg-[rgba(120,120,120,0.2)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[rgba(120,120,120,0.3)] disabled:opacity-40 transition"
-                        >
-                          {submittingLineEdit ? "Saving…" : "Submit"}
-                        </button>
-                        <button
-                          onClick={() => { setPendingSelection(null); setLineEditDraft(""); window.getSelection()?.removeAllRanges(); }}
-                          className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 transition"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   </div>
 
                   {/* Card area - floating cards aligned to the text markers */}
@@ -2733,7 +2697,7 @@ function PageInner() {
 
       {pendingSelection && canLeaveLineEdits && (
         <div
-          className="feedback-inline-popup fixed z-50 w-72 rounded-xl border border-[rgba(120,120,120,0.6)] shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-3"
+          className="feedback-inline-popup fixed z-50 w-72 rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
           style={{
             top: pendingSelection.y + 8,
             left: pendingSelection.x,
@@ -2746,7 +2710,6 @@ function PageInner() {
             &ldquo;{pendingSelection.text}&rdquo;
           </blockquote>
           <textarea
-            autoFocus
             rows={3}
             placeholder="Your feedback on this selection..."
             value={lineEditDraft}
