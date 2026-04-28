@@ -141,7 +141,6 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const canLeaveLineEditsRef = useRef(false);
-  const isDraggingFromProseRef = useRef(false);
   const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
@@ -169,78 +168,26 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-  function getCaretRangeAtPoint(x: number, y: number): Range | null {
-    if (typeof document.caretRangeFromPoint === "function") {
-      return document.caretRangeFromPoint(x, y);
-    }
-    if (typeof document.caretPositionFromPoint === "function") {
-      const pos = document.caretPositionFromPoint(x, y);
-      if (pos?.offsetNode) {
-        const range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-        range.collapse(true);
-        return range;
-      }
-    }
-    return null;
-  }
 
-  
-
-  // Document-level mouseup: fires even when the user releases outside textContainerRef
-  // (e.g. drags into the sidebar). Only TEXT_NODE start containers are accepted so that
-  // drags starting in empty space (paragraph gaps, text-indent area) don't produce
-  // over-sized selections. Popup interactions have onMouseUp stopPropagation so they
-  // don't dismiss the popup.
   useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      isDraggingFromProseRef.current = false;
-      if (!canLeaveLineEditsRef.current) return;
-      const target = e.target as HTMLElement;
-      if (target.closest("button, textarea, [data-feedback-marker]")) return;
-      if (!proseContentRef.current?.contains(target)) return;
-      const pointRange = getCaretRangeAtPoint(e.clientX, e.clientY);
-      if (!pointRange || pointRange.startContainer.nodeType !== Node.TEXT_NODE) return;
-      if (!proseContentRef.current.contains(pointRange.startContainer)) return;
-      isDraggingFromProseRef.current = true;
-    }
-
     function onDocMouseUp() {
-      const startedInProse = isDraggingFromProseRef.current;
-      isDraggingFromProseRef.current = false;
-      if (!canLeaveLineEditsRef.current || !startedInProse) return;
+      if (!canLeaveLineEditsRef.current) return;
       if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
       selectionFrameRef.current = requestAnimationFrame(() => {
         selectionFrameRef.current = null;
         const sel = window.getSelection();
         const container = proseContentRef.current;
-        if (!sel || !sel.rangeCount || !container || sel.isCollapsed) {
-          setPendingSelection(null);
-          return;
-        }
+        if (!sel || !sel.rangeCount || !container || sel.isCollapsed) { setPendingSelection(null); return; }
         const text = sel.toString().trim();
-        if (!text) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
-        }
+        if (!text) { sel.removeAllRanges(); setPendingSelection(null); return; }
         const range = sel.getRangeAt(0);
-      // Reject if anchor is not on actual text — drags starting in padding, gaps, or
-      // indent space produce an element node anchor that covers way more than intended.
-        const startParent = range.startContainer.nodeType === Node.TEXT_NODE
-          ? range.startContainer.parentNode
-          : range.startContainer;
-        if (!(startParent instanceof Node) || !container.contains(startParent)) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
+        // Reject element-node anchors (over-selection from dragging in gaps/padding)
+        // and selections that didn't start inside the prose content area
+        if (range.startContainer.nodeType !== Node.TEXT_NODE || !container.contains(range.startContainer)) {
+          sel.removeAllRanges(); setPendingSelection(null); return;
         }
         const rect = range.getBoundingClientRect();
-        if (!rect.width && !rect.height) {
-          sel.removeAllRanges();
-          setPendingSelection(null);
-          return;
-        }
+        if (!rect.width && !rect.height) { sel.removeAllRanges(); setPendingSelection(null); return; }
         const preRange = document.createRange();
         preRange.selectNodeContents(container);
         preRange.setEnd(range.startContainer, range.startOffset);
@@ -253,17 +200,12 @@ function PageInner() {
         setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
       });
     }
-    document.addEventListener("mousedown", onDocMouseDown, true);
-    document.addEventListener("mouseup", onDocMouseUp, true);
+    document.addEventListener("mouseup", onDocMouseUp);
     return () => {
-      document.removeEventListener("mousedown", onDocMouseDown, true);
-      document.removeEventListener("mouseup", onDocMouseUp, true);
-      if (selectionFrameRef.current != null) {
-        cancelAnimationFrame(selectionFrameRef.current);
-        selectionFrameRef.current = null;
-      }
+      document.removeEventListener("mouseup", onDocMouseUp);
+      if (selectionFrameRef.current != null) { cancelAnimationFrame(selectionFrameRef.current); selectionFrameRef.current = null; }
     };
-  }, []); // stable: reads via refs; setters are stable
+  }, []);
 
   const PARENT_DISABLE_REASONS = [
     "Inappropriate content",
