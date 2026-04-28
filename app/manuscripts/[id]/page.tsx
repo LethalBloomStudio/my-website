@@ -10,7 +10,7 @@ import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
-import { chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -128,7 +128,6 @@ function PageInner() {
     manuscript_lifetime_suspension_count: number;
   } | null>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
-  const proseContentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
@@ -137,9 +136,7 @@ function PageInner() {
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
-  const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
-  const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -529,7 +526,7 @@ function PageInner() {
   }
 
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
-    const container = proseContentRef.current;
+    const container = textContainerRef.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const newInfos: Record<string, ReaderMarkerInfo> = {};
@@ -541,7 +538,7 @@ function PageInner() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        top: lastRect.bottom - containerRect.top - Math.min(10, Math.max(6, lastRect.height * 0.45)),
+        top: lastRect.top - containerRect.top - 4,
         left: lastRect.right - containerRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - containerRect.top,
@@ -554,17 +551,6 @@ function PageInner() {
     setReaderMarkerInfos(newInfos);
   }
 
-  function clearNativeSelection() { window.getSelection()?.removeAllRanges(); }
-
-  function getProseTextOffset(container: HTMLElement, range: Range, edge: "start" | "end") {
-    const offsetRange = document.createRange();
-    offsetRange.selectNodeContents(container);
-    if (edge === "start") offsetRange.setEnd(range.startContainer, range.startOffset);
-    else offsetRange.setEnd(range.endContainer, range.endOffset);
-    return offsetRange.toString().length;
-  }
-
-  /*
   function renderParagraphContent(
     html: string,
     markerItems: LineFeedback[],
@@ -647,7 +633,6 @@ function PageInner() {
 
     return <>{parts}</>;
   }
-  */
 
   function friendlyDbError(message: string) {
     const m = message.toLowerCase();
@@ -663,58 +648,46 @@ function PageInner() {
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
 
-  useEffect(() => () => {
-    if (selectionFrameRef.current != null) { cancelAnimationFrame(selectionFrameRef.current); selectionFrameRef.current = null; }
-  }, []);
-
-  const readCurrentSelection = useCallback(() => {
-    const container = proseContentRef.current;
+  const handleSelectionUp = useCallback(() => {
+    if (!canLeaveLineEdits || !textContainerRef.current) return;
     const sel = window.getSelection();
-    if (!container || !sel || sel.isCollapsed || !sel.rangeCount) return null;
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      setPendingSelection(null);
+      return;
+    }
     const range = sel.getRangeAt(0);
-    // Selection must be within the prose area
-    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return null;
-    const start = getProseTextOffset(container, range, "start");
-    const end = getProseTextOffset(container, range, "end");
-    if (end <= start) return null;
-    const proseText = container.textContent ?? "";
-    const rawText = proseText.slice(start, end);
-    // Trim surrounding whitespace from the stored text and offsets
+    if (!textContainerRef.current.contains(range.startContainer) || !textContainerRef.current.contains(range.endContainer)) {
+      setPendingSelection(null);
+      return;
+    }
+    const rawText = sel.toString();
+    const text = rawText.trim();
+    if (!text) {
+      setPendingSelection(null);
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    if (!rect.width && !rect.height) {
+      setPendingSelection(null);
+      return;
+    }
+    const preRange = document.createRange();
+    preRange.setStart(textContainerRef.current, 0);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    const rawStart = preRange.toString().length;
     const leadingWS = rawText.length - rawText.trimStart().length;
     const trailingWS = rawText.length - rawText.trimEnd().length;
-    const normalizedStart = start + leadingWS;
-    const normalizedEnd = end - trailingWS;
-    const trimmedText = rawText.trim();
-    // Use raw text if trimming removed everything (e.g. pure whitespace / single space)
-    const storedText = trimmedText || rawText;
-    const storedStart = trimmedText ? normalizedStart : start;
-    const storedEnd = trimmedText ? normalizedEnd : end;
-    if (!storedText || storedEnd <= storedStart) return null;
-    const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 || r.height > 0);
-    const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
-    if (!anchorRect.width && !anchorRect.height) return null;
-    const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
+    const start = rawStart + leadingWS;
+    const end = rawStart + rawText.length - trailingWS;
+    if (end <= start) {
+      setPendingSelection(null);
+      return;
+    }
+    const centerX = rect.left + (rect.right - rect.left) / 2;
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-    const popupY = Math.min(anchorRect.bottom, window.innerHeight - 220);
-    return { text: storedText, start: storedStart, end: storedEnd, x: clampedX, y: popupY };
-  }, []);
-
-  const capturePendingSelection = useCallback(() => {
-    if (!canLeaveLineEdits) return;
-    const next = readCurrentSelection();
     setLineEditDraft("");
-    setPendingSelection(next);
-    if (next) clearNativeSelection();
-  }, [canLeaveLineEdits, readCurrentSelection]);
-
-  const handleProseMouseUp = useCallback(() => {
-    if (!canLeaveLineEdits) return;
-    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-    selectionFrameRef.current = requestAnimationFrame(() => {
-      selectionFrameRef.current = null;
-      capturePendingSelection();
-    });
-  }, [canLeaveLineEdits, capturePendingSelection]);
+    setPendingSelection({ text, start, end, x: clampedX, y: rect.top });
+  }, [canLeaveLineEdits]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -735,7 +708,6 @@ function PageInner() {
         .filter(Boolean),
     [activeText],
   );
-  const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -759,28 +731,6 @@ function PageInner() {
     `.trim();
     return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
   }, [isOwner, manuscript, myDisplayName, names, theme]);
-
-  const _feedbackByParagraph = useMemo(() => {
-    const map: Record<number, LineFeedback[]> = {};
-    for (const f of feedback) {
-      let targetIdx = 0;
-      if (f.selection_excerpt) {
-        const found = manuscriptParagraphs.findIndex((p) => p.includes(f.selection_excerpt));
-        if (found >= 0) {
-          targetIdx = found;
-        } else if (f.start_offset != null) {
-          let charCount = 0;
-          for (let i = 0; i < manuscriptParagraphs.length; i++) {
-            charCount += manuscriptParagraphs[i].length + 2;
-            if (f.start_offset < charCount) { targetIdx = i; break; }
-          }
-        }
-      }
-      if (!map[targetIdx]) map[targetIdx] = [];
-      map[targetIdx].push(f);
-    }
-    return map;
-  }, [feedback, manuscriptParagraphs]);
 
   // Sum word counts across all chapters for the "About" section
   const displayedWordCount = chapters.length > 0
@@ -1162,16 +1112,9 @@ function PageInner() {
   useEffect(() => {
     function measure() {
       const textBox = textContainerRef.current;
-      const proseBox = proseContentRef.current;
       const col = asideRef.current;
-      const anchor = proseBox ?? textBox;
-      if (!anchor || !col) return;
-      setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
-      if (textBox && proseBox) {
-        setReaderOverlayOffsetY(proseBox.getBoundingClientRect().top - textBox.getBoundingClientRect().top);
-      } else {
-        setReaderOverlayOffsetY(0);
-      }
+      if (!textBox || !col) return;
+      setReaderColumnOffsetY(textBox.getBoundingClientRect().top - col.getBoundingClientRect().top);
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -1208,7 +1151,7 @@ function PageInner() {
 
   // Recompute on resize (e.g. window resize or font load)
   useEffect(() => {
-    const container = proseContentRef.current;
+    const container = textContainerRef.current;
     if (!container) return;
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
@@ -1226,7 +1169,7 @@ function PageInner() {
   useEffect(() => {
     if (!selectedFeedbackId) return;
     const info = readerMarkerInfos[selectedFeedbackId];
-    const container = proseContentRef.current;
+    const container = textContainerRef.current;
 
     // Skip if we already successfully scrolled to this exact id using Range-API marker info.
     // This prevents re-scrolling every time readerMarkerInfos recomputes (e.g. on resize).
@@ -2121,6 +2064,7 @@ function PageInner() {
                   <div
                     ref={textContainerRef}
                     className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
+                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2166,19 +2110,48 @@ function PageInner() {
                         }}
                       />
                     )}
-                    {!readerPreviewHtml ? (
+                    {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div
-                        ref={proseContentRef}
-                        onMouseUp={handleProseMouseUp}
-                        className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
-                        style={{
-                          ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
-                          ["--ms-text-align" as string]: readerFormat?.textAlign ?? "left",
-                        }}
-                        dangerouslySetInnerHTML={{ __html: readerPreviewHtml }}
-                      >
+                      <div className="relative z-[1] space-y-4 select-text">
+                        {(() => {
+                          const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+                          const paraPlainLengths = manuscriptParagraphs.map((p) => p.replace(/<[^>]+>/g, "").length);
+                          const paraCharOffsets: number[] = [];
+                          let cumCharOffset = 0;
+                          for (const len of paraPlainLengths) {
+                            paraCharOffsets.push(cumCharOffset);
+                            cumCharOffset += len;
+                          }
+                          return manuscriptParagraphs.map((para, idx) => {
+                            const paraStart = paraCharOffsets[idx];
+                            const paraEnd = paraCharOffsets[idx + 1] ?? cumCharOffset;
+                            const plainPara = para.replace(/<[^>]+>/g, "");
+                            const paraFeedbacks = markerFeedback.filter((f) => {
+                              if (!f.selection_excerpt) return false;
+                              if (f.start_offset != null) {
+                                return f.start_offset >= paraStart && f.start_offset < paraEnd;
+                              }
+                              return para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt);
+                            });
+
+                            return (
+                              <div key={idx} id={`para-${idx}`} className="relative">
+                                <p
+                                  className="m-0 mb-3 whitespace-pre-line"
+                                  style={readerFormat ? {
+                                    textIndent: readerFormat.paragraphIndent ? (idx === 0 ? "0" : "2.5em") : "0",
+                                    textAlign: readerFormat.textAlign,
+                                  } : { textIndent: idx === 0 ? "0" : "1.5rem" }}
+                                >
+                                  {paraFeedbacks.length > 0
+                                    ? renderParagraphContent(para, paraFeedbacks, paraStart)
+                                    : <span dangerouslySetInnerHTML={{ __html: para }} />}
+                                </p>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
 
@@ -2187,7 +2160,7 @@ function PageInner() {
                       const isSelected = selectedFeedbackId === fid;
                       return info.highlightRects.map((r, i) => (
                         <div key={`${fid}-hl-${i}`} style={{
-                          position: "absolute", top: readerOverlayOffsetY + r.top, left: r.left, width: r.width, height: r.height,
+                          position: "absolute", top: r.top, left: r.left, width: r.width, height: r.height,
                           backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                           borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
                           pointerEvents: "none",
@@ -2202,7 +2175,7 @@ function PageInner() {
                       return (
                         <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                           onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 3, left: info.left + offsetX - 7, userSelect: "none" }}
+                          style={{ position: "absolute", top: info.top, left: info.left + offsetX - 7, userSelect: "none" }}
                           className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                             isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                        : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
