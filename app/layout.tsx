@@ -136,14 +136,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                const isLocalhost = Boolean(
-                  window.location.hostname === 'localhost' ||
-                  window.location.hostname === '127.0.0.1'
-                );
-                const shouldRegister = window.location.protocol === 'https:' || isLocalhost;
-                if (shouldRegister) {
-                  navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-                }
+                navigator.serviceWorker.getRegistrations()
+                  .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+                  .then(() => {
+                    if (window.caches) {
+                      return caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+                    }
+                  })
+                  .catch(() => {});
               }
             `,
           }}
