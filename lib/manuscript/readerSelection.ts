@@ -25,69 +25,21 @@ type DocWithCaret = Document & {
   caretRangeFromPoint?: (x: number, y: number) => Range | null;
 };
 
-type ParagraphMeta = {
-  element: HTMLElement;
-  isSceneBreak: boolean;
-  storageStart: number;
-  storageLength: number;
-  visualLength: number;
-};
-
 type DomPoint = {
   node: Node;
   offset: number;
 };
 
-function paragraphElements(root: HTMLElement): HTMLElement[] {
-  return Array.from(root.children).filter(
-    (child): child is HTMLElement => child instanceof HTMLElement && child.tagName === "P",
-  );
-}
-
-function isSceneBreakParagraph(paragraph: HTMLElement): boolean {
-  return paragraph.dataset.sceneBreak === "1";
-}
-
-function countVisualText(node: Node): number {
+function countVisibleText(node: Node): number {
   if (node.nodeType === Node.TEXT_NODE) return node.textContent?.length ?? 0;
   if (!(node instanceof HTMLElement)) return 0;
   if (node.tagName === "BR") return 1;
   let total = 0;
-  for (const child of Array.from(node.childNodes)) total += countVisualText(child);
+  for (const child of Array.from(node.childNodes)) total += countVisibleText(child);
   return total;
 }
 
-function buildParagraphMap(root: HTMLElement): ParagraphMeta[] {
-  const paragraphs = paragraphElements(root);
-  const metas: ParagraphMeta[] = [];
-  let storageCursor = 0;
-  paragraphs.forEach((paragraph, index) => {
-    const sceneBreak = isSceneBreakParagraph(paragraph);
-    const visualLength = countVisualText(paragraph);
-    const storageLength = sceneBreak ? visualLength : visualLength + 1;
-    metas.push({
-      element: paragraph,
-      isSceneBreak: sceneBreak,
-      storageStart: storageCursor,
-      storageLength,
-      visualLength,
-    });
-    storageCursor += storageLength;
-    if (index < paragraphs.length - 1) storageCursor += 2;
-  });
-  return metas;
-}
-
-function paragraphForNode(node: Node, root: HTMLElement): HTMLElement | null {
-  let current: Node | null = node;
-  while (current && current !== root) {
-    if (current instanceof HTMLElement && current.tagName === "P" && current.parentElement === root) return current;
-    current = current.parentNode;
-  }
-  return null;
-}
-
-function countVisualOffsetInParagraph(paragraph: HTMLElement, targetNode: Node, targetOffset: number): number | null {
+function visibleOffsetFromDomPoint(root: HTMLElement, targetNode: Node, targetOffset: number): number | null {
   let total = 0;
 
   function walk(node: Node): boolean {
@@ -102,7 +54,7 @@ function countVisualOffsetInParagraph(paragraph: HTMLElement, targetNode: Node, 
       }
       const children = Array.from(node.childNodes);
       for (let i = 0; i < Math.min(targetOffset, children.length); i += 1) {
-        total += countVisualText(children[i]);
+        total += countVisibleText(children[i]);
       }
       return true;
     }
@@ -121,10 +73,10 @@ function countVisualOffsetInParagraph(paragraph: HTMLElement, targetNode: Node, 
     return false;
   }
 
-  return walk(paragraph) ? total : null;
+  return walk(root) ? total : null;
 }
 
-function domPointForVisualOffset(paragraph: HTMLElement, visualOffset: number): DomPoint {
+function domPointFromVisibleOffset(root: HTMLElement, visualOffset: number): DomPoint {
   let remaining = Math.max(0, visualOffset);
 
   function walk(node: Node): DomPoint | null {
@@ -153,84 +105,14 @@ function domPointForVisualOffset(paragraph: HTMLElement, visualOffset: number): 
     return null;
   }
 
-  const point = walk(paragraph);
+  const point = walk(root);
   if (point) return point;
-  return { node: paragraph, offset: paragraph.childNodes.length };
+  return { node: root, offset: root.childNodes.length };
 }
 
-function storageOffsetFromDomPoint(root: HTMLElement, node: Node, nodeOffset: number): number | null {
-  const paragraph = paragraphForNode(node, root);
-  if (!paragraph) return null;
-  const map = buildParagraphMap(root);
-  const meta = map.find((entry) => entry.element === paragraph);
-  if (!meta) return null;
-  const visualOffset = countVisualOffsetInParagraph(paragraph, node, nodeOffset);
-  if (visualOffset == null) return null;
-  return meta.storageStart + (meta.isSceneBreak ? visualOffset : visualOffset + 1);
-}
-
-function paragraphMetaForStorageOffset(map: ParagraphMeta[], offset: number): { meta: ParagraphMeta; localOffset: number } | null {
-  for (const meta of map) {
-    const end = meta.storageStart + meta.storageLength;
-    if (offset <= end) {
-      return { meta, localOffset: offset - meta.storageStart };
-    }
-  }
-  const last = map[map.length - 1];
-  if (!last) return null;
-  return { meta: last, localOffset: last.storageLength };
-}
-
-function createRangeFromStorageOffsets(root: HTMLElement, start: number, end: number): Range | null {
-  const map = buildParagraphMap(root);
-  if (!map.length || end <= start) return null;
-
-  const startMeta = paragraphMetaForStorageOffset(map, start);
-  const endMeta = paragraphMetaForStorageOffset(map, end);
-  if (!startMeta || !endMeta) return null;
-
-  const startVisual = Math.max(0, Math.min(startMeta.meta.visualLength, startMeta.localOffset - (startMeta.meta.isSceneBreak ? 0 : 1)));
-  const endVisual = Math.max(0, Math.min(endMeta.meta.visualLength, endMeta.localOffset - (endMeta.meta.isSceneBreak ? 0 : 1)));
-
-  const startPoint = domPointForVisualOffset(startMeta.meta.element, startVisual);
-  const endPoint = domPointForVisualOffset(endMeta.meta.element, endVisual);
-  const range = document.createRange();
-  range.setStart(startPoint.node, startPoint.offset);
-  range.setEnd(endPoint.node, endPoint.offset);
-  return range;
-}
-
-function manuscriptTextFromStorageOffsets(root: HTMLElement, start: number, end: number): string | null {
-  const map = buildParagraphMap(root);
-  if (!map.length || end <= start) return null;
-  const remainingStart = start;
-  const remainingEnd = end;
-  let output = "";
-
-  for (let index = 0; index < map.length; index += 1) {
-    const meta = map[index];
-    const paragraphText = meta.element.textContent ?? "";
-    const storageText = meta.isSceneBreak ? paragraphText : `\t${paragraphText}`;
-    const blockStart = meta.storageStart;
-    const blockEnd = blockStart + meta.storageLength;
-
-    if (remainingEnd <= blockStart) break;
-    if (remainingStart < blockEnd && remainingEnd > blockStart) {
-      const sliceStart = Math.max(0, remainingStart - blockStart);
-      const sliceEnd = Math.min(storageText.length, remainingEnd - blockStart);
-      output += storageText.slice(sliceStart, sliceEnd);
-    }
-
-    const separatorStart = blockEnd;
-    const separatorEnd = separatorStart + (index < map.length - 1 ? 2 : 0);
-    if (remainingEnd > separatorStart && remainingStart < separatorEnd) {
-      const separatorSliceStart = Math.max(0, remainingStart - separatorStart);
-      const separatorSliceEnd = Math.min(2, remainingEnd - separatorStart);
-      output += "\n\n".slice(separatorSliceStart, separatorSliceEnd);
-    }
-  }
-
-  return output || null;
+function visibleTextFromOffsets(root: HTMLElement, start: number, end: number): string {
+  const range = createRangeFromTextOffsets(root, start, end);
+  return range?.toString() ?? "";
 }
 
 function getCharacterRect(node: Text, startOffset: number, endOffset: number): DOMRect | null {
@@ -281,7 +163,7 @@ export function getCaretPointFromClientPoint(root: HTMLElement, clientX: number,
   const rawNodeOffset = caretPos?.offset ?? caretRange?.startOffset ?? 0;
   if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
   const nodeOffset = adjustTextOffsetToClick(node as Text, rawNodeOffset, clientX, clientY);
-  const offset = storageOffsetFromDomPoint(root, node, nodeOffset);
+  const offset = visibleOffsetFromDomPoint(root, node, nodeOffset);
   if (offset == null) return null;
   return {
     offset,
@@ -291,11 +173,18 @@ export function getCaretPointFromClientPoint(root: HTMLElement, clientX: number,
 }
 
 export function createRangeFromTextOffsets(root: HTMLElement, start: number, end: number): Range | null {
-  return createRangeFromStorageOffsets(root, start, end);
+  if (end <= start) return null;
+  const startPoint = domPointFromVisibleOffset(root, start);
+  const endPoint = domPointFromVisibleOffset(root, end);
+  const range = document.createRange();
+  range.setStart(startPoint.node, startPoint.offset);
+  range.setEnd(endPoint.node, endPoint.offset);
+  return range;
 }
 
 export function readTextFromOffsets(root: HTMLElement, start: number, end: number): string | null {
-  return manuscriptTextFromStorageOffsets(root, start, end);
+  if (end <= start) return null;
+  return visibleTextFromOffsets(root, start, end) || null;
 }
 
 export function buildStoredFeedbackRange(
@@ -305,9 +194,9 @@ export function buildStoredFeedbackRange(
   endOffset: number | null | undefined,
 ): Range | null {
   if (typeof startOffset === "number" && typeof endOffset === "number" && endOffset > startOffset) {
-    const exactRange = createRangeFromStorageOffsets(root, startOffset, endOffset);
+    const exactRange = createRangeFromTextOffsets(root, startOffset, endOffset);
     if (exactRange) {
-      const exactText = manuscriptTextFromStorageOffsets(root, startOffset, endOffset) ?? "";
+      const exactText = exactRange.toString();
       const expected = (excerpt ?? "").trim();
       if (!expected || exactText === expected) {
         return exactRange;
@@ -318,9 +207,8 @@ export function buildStoredFeedbackRange(
         const adjustedStart = startOffset + leadingWhitespace;
         const adjustedEnd = endOffset - trailingWhitespace;
         if (adjustedEnd > adjustedStart) {
-          const adjustedRange = createRangeFromStorageOffsets(root, adjustedStart, adjustedEnd);
-          const adjustedText = manuscriptTextFromStorageOffsets(root, adjustedStart, adjustedEnd) ?? "";
-          if (adjustedRange && adjustedText === expected) {
+          const adjustedRange = createRangeFromTextOffsets(root, adjustedStart, adjustedEnd);
+          if (adjustedRange && adjustedRange.toString() === expected) {
             return adjustedRange;
           }
         }
@@ -335,8 +223,7 @@ export function buildDragSelection(root: HTMLElement, startOffset: number, endOf
   let end = Math.max(startOffset, endOffset);
   if (end <= start) return null;
 
-  const rawText = manuscriptTextFromStorageOffsets(root, start, end);
-  if (!rawText) return null;
+  const rawText = visibleTextFromOffsets(root, start, end);
   const trimmedText = rawText.trim();
   if (!trimmedText) return null;
 
@@ -346,7 +233,7 @@ export function buildDragSelection(root: HTMLElement, startOffset: number, endOf
   end -= trailingWhitespace;
   if (end <= start) return null;
 
-  const range = createRangeFromStorageOffsets(root, start, end);
+  const range = createRangeFromTextOffsets(root, start, end);
   if (!range) return null;
 
   const clientRects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
