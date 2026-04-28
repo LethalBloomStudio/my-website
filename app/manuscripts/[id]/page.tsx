@@ -10,7 +10,7 @@ import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
-import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -132,7 +132,6 @@ function PageInner() {
   const asideRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
-  const [markerTops, setMarkerTops] = useState<Record<string, number>>({});
   const [clickedMarkerTop, setClickedMarkerTop] = useState<number | null>(null);
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
@@ -577,12 +576,6 @@ function PageInner() {
 
   function clearNativeSelection() { window.getSelection()?.removeAllRanges(); }
 
-  function getParagraphContainer(node: Node | null): HTMLElement | null {
-    if (!node) return null;
-    const base = node.nodeType === Node.TEXT_NODE ? node.parentElement : node instanceof HTMLElement ? node : null;
-    return base?.closest("[id^='para-']") as HTMLElement | null;
-  }
-
   function getProseTextOffset(container: HTMLElement, range: Range, edge: "start" | "end") {
     const offsetRange = document.createRange();
     offsetRange.selectNodeContents(container);
@@ -591,11 +584,7 @@ function PageInner() {
     return offsetRange.toString().length;
   }
 
-  /**
-   * Renders a paragraph (which may contain inline HTML like <strong>, <em>) with
-   * only a dotted-underline span (for scroll targeting) - no inline button.
-   * The actual speech-bubble buttons are rendered as absolute overlays via Range API.
-   */
+  /*
   function renderParagraphContent(
     html: string,
     markerItems: LineFeedback[],
@@ -678,6 +667,7 @@ function PageInner() {
 
     return <>{parts}</>;
   }
+  */
 
   function friendlyDbError(message: string) {
     const m = message.toLowerCase();
@@ -786,6 +776,7 @@ function PageInner() {
         .filter(Boolean),
     [activeText],
   );
+  const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -1207,23 +1198,6 @@ function PageInner() {
     void load();
   }, [load]);
 
-  // Measure text-marker positions so feedback cards align with their text
-  useEffect(() => {
-    if (!activeChapter) { setMarkerTops({}); setChapterHeight(0); return; }
-    const section = chapterSectionRef.current;
-    if (!section) return;
-    const sectionTop = section.getBoundingClientRect().top;
-    const tops: Record<string, number> = {};
-    const items = (isOwner || isParentView ? feedback : myChapterFeedback).filter((f) => !f.resolved);
-    for (const f of items) {
-      const el = document.getElementById(`text-marker-${f.id}`);
-      if (el) tops[f.id] = el.getBoundingClientRect().top - sectionTop;
-    }
-    setMarkerTops(tops);
-    setChapterHeight(section.offsetHeight);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
-  }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
-
   // Measure the vertical gap between the feedback column top and the protected text box.
   // Reader-side cards need this offset because their marker Y is measured inside textContainerRef.
   useEffect(() => {
@@ -1305,13 +1279,6 @@ function PageInner() {
       const markerDocY = container.getBoundingClientRect().top + window.scrollY + info.top;
       const targetScrollY = markerDocY - window.innerHeight * 0.35;
       window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
-    } else {
-      const markerEl = document.getElementById(`text-marker-${selectedFeedbackId}`);
-      if (markerEl) {
-        const rect = markerEl.getBoundingClientRect();
-        const targetScrollY = window.scrollY + rect.top - window.innerHeight * 0.35;
-        window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
-      }
     }
   }, [selectedFeedbackId, readerMarkerInfos]);
 
@@ -2240,57 +2207,18 @@ function PageInner() {
                         }}
                       />
                     )}
-                    {manuscriptParagraphs.length === 0 ? (
+                    {!readerPreviewHtml ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
-                      {(() => {
-                        const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
-                          if (f.resolved) return false;
-                          if (!f.selection_excerpt) return false;
-                          return activeText.replace(/<[^>]+>/g, "").includes(f.selection_excerpt);
-                        });
-                        // Compute the plain-text character offset of each paragraph start
-                        // so we can assign feedback to the exact paragraph using start_offset.
-                        const paraPlainLengths = manuscriptParagraphs.map((p) => p.replace(/<[^>]+>/g, "").length);
-                        const paraCharOffsets: number[] = [];
-                        let cumCharOffset = 0;
-                        for (const len of paraPlainLengths) {
-                          paraCharOffsets.push(cumCharOffset);
-                          cumCharOffset += len;
-                        }
-                        return manuscriptParagraphs.map((para, idx) => {
-                          const paraStart = paraCharOffsets[idx];
-                          const paraEnd = paraCharOffsets[idx + 1] ?? cumCharOffset;
-                          const plainPara = para.replace(/<[^>]+>/g, "");
-                          const paraFeedbacks = markerFeedback.filter((f) => {
-                            if (!f.selection_excerpt) return false;
-                            // Prefer start_offset for precise paragraph assignment
-                            if (f.start_offset != null) {
-                              return f.start_offset >= paraStart && f.start_offset < paraEnd;
-                            }
-                            // Fallback for legacy feedback without stored offsets
-                            return para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt);
-                          });
-
-                          return (
-                            <div key={idx} id={`para-${idx}`} className="relative">
-                              <p
-                                className="whitespace-pre-line m-0 mb-3"
-                                style={readerFormat ? {
-                                  textIndent: readerFormat.paragraphIndent ? (idx === 0 ? "0" : "2.5em") : "0",
-                                  textAlign: readerFormat.textAlign,
-                                } : { textIndent: idx === 0 ? "0" : "1.5rem" }}
-                              >
-                                {paraFeedbacks.length > 0
-                                  ? renderParagraphContent(para, paraFeedbacks, paraStart)
-                                  : <span dangerouslySetInnerHTML={{ __html: para }} />
-                                }
-                              </p>
-                            </div>
-                          );
-                        });
-                      })()}
+                      <div
+                        ref={proseContentRef}
+                        className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
+                        style={{
+                          ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
+                          ["--ms-text-align" as string]: readerFormat?.textAlign ?? "left",
+                        }}
+                        dangerouslySetInnerHTML={{ __html: readerPreviewHtml }}
+                      >
                       </div>
                     )}
 
@@ -2466,7 +2394,6 @@ function PageInner() {
                                   if ((e.target as HTMLElement).closest("button,textarea")) return;
                                   setClickedMarkerTop(null);
                                   setSelectedFeedbackId(f.id);
-                                  document.getElementById(`text-marker-${f.id}`)?.scrollIntoView({ behavior: "instant", block: "nearest" });
                                 }}
                               >
                                 <div className="flex min-w-0 items-center justify-between gap-2">
