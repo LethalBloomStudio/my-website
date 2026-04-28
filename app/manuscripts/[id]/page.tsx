@@ -12,6 +12,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
+import { buildDragSelection, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -101,6 +102,7 @@ function PageInner() {
   const [myRequestStatus, setMyRequestStatus] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
   const [pendingSelection, setPendingSelection] = useState<{ text: string; start: number; end: number; x: number; y: number } | null>(null);
+  const [pendingSelectionRects, setPendingSelectionRects] = useState<Array<{ top: number; left: number; width: number; height: number }>>([]);
   const [lineEditDraft, setLineEditDraft] = useState("");
   const [submittingLineEdit, setSubmittingLineEdit] = useState(false);
   const [pasteBlocked, setPasteBlocked] = useState(false);
@@ -139,7 +141,8 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
-  const proseSelectionStartedOnTextRef = useRef(false);
+  const selectionDragStartOffsetRef = useRef<number | null>(null);
+  const [selectionDragActive, setSelectionDragActive] = useState(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -294,6 +297,7 @@ function PageInner() {
     }
     const inserted = json.feedback;
     setPendingSelection(null);
+    setPendingSelectionRects([]);
     setLineEditDraft("");
     window.getSelection()?.removeAllRanges();
     if (inserted) {
@@ -651,92 +655,61 @@ function PageInner() {
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
 
-  const handleSelectionDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+  const finishCustomSelection = useCallback((clientX: number, clientY: number) => {
     const prose = proseContentRef.current;
-    if (!prose) {
-      proseSelectionStartedOnTextRef.current = false;
-      return;
-    }
-    type DocWithCaret = Document & {
-      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node | null } | null;
-      caretRangeFromPoint?: (x: number, y: number) => Range | null;
-    };
-    const docWithCaret = document as DocWithCaret;
-    const caretNode =
-      docWithCaret.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode ??
-      docWithCaret.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer ??
-      null;
-
-    const startedOnText = !!(
-      caretNode &&
-      caretNode.nodeType === Node.TEXT_NODE &&
-      prose.contains(caretNode)
-    );
-    proseSelectionStartedOnTextRef.current = startedOnText;
-
-    // If the drag starts in paragraph indent / padding / non-text layout space,
-    // block the browser from creating a huge synthetic selection anchored above.
-    if (!startedOnText) {
-      event.preventDefault();
-      window.getSelection()?.removeAllRanges();
-    }
-  }, []);
-
-  const handleSelectionUp = useCallback(() => {
-    if (!canLeaveLineEdits || !proseContentRef.current) return;
-    if (!proseSelectionStartedOnTextRef.current) {
+    const startOffset = selectionDragStartOffsetRef.current;
+    selectionDragStartOffsetRef.current = null;
+    setSelectionDragActive(false);
+    if (!canLeaveLineEdits || !prose || startOffset == null) return;
+    const endInfo = getCaretPointFromClientPoint(prose, clientX, clientY);
+    if (!endInfo) {
       setPendingSelection(null);
+      setPendingSelectionRects([]);
       return;
     }
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.rangeCount) {
-      proseSelectionStartedOnTextRef.current = false;
+    const nextSelection = buildDragSelection(prose, startOffset, endInfo.offset, window.innerWidth);
+    if (!nextSelection) {
       setPendingSelection(null);
+      setPendingSelectionRects([]);
       return;
     }
-    const range = sel.getRangeAt(0);
-    if (!proseContentRef.current.contains(range.startContainer) || !proseContentRef.current.contains(range.endContainer)) {
-      proseSelectionStartedOnTextRef.current = false;
-      setPendingSelection(null);
-      return;
-    }
-    if (range.startContainer.nodeType !== Node.TEXT_NODE || range.endContainer.nodeType !== Node.TEXT_NODE) {
-      proseSelectionStartedOnTextRef.current = false;
-      setPendingSelection(null);
-      return;
-    }
-    const rawText = sel.toString();
-    const text = rawText.trim();
-    if (!text) {
-      proseSelectionStartedOnTextRef.current = false;
-      setPendingSelection(null);
-      return;
-    }
-    const rect = range.getBoundingClientRect();
-    if (!rect.width && !rect.height) {
-      proseSelectionStartedOnTextRef.current = false;
-      setPendingSelection(null);
-      return;
-    }
-    const preRange = document.createRange();
-    preRange.selectNodeContents(proseContentRef.current);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const rawStart = preRange.toString().length;
-    const leadingWS = rawText.length - rawText.trimStart().length;
-    const trailingWS = rawText.length - rawText.trimEnd().length;
-    const start = rawStart + leadingWS;
-    const end = rawStart + rawText.length - trailingWS;
-    if (end <= start) {
-      proseSelectionStartedOnTextRef.current = false;
-      setPendingSelection(null);
-      return;
-    }
-    const centerX = rect.left + (rect.right - rect.left) / 2;
-    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+    setPendingSelectionRects(nextSelection.rects);
     setLineEditDraft("");
-    setPendingSelection({ text, start, end, x: clampedX, y: rect.top });
-    proseSelectionStartedOnTextRef.current = false;
+    setPendingSelection({
+      text: nextSelection.text,
+      start: nextSelection.start,
+      end: nextSelection.end,
+      x: nextSelection.x,
+      y: nextSelection.y,
+    });
   }, [canLeaveLineEdits]);
+
+  const handleSelectionDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!canLeaveLineEdits) return;
+    const prose = proseContentRef.current;
+    if (!prose) return;
+    const startInfo = getCaretPointFromClientPoint(prose, event.clientX, event.clientY);
+    if (!startInfo) {
+      selectionDragStartOffsetRef.current = null;
+      setSelectionDragActive(false);
+      setPendingSelection(null);
+      setPendingSelectionRects([]);
+      return;
+    }
+    event.preventDefault();
+    window.getSelection()?.removeAllRanges();
+    selectionDragStartOffsetRef.current = startInfo.offset;
+    setSelectionDragActive(true);
+  }, [canLeaveLineEdits]);
+
+  useEffect(() => {
+    if (!selectionDragActive) return;
+    function onMouseUp(event: MouseEvent) {
+      finishCustomSelection(event.clientX, event.clientY);
+    }
+    document.addEventListener("mouseup", onMouseUp, true);
+    return () => document.removeEventListener("mouseup", onMouseUp, true);
+  }, [finishCustomSelection, selectionDragActive]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -2109,7 +2082,6 @@ function PageInner() {
                   <div
                     ref={textContainerRef}
                     className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
-                    onMouseUp={handleSelectionUp}
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2169,6 +2141,22 @@ function PageInner() {
                         dangerouslySetInnerHTML={{ __html: readerPreviewHtml }}
                       />
                     )}
+
+                    {pendingSelectionRects.map((r, i) => (
+                      <div
+                        key={`pending-hl-${i}`}
+                        style={{
+                          position: "absolute",
+                          top: readerOverlayOffsetY + r.top,
+                          left: r.left,
+                          width: r.width,
+                          height: r.height,
+                          backgroundColor: "rgba(251,191,36,0.22)",
+                          borderBottom: "2px dotted rgba(251,191,36,0.95)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    ))}
 
                     {/* Absolute-positioned dotted underline highlights */}
                     {Object.entries(readerMarkerInfos).flatMap(([fid, info]) => {
@@ -2616,7 +2604,7 @@ function PageInner() {
               {submittingLineEdit ? "Saving…" : "Submit"}
             </button>
             <button
-              onClick={() => { setPendingSelection(null); setLineEditDraft(""); window.getSelection()?.removeAllRanges(); }}
+            onClick={() => { setPendingSelection(null); setPendingSelectionRects([]); setLineEditDraft(""); window.getSelection()?.removeAllRanges(); }}
               className="rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 transition"
             >
               Cancel
