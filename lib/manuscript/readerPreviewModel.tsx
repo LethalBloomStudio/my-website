@@ -134,9 +134,9 @@ function renderInlineNodes(nodes: ReaderInlineNode[], keyPrefix: string, state: 
             data-reader-char="1"
             data-reader-offset={offset}
             data-reader-end={offset + 1}
-            className="reader-char whitespace-pre-wrap"
+            className="reader-char"
           >
-            {char === " " ? "\u00A0" : char}
+            {char}
           </span>,
         );
       });
