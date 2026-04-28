@@ -169,26 +169,19 @@ function PageInner() {
   }, [readerMarkerInfos]);
 
 
-  function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
-    if (!canLeaveLineEdits) return;
-    const target = e.target as HTMLElement;
-    isSelectingRef.current = false;
-    if (target.closest("button, textarea, [data-feedback-marker]")) return;
-    isSelectingRef.current = true;
-    if (selectionFrameRef.current != null) {
-      cancelAnimationFrame(selectionFrameRef.current);
-      selectionFrameRef.current = null;
+  function getTextNodeAtPoint(x: number, y: number, container: HTMLElement): Text | null {
+    if (typeof document === "undefined") return null;
+    if ("caretPositionFromPoint" in document) {
+      const pos = document.caretPositionFromPoint(x, y);
+      const node = pos?.offsetNode ?? null;
+      return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
     }
-  }
-
-  function handleSelectionUp() {
-    if (!isSelectingRef.current) return;
-    isSelectingRef.current = false;
-    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-    selectionFrameRef.current = requestAnimationFrame(() => {
-      selectionFrameRef.current = null;
-      capturePendingSelection();
-    });
+    if ("caretRangeFromPoint" in document) {
+      const range = document.caretRangeFromPoint(x, y);
+      const node = range?.startContainer ?? null;
+      return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
+    }
+    return null;
   }
 
   const PARENT_DISABLE_REASONS = [
@@ -700,7 +693,6 @@ function PageInner() {
     if (selectionFrameRef.current != null) { cancelAnimationFrame(selectionFrameRef.current); selectionFrameRef.current = null; }
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const readCurrentSelection = useCallback(() => {
     const container = proseContentRef.current;
     const sel = window.getSelection();
@@ -743,9 +735,19 @@ function PageInner() {
 
   useEffect(() => {
     if (!canLeaveLineEdits) return;
+    function onDocumentMouseDown(e: MouseEvent) {
+      isSelectingRef.current = false;
+      const target = e.target as HTMLElement | null;
+      if (!target || target.closest("button, textarea, [data-feedback-marker], .feedback-inline-popup")) return;
+      const container = proseContentRef.current;
+      if (!container || !container.contains(target)) return;
+      if (!getTextNodeAtPoint(e.clientX, e.clientY, container)) return;
+      isSelectingRef.current = true;
+      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+    }
+
     function onDocumentMouseUp(e: MouseEvent) {
       if (!isSelectingRef.current) return;
-      if (textContainerRef.current?.contains(e.target as Node)) return;
       isSelectingRef.current = false;
       if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
       selectionFrameRef.current = requestAnimationFrame(() => {
@@ -753,8 +755,12 @@ function PageInner() {
         capturePendingSelection();
       });
     }
+    document.addEventListener("mousedown", onDocumentMouseDown, true);
     document.addEventListener("mouseup", onDocumentMouseUp);
-    return () => document.removeEventListener("mouseup", onDocumentMouseUp);
+    return () => {
+      document.removeEventListener("mousedown", onDocumentMouseDown, true);
+      document.removeEventListener("mouseup", onDocumentMouseUp);
+    };
   }, [canLeaveLineEdits, capturePendingSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
@@ -784,7 +790,7 @@ function PageInner() {
     const ownerLabel = names[manuscript.owner_id] || "Author";
     const ownerDate = manuscript.created_at ? new Date(manuscript.created_at).toLocaleDateString() : "";
     const accessDate = new Date().toLocaleDateString();
-    const color = theme === "day" ? "rgba(150,150,156,0.18)" : "rgba(86,86,92,0.36)";
+    const color = theme === "day" ? "rgba(228,232,240,0.16)" : "rgba(188,194,204,0.18)";
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240">
         <g transform="rotate(-28 260 120)">
@@ -2152,20 +2158,6 @@ function PageInner() {
                   {!isOwner && (
                     <div
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
-                      style={{
-                        userSelect: "none",
-                        WebkitUserSelect: "none",
-                        backgroundImage: readerWatermarkDataUrl ?? undefined,
-                        backgroundRepeat: "repeat",
-                        backgroundSize: "420px 200px",
-                        backgroundPosition: "0 0",
-                      }}
-                    />
-                  )}
-                  {!isOwner && (
-                    <div
-                      aria-hidden="true"
                       className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden rounded-xl"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}
                     >
@@ -2198,8 +2190,6 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
-                    onMouseDown={handleSelectionDown}
-                    onMouseUp={handleSelectionUp}
                     className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
@@ -2232,10 +2222,24 @@ function PageInner() {
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-0 z-0 rounded-xl bg-[rgba(18,18,18,0.72)]"
                     />
+                    {!isOwner && (
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
+                        style={{
+                          userSelect: "none",
+                          WebkitUserSelect: "none",
+                          backgroundImage: readerWatermarkDataUrl ?? undefined,
+                          backgroundRepeat: "repeat",
+                          backgroundSize: "420px 200px",
+                          backgroundPosition: "0 0",
+                        }}
+                      />
+                    )}
                     {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div ref={proseContentRef} className="relative space-y-4 select-text">
+                      <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
