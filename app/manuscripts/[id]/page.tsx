@@ -140,7 +140,6 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
-  const canLeaveLineEditsRef = useRef(false);
   const selectionFrameRef = useRef<number | null>(null);
 
   const readerMarkerOffsets = useMemo(() => {
@@ -169,43 +168,22 @@ function PageInner() {
   }, [readerMarkerInfos]);
 
 
-  useEffect(() => {
-    function onDocMouseUp() {
-      if (!canLeaveLineEditsRef.current) return;
-      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-      selectionFrameRef.current = requestAnimationFrame(() => {
-        selectionFrameRef.current = null;
-        const sel = window.getSelection();
-        const container = proseContentRef.current;
-        if (!sel || !sel.rangeCount || !container || sel.isCollapsed) { setPendingSelection(null); return; }
-        const text = sel.toString().trim();
-        if (!text) { sel.removeAllRanges(); setPendingSelection(null); return; }
-        const range = sel.getRangeAt(0);
-        // Reject element-node anchors (over-selection from dragging in gaps/padding)
-        // and selections that didn't start inside the prose content area
-        if (range.startContainer.nodeType !== Node.TEXT_NODE || !container.contains(range.startContainer)) {
-          sel.removeAllRanges(); setPendingSelection(null); return;
-        }
-        const rect = range.getBoundingClientRect();
-        if (!rect.width && !rect.height) { sel.removeAllRanges(); setPendingSelection(null); return; }
-        const preRange = document.createRange();
-        preRange.selectNodeContents(container);
-        preRange.setEnd(range.startContainer, range.startOffset);
-        const start = preRange.toString().length;
-        const centerX = rect.left + (rect.right - rect.left) / 2;
-        const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
-        const popupY = Math.min(rect.bottom, window.innerHeight - 220);
-        sel.removeAllRanges();
-        setLineEditDraft("");
-        setPendingSelection({ text, start, end: start + text.length, x: clampedX, y: popupY });
-      });
-    }
-    document.addEventListener("mouseup", onDocMouseUp);
-    return () => {
-      document.removeEventListener("mouseup", onDocMouseUp);
-      if (selectionFrameRef.current != null) { cancelAnimationFrame(selectionFrameRef.current); selectionFrameRef.current = null; }
-    };
-  }, []);
+  function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
+    if (!canLeaveLineEdits) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, textarea, [data-feedback-marker]")) return;
+    if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
+    setPendingSelection(null);
+    setLineEditDraft("");
+  }
+
+  function handleSelectionUp() {
+    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
+      capturePendingSelection();
+    });
+  }
 
   const PARENT_DISABLE_REASONS = [
     "Inappropriate content",
@@ -594,6 +572,22 @@ function PageInner() {
     setReaderMarkerInfos(newInfos);
   }
 
+  function clearNativeSelection() { window.getSelection()?.removeAllRanges(); }
+
+  function getParagraphContainer(node: Node | null): HTMLElement | null {
+    if (!node) return null;
+    const base = node.nodeType === Node.TEXT_NODE ? node.parentElement : node instanceof HTMLElement ? node : null;
+    return base?.closest("[id^='para-']") as HTMLElement | null;
+  }
+
+  function getProseTextOffset(container: HTMLElement, range: Range, edge: "start" | "end") {
+    const offsetRange = document.createRange();
+    offsetRange.selectNodeContents(container);
+    if (edge === "start") offsetRange.setEnd(range.startContainer, range.startOffset);
+    else offsetRange.setEnd(range.endContainer, range.endOffset);
+    return offsetRange.toString().length;
+  }
+
   /**
    * Renders a paragraph (which may contain inline HTML like <strong>, <em>) with
    * only a dotted-underline span (for scroll targeting) - no inline button.
@@ -695,7 +689,49 @@ function PageInner() {
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
-  canLeaveLineEditsRef.current = canLeaveLineEdits;
+
+  useEffect(() => () => {
+    if (selectionFrameRef.current != null) { cancelAnimationFrame(selectionFrameRef.current); selectionFrameRef.current = null; }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const readCurrentSelection = useCallback(() => {
+    const container = proseContentRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || sel.isCollapsed || !sel.rangeCount) return null;
+    const range = sel.getRangeAt(0);
+    const startParent = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer.parentNode : range.startContainer;
+    const endParent = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.parentNode : range.endContainer;
+    if (!(startParent instanceof Node) || !(endParent instanceof Node) || !container.contains(startParent) || !container.contains(endParent)) return null;
+    const startParagraph = getParagraphContainer(range.startContainer);
+    const endParagraph = getParagraphContainer(range.endContainer);
+    if (!startParagraph || !endParagraph || startParagraph !== endParagraph) return null;
+    const start = getProseTextOffset(container, range, "start");
+    const end = getProseTextOffset(container, range, "end");
+    if (end <= start) return null;
+    const proseText = container.textContent ?? "";
+    const selectedFromProse = proseText.slice(start, end);
+    const trimmedText = selectedFromProse.trim();
+    const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 || r.height > 0);
+    if (!trimmedText || trimmedText.length > 600 || rects.length > 12) return null;
+    const leadingWS = selectedFromProse.match(/^\s*/)?.[0].length ?? 0;
+    const trailingWS = selectedFromProse.match(/\s*$/)?.[0].length ?? 0;
+    const normalizedStart = start + leadingWS;
+    const normalizedEnd = end - trailingWS;
+    if (normalizedEnd <= normalizedStart) return null;
+    const anchorRect = rects[rects.length - 1] ?? range.getBoundingClientRect();
+    const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
+    const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
+    const popupY = Math.min(anchorRect.bottom, window.innerHeight - 220);
+    return { text: trimmedText, start: normalizedStart, end: normalizedEnd, x: clampedX, y: popupY };
+  }, []);
+
+  const capturePendingSelection = useCallback(() => {
+    if (!canLeaveLineEdits) return;
+    const next = readCurrentSelection();
+    setPendingSelection(next);
+    if (next) clearNativeSelection();
+  }, [canLeaveLineEdits, readCurrentSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
@@ -2138,7 +2174,9 @@ function PageInner() {
 
                   <div
                     ref={textContainerRef}
-                    className="relative z-[1] rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
+                    onMouseDown={handleSelectionDown}
+                    onMouseUp={handleSelectionUp}
+                    className="relative rounded-xl border border-[rgba(120,120,120,0.28)] px-8 py-8 text-white shadow-[0_12px_34px_rgba(0,0,0,0.35)]"
                     onClick={(e) => {
                       if (selectedFeedbackId && !(e.target as HTMLElement).closest("button")) {
                         setSelectedFeedbackId(null);
@@ -2173,7 +2211,7 @@ function PageInner() {
                     {manuscriptParagraphs.length === 0 ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div ref={proseContentRef} className="relative space-y-4">
+                      <div ref={proseContentRef} className="relative z-[1] space-y-4 select-text">
                       {(() => {
                         const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => {
                           if (f.resolved) return false;
