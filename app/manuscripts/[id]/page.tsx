@@ -10,7 +10,7 @@ import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
-import { sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -128,6 +128,7 @@ function PageInner() {
     manuscript_lifetime_suspension_count: number;
   } | null>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
+  const proseContentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
@@ -136,6 +137,7 @@ function PageInner() {
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
+  const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
 
   const readerMarkerOffsets = useMemo(() => {
@@ -526,7 +528,7 @@ function PageInner() {
   }
 
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const newInfos: Record<string, ReaderMarkerInfo> = {};
@@ -538,7 +540,7 @@ function PageInner() {
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {
-        top: lastRect.top - containerRect.top - 4,
+        top: lastRect.top - containerRect.top - 1,
         left: lastRect.right - containerRect.left + 1,
         highlightRects: clientRects.map((r) => ({
           top: r.top - containerRect.top,
@@ -649,14 +651,14 @@ function PageInner() {
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
 
   const handleSelectionUp = useCallback(() => {
-    if (!canLeaveLineEdits || !textContainerRef.current) return;
+    if (!canLeaveLineEdits || !proseContentRef.current) return;
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) {
       setPendingSelection(null);
       return;
     }
     const range = sel.getRangeAt(0);
-    if (!textContainerRef.current.contains(range.startContainer) || !textContainerRef.current.contains(range.endContainer)) {
+    if (!proseContentRef.current.contains(range.startContainer) || !proseContentRef.current.contains(range.endContainer)) {
       setPendingSelection(null);
       return;
     }
@@ -672,7 +674,7 @@ function PageInner() {
       return;
     }
     const preRange = document.createRange();
-    preRange.setStart(textContainerRef.current, 0);
+    preRange.selectNodeContents(proseContentRef.current);
     preRange.setEnd(range.startContainer, range.startOffset);
     const rawStart = preRange.toString().length;
     const leadingWS = rawText.length - rawText.trimStart().length;
@@ -699,15 +701,8 @@ function PageInner() {
     youthAudienceCategory && myAge === "adult_18_plus" && ages[readerId] === "youth_13_17";
   const activeChapter = chapterId ? (chapters.find((c) => c.id === chapterId) ?? null) : null;
   const activeText = activeChapter?.content ?? "";
-  const manuscriptParagraphs = useMemo(
-    () =>
-      activeText
-        .replace(/\r\n/g, "\n")
-        .split(/\n\s*\n/)
-        .map((block) => sanitizeChapterHtml(block.trim()))
-        .filter(Boolean),
-    [activeText],
-  );
+  const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
+  const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, ""), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -1112,9 +1107,12 @@ function PageInner() {
   useEffect(() => {
     function measure() {
       const textBox = textContainerRef.current;
+      const proseBox = proseContentRef.current;
       const col = asideRef.current;
-      if (!textBox || !col) return;
-      setReaderColumnOffsetY(textBox.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      const anchor = proseBox ?? textBox;
+      if (!anchor || !textBox || !col) return;
+      setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      setReaderOverlayOffsetY(anchor.getBoundingClientRect().top - textBox.getBoundingClientRect().top);
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -1151,7 +1149,7 @@ function PageInner() {
 
   // Recompute on resize (e.g. window resize or font load)
   useEffect(() => {
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
     if (!container) return;
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
@@ -1169,7 +1167,7 @@ function PageInner() {
   useEffect(() => {
     if (!selectedFeedbackId) return;
     const info = readerMarkerInfos[selectedFeedbackId];
-    const container = textContainerRef.current;
+    const container = proseContentRef.current;
 
     // Skip if we already successfully scrolled to this exact id using Range-API marker info.
     // This prevents re-scrolling every time readerMarkerInfos recomputes (e.g. on resize).
@@ -2110,49 +2108,18 @@ function PageInner() {
                         }}
                       />
                     )}
-                    {manuscriptParagraphs.length === 0 ? (
+                    {!readerPreviewHtml ? (
                       <p className="relative z-[1] text-sm text-neutral-400">No manuscript text yet.</p>
                     ) : (
-                      <div className="relative z-[1] space-y-4 select-text">
-                        {(() => {
-                          const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
-                          const paraPlainLengths = manuscriptParagraphs.map((p) => p.replace(/<[^>]+>/g, "").length);
-                          const paraCharOffsets: number[] = [];
-                          let cumCharOffset = 0;
-                          for (const len of paraPlainLengths) {
-                            paraCharOffsets.push(cumCharOffset);
-                            cumCharOffset += len;
-                          }
-                          return manuscriptParagraphs.map((para, idx) => {
-                            const paraStart = paraCharOffsets[idx];
-                            const paraEnd = paraCharOffsets[idx + 1] ?? cumCharOffset;
-                            const plainPara = para.replace(/<[^>]+>/g, "");
-                            const paraFeedbacks = markerFeedback.filter((f) => {
-                              if (!f.selection_excerpt) return false;
-                              if (f.start_offset != null) {
-                                return f.start_offset >= paraStart && f.start_offset < paraEnd;
-                              }
-                              return para.includes(f.selection_excerpt) || plainPara.includes(f.selection_excerpt);
-                            });
-
-                            return (
-                              <div key={idx} id={`para-${idx}`} className="relative">
-                                <p
-                                  className="m-0 mb-3 whitespace-pre-line"
-                                  style={readerFormat ? {
-                                    textIndent: readerFormat.paragraphIndent ? (idx === 0 ? "0" : "2.5em") : "0",
-                                    textAlign: readerFormat.textAlign,
-                                  } : { textIndent: idx === 0 ? "0" : "1.5rem" }}
-                                >
-                                  {paraFeedbacks.length > 0
-                                    ? renderParagraphContent(para, paraFeedbacks, paraStart)
-                                    : <span dangerouslySetInnerHTML={{ __html: para }} />}
-                                </p>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
+                      <div
+                        ref={proseContentRef}
+                        className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
+                        style={{
+                          ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
+                          ["--ms-text-align" as string]: readerFormat?.textAlign ?? "left",
+                        }}
+                        dangerouslySetInnerHTML={{ __html: readerPreviewHtml }}
+                      />
                     )}
 
                     {/* Absolute-positioned dotted underline highlights */}
@@ -2160,7 +2127,7 @@ function PageInner() {
                       const isSelected = selectedFeedbackId === fid;
                       return info.highlightRects.map((r, i) => (
                         <div key={`${fid}-hl-${i}`} style={{
-                          position: "absolute", top: r.top, left: r.left, width: r.width, height: r.height,
+                          position: "absolute", top: readerOverlayOffsetY + r.top, left: r.left, width: r.width, height: r.height,
                           backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                           borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
                           pointerEvents: "none",
@@ -2175,7 +2142,7 @@ function PageInner() {
                       return (
                         <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                           onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                          style={{ position: "absolute", top: info.top, left: info.left + offsetX - 7, userSelect: "none" }}
+                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top, left: info.left + offsetX - 7, userSelect: "none" }}
                           className={`flex h-[16px] w-[16px] items-center justify-center rounded-full shadow-sm transition-all ${
                             isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                        : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
@@ -2428,7 +2395,7 @@ function PageInner() {
                                   </button>
                                 </div>
                               </div>
-                              {f.selection_excerpt && !manuscriptParagraphs.some((p) => p.includes(f.selection_excerpt)) ? (
+                              {f.selection_excerpt && !activePlainText.includes(f.selection_excerpt) ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
                               ) : (
                                 <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
