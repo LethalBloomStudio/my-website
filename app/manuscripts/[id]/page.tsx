@@ -2367,6 +2367,14 @@ function PageInner() {
                     </div>
                   )}
 
+                  {canLeaveLineEdits && (
+                    <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.2)] bg-[rgba(18,18,18,0.78)] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.2)] backdrop-blur-sm">
+                      <p className="text-[11px] leading-relaxed text-neutral-400">
+                        Highlight any text: a single punctuation mark, word, sentence, or paragraph, to leave feedback.
+                      </p>
+                    </div>
+                  )}
+
                   </div>
 
                   {/* Card area - floating cards aligned to the text markers */}
@@ -2394,7 +2402,7 @@ function PageInner() {
                     if (allFeedback.length === 0 && !pendingSelection) {
                       return (
                         <p className="p-4 text-[11px] italic text-neutral-600 select-none">
-                          {canLeaveLineEdits ? "Highlight any text - a single punctuation mark, word, sentence, or paragraph - to leave feedback." : "No feedback on this chapter yet."}
+                          {canLeaveLineEdits ? "No feedback on this chapter yet." : "No feedback on this chapter yet."}
                         </p>
                       );
                     }
