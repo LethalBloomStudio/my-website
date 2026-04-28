@@ -139,6 +139,7 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  const proseSelectionStartedOnTextRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -650,26 +651,70 @@ function PageInner() {
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
 
+  const handleSelectionDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const prose = proseContentRef.current;
+    if (!prose) {
+      proseSelectionStartedOnTextRef.current = false;
+      return;
+    }
+    type DocWithCaret = Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node | null } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    const docWithCaret = document as DocWithCaret;
+    const caretNode =
+      docWithCaret.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode ??
+      docWithCaret.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer ??
+      null;
+
+    const startedOnText = !!(
+      caretNode &&
+      caretNode.nodeType === Node.TEXT_NODE &&
+      prose.contains(caretNode)
+    );
+    proseSelectionStartedOnTextRef.current = startedOnText;
+
+    // If the drag starts in paragraph indent / padding / non-text layout space,
+    // block the browser from creating a huge synthetic selection anchored above.
+    if (!startedOnText) {
+      event.preventDefault();
+      window.getSelection()?.removeAllRanges();
+    }
+  }, []);
+
   const handleSelectionUp = useCallback(() => {
     if (!canLeaveLineEdits || !proseContentRef.current) return;
+    if (!proseSelectionStartedOnTextRef.current) {
+      setPendingSelection(null);
+      return;
+    }
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      proseSelectionStartedOnTextRef.current = false;
       setPendingSelection(null);
       return;
     }
     const range = sel.getRangeAt(0);
     if (!proseContentRef.current.contains(range.startContainer) || !proseContentRef.current.contains(range.endContainer)) {
+      proseSelectionStartedOnTextRef.current = false;
+      setPendingSelection(null);
+      return;
+    }
+    if (range.startContainer.nodeType !== Node.TEXT_NODE || range.endContainer.nodeType !== Node.TEXT_NODE) {
+      proseSelectionStartedOnTextRef.current = false;
       setPendingSelection(null);
       return;
     }
     const rawText = sel.toString();
     const text = rawText.trim();
     if (!text) {
+      proseSelectionStartedOnTextRef.current = false;
       setPendingSelection(null);
       return;
     }
     const rect = range.getBoundingClientRect();
     if (!rect.width && !rect.height) {
+      proseSelectionStartedOnTextRef.current = false;
       setPendingSelection(null);
       return;
     }
@@ -682,6 +727,7 @@ function PageInner() {
     const start = rawStart + leadingWS;
     const end = rawStart + rawText.length - trailingWS;
     if (end <= start) {
+      proseSelectionStartedOnTextRef.current = false;
       setPendingSelection(null);
       return;
     }
@@ -689,6 +735,7 @@ function PageInner() {
     const clampedX = Math.min(Math.max(centerX, 152), window.innerWidth - 152);
     setLineEditDraft("");
     setPendingSelection({ text, start, end, x: clampedX, y: rect.top });
+    proseSelectionStartedOnTextRef.current = false;
   }, [canLeaveLineEdits]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
@@ -2113,6 +2160,7 @@ function PageInner() {
                     ) : (
                       <div
                         ref={proseContentRef}
+                        onMouseDown={handleSelectionDown}
                         className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
                         style={{
                           ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
