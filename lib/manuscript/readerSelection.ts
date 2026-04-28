@@ -25,13 +25,54 @@ type DocWithCaret = Document & {
   caretRangeFromPoint?: (x: number, y: number) => Range | null;
 };
 
+function getCharacterRect(node: Text, startOffset: number, endOffset: number): DOMRect | null {
+  if (startOffset < 0 || endOffset > node.length || endOffset <= startOffset) return null;
+  const range = document.createRange();
+  range.setStart(node, startOffset);
+  range.setEnd(node, endOffset);
+  const rect = range.getBoundingClientRect();
+  return rect.width || rect.height ? rect : null;
+}
+
+function adjustTextOffsetToClick(node: Text, offset: number, clientX: number, clientY: number): number {
+  const textLength = node.length;
+  const nextOffset = Math.max(0, Math.min(textLength, offset));
+
+  const afterRect = nextOffset < textLength ? getCharacterRect(node, nextOffset, nextOffset + 1) : null;
+  if (
+    afterRect &&
+    clientY >= afterRect.top - 2 &&
+    clientY <= afterRect.bottom + 2 &&
+    clientX >= afterRect.left &&
+    clientX <= afterRect.right
+  ) {
+    const midpoint = afterRect.left + afterRect.width / 2;
+    return clientX > midpoint ? nextOffset + 1 : nextOffset;
+  }
+
+  const beforeRect = nextOffset > 0 ? getCharacterRect(node, nextOffset - 1, nextOffset) : null;
+  if (
+    beforeRect &&
+    clientY >= beforeRect.top - 2 &&
+    clientY <= beforeRect.bottom + 2 &&
+    clientX >= beforeRect.left &&
+    clientX <= beforeRect.right
+  ) {
+    const midpoint = beforeRect.left + beforeRect.width / 2;
+    return clientX < midpoint ? nextOffset - 1 : nextOffset;
+  }
+
+  return nextOffset;
+}
+
 export function getCaretPointFromClientPoint(root: HTMLElement, clientX: number, clientY: number): CaretPoint | null {
   const docWithCaret = document as DocWithCaret;
   const caretPos = docWithCaret.caretPositionFromPoint?.(clientX, clientY) ?? null;
   const caretRange = !caretPos ? docWithCaret.caretRangeFromPoint?.(clientX, clientY) ?? null : null;
   const node = caretPos?.offsetNode ?? caretRange?.startContainer ?? null;
-  const nodeOffset = caretPos?.offset ?? caretRange?.startOffset ?? 0;
+  const rawNodeOffset = caretPos?.offset ?? caretRange?.startOffset ?? 0;
   if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
+  const nodeOffset = adjustTextOffsetToClick(node as Text, rawNodeOffset, clientX, clientY);
 
   const prefix = document.createRange();
   prefix.selectNodeContents(root);
@@ -89,10 +130,22 @@ export function buildStoredFeedbackRange(
   if (typeof startOffset === "number" && typeof endOffset === "number" && endOffset > startOffset) {
     const exactRange = createRangeFromTextOffsets(root, startOffset, endOffset);
     if (exactRange) {
-      const exactText = exactRange.toString().trim();
+      const exactText = exactRange.toString();
       const expected = (excerpt ?? "").trim();
       if (!expected || exactText === expected) {
         return exactRange;
+      }
+      if (exactText.trim() === expected) {
+        const leadingWhitespace = exactText.length - exactText.trimStart().length;
+        const trailingWhitespace = exactText.length - exactText.trimEnd().length;
+        const adjustedStart = startOffset + leadingWhitespace;
+        const adjustedEnd = endOffset - trailingWhitespace;
+        if (adjustedEnd > adjustedStart) {
+          const adjustedRange = createRangeFromTextOffsets(root, adjustedStart, adjustedEnd);
+          if (adjustedRange && adjustedRange.toString() === expected) {
+            return adjustedRange;
+          }
+        }
       }
     }
   }
