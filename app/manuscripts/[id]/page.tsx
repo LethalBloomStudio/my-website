@@ -141,6 +141,7 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
+  const isSelectingRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -171,13 +172,18 @@ function PageInner() {
   function handleSelectionDown(e: React.MouseEvent<HTMLDivElement>) {
     if (!canLeaveLineEdits) return;
     const target = e.target as HTMLElement;
+    isSelectingRef.current = false;
     if (target.closest("button, textarea, [data-feedback-marker]")) return;
-    if (proseContentRef.current && !proseContentRef.current.contains(target)) return;
-    setPendingSelection(null);
-    setLineEditDraft("");
+    isSelectingRef.current = true;
+    if (selectionFrameRef.current != null) {
+      cancelAnimationFrame(selectionFrameRef.current);
+      selectionFrameRef.current = null;
+    }
   }
 
   function handleSelectionUp() {
+    if (!isSelectingRef.current) return;
+    isSelectingRef.current = false;
     if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
     selectionFrameRef.current = requestAnimationFrame(() => {
       selectionFrameRef.current = null;
@@ -730,9 +736,26 @@ function PageInner() {
   const capturePendingSelection = useCallback(() => {
     if (!canLeaveLineEdits) return;
     const next = readCurrentSelection();
+    setLineEditDraft("");
     setPendingSelection(next);
     if (next) clearNativeSelection();
   }, [canLeaveLineEdits, readCurrentSelection]);
+
+  useEffect(() => {
+    if (!canLeaveLineEdits) return;
+    function onDocumentMouseUp(e: MouseEvent) {
+      if (!isSelectingRef.current) return;
+      if (textContainerRef.current?.contains(e.target as Node)) return;
+      isSelectingRef.current = false;
+      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+      selectionFrameRef.current = requestAnimationFrame(() => {
+        selectionFrameRef.current = null;
+        capturePendingSelection();
+      });
+    }
+    document.addEventListener("mouseup", onDocumentMouseUp);
+    return () => document.removeEventListener("mouseup", onDocumentMouseUp);
+  }, [canLeaveLineEdits, capturePendingSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
       ? manuscript.categories
