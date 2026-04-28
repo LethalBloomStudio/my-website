@@ -124,51 +124,89 @@ function getCharacterRect(node: Text, startOffset: number, endOffset: number): D
   return rect.width || rect.height ? rect : null;
 }
 
-function adjustTextOffsetToClick(node: Text, offset: number, clientX: number, clientY: number): number {
-  const textLength = node.length;
-  const nextOffset = Math.max(0, Math.min(textLength, offset));
+type GeometryCaretPoint = {
+  node: Text;
+  nodeOffset: number;
+};
 
-  const afterRect = nextOffset < textLength ? getCharacterRect(node, nextOffset, nextOffset + 1) : null;
-  if (
-    afterRect &&
-    clientY >= afterRect.top - 2 &&
-    clientY <= afterRect.bottom + 2 &&
-    clientX >= afterRect.left &&
-    clientX <= afterRect.right
-  ) {
-    const midpoint = afterRect.left + afterRect.width / 2;
-    return clientX > midpoint ? nextOffset + 1 : nextOffset;
+function scoreBoundary(rect: DOMRect, boundaryX: number, clientX: number, clientY: number): number {
+  const verticalDistance =
+    clientY < rect.top ? rect.top - clientY :
+    clientY > rect.bottom ? clientY - rect.bottom :
+    0;
+  const horizontalDistance = Math.abs(clientX - boundaryX);
+  return verticalDistance * 100000 + horizontalDistance;
+}
+
+function getCaretPointFromTextGeometry(root: HTMLElement, clientX: number, clientY: number): GeometryCaretPoint | null {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  let best: { score: number; point: GeometryCaretPoint } | null = null;
+
+  while ((node = walker.nextNode())) {
+    const textNode = node as Text;
+    const text = textNode.textContent ?? "";
+    for (let i = 0; i < text.length; i += 1) {
+      const rect = getCharacterRect(textNode, i, i + 1);
+      if (!rect) continue;
+
+      const midpoint = rect.left + rect.width / 2;
+      const preferredOffset = clientX <= midpoint ? i : i + 1;
+      const preferredBoundaryX = clientX <= midpoint ? rect.left : rect.right;
+      const preferredScore = scoreBoundary(rect, preferredBoundaryX, clientX, clientY);
+      if (!best || preferredScore < best.score) {
+        best = {
+          score: preferredScore,
+          point: {
+            node: textNode,
+            nodeOffset: preferredOffset,
+          },
+        };
+      }
+
+      const alternateOffset = preferredOffset === i ? i + 1 : i;
+      const alternateBoundaryX = preferredOffset === i ? rect.right : rect.left;
+      const alternateScore = scoreBoundary(rect, alternateBoundaryX, clientX, clientY);
+      if (!best || alternateScore < best.score) {
+        best = {
+          score: alternateScore,
+          point: {
+            node: textNode,
+            nodeOffset: alternateOffset,
+          },
+        };
+      }
+    }
   }
 
-  const beforeRect = nextOffset > 0 ? getCharacterRect(node, nextOffset - 1, nextOffset) : null;
-  if (
-    beforeRect &&
-    clientY >= beforeRect.top - 2 &&
-    clientY <= beforeRect.bottom + 2 &&
-    clientX >= beforeRect.left &&
-    clientX <= beforeRect.right
-  ) {
-    const midpoint = beforeRect.left + beforeRect.width / 2;
-    return clientX < midpoint ? nextOffset - 1 : nextOffset;
-  }
-
-  return nextOffset;
+  return best?.point ?? null;
 }
 
 export function getCaretPointFromClientPoint(root: HTMLElement, clientX: number, clientY: number): CaretPoint | null {
+  const geometryPoint = getCaretPointFromTextGeometry(root, clientX, clientY);
+  if (geometryPoint) {
+    const offset = visibleOffsetFromDomPoint(root, geometryPoint.node, geometryPoint.nodeOffset);
+    if (offset != null) {
+      return {
+        offset,
+        node: geometryPoint.node,
+        nodeOffset: geometryPoint.nodeOffset,
+      };
+    }
+  }
+
   const docWithCaret = document as DocWithCaret;
   const caretPos = docWithCaret.caretPositionFromPoint?.(clientX, clientY) ?? null;
   const caretRange = !caretPos ? docWithCaret.caretRangeFromPoint?.(clientX, clientY) ?? null : null;
-  const node = caretPos?.offsetNode ?? caretRange?.startContainer ?? null;
-  const rawNodeOffset = caretPos?.offset ?? caretRange?.startOffset ?? 0;
-  if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
-  const nodeOffset = adjustTextOffsetToClick(node as Text, rawNodeOffset, clientX, clientY);
-  const offset = visibleOffsetFromDomPoint(root, node, nodeOffset);
+  const fallbackNode = caretPos?.offsetNode ?? caretRange?.startContainer ?? null;
+  const fallbackNodeOffset = caretPos?.offset ?? caretRange?.startOffset ?? 0;
+  if (!fallbackNode || fallbackNode.nodeType !== Node.TEXT_NODE || !root.contains(fallbackNode)) return null;
+  const offset = visibleOffsetFromDomPoint(root, fallbackNode, fallbackNodeOffset);
   if (offset == null) return null;
   return {
     offset,
-    node: node as Text,
-    nodeOffset,
+    node: fallbackNode as Text,
+    nodeOffset: fallbackNodeOffset,
   };
 }
 
