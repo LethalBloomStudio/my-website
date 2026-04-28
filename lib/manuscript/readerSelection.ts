@@ -82,7 +82,7 @@ function domPointFromVisibleOffset(root: HTMLElement, visualOffset: number): Dom
   function walk(node: Node): DomPoint | null {
     if (node.nodeType === Node.TEXT_NODE) {
       const len = node.textContent?.length ?? 0;
-      if (remaining <= len) return { node, offset: remaining };
+      if (remaining < len) return { node, offset: remaining };
       remaining -= len;
       return null;
     }
