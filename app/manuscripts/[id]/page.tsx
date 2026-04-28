@@ -140,7 +140,6 @@ function PageInner() {
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionFrameRef = useRef<number | null>(null);
-  const isSelectingRef = useRef(false);
 
   const readerMarkerOffsets = useMemo(() => {
     const entries = Object.entries(readerMarkerInfos)
@@ -167,25 +166,6 @@ function PageInner() {
     return offsets;
   }, [readerMarkerInfos]);
 
-
-  function getTextNodeAtPoint(x: number, y: number, container: HTMLElement): Text | null {
-    if (typeof document === "undefined") return null;
-    const docWithCaret = document as Document & {
-      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node | null } | null;
-      caretRangeFromPoint?: (x: number, y: number) => Range | null;
-    };
-    if (docWithCaret.caretPositionFromPoint) {
-      const pos = docWithCaret.caretPositionFromPoint(x, y);
-      const node = pos?.offsetNode ?? null;
-      return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
-    }
-    if (docWithCaret.caretRangeFromPoint) {
-      const range = docWithCaret.caretRangeFromPoint(x, y);
-      const node = range?.startContainer ?? null;
-      return node?.nodeType === Node.TEXT_NODE && container.contains(node) ? (node as Text) : null;
-    }
-    return null;
-  }
 
   const PARENT_DISABLE_REASONS = [
     "Inappropriate content",
@@ -727,34 +707,13 @@ function PageInner() {
     if (next) clearNativeSelection();
   }, [canLeaveLineEdits, readCurrentSelection]);
 
-  useEffect(() => {
+  const handleProseMouseUp = useCallback(() => {
     if (!canLeaveLineEdits) return;
-    function onDocumentMouseDown(e: MouseEvent) {
-      isSelectingRef.current = false;
-      const target = e.target as HTMLElement | null;
-      if (!target || target.closest("button, textarea, [data-feedback-marker], .feedback-inline-popup")) return;
-      const container = proseContentRef.current;
-      if (!container || !container.contains(target)) return;
-      if (!getTextNodeAtPoint(e.clientX, e.clientY, container)) return;
-      isSelectingRef.current = true;
-      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-    }
-
-    function onDocumentMouseUp(e: MouseEvent) {
-      if (!isSelectingRef.current) return;
-      isSelectingRef.current = false;
-      if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
-      selectionFrameRef.current = requestAnimationFrame(() => {
-        selectionFrameRef.current = null;
-        capturePendingSelection();
-      });
-    }
-    document.addEventListener("mousedown", onDocumentMouseDown, true);
-    document.addEventListener("mouseup", onDocumentMouseUp);
-    return () => {
-      document.removeEventListener("mousedown", onDocumentMouseDown, true);
-      document.removeEventListener("mouseup", onDocumentMouseUp);
-    };
+    if (selectionFrameRef.current != null) cancelAnimationFrame(selectionFrameRef.current);
+    selectionFrameRef.current = requestAnimationFrame(() => {
+      selectionFrameRef.current = null;
+      capturePendingSelection();
+    });
   }, [canLeaveLineEdits, capturePendingSelection]);
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0
@@ -2212,6 +2171,7 @@ function PageInner() {
                     ) : (
                       <div
                         ref={proseContentRef}
+                        onMouseUp={handleProseMouseUp}
                         className="relative z-[1] select-text [&>p]:mb-[0.55em] [&>p]:whitespace-pre-wrap [&>p]:indent-[var(--ms-para-indent)] [&>p]:[text-align:var(--ms-text-align)] [&>p:first-child]:indent-0 [&>p[data-no-indent]]:indent-0 [&>p[data-scene-break]]:my-[1.25em] [&>p[data-scene-break]]:indent-0 [&>p[data-scene-break]]:text-center [&>p[data-scene-break]]:tracking-[0.3em] [&>p[data-scene-break]]:text-[rgba(255,160,160,0.55)]"
                         style={{
                           ["--ms-para-indent" as string]: readerFormat?.paragraphIndent ? "2.5em" : "0",
