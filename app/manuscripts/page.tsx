@@ -119,6 +119,8 @@ export default function ManuscriptsPage() {
   const [appealReason, setAppealReason] = useState("");
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
+  const [manuscriptsWithActiveReaders, setManuscriptsWithActiveReaders] = useState<Set<string>>(new Set());
+  const presenceChannelsRef = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
   const now = Date.now();
 
   function handleBetaProjectOpen(manuscriptId: string) {
@@ -201,6 +203,54 @@ export default function ManuscriptsPage() {
   // Keep a ref so realtime handlers can access current betaItems without re-subscribing
   const betaItemsRef = useRef<BetaManuscript[]>([]);
   useEffect(() => { betaItemsRef.current = betaItems; }, [betaItems]);
+
+  useEffect(() => {
+    const activeIds = new Set(items.map((item) => item.id));
+    const channels = presenceChannelsRef.current;
+
+    for (const [manuscriptId, channel] of channels.entries()) {
+      if (!activeIds.has(manuscriptId)) {
+        void supabase.removeChannel(channel);
+        channels.delete(manuscriptId);
+        setManuscriptsWithActiveReaders((prev) => {
+          if (!prev.has(manuscriptId)) return prev;
+          const next = new Set(prev);
+          next.delete(manuscriptId);
+          return next;
+        });
+      }
+    }
+
+    for (const manuscriptId of activeIds) {
+      if (channels.has(manuscriptId)) continue;
+      const channel = supabase
+        .channel(`manuscript-presence:${manuscriptId}`)
+        .on("presence", { event: "sync" }, () => {
+          const state = channel.presenceState() as Record<string, { user_id: string }[]>;
+          const hasActiveReader = Object.values(state).some((presences) => presences.length > 0);
+          setManuscriptsWithActiveReaders((prev) => {
+            const already = prev.has(manuscriptId);
+            if (hasActiveReader === already) return prev;
+            const next = new Set(prev);
+            if (hasActiveReader) next.add(manuscriptId);
+            else next.delete(manuscriptId);
+            return next;
+          });
+        })
+        .subscribe();
+      channels.set(manuscriptId, channel);
+    }
+  }, [items, supabase]);
+
+  useEffect(() => {
+    const channels = presenceChannelsRef.current;
+    return () => {
+      for (const channel of channels.values()) {
+        void supabase.removeChannel(channel);
+      }
+      channels.clear();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     (async () => {
@@ -491,7 +541,13 @@ export default function ManuscriptsPage() {
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
               {items.map((m) => (
-                <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
+                <li key={m.id} className="relative rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
+                  {manuscriptsWithActiveReaders.has(m.id) && (
+                    <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-full border border-emerald-400/60 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300 shadow-[0_0_14px_4px_rgba(52,211,153,0.28)]">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_4px_rgba(52,211,153,0.65)]" />
+                      Active Reader
+                    </div>
+                  )}
                   <Link href={`/manuscripts/${m.id}/details`} className="group block w-full text-left">
                     <div className="flex gap-3">
                       <CoverThumb url={m.cover_url} title={m.title} />
