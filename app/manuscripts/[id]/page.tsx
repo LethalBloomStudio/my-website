@@ -777,6 +777,26 @@ function PageInner() {
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
+  const readerWatermarkDataUrl = useMemo(() => {
+    if (!manuscript || isOwner) return null;
+    const ownerLabel = names[manuscript.owner_id] || "Author";
+    const ownerDate = manuscript.created_at ? new Date(manuscript.created_at).toLocaleDateString() : "";
+    const accessDate = new Date().toLocaleDateString();
+    const color = theme === "day" ? "rgba(150,150,156,0.18)" : "rgba(86,86,92,0.36)";
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240">
+        <g transform="rotate(-28 260 120)">
+          <text x="40" y="110" fill="${color}" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="0.8">
+            ${`Owner: ${ownerLabel} · ${ownerDate}`.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+          </text>
+          <text x="40" y="150" fill="${color}" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="0.8">
+            ${`Access Granted: ${myDisplayName} · ${accessDate}`.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+          </text>
+        </g>
+      </svg>
+    `.trim();
+    return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  }, [isOwner, manuscript, myDisplayName, names, theme]);
 
   const _feedbackByParagraph = useMemo(() => {
     const map: Record<number, LineFeedback[]> = {};
@@ -2131,6 +2151,20 @@ function PageInner() {
                     <div
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
+                      style={{
+                        userSelect: "none",
+                        WebkitUserSelect: "none",
+                        backgroundImage: readerWatermarkDataUrl ?? undefined,
+                        backgroundRepeat: "repeat",
+                        backgroundSize: "420px 200px",
+                        backgroundPosition: "0 0",
+                      }}
+                    />
+                  )}
+                  {!isOwner && (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden rounded-xl"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}
                     >
                       {Array.from({ length: 16 }).map((_, row) =>
