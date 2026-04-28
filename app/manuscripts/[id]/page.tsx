@@ -140,6 +140,7 @@ function PageInner() {
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
+  const [readerOverlayOffsetX, setReaderOverlayOffsetX] = useState(0);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionDragStartOffsetRef = useRef<number | null>(null);
   const [selectionDragActive, setSelectionDragActive] = useState(false);
@@ -1158,6 +1159,7 @@ function PageInner() {
       if (!anchor || !textBox || !col) return;
       setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
       setReaderOverlayOffsetY(anchor.getBoundingClientRect().top - textBox.getBoundingClientRect().top);
+      setReaderOverlayOffsetX(anchor.getBoundingClientRect().left - textBox.getBoundingClientRect().left);
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -2173,7 +2175,7 @@ function PageInner() {
                         style={{
                           position: "absolute",
                           top: readerOverlayOffsetY + r.top,
-                          left: r.left,
+                          left: readerOverlayOffsetX + r.left,
                           width: r.width,
                           height: r.height,
                           backgroundColor: "rgba(251,191,36,0.22)",
@@ -2189,7 +2191,7 @@ function PageInner() {
                       const isSelected = selectedFeedbackId === fid;
                       return info.highlightRects.map((r, i) => (
                         <div key={`${fid}-hl-${i}`} style={{
-                          position: "absolute", top: readerOverlayOffsetY + r.top, left: r.left, width: r.width, height: r.height,
+                          position: "absolute", top: readerOverlayOffsetY + r.top, left: readerOverlayOffsetX + r.left, width: r.width, height: r.height,
                           backgroundColor: isSelected ? "rgba(251,191,36,0.18)" : "transparent",
                           borderBottom: `2px dotted ${isSelected ? "rgba(251,191,36,0.95)" : "rgba(251,191,36,0.45)"}`,
                           pointerEvents: "none",
