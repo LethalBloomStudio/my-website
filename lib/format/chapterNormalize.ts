@@ -17,6 +17,100 @@ export function sanitizeChapterHtml(html: string): string {
     .replace(/<(?!\/?(?:strong|em|u|s|sup|sub|br)\b)[^>]+>/gi, "");
 }
 
+function processPastedInlineNode(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+  if (!(node instanceof HTMLElement)) return "";
+
+  const tag = node.tagName.toLowerCase();
+  if (tag === "br") return "\n";
+
+  const style = node.getAttribute("style") ?? "";
+  const bold = tag === "b" || tag === "strong" || /font-weight\s*:\s*(bold|[6-9]\d\d)/i.test(style);
+  const italic = tag === "i" || tag === "em" || /font-style\s*:\s*italic/i.test(style);
+  const underline = tag === "u" || /text-decoration[^;:]*:\s*[^;]*\bunderline\b/i.test(style);
+  const strike = ["s", "del", "strike"].includes(tag) || /text-decoration[^;:]*:\s*[^;]*\bline-through\b/i.test(style);
+  const sup = tag === "sup" || /vertical-align\s*:\s*super/i.test(style);
+  const sub = tag === "sub" || /vertical-align\s*:\s*sub/i.test(style);
+
+  let content = Array.from(node.childNodes).map(processPastedInlineNode).join("");
+  if (!content) return "";
+
+  if (sub) content = `<sub>${content}</sub>`;
+  if (sup) content = `<sup>${content}</sup>`;
+  if (strike) content = `<s>${content}</s>`;
+  if (underline) content = `<u>${content}</u>`;
+  if (italic) content = `<em>${content}</em>`;
+  if (bold) content = `<strong>${content}</strong>`;
+
+  return content;
+}
+
+function processPastedBlockElement(el: Element, out: string[]) {
+  const tag = el.tagName.toLowerCase();
+  if (["p", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
+    const content = Array.from(el.childNodes).map(processPastedInlineNode).join("").trim();
+    if (content) out.push(content);
+    return;
+  }
+
+  if (tag === "li") {
+    const content = Array.from(el.childNodes).map(processPastedInlineNode).join("").trim();
+    if (content) out.push(content);
+    return;
+  }
+
+  if (tag === "ul" || tag === "ol") {
+    for (const child of Array.from(el.children)) processPastedBlockElement(child, out);
+    return;
+  }
+
+  if (tag === "div") {
+    const hasNestedBlocks = Array.from(el.children).some((child) =>
+      ["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "div"].includes(child.tagName.toLowerCase())
+    );
+    if (hasNestedBlocks) {
+      for (const child of Array.from(el.children)) processPastedBlockElement(child, out);
+      return;
+    }
+  }
+
+  const content = processPastedInlineNode(el).trim();
+  if (!content) return;
+
+  const pieces = content
+    .split(/\n{2,}/)
+    .map((piece) => piece.trim())
+    .filter(Boolean);
+
+  if (pieces.length > 0) {
+    out.push(...pieces);
+  }
+}
+
+/**
+ * Sanitizes rich HTML pasted into the chapter editor while preserving the
+ * inline emphasis users expect to keep from Docs/Word/email.
+ */
+export function sanitizePastedChapterHtml(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const paragraphs: string[] = [];
+
+  for (const child of Array.from(doc.body.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const text = child.textContent?.trim();
+      if (text) paragraphs.push(text);
+      continue;
+    }
+
+    if (child instanceof Element) {
+      processPastedBlockElement(child, paragraphs);
+    }
+  }
+
+  return paragraphs.join("\n\n");
+}
+
 /**
  * Normalizes raw chapter text into clean fiction manuscript format.
  *

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { normalizeChapterText, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import {
+  normalizeChapterText,
+  sanitizeChapterHtml,
+  sanitizePastedChapterHtml,
+} from "@/lib/format/chapterNormalize";
 import type { ManuscriptFormat } from "@/lib/format/manuscriptFormats";
 
 type Props = {
@@ -51,6 +55,8 @@ function readNode(node: Node): string {
     case "em":     case "i": return `<em>${children}</em>`;
     case "u":               return `<u>${children}</u>`;
     case "s": case "del": case "strike": return `<s>${children}</s>`;
+    case "sup": return `<sup>${children}</sup>`;
+    case "sub": return `<sub>${children}</sub>`;
     default: return children; // strip span, div, etc. but keep their text
   }
 }
@@ -71,55 +77,6 @@ function domToText(el: HTMLElement): string {
 
 // ── Google Docs / HTML paste sanitizer ───────────────────────────────────────
 
-function processInlineNode(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
-  if (!(node instanceof HTMLElement)) return "";
-  const tag = node.tagName.toLowerCase();
-  if (tag === "br") return "\n";
-  const style = node.getAttribute("style") ?? "";
-  const bold      = tag === "b" || tag === "strong" || /font-weight\s*:\s*(bold|[6-9]\d\d)/i.test(style);
-  const italic    = tag === "i" || tag === "em"     || /font-style\s*:\s*italic/i.test(style);
-  const underline = tag === "u"                     || /text-decoration[^;:]*:\s*[^;]*\bunderline\b/i.test(style);
-  const strike    = ["s","del","strike"].includes(tag) || /text-decoration[^;:]*:\s*[^;]*\bline-through\b/i.test(style);
-  let content = Array.from(node.childNodes).map(processInlineNode).join("");
-  if (!content) return "";
-  if (strike)    content = `<s>${content}</s>`;
-  if (underline) content = `<u>${content}</u>`;
-  if (italic)    content = `<em>${content}</em>`;
-  if (bold)      content = `<strong>${content}</strong>`;
-  return content;
-}
-
-function processBlockElement(el: Element, out: string[]) {
-  const tag = el.tagName.toLowerCase();
-  if (["p","h1","h2","h3","h4","h5","h6"].includes(tag)) {
-    const c = Array.from(el.childNodes).map(processInlineNode).join("").trim();
-    if (c) out.push(c);
-  } else if (tag === "li") {
-    const c = Array.from(el.childNodes).map(processInlineNode).join("").trim();
-    if (c) out.push(c);
-  } else if (tag === "ul" || tag === "ol") {
-    for (const child of Array.from(el.children)) processBlockElement(child, out);
-  } else if (tag === "div") {
-    const hasBlocks = Array.from(el.children).some((c) =>
-      ["p","h1","h2","h3","h4","h5","h6","ul","ol","li","div"].includes(c.tagName.toLowerCase())
-    );
-    if (hasBlocks) {
-      for (const child of Array.from(el.children)) processBlockElement(child, out);
-    } else {
-      const c = Array.from(el.childNodes).map(processInlineNode).join("").trim();
-      if (c) out.push(c);
-    }
-  }
-}
-
-function sanitizeGoogleDocsHtml(html: string): string {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const paragraphs: string[] = [];
-  for (const child of Array.from(doc.body.children)) processBlockElement(child, paragraphs);
-  return paragraphs.join("\n\n");
-}
 
 // ── Caret utilities ───────────────────────────────────────────────────────────
 
@@ -319,7 +276,7 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     // Try HTML first (Google Docs, Word, etc.)
     const htmlData = e.clipboardData.getData("text/html");
     if (htmlData) {
-      const sanitized = sanitizeGoogleDocsHtml(htmlData);
+      const sanitized = sanitizePastedChapterHtml(htmlData);
       if (sanitized.trim()) {
         insertParsedBlocks(el, sanitized);
         return;
