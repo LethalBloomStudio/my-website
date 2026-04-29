@@ -244,18 +244,6 @@ function BetaReadersPageInner() {
     setVisibleCount(15);
   }, [levelFilter, genreFilter, searchQuery]);
 
-  // Load more when sentinel enters viewport
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisibleCount((n) => n + 15); },
-      { threshold: 0.1 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
-
   const visible = profiles.filter((p) => {
     if (levelFilter && p.beta_reader_level !== levelFilter) return false;
     if (genreFilter && !(p.reads_genres ?? []).includes(genreFilter)) return false;
@@ -267,6 +255,24 @@ function BetaReadersPageInner() {
     }
     return true;
   });
+
+  const hasMore = visible.length > visibleCount;
+
+  // Load more when sentinel enters viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || loading || !hasMore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((n) => Math.min(n + 15, visible.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loading, hasMore, visible.length]);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -460,12 +466,12 @@ function BetaReadersPageInner() {
         </section>
 
         {/* Sentinel for infinite scroll */}
-        {!loading && visible.length > visibleCount && (
+        {!loading && hasMore && (
           <div ref={sentinelRef} className="py-6 text-center">
             <span className="text-xs text-neutral-600">Loading more…</span>
           </div>
         )}
-        {!loading && visible.length > 0 && visible.length <= visibleCount && (
+        {!loading && visible.length > 0 && !hasMore && (
           <p className="mt-4 text-center text-xs text-neutral-400">All readers shown</p>
         )}
       </div>
