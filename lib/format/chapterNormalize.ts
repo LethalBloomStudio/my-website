@@ -25,12 +25,13 @@ function processPastedInlineNode(node: Node): string {
   if (tag === "br") return "\n";
 
   const style = node.getAttribute("style") ?? "";
-  const bold = tag === "b" || tag === "strong" || /font-weight\s*:\s*(bold|[6-9]\d\d)/i.test(style);
-  const italic = tag === "i" || tag === "em" || /font-style\s*:\s*italic/i.test(style);
-  const underline = tag === "u" || /text-decoration[^;:]*:\s*[^;]*\bunderline\b/i.test(style);
-  const strike = ["s", "del", "strike"].includes(tag) || /text-decoration[^;:]*:\s*[^;]*\bline-through\b/i.test(style);
-  const sup = tag === "sup" || /vertical-align\s*:\s*super/i.test(style);
-  const sub = tag === "sub" || /vertical-align\s*:\s*sub/i.test(style);
+  const inlineStyleCarrier = ["span", "b", "strong", "i", "em", "u", "s", "del", "strike", "sup", "sub"].includes(tag);
+  const bold = tag === "b" || tag === "strong" || (inlineStyleCarrier && /font-weight\s*:\s*(bold|[6-9]\d\d)/i.test(style));
+  const italic = tag === "i" || tag === "em" || (inlineStyleCarrier && /font-style\s*:\s*italic/i.test(style));
+  const underline = tag === "u" || (inlineStyleCarrier && /text-decoration[^;:]*:\s*[^;]*\bunderline\b/i.test(style));
+  const strike = ["s", "del", "strike"].includes(tag) || (inlineStyleCarrier && /text-decoration[^;:]*:\s*[^;]*\bline-through\b/i.test(style));
+  const sup = tag === "sup" || (inlineStyleCarrier && /vertical-align\s*:\s*super/i.test(style));
+  const sub = tag === "sub" || (inlineStyleCarrier && /vertical-align\s*:\s*sub/i.test(style));
 
   let content = Array.from(node.childNodes).map(processPastedInlineNode).join("");
   if (!content) return "";
@@ -48,6 +49,8 @@ function processPastedInlineNode(node: Node): string {
 function readPastedInlineChildren(node: ParentNode): string {
   return Array.from(node.childNodes).map(processPastedInlineNode).join("");
 }
+
+const PASTED_BLOCK_TAGS = new Set(["p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li"]);
 
 function processPastedBlockElement(el: Element, out: string[]) {
   const tag = el.tagName.toLowerCase();
@@ -68,21 +71,30 @@ function processPastedBlockElement(el: Element, out: string[]) {
     return;
   }
 
-  if (tag === "div") {
-    const hasNestedBlocks = Array.from(el.children).some((child) =>
-      ["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "div"].includes(child.tagName.toLowerCase())
-    );
-    if (hasNestedBlocks) {
-      for (const child of Array.from(el.children)) processPastedBlockElement(child, out);
-      return;
-    }
+  const hasNestedBlocks = Array.from(el.children).some((child) => PASTED_BLOCK_TAGS.has(child.tagName.toLowerCase()));
+  if (hasNestedBlocks) {
+    for (const child of Array.from(el.children)) processPastedBlockElement(child, out);
+    return;
+  }
 
+  if (tag === "div") {
     const divPieces = readPastedInlineChildren(el)
       .split(/\n{1,2}/)
       .map((piece) => piece.trim())
       .filter(Boolean);
     if (divPieces.length > 0) {
       out.push(...divPieces);
+    }
+    return;
+  }
+
+  if (tag === "span") {
+    const spanPieces = readPastedInlineChildren(el)
+      .split(/\n{2,}/)
+      .map((piece) => piece.trim())
+      .filter(Boolean);
+    if (spanPieces.length > 0) {
+      out.push(...spanPieces);
     }
     return;
   }
