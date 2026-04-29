@@ -45,16 +45,20 @@ function processPastedInlineNode(node: Node): string {
   return content;
 }
 
+function readPastedInlineChildren(node: ParentNode): string {
+  return Array.from(node.childNodes).map(processPastedInlineNode).join("");
+}
+
 function processPastedBlockElement(el: Element, out: string[]) {
   const tag = el.tagName.toLowerCase();
   if (["p", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
-    const content = Array.from(el.childNodes).map(processPastedInlineNode).join("").trim();
+    const content = readPastedInlineChildren(el).trim();
     if (content) out.push(content);
     return;
   }
 
   if (tag === "li") {
-    const content = Array.from(el.childNodes).map(processPastedInlineNode).join("").trim();
+    const content = readPastedInlineChildren(el).trim();
     if (content) out.push(content);
     return;
   }
@@ -72,6 +76,15 @@ function processPastedBlockElement(el: Element, out: string[]) {
       for (const child of Array.from(el.children)) processPastedBlockElement(child, out);
       return;
     }
+
+    const divPieces = readPastedInlineChildren(el)
+      .split(/\n{1,2}/)
+      .map((piece) => piece.trim())
+      .filter(Boolean);
+    if (divPieces.length > 0) {
+      out.push(...divPieces);
+    }
+    return;
   }
 
   const content = processPastedInlineNode(el).trim();
