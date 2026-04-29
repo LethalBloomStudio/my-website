@@ -20,17 +20,24 @@ export async function updateAccount(formData: FormData) {
   const user = auth?.user;
   if (!user) redirect("/sign-in");
 
-  const fullName = String(formData.get("full_name") ?? "").trim();
+  const submittedFullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const dob = String(formData.get("dob") ?? "").trim();
   const userMetadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const metadataDob = typeof userMetadata.dob === "string" ? userMetadata.dob.trim() : "";
+  const metadataName = typeof userMetadata.full_name === "string" ? userMetadata.full_name.trim() : "";
   const metadataConsent = typeof userMetadata.parental_consent === "boolean" ? userMetadata.parental_consent : null;
 
   const { data: existingAccount } = await supabase
     .from("accounts")
-    .select("parental_consent")
+    .select("full_name, dob, parental_consent")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  const existingName = typeof existingAccount?.full_name === "string" ? existingAccount.full_name.trim() : "";
+  const fullName = submittedFullName || existingName || metadataName;
+  const dob =
+    (typeof existingAccount?.dob === "string" ? existingAccount.dob.trim() : "") ||
+    metadataDob;
 
   const parentalConsent =
     typeof existingAccount?.parental_consent === "boolean"
@@ -49,6 +56,14 @@ export async function updateAccount(formData: FormData) {
   if (ageCategory === "youth_13_17" && !parentalConsent) {
     redirect("/account?error=parental_consent_required");
   }
+
+  if (email && email !== (user.email ?? "").trim().toLowerCase()) {
+    const { error: authError } = await supabase.auth.updateUser({ email });
+    if (authError) {
+      redirect(`/account?error=${encodeURIComponent(authError.message)}`);
+    }
+  }
+
   const payload = {
     user_id: user.id,
     full_name: fullName,
