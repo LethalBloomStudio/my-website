@@ -53,6 +53,12 @@ type LineFeedback = {
 type FeedbackReply = { id: string; feedback_id: string; replier_id: string; body: string; created_at: string };
 type ReaderMarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
 
+function filterFeedbackForChapter(rows: LineFeedback[], chapterId: string | null) {
+  return chapterId
+    ? rows.filter((row) => row.chapter_id === chapterId)
+    : rows.filter((row) => row.chapter_id === null);
+}
+
 function PageInner() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -141,6 +147,7 @@ function PageInner() {
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const [readerOverlayOffsetX, setReaderOverlayOffsetX] = useState(0);
+  const manuscriptRef = useRef<Manuscript | null>(null);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   const selectionDragStartOffsetRef = useRef<number | null>(null);
   const selectionPreviewRafRef = useRef<number | null>(null);
@@ -811,6 +818,10 @@ function PageInner() {
   }, [isOwner, manuscript, myDisplayName, names, theme]);
 
   useEffect(() => {
+    manuscriptRef.current = manuscript;
+  }, [manuscript]);
+
+  useEffect(() => {
     if (isOwner || isParentView || !activeChapter) return;
 
     function selectionTouchesProtectedText() {
@@ -856,6 +867,14 @@ function PageInner() {
     };
   }, [activeChapter, isOwner, isParentView, triggerCopyWarning]);
 
+  useEffect(() => {
+    if (isOwner || isParentView) {
+      setMyChapterFeedback([]);
+      return;
+    }
+    setMyChapterFeedback(filterFeedbackForChapter(myAllFeedback, chapterId));
+  }, [chapterId, isOwner, isParentView, myAllFeedback]);
+
   // Sum word counts across all chapters for the "About" section
   const displayedWordCount = chapters.length > 0
     ? chapters.reduce((sum, c) => sum + (c.content ?? "").trim().split(/\s+/).filter(Boolean).length, 0)
@@ -872,7 +891,7 @@ function PageInner() {
 
     // ── Parent view: fetch all data via server API (bypasses RLS on private manuscripts) ──
     if (fromParam === "parent") {
-      if (!manuscript) setLoading(true);
+      if (!manuscriptRef.current) setLoading(true);
       setMsg(null);
       setIsParentView(true);
       try {
@@ -926,7 +945,7 @@ function PageInner() {
     }
 
     // Only show the full loading screen on initial load; subsequent calls refresh silently
-    if (!manuscript) setLoading(true);
+    if (!manuscriptRef.current) setLoading(true);
     setMsg(null);
     let fRows: LineFeedback[] = [];
 
@@ -1158,11 +1177,6 @@ function PageInner() {
           fRows = myFRows;
           setFeedback([]);
           setMyAllFeedback(myFRows);
-          const myChapterRows = chapterId
-            ? myFRows.filter((f) => f.chapter_id === chapterId)
-            : myFRows.filter((f) => f.chapter_id === null);
-          setMyChapterFeedback(myChapterRows);
-
           if (myFRows.length) {
             const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
             setReplies((rep as FeedbackReply[]) ?? []);
@@ -1183,10 +1197,6 @@ function PageInner() {
         const myFRows = (myF as LineFeedback[]) ?? [];
         fRows = myFRows;
         setMyAllFeedback(myFRows);
-        const myChapterRows = chapterId
-          ? myFRows.filter((f) => f.chapter_id === chapterId)
-          : myFRows.filter((f) => f.chapter_id === null);
-        setMyChapterFeedback(myChapterRows);
         if (myFRows.length) {
           const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
           setReplies((rep as FeedbackReply[]) ?? []);
@@ -1225,7 +1235,7 @@ function PageInner() {
     } finally {
       setLoading(false);
     }
-  }, [chapterId, fromParam, manuscript, manuscriptId, router, supabase]);
+  }, [chapterId, fromParam, manuscriptId, router, supabase]);
 
   useEffect(() => {
     void load();
