@@ -340,7 +340,7 @@ export default function NotificationsPage() {
     feedbackRows.forEach((f) => {
       feedbackLookup[f.id] = f;
     });
-    setFeedbackMap(feedbackLookup);
+    // setFeedbackMap is called later, after a supplemental fetch fills any gaps
 
     if (systemRes.error || modRes.error || feedbackRes.error || myFeedbackRes.error || accessRes.error) {
       setMsg(
@@ -562,6 +562,27 @@ export default function NotificationsPage() {
       return true;
     });
 
+    // Ensure every feedback_id referenced by a reply item is in the map.
+    // If the two broad fetches above missed any (e.g. the feedback row belongs
+    // to a manuscript the user no longer has access to), fetch them directly
+    // so the ?chapter= param is never silently dropped from View Comment links.
+    const missingFeedbackIds = Array.from(new Set(
+      prunedFeed
+        .filter((item): item is Extract<FeedItem, { type: "reply" }> => item.type === "reply")
+        .map((item) => item.payload.feedback_id)
+        .filter((id) => !feedbackLookup[id])
+    ));
+    if (missingFeedbackIds.length > 0) {
+      const { data: extraFeedback } = await supabase
+        .from("line_feedback")
+        .select("id, manuscript_id, reader_id, comment_text, chapter_id, created_at")
+        .in("id", missingFeedbackIds);
+      ((extraFeedback as Feedback[] | null) ?? []).forEach((f) => {
+        feedbackLookup[f.id] = f;
+      });
+    }
+
+    setFeedbackMap(feedbackLookup);
     setManuscriptTitles(manuscriptTitleMap);
     setItems(prunedFeed);
     setLoading(false);
