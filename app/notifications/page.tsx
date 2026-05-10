@@ -883,8 +883,8 @@ export default function NotificationsPage() {
           <Link
             href={
               fromMe
-                ? `/manuscripts/${encodeURIComponent(f.manuscript_id)}${f.chapter_id ? `?chapter=${encodeURIComponent(f.chapter_id)}` : ""}`
-                : `/manuscripts/${encodeURIComponent(f.manuscript_id)}/details?${f.chapter_id ? `chapter=${encodeURIComponent(f.chapter_id)}&` : ""}feedback=${encodeURIComponent(f.id)}`
+                ? `/manuscripts/${encodeURIComponent(f.manuscript_id)}${f.chapter_id ? `?chapter=${encodeURIComponent(f.chapter_id)}&feedback=${encodeURIComponent(f.id)}` : `?feedback=${encodeURIComponent(f.id)}`}`
+                : `/manuscripts/${encodeURIComponent(f.manuscript_id)}?${f.chapter_id ? `chapter=${encodeURIComponent(f.chapter_id)}&` : ""}feedback=${encodeURIComponent(f.id)}`
             }
             onClick={() => void markOneAsRead(item)}
             className={`mt-3 inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition ${CAT_BTN[cat]}`}
@@ -918,7 +918,7 @@ export default function NotificationsPage() {
           )}
           {manuscriptId && (
             <Link
-              href={`/manuscripts/${encodeURIComponent(manuscriptId)}${baseFeedback?.chapter_id ? `?chapter=${encodeURIComponent(baseFeedback.chapter_id)}` : ""}`}
+              href={`/manuscripts/${encodeURIComponent(manuscriptId)}${baseFeedback?.chapter_id ? `?chapter=${encodeURIComponent(baseFeedback.chapter_id)}&feedback=${encodeURIComponent(r.feedback_id)}` : `?feedback=${encodeURIComponent(r.feedback_id)}`}`}
               onClick={() => void markOneAsRead(item)}
               className={`mt-3 inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition ${CAT_BTN[cat]}`}
             >

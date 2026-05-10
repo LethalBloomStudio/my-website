@@ -104,6 +104,10 @@ function PageInner() {
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(feedbackParam);
   const [unreadReplyCounts, setUnreadReplyCounts] = useState<Record<string, number>>({});
   const [selectedOwnerFeedbackId, setSelectedOwnerFeedbackId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isOwner || !feedbackParam) return;
+    setSelectedOwnerFeedbackId(feedbackParam);
+  }, [isOwner, feedbackParam]);
   const [requestSent, setRequestSent] = useState(false);
   const [myRequestStatus, setMyRequestStatus] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
