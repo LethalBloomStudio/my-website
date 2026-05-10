@@ -431,6 +431,8 @@ function PageInner() {
     if (error) return setMsg(error.message);
     setFeedback((prev) => prev.filter((f) => f.id !== id));
     setMyChapterFeedback((prev) => prev.filter((f) => f.id !== id));
+    setMyAllFeedback((prev) => prev.filter((f) => f.id !== id));
+    setOwnerAllFeedback((prev) => prev.filter((f) => f.id !== id));
   }
 
   async function saveLineFeedbackEdit(id: string) {
