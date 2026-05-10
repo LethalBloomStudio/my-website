@@ -2568,7 +2568,7 @@ function PageInner() {
                                 </div>
                               </div>
                               {f.selection_excerpt && !activePlainText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, "")) ? (
-                                <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ Original text has been edited or removed.</p>
+                                <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ The text this comment was anchored to has since been edited or removed.</p>
                               ) : (
                                 <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
                                   &ldquo;{f.selection_excerpt}&rdquo;
