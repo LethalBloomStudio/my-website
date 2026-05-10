@@ -301,14 +301,23 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     const curP = currentParagraph(el);
 
     if (!curP) {
+      // Cursor is inside the editor but not inside any <p>. Insert after the last
+      // existing paragraph instead of blindly appending — blind append creates
+      // duplicates when the editor already has content.
+      const existingParas = Array.from(el.querySelectorAll<HTMLElement>("p"));
+      let anchor: HTMLElement | null = existingParas.length > 0 ? existingParas[existingParas.length - 1] : null;
+      let prevBlock = "";
       blocks.forEach((block, i) => {
         const p = document.createElement("p");
         if (block === "***") { p.setAttribute("data-scene-break", "1"); p.textContent = "***"; }
         else {
-          if (i === 0) p.setAttribute("data-no-indent", "1");
+          if (!anchor && i === 0) p.setAttribute("data-no-indent", "1");
+          if (prevBlock === "***") p.setAttribute("data-no-indent", "1");
           p.innerHTML = block;
         }
-        el.appendChild(p);
+        if (anchor) { anchor.after(p); } else { el.appendChild(p); }
+        anchor = p;
+        prevBlock = block;
       });
       emit(el);
       return;
