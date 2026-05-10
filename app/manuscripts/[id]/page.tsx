@@ -797,7 +797,7 @@ function PageInner() {
   const activeChapter = chapterId ? (chapters.find((c) => c.id === chapterId) ?? null) : null;
   const activeText = activeChapter?.content ?? "";
   const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
-  const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, ""), [activeText]);
+  const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n"), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;

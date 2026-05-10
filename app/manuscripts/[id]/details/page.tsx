@@ -2481,7 +2481,7 @@ export default function ManuscriptDetailsPage() {
                       {overviewFiltered.map((f) => {
                         const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                         const chapterLabel = chapterObj ? (chapterObj.chapter_type === "prologue" ? `Prologue: ${chapterObj.title || "Untitled"}` : chapterObj.chapter_type === "trigger_page" ? `Trigger Page: ${chapterObj.title || "Untitled"}` : `Ch. ${chapterNumFor(chapterObj.id)}: ${chapterObj.title || "Untitled"}`) : null;
-                        const excerptDetached = !!f.selection_excerpt && !!chapterObj && !(chapterObj.content ?? "").includes(f.selection_excerpt);
+                        const excerptDetached = !!f.selection_excerpt && !!chapterObj && !(chapterObj.content ?? "").replace(/\t/g, "").replace(/\n\n/g, "\n").includes(f.selection_excerpt);
                         const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const isExpanded = overviewExpandedIds.has(f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
@@ -2727,7 +2727,7 @@ export default function ManuscriptDetailsPage() {
           )}
 
           {selectedChapterId && selectedChapter && (() => {
-            const plainChapterText = chapterEditorContent.replace(/<[^>]+>/g, "");
+            const plainChapterText = chapterEditorContent.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
             const chapterFeedback = feedbackItems
               .filter((f) => f.chapter_id === selectedChapterId)
               .sort((a, b) => {
