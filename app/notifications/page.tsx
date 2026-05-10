@@ -1281,8 +1281,9 @@ export default function NotificationsPage() {
       const n = item.payload;
       const manuscriptId = n.metadata?.manuscript_id as string | undefined;
       const chapterId = n.metadata?.chapter_id as string | undefined;
+      const feedbackId = n.metadata?.feedback_id as string | undefined;
       const viewHref = manuscriptId
-        ? `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}` : ""}`
+        ? `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
         : null;
       return (
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
