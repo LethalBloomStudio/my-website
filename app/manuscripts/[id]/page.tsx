@@ -1136,7 +1136,6 @@ function PageInner() {
             .eq("manuscript_id", manuscriptId)
             .order("created_at", { ascending: false });
           if (chapterId) q.eq("chapter_id", chapterId);
-          else q.is("chapter_id", null);
           const { data: f, error: fError } = await q;
           if (fError) { setMsg(`Feedback load error: ${fError.message}. Run supabase/run_in_sql_editor.sql in your Supabase SQL editor.`); setLoading(false); return; }
           fRows = (f as LineFeedback[]) ?? [];
