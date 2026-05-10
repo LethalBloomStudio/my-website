@@ -905,7 +905,7 @@ export default function NotificationsPage() {
             href={
               fromMe
                 ? `/manuscripts/${encodeURIComponent(f.manuscript_id)}${f.chapter_id ? `?chapter=${encodeURIComponent(f.chapter_id)}&feedback=${encodeURIComponent(f.id)}` : `?feedback=${encodeURIComponent(f.id)}`}`
-                : `/manuscripts/${encodeURIComponent(f.manuscript_id)}?${f.chapter_id ? `chapter=${encodeURIComponent(f.chapter_id)}&` : ""}feedback=${encodeURIComponent(f.id)}`
+                : `/manuscripts/${encodeURIComponent(f.manuscript_id)}/details?${f.chapter_id ? `chapter=${encodeURIComponent(f.chapter_id)}&` : ""}feedback=${encodeURIComponent(f.id)}`
             }
             onClick={() => void markOneAsRead(item)}
             className={`mt-3 inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition ${CAT_BTN[cat]}`}
@@ -1054,7 +1054,7 @@ export default function NotificationsPage() {
             </button>
           )}
           <Link
-            href={`/manuscripts/${encodeURIComponent(m.manuscript_id)}`}
+            href={`/manuscripts/${encodeURIComponent(m.manuscript_id)}/details`}
             onClick={() => void markOneAsRead(item)}
             className={`mt-3 inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition ${CAT_BTN[cat]}`}
           >
@@ -1283,7 +1283,7 @@ export default function NotificationsPage() {
       const chapterId = n.metadata?.chapter_id as string | undefined;
       const feedbackId = n.metadata?.feedback_id as string | undefined;
       const viewHref = manuscriptId
-        ? `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
+        ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
         : null;
       return (
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
