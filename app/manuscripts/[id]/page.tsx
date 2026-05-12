@@ -561,7 +561,7 @@ function PageInner() {
         buildStoredFeedbackRange(container, f.selection_excerpt, f.start_offset, f.end_offset) ??
         findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
       if (!range) continue;
-      const clientRects = Array.from(range.getClientRects());
+      const clientRects = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height >= 4);
       if (!clientRects.length) continue;
       const lastRect = clientRects[clientRects.length - 1];
       newInfos[f.id] = {

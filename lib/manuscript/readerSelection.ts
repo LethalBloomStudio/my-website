@@ -274,7 +274,7 @@ export function buildDragSelection(root: HTMLElement, startOffset: number, endOf
   const range = createRangeFromTextOffsets(root, start, end);
   if (!range) return null;
 
-  const clientRects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+  const clientRects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height >= 4);
   const anchorRect = clientRects[clientRects.length - 1] ?? range.getBoundingClientRect();
   if (!anchorRect.width && !anchorRect.height) return null;
 
