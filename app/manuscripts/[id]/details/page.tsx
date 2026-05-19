@@ -2940,13 +2940,13 @@ export default function ManuscriptDetailsPage() {
                                   left: info.left + offsetX - 4,
                                   zIndex: 10,
                                 }}
-                                className={`flex h-[8px] w-[8px] items-center justify-center rounded-full shadow-sm transition-all ${
+                                className={`flex h-[10px] w-[10px] items-center justify-center rounded-full shadow-sm transition-all ${
                                   isSelected
                                     ? "bg-yellow-300 text-yellow-950 scale-110 shadow-yellow-300/60"
                                     : "bg-yellow-300 text-yellow-950 hover:bg-yellow-200 hover:scale-105"
                                 }`}
                               >
-                                <svg width="5" height="5" viewBox="0 0 9 9" fill="currentColor">
+                                <svg width="6" height="6" viewBox="0 0 9 9" fill="currentColor">
                                   <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                                 </svg>
                               </button>
