@@ -184,7 +184,7 @@ export default function BloomEventBanner({ isYouth }: Props) {
           className="w-full rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
         />
 
-        {/* Category pills */}
+        {/* Category dropdown */}
         <div className="mt-3">
           <p className="mb-1.5 text-[11px] text-neutral-400">
             Categories{" "}
@@ -192,27 +192,35 @@ export default function BloomEventBanner({ isYouth }: Props) {
               ({selectedCategories.length}/3)
             </span>
           </p>
-          <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
-            {categoryOptions.map((cat) => {
-              const selected = selectedCategories.includes(cat);
-              const atMax = !selected && selectedCategories.length >= 3;
-              return (
+          <select
+            value=""
+            onChange={(e) => { if (e.target.value) toggleCategory(e.target.value); }}
+            disabled={selectedCategories.length >= 3}
+            className="w-full rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 focus:border-[rgba(120,120,120,0.6)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <option value="" disabled>
+              {selectedCategories.length >= 3 ? "Max 3 categories selected" : "Add a category…"}
+            </option>
+            {categoryOptions
+              .filter((cat) => !selectedCategories.includes(cat))
+              .map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+          </select>
+          {selectedCategories.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {selectedCategories.map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => toggleCategory(cat)}
-                  disabled={atMax}
-                  className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
-                    selected
-                      ? "border-amber-600/70 bg-amber-950/40 text-amber-200"
-                      : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] text-neutral-400 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                  }`}
+                  className="flex items-center gap-1 rounded-full border border-amber-600/70 bg-amber-950/40 px-2.5 py-0.5 text-[11px] text-amber-200 transition hover:bg-amber-900/50"
                 >
-                  {cat}
+                  {cat} <span aria-hidden="true">×</span>
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Duration */}
