@@ -2936,17 +2936,17 @@ export default function ManuscriptDetailsPage() {
                                 }}
                                 style={{
                                   position: "absolute",
-                                  top: info.top,
-                                  left: info.left + offsetX,
+                                  top: info.top - 8,
+                                  left: info.left + offsetX - 4,
                                   zIndex: 10,
                                 }}
-                                className={`flex h-[20px] w-[20px] items-center justify-center rounded-full shadow-sm transition-all ${
+                                className={`flex h-[8px] w-[8px] items-center justify-center rounded-full shadow-sm transition-all ${
                                   isSelected
                                     ? "bg-yellow-300 text-yellow-950 scale-110 shadow-yellow-300/60"
                                     : "bg-yellow-300 text-yellow-950 hover:bg-yellow-200 hover:scale-105"
                                 }`}
                               >
-                                <svg width="10" height="10" viewBox="0 0 9 9" fill="currentColor">
+                                <svg width="5" height="5" viewBox="0 0 9 9" fill="currentColor">
                                   <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                                 </svg>
                               </button>
