@@ -2306,13 +2306,13 @@ function PageInner() {
                       return (
                         <button key={fid} data-feedback-marker="1" type="button" title="View feedback"
                           onClick={(e) => { e.stopPropagation(); setSelectedFeedbackId(isSelected ? null : fid); setClickedMarkerTop(null); }}
-                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 14, left: info.left + offsetX - 7, userSelect: "none", zIndex: 10 }}
-                          className={`flex h-[12px] w-[12px] items-center justify-center rounded-full shadow-sm transition-all ${
+                          style={{ position: "absolute", top: readerOverlayOffsetY + info.top - 8, left: info.left + offsetX - 4, userSelect: "none", zIndex: 10 }}
+                          className={`flex h-[8px] w-[8px] items-center justify-center rounded-full shadow-sm transition-all ${
                             isSelected ? "bg-amber-400 text-amber-950 scale-110 shadow-amber-400/50"
                                        : "bg-amber-400/85 text-amber-950 hover:bg-amber-400 hover:scale-105"
                           }`}
                         >
-                          <svg width="6" height="6" viewBox="0 0 9 9" fill="currentColor">
+                          <svg width="5" height="5" viewBox="0 0 9 9" fill="currentColor">
                             <path d="M1 1h7v5H6L4 8V6H1V1z"/>
                           </svg>
                         </button>
