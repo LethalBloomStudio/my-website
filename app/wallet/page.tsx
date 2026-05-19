@@ -18,6 +18,7 @@ type WalletLedgerRow = {
   reason: string;
   created_at: string;
   event_id?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" };
@@ -36,7 +37,7 @@ export default async function WalletPage({
   if ((data as { is_deactivated?: boolean } | null)?.is_deactivated) redirect("/account");
   const { data: ledgerData } = await supabase
     .from("bloom_coin_ledger")
-    .select("id, delta, reason, created_at, event_id")
+    .select("id, delta, reason, created_at, event_id, metadata")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(200);

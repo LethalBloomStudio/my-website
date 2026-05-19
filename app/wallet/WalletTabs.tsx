@@ -9,6 +9,7 @@ type WalletLedgerRow = {
   reason: string;
   created_at: string;
   event_id?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" };
@@ -27,6 +28,7 @@ type WalletTabsProps = {
 type WalletTab = "purchases" | "history" | "tracking";
 
 const REASON_LABELS: Record<string, string> = {
+  chapter_feedback_reward: "Chapter feedback reward",
   feedback_reward: "Feedback reward",
   announcement_reward: "Admin announcement reward",
   admin_adjustment: "Admin coin adjustment",
@@ -460,7 +462,9 @@ export default function WalletTabs({
                           {new Date(row.created_at).toLocaleString()}
                         </p>
                         {row.event_id && (
-                          <p className="mt-1 text-[11px] text-amber-400/80">✿ Bloom Event bonus</p>
+                          <p className="mt-1 text-[11px] text-amber-400/80">
+                            ✿ {typeof row.metadata?.event_title === "string" ? row.metadata.event_title : "Bloom Event bonus"}
+                          </p>
                         )}
                       </div>
                       <p
