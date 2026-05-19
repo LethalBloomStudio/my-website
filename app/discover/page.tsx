@@ -10,6 +10,7 @@ import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
 import { genreOptionsForAgeCategory } from "@/lib/profileOptions";
 import { YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
 import FeaturedCarousel from "./FeaturedCarousel";
+import BloomEventBanner from "./BloomEventBanner";
 
 type Manuscript = {
   id: string;
@@ -70,6 +71,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [isYouth, setIsYouth] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(15);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,15 @@ export default function DiscoverPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
+
+      if (user?.id) {
+        const { data: acct } = await supabase
+          .from("accounts")
+          .select("is_admin")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setIsAdmin(!!(acct as { is_admin?: boolean } | null)?.is_admin);
+      }
 
       const res = await fetch("/api/discover-manuscripts");
       if (!res.ok) {
@@ -202,6 +213,8 @@ export default function DiscoverPage() {
       <div className="mx-auto max-w-6xl px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Discover</h1>
         <p className="mt-2 text-neutral-300">Search books by category and writer level.</p>
+
+        {isAdmin && <BloomEventBanner isYouth={isYouth} />}
 
         <FeaturedCarousel />
 
