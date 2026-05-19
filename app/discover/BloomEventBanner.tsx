@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { ALL_MANUSCRIPT_CATEGORIES, YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
 
@@ -30,6 +30,8 @@ export default function BloomEventBanner({ isYouth }: Props) {
   const [durationWeeks, setDurationWeeks] = useState<1 | 2 | 3 | 4>(1);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
   const categoryOptions = useMemo(
     () =>
@@ -55,6 +57,17 @@ export default function BloomEventBanner({ isYouth }: Props) {
     }
     void fetchActiveEvent();
   }, [supabase]);
+
+  useEffect(() => {
+    if (!categoryMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node)) {
+        setCategoryMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [categoryMenuOpen]);
 
   function toggleCategory(cat: string) {
     setSelectedCategories((prev) => {
@@ -184,42 +197,48 @@ export default function BloomEventBanner({ isYouth }: Props) {
           className="w-full rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
         />
 
-        {/* Category dropdown */}
-        <div className="mt-3">
+        {/* Category multi-select */}
+        <div className="relative mt-3" ref={categoryMenuRef}>
           <p className="mb-1.5 text-[11px] text-neutral-400">
             Categories{" "}
             <span className={selectedCategories.length >= 3 ? "text-amber-400" : "text-neutral-600"}>
               ({selectedCategories.length}/3)
             </span>
           </p>
-          <select
-            value=""
-            onChange={(e) => { if (e.target.value) toggleCategory(e.target.value); }}
-            disabled={selectedCategories.length >= 3}
-            className="w-full rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-sm text-neutral-100 focus:border-[rgba(120,120,120,0.6)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          <button
+            type="button"
+            onClick={() => setCategoryMenuOpen((o) => !o)}
+            className="w-full rounded-lg border border-[rgba(120,120,120,0.32)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-left text-sm focus:border-[rgba(120,120,120,0.6)] focus:outline-none"
           >
-            <option value="" disabled>
-              {selectedCategories.length >= 3 ? "Max 3 categories selected" : "Add a category…"}
-            </option>
-            {categoryOptions
-              .filter((cat) => !selectedCategories.includes(cat))
-              .map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-          </select>
-          {selectedCategories.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {selectedCategories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => toggleCategory(cat)}
-                  className="flex items-center gap-1 rounded-full border border-amber-600/70 bg-amber-950/40 px-2.5 py-0.5 text-[11px] text-amber-200 transition hover:bg-amber-900/50"
-                >
-                  {cat} <span aria-hidden="true">×</span>
-                </button>
-              ))}
-            </div>
+            <span className={selectedCategories.length > 0 ? "text-neutral-100" : "text-neutral-500"}>
+              {selectedCategories.length > 0 ? selectedCategories.join(" · ") : "Select categories…"}
+            </span>
+          </button>
+          {categoryMenuOpen && (
+            <ul className="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-[rgba(120,120,120,0.32)] bg-neutral-900 py-1 shadow-xl">
+              {categoryOptions.map((cat) => {
+                const selected = selectedCategories.includes(cat);
+                const atMax = !selected && selectedCategories.length >= 3;
+                return (
+                  <li key={cat}>
+                    <button
+                      type="button"
+                      onClick={() => { if (!atMax) toggleCategory(cat); }}
+                      className={`flex w-full items-center justify-between px-3 py-1.5 text-sm transition ${
+                        selected
+                          ? "bg-amber-950/30 text-amber-200"
+                          : atMax
+                          ? "cursor-not-allowed text-neutral-600"
+                          : "text-neutral-300 hover:bg-[rgba(120,120,120,0.12)] hover:text-neutral-100"
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      {selected && <span className="text-xs text-amber-400">✓</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
