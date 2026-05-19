@@ -270,6 +270,7 @@ export default function ManuscriptDetailsPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSelectedChapterIdRef = useRef<string | null>(null);
   const [manualSaving, setManualSaving] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
   const [rewardToast, setRewardToast] = useState<string | null>(null);
@@ -1075,6 +1076,14 @@ export default function ManuscriptDetailsPage() {
   }, [manuscriptId, supabase]);
 
   useEffect(() => {
+    // Only sync the editor when the selected chapter actually changes.
+    // When `chapters` updates in-place (auto-save writeback or realtime event on the
+    // same chapter), skip all editor state setters — the user may be mid-keystroke and
+    // overwriting chapterEditorContent would jump the cursor and discard typed text.
+    const chapterIdChanged = selectedChapterId !== prevSelectedChapterIdRef.current;
+    prevSelectedChapterIdRef.current = selectedChapterId ?? null;
+    if (!chapterIdChanged) return;
+
     const selected = chapters.find((c) => c.id === selectedChapterId) ?? null;
     if (selected) {
       const normalized = normalizeChapterText(selected.content);
