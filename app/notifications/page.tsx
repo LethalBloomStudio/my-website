@@ -668,7 +668,6 @@ export default function NotificationsPage() {
       .from("manuscript_access_grants")
       .insert({ manuscript_id: req.manuscript_id, reader_id: req.requester_id, granted_by: userId });
     if (grantErr && grantErr.code !== "23505") { setMsg(grantErr.message); return; }
-    setActiveTab("read");
     await load();
   }
 
@@ -678,7 +677,6 @@ export default function NotificationsPage() {
       .update({ status: "denied" })
       .eq("id", req.id);
     if (error) { setMsg(error.message); return; }
-    setActiveTab("read");
     await load();
   }
 
@@ -699,7 +697,6 @@ export default function NotificationsPage() {
     });
     window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     setRespondingTo(null);
-    setActiveTab("read");
     await load();
   }
 
@@ -720,7 +717,6 @@ export default function NotificationsPage() {
     });
     window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     setRespondingTo(null);
-    setActiveTab("read");
     await load();
   }
 
@@ -835,7 +831,6 @@ export default function NotificationsPage() {
         .eq("is_read", false);
       if (!error) window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
       setMsg(error ? error.message : null);
-      setActiveTab("read");
       await load();
       return;
     }
@@ -845,7 +840,6 @@ export default function NotificationsPage() {
       const existing: { key: string; readAt: number }[] = raw ? (JSON.parse(raw) as { key: string; readAt: number }[]) : [];
       saveClientReadKeys(userId, next, existing);
       setClientReadKeys(next);
-      setActiveTab("read");
     }
   }
 
