@@ -41,10 +41,12 @@ export default function BloomEventBanner({ isYouth }: Props) {
 
   useEffect(() => {
     async function fetchActiveEvent() {
+      const today = new Date().toISOString().split("T")[0]!;
       const { data } = await supabase
         .from("bloom_events")
         .select("*")
         .eq("status", "active")
+        .gte("end_date", today)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
