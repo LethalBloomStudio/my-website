@@ -8,6 +8,7 @@ type WalletLedgerRow = {
   delta: number;
   reason: string;
   created_at: string;
+  event_id?: string | null;
 };
 
 type LinkedChild = { userId: string; name: string; balance: number; subscriptionTier: "free" | "unlimited" };
@@ -458,6 +459,9 @@ export default function WalletTabs({
                         <p className="mt-1 text-xs text-neutral-400">
                           {new Date(row.created_at).toLocaleString()}
                         </p>
+                        {row.event_id && (
+                          <p className="mt-1 text-[11px] text-amber-400/80">✿ Bloom Event bonus</p>
+                        )}
                       </div>
                       <p
                         className={`text-sm font-semibold ${
