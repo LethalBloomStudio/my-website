@@ -8,6 +8,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/ManuscriptLayout";
+import ChapterTipButton from "@/components/ChapterTipButton";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
@@ -2159,12 +2160,17 @@ function PageInner() {
                       {activeText.replace(/<[^>]+>/g, "").trim().split(/\s+/).filter(Boolean).length.toLocaleString()} words
                     </p>
                   </div>
-                  <button
-                    onClick={() => setChapterId(null)}
-                    className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] transition"
-                  >
-                    ✕ Close
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {canRead && !isOwner && !isParentView && (
+                      <ChapterTipButton chapterId={activeChapter.id} />
+                    )}
+                    <button
+                      onClick={() => setChapterId(null)}
+                      className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-sm text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] transition"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
                 </div>
                 {!isOwner && !isParentView && (
                   <style>{`
