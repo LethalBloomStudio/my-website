@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -32,10 +33,10 @@ export async function POST(req: Request) {
   if (tier === "unlimited") {
     const { data: parentAcct } = await admin
       .from("accounts")
-      .select("subscription_status, active_promotion_id, promotion_expires_at")
+      .select("subscription_status, active_promotion_id, promotion_expires_at, active_gift_membership_id, gift_access_expires_at")
       .eq("user_id", parentId)
       .maybeSingle();
-    const parentAccount = parentAcct as { subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null;
+    const parentAccount = parentAcct as { subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null; active_gift_membership_id?: string | null; gift_access_expires_at?: string | null } | null;
     const promoState = getPromotionState(parentAccount);
     if (promoState.shouldClearPromotion) {
       await admin
@@ -46,7 +47,8 @@ export async function POST(req: Request) {
     const parentStatus = (parentAccount?.subscription_status ?? "").toLowerCase();
     const parentIsLethal = parentStatus.includes("lethal");
     const onPromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
-    if (!parentIsLethal && !onPromo) {
+    const { onActiveGift } = getGiftState(parentAccount);
+    if (!parentIsLethal && !onPromo && !onActiveGift) {
       return NextResponse.json(
         { error: "You must have an active Lethal Member subscription to add the Unlimited add-on for a youth account." },
         { status: 403 }

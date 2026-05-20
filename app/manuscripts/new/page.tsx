@@ -16,6 +16,7 @@ import { ageCategoryFromDob } from "@/lib/contentPolicy";
 import { genreOptionsForAgeCategory } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
 
 const REQUESTED_FEEDBACK_DESCRIPTIONS: Record<"bloom" | "forge" | "lethal", string> = {
   bloom: "Encouraging, supportive feedback focused on clarity, flow, and what is already working.",
@@ -64,11 +65,11 @@ function NewManuscriptInner() {
       if (!auth.user) return;
       const { data } = await supabase
         .from("accounts")
-        .select("age_category, dob, bloom_coins, subscription_status, active_promotion_id, promotion_expires_at")
+        .select("age_category, dob, bloom_coins, subscription_status, active_promotion_id, promotion_expires_at, active_gift_membership_id, gift_access_expires_at")
         .eq("user_id", auth.user.id)
         .maybeSingle();
 
-      const row = data as { age_category?: string | null; dob?: string | null; bloom_coins?: number | null; subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null;
+      const row = data as { age_category?: string | null; dob?: string | null; bloom_coins?: number | null; subscription_status?: string | null; active_promotion_id?: string | null; promotion_expires_at?: string | null; active_gift_membership_id?: string | null; gift_access_expires_at?: string | null } | null;
       const promoState = getPromotionState(row);
       if (auth.user.id && promoState.shouldClearPromotion) {
         await supabase
@@ -92,7 +93,8 @@ function NewManuscriptInner() {
       const subscription = (normalizedRow?.subscription_status ?? "").toLowerCase();
       const lethalFromSubscription = subscription.includes("lethal");
       const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
-      setMemberTier(writerLevel === "lethal" || lethalFromSubscription || onActivePromo ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
+      const { onActiveGift } = getGiftState(normalizedRow);
+      setMemberTier(writerLevel === "lethal" || lethalFromSubscription || onActivePromo || onActiveGift ? "lethal" : writerLevel === "forge" ? "forge" : "bloom");
 
       // Map profile feedback_preference to manuscript requested_feedback values
       const feedbackMap: Record<string, FeedbackLevel> = { gentle: "bloom", balanced: "forge", direct: "lethal" };

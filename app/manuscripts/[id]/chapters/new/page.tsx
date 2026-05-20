@@ -10,6 +10,7 @@ import FormatPicker from "@/components/FormatPicker";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { normalizeChapterText } from "@/lib/format/chapterNormalize";
 import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
 
 type Manuscript = {
   id: string;
@@ -55,10 +56,10 @@ export default function NewChapterPage() {
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("subscription_status, bloom_coins, active_promotion_id, promotion_expires_at")
+      .select("subscription_status, bloom_coins, active_promotion_id, promotion_expires_at, active_gift_membership_id, gift_access_expires_at")
       .eq("user_id", userId)
       .maybeSingle();
-    const accountRow = (account as { subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
+    const accountRow = (account as { subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null; active_gift_membership_id?: string | null; gift_access_expires_at?: string | null } | null);
     const promoState = getPromotionState(accountRow);
     if (promoState.shouldClearPromotion) {
       await supabase
@@ -80,8 +81,9 @@ export default function NewChapterPage() {
     const subscription = (normalizedAccountRow?.subscription_status ?? "").toLowerCase();
     const lethalFromSubscription = subscription.includes("lethal");
     const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
+    const { onActiveGift } = getGiftState(normalizedAccountRow);
     setMemberTier(
-      writerLevel === "lethal" || lethalFromSubscription || onActivePromo
+      writerLevel === "lethal" || lethalFromSubscription || onActivePromo || onActiveGift
         ? "lethal"
         : writerLevel === "forge"
           ? "forge"

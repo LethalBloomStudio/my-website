@@ -20,6 +20,7 @@ import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/cha
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
 import NotesPanel from "@/components/NotesPanel";
 
 type Manuscript = {
@@ -567,10 +568,10 @@ export default function ManuscriptDetailsPage() {
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("age_category, subscription_status, bloom_coins, active_promotion_id, promotion_expires_at")
+      .select("age_category, subscription_status, bloom_coins, active_promotion_id, promotion_expires_at, active_gift_membership_id, gift_access_expires_at")
       .eq("user_id", userId)
       .maybeSingle();
-    const accountRow = (account as { age_category?: string | null; subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null } | null);
+    const accountRow = (account as { age_category?: string | null; subscription_status?: string | null; bloom_coins?: number | null; active_promotion_id?: string | null; promotion_expires_at?: string | null; active_gift_membership_id?: string | null; gift_access_expires_at?: string | null } | null);
     const promoState = getPromotionState(accountRow);
     if (promoState.shouldClearPromotion) {
       await supabase
@@ -599,8 +600,9 @@ export default function ManuscriptDetailsPage() {
     // writer_level is the user's self-selected writing experience - unrelated to subscription
     const subscription = (normalizedAccountRow?.subscription_status ?? "").toLowerCase().trim();
     const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
+    const { onActiveGift } = getGiftState(normalizedAccountRow);
     setMemberTier(
-      subscription === "lethal" || subscription.includes("lethal") || onActivePromo ? "lethal" :
+      subscription === "lethal" || subscription.includes("lethal") || onActivePromo || onActiveGift ? "lethal" :
       subscription === "forge" || subscription.includes("forge") ? "forge" :
       "bloom"
     );
