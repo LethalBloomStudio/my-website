@@ -43,7 +43,7 @@ export default function ChapterTipButton({ chapterId }: Props) {
       .from("chapter_tips")
       .select("reason")
       .eq("chapter_id", chapterId)
-      .then(({ data }) => {
+      .then(({ data }: { data: Array<{ reason: string }> | null }) => {
         if (cancelled) return;
         setUsedReasons(new Set((data ?? []).map((r) => r.reason as TipReason)));
         setLoadingReasons(false);
