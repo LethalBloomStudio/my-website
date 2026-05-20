@@ -1304,8 +1304,11 @@ function AdminPageInner() {
                         {(() => { const la = formatLastActive(u.last_active_at); return <span className={`text-xs ${la.color}`}>{la.label}</span>; })()}
                       </td>
                       <td className="px-4 py-3">{(() => {
-                        const onPromo = u.active_promotion_id && u.promotion_expires_at && new Date(u.promotion_expires_at) > new Date();
-                        if (u.subscription_status === "lethal") return <Badge label="lethal" color="red" />;
+                        const now = new Date();
+                        const onPromo = u.active_promotion_id && u.promotion_expires_at && new Date(u.promotion_expires_at) > now;
+                        const onGift = u.active_gift_membership_id && u.gift_access_expires_at && new Date(u.gift_access_expires_at) > now;
+                        if (u.subscription_status === "lethal" || u.subscription_status === "lethal_annual") return <Badge label="lethal" color="red" />;
+                        if (onGift) return <Badge label="gift" color="blue" />;
                         if (onPromo) return <Badge label="promotion" color="amber" />;
                         return <Badge label={u.subscription_status} color="violet" />;
                       })()}</td>
