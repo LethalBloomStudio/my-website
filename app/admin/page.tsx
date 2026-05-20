@@ -266,12 +266,12 @@ type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" |
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const REWARD_TALLY_CONFIG = [
-  { type: "Amazing feedback",         symbol: "★", color: "#f59e0b" },
-  { type: "Very detailed feedback",   symbol: "✍", color: "#60a5fa" },
-  { type: "Incredibly helpful notes", symbol: "✎", color: "#a78bfa" },
-  { type: "Caught critical errors",   symbol: "◉", color: "#f87171" },
-  { type: "Exceptional line edits",   symbol: "✦", color: "#4ade80" },
-  { type: "Above and beyond effort",  symbol: "◆", color: "#22d3ee" },
+  { type: "Amazing feedback",         symbol: "⭐", color: "#f59e0b" },
+  { type: "Very detailed feedback",   symbol: "📐", color: "#60a5fa" },
+  { type: "Incredibly helpful notes", symbol: "📝", color: "#a78bfa" },
+  { type: "Caught critical errors",   symbol: "🔍", color: "#f87171" },
+  { type: "Exceptional line edits",   symbol: "✏️", color: "#4ade80" },
+  { type: "Above and beyond effort",  symbol: "🏆", color: "#22d3ee" },
 ] as const;
 
 const _REPORT_CATEGORIES = [

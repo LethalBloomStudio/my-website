@@ -27,12 +27,12 @@ type ReaderProfile = {
 };
 
 const BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
-  "Amazing feedback":         { symbol: "★", color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
-  "Very detailed feedback":   { symbol: "✍", color: "#60a5fa", bg: "rgba(96,165,250,0.15)" },
-  "Incredibly helpful notes": { symbol: "✎", color: "#a78bfa", bg: "rgba(167,139,250,0.15)" },
-  "Caught critical errors":   { symbol: "◉", color: "#f87171", bg: "rgba(248,113,113,0.15)" },
-  "Exceptional line edits":   { symbol: "✦", color: "#4ade80", bg: "rgba(74,222,128,0.15)" },
-  "Above and beyond effort":  { symbol: "◆", color: "#22d3ee", bg: "rgba(34,211,238,0.15)" },
+  "Amazing feedback":         { symbol: "⭐", color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
+  "Very detailed feedback":   { symbol: "📐", color: "#60a5fa", bg: "rgba(96,165,250,0.15)" },
+  "Incredibly helpful notes": { symbol: "📝", color: "#a78bfa", bg: "rgba(167,139,250,0.15)" },
+  "Caught critical errors":   { symbol: "🔍", color: "#f87171", bg: "rgba(248,113,113,0.15)" },
+  "Exceptional line edits":   { symbol: "✏️", color: "#4ade80", bg: "rgba(74,222,128,0.15)" },
+  "Above and beyond effort":  { symbol: "🏆", color: "#22d3ee", bg: "rgba(34,211,238,0.15)" },
 };
 
 type ManuscriptForInvite = {
