@@ -265,6 +265,15 @@ type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" |
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const REWARD_TALLY_CONFIG = [
+  { type: "Amazing feedback",         symbol: "★", color: "#f59e0b" },
+  { type: "Very detailed feedback",   symbol: "✍", color: "#60a5fa" },
+  { type: "Incredibly helpful notes", symbol: "✎", color: "#a78bfa" },
+  { type: "Caught critical errors",   symbol: "◉", color: "#f87171" },
+  { type: "Exceptional line edits",   symbol: "✦", color: "#4ade80" },
+  { type: "Above and beyond effort",  symbol: "◆", color: "#22d3ee" },
+] as const;
+
 const _REPORT_CATEGORIES = [
   "Harassment",
   "Plagiarism",
@@ -371,6 +380,7 @@ function AdminPageInner() {
   const [referrals, setReferrals] = useState<ReferralEntry[]>([]);
   const [appeals, setAppeals] = useState<ConductAppeal[]>([]);
   const [modNotes, setModNotes] = useState<ModNote[]>([]);
+  const [rewardCounts, setRewardCounts] = useState<Record<string, number>>({});
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -792,6 +802,18 @@ function AdminPageInner() {
       setModNotes(prev => [{ ...result, admin_name: adminName }, ...prev]);
     }
     setNewNote("");
+  }
+
+  async function loadRewardCounts(userId: string) {
+    const { data } = await supabase
+      .from("reader_reward_counts")
+      .select("reward_type, count")
+      .eq("reader_id", userId);
+    const map: Record<string, number> = {};
+    ((data as Array<{ reward_type: string; count: number }> | null) ?? []).forEach(
+      (r) => { map[r.reward_type] = r.count; }
+    );
+    setRewardCounts(map);
   }
 
   async function loadModNotes(targetId: string) {
@@ -1243,7 +1265,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); void loadModNotes(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2346,12 +2368,29 @@ function AdminPageInner() {
                 <Badge label={selectedUser.parental_consent ? "Parental Consent ✓" : "No Parental Consent"} color={selectedUser.parental_consent ? "green" : "amber"} />
               )}
             </div>
-            <div className="mb-5 text-xs text-neutral-500">
+            <div className="mb-4 text-xs text-neutral-500">
               Last active:{" "}
               {(() => { const la = formatLastActive(selectedUser.last_active_at); return <span className={la.color}>{la.label}</span>; })()}
               {selectedUser.last_active_at && (
                 <span className="ml-1 text-neutral-600">({new Date(selectedUser.last_active_at).toLocaleDateString()})</span>
               )}
+            </div>
+
+            <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Reward Tally</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                {REWARD_TALLY_CONFIG.map(({ type, symbol, color }) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[11px] text-neutral-400">
+                      <span style={{ color }}>{symbol}</span>
+                      {type}
+                    </span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${(rewardCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
+                      {rewardCounts[type] ?? 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-5">
