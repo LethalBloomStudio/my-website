@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS public.gift_memberships (
   granted_by  UUID        REFERENCES auth.users(id) ON DELETE SET NULL,
   months      INTEGER     NOT NULL CHECK (months IN (1, 2, 3, 6, 12)),
   starts_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  ends_at     TIMESTAMPTZ GENERATED ALWAYS AS
-                (starts_at + (months * INTERVAL '1 month')) STORED,
+  ends_at     TIMESTAMPTZ NOT NULL,
   status      TEXT        NOT NULL DEFAULT 'active'
                 CHECK (status IN ('active', 'revoked')),
   revoked_at  TIMESTAMPTZ,
@@ -18,6 +17,27 @@ CREATE TABLE IF NOT EXISTS public.gift_memberships (
   CONSTRAINT gift_memberships_revoke_consistency
     CHECK ((status = 'revoked') = (revoked_at IS NOT NULL))
 );
+
+-- Trigger to derive ends_at from starts_at + months on every insert/update.
+-- GENERATED ALWAYS AS cannot be used here because timestamptz + interval is
+-- STABLE, not IMMUTABLE (it is calendar-aware), which PostgreSQL forbids.
+CREATE OR REPLACE FUNCTION public.gift_memberships_set_ends_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  NEW.ends_at := NEW.starts_at + (NEW.months * INTERVAL '1 month');
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS gift_memberships_set_ends_at ON public.gift_memberships;
+CREATE TRIGGER gift_memberships_set_ends_at
+  BEFORE INSERT OR UPDATE OF starts_at, months
+  ON public.gift_memberships
+  FOR EACH ROW EXECUTE FUNCTION public.gift_memberships_set_ends_at();
 
 CREATE INDEX IF NOT EXISTS gift_memberships_user_id_idx
   ON public.gift_memberships (user_id);
