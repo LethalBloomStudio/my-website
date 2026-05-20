@@ -2098,8 +2098,8 @@ function PageInner() {
                               </div>
                             </div>
                             {f.author_response && (
-                              <p className={`text-[10px] font-medium text-center ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
-                                {f.author_response === "agree" ? "✓ Author agreed - conversation closed" : "✗ Author disagreed - conversation closed"}
+                              <p className="text-[10px] font-medium text-center text-neutral-400">
+                                ✓ Resolved
                               </p>
                             )}
                             {/* Reply bubbles */}
@@ -2605,8 +2605,8 @@ function PageInner() {
                                     <p className="text-[11px] leading-relaxed text-neutral-300 break-words">{f.comment_text}</p>
                                   </div>
                                   {f.author_response && (
-                                    <p className={`text-[10px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
-                                      {f.author_response === "agree" ? "✓ Author agreed" : "✗ Author disagreed"}
+                                    <p className="text-[10px] font-medium text-neutral-400">
+                                      ✓ Resolved
                                     </p>
                                   )}
                                   {cardReplies.map((r) => {
