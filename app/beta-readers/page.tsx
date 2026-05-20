@@ -393,11 +393,11 @@ function BetaReadersPageInner() {
                         )}
                         {p.active_badge && BADGE_CONFIG[p.active_badge] && (
                           <span
-                            title={p.active_badge}
                             style={{ color: BADGE_CONFIG[p.active_badge].color, background: BADGE_CONFIG[p.active_badge].bg }}
-                            className="mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none cursor-default"
+                            className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none cursor-default"
                           >
                             {BADGE_CONFIG[p.active_badge].symbol}
+                            <span>{p.active_badge}</span>
                           </span>
                         )}
                       </div>
