@@ -70,5 +70,20 @@ export async function GET(req: Request) {
     return !isYouthProfile;
   });
 
-  return NextResponse.json({ profiles: filtered, isYouth: viewerIsYouth });
+  // Attach active badge for each reader
+  const filteredIds = filtered.map((p) => p.user_id);
+  const { data: badgeRows } = filteredIds.length > 0
+    ? await admin.from("reader_badges").select("reader_id, active_badge").in("reader_id", filteredIds)
+    : { data: [] };
+
+  const badgeMap = new Map(
+    ((badgeRows as Array<{ reader_id: string; active_badge: string }> | null) ?? []).map((r) => [r.reader_id, r.active_badge])
+  );
+
+  const withBadges = filtered.map((p) => ({
+    ...p,
+    active_badge: badgeMap.get(p.user_id) ?? null,
+  }));
+
+  return NextResponse.json({ profiles: withBadges, isYouth: viewerIsYouth });
 }

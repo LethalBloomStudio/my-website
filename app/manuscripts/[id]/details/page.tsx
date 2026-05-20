@@ -58,7 +58,6 @@ type AcceptedReader = {
   disabled?: boolean;
   left?: boolean;
   suspended?: boolean;
-  active_badge?: string | null;
 };
 
 type PendingRequest = {
@@ -90,15 +89,6 @@ const REWARD_REASONS = [
   "Exceptional line edits",
   "Above and beyond effort",
 ] as const;
-
-const BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
-  "Amazing feedback":         { symbol: "★", color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
-  "Very detailed feedback":   { symbol: "✍", color: "#60a5fa", bg: "rgba(96,165,250,0.15)" },
-  "Incredibly helpful notes": { symbol: "✎", color: "#a78bfa", bg: "rgba(167,139,250,0.15)" },
-  "Caught critical errors":   { symbol: "◉", color: "#f87171", bg: "rgba(248,113,113,0.15)" },
-  "Exceptional line edits":   { symbol: "✦", color: "#4ade80", bg: "rgba(74,222,128,0.15)" },
-  "Above and beyond effort":  { symbol: "◆", color: "#22d3ee", bg: "rgba(34,211,238,0.15)" },
-};
 
 const PARENT_DISABLE_REASONS = [
   "Inappropriate content",
@@ -676,28 +666,23 @@ export default function ManuscriptDetailsPage() {
     const disabledSet = new Set(requestRows.filter((r) => r.status === "disabled").map((r) => r.requester_id));
     const leftSet = new Set(requestRows.filter((r) => r.status === "left").map((r) => r.requester_id));
     if (readerIds.length > 0) {
-      const [{ data: profileRows }, conductRes, { data: badgeRows }] = await Promise.all([
+      const [{ data: profileRows }, conductRes] = await Promise.all([
         supabase.from("public_profiles").select("user_id, avatar_url, pen_name, username").in("user_id", readerIds),
         fetch("/api/manuscript/reader-conduct-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_ids: readerIds }),
         }).then((r) => r.json() as Promise<{ suspended?: string[] }>),
-        supabase.from("reader_badges").select("reader_id, active_badge").in("reader_id", readerIds),
       ]);
       const byUserId = new Map<string, AcceptedReader>();
       ((profileRows as AcceptedReader[] | null) ?? []).forEach((row) => byUserId.set(row.user_id, row));
       const suspendedSet = new Set(conductRes.suspended ?? []);
-      const badgeMap = new Map<string, string>(
-        ((badgeRows as Array<{ reader_id: string; active_badge: string }> | null) ?? []).map((r) => [r.reader_id, r.active_badge])
-      );
       setAcceptedReaders(
         readerIds.map((id) => ({
           ...(byUserId.get(id) ?? { user_id: id, avatar_url: null, pen_name: null, username: null }),
           disabled: disabledSet.has(id),
           left: leftSet.has(id),
           suspended: suspendedSet.has(id),
-          active_badge: badgeMap.get(id) ?? null,
         })),
       );
     } else {
@@ -2282,15 +2267,6 @@ export default function ManuscriptDetailsPage() {
                         </Link>
                         {reader.left && <span className="text-[9px] text-red-500/70">Left project</span>}
                         {reader.suspended && <span className="text-[9px] text-amber-500/80">Suspended</span>}
-                        {reader.active_badge && BADGE_CONFIG[reader.active_badge] && (
-                          <span
-                            title={reader.active_badge}
-                            style={{ color: BADGE_CONFIG[reader.active_badge].color, background: BADGE_CONFIG[reader.active_badge].bg }}
-                            className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none cursor-default"
-                          >
-                            {BADGE_CONFIG[reader.active_badge].symbol}
-                          </span>
-                        )}
                       </div>
                     ) : (
                       <div key={`empty-${i}`} className="flex shrink-0 flex-col items-center gap-1.5">
