@@ -276,6 +276,19 @@ const REWARD_TALLY_CONFIG = [
   { type: "Above and beyond effort",  symbol: "🏆", color: "#22d3ee" },
 ] as const;
 
+const TIP_TALLY_CONFIG = [
+  { type: "Beautifully Written",      symbol: "🌸", color: "#f9a8d4" },
+  { type: "Couldn't Put It Down",     symbol: "🔥", color: "#fb923c" },
+  { type: "Masterful Storytelling",   symbol: "👑", color: "#fbbf24" },
+  { type: "Emotionally Devastating",  symbol: "💔", color: "#f87171" },
+  { type: "Left Me Speechless",       symbol: "🤯", color: "#c084fc" },
+  { type: "Obsessed With This Story", symbol: "💫", color: "#22d3ee" },
+  { type: "Obsessed With FMC",        symbol: "🌺", color: "#e879f9" },
+  { type: "Obsessed With the MMC",    symbol: "⚔️", color: "#60a5fa" },
+  { type: "This Chapter Broke Me",    symbol: "😭", color: "#a78bfa" },
+  { type: "I Need More Immediately",  symbol: "⚡", color: "#4ade80" },
+] as const;
+
 const _REPORT_CATEGORIES = [
   "Harassment",
   "Plagiarism",
@@ -396,6 +409,7 @@ function AdminPageInner() {
   const [appeals, setAppeals] = useState<ConductAppeal[]>([]);
   const [modNotes, setModNotes] = useState<ModNote[]>([]);
   const [rewardCounts, setRewardCounts] = useState<Record<string, number>>({});
+  const [tipCounts, setTipCounts] = useState<Record<string, number>>({});
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -883,6 +897,18 @@ function AdminPageInner() {
     setRewardCounts(map);
   }
 
+  async function loadTipCounts(userId: string) {
+    const { data } = await supabase
+      .from("author_tip_reason_counts")
+      .select("reason, count")
+      .eq("author_id", userId);
+    const map: Record<string, number> = {};
+    ((data as Array<{ reason: string; count: number }> | null) ?? []).forEach(
+      (r) => { map[r.reason] = r.count; }
+    );
+    setTipCounts(map);
+  }
+
   async function loadModNotes(targetId: string) {
     const rows = await adminFetch("/api/admin/action", {
       method: "POST",
@@ -1335,7 +1361,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2464,6 +2490,23 @@ function AdminPageInner() {
                     </span>
                     <span className={`text-[11px] font-semibold tabular-nums ${(rewardCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
                       {rewardCounts[type] ?? 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Tip Tally</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                {TIP_TALLY_CONFIG.map(({ type, symbol, color }) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[11px] text-neutral-400">
+                      <span style={{ color }}>{symbol}</span>
+                      {type}
+                    </span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${(tipCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
+                      {tipCounts[type] ?? 0}
                     </span>
                   </div>
                 ))}
