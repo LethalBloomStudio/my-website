@@ -293,7 +293,7 @@ function Badge({ label, color }: { label: string; color: "red" | "amber" | "gree
     amber: "bg-amber-900/40 text-amber-400",
     green: "bg-emerald-900/40 text-emerald-400",
     neutral: "bg-neutral-800 text-neutral-400",
-    blue: "bg-blue-900/40 text-blue-400",
+    blue: "bg-blue-900/40 text-blue-400 badge-blue",
     violet: "bg-violet-900/40 text-violet-400 badge-violet",
   }[color];
   return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>;
