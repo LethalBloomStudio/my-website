@@ -133,41 +133,45 @@ export default function ChapterTipButton({ chapterId }: Props) {
             : "border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] text-neutral-200 hover:bg-[rgba(120,120,120,0.22)]"
         }`}
       >
-        {allUsed ? "All tips sent" : "✿ Tip"}
+        {allUsed ? (
+          "All tips sent"
+        ) : (
+          <>
+            <span style={{ color: "#f59e0b" }}>✿</span>
+            {" Tip"}
+          </>
+        )}
       </button>
 
       {/* ── Modal ─────────────────────────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
           onClick={closeModal}
         >
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-white">Tip this chapter</h2>
-                <p className="mt-0.5 text-xs text-neutral-400">
-                  Choose a reason — you can tip the same chapter multiple times with different reasons.
-                </p>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl" style={{ color: "#f59e0b" }}>✿</span>
+              <h2 className="flex-1 text-base font-semibold text-white">Tip this chapter</h2>
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={submitting}
-                className="mt-0.5 shrink-0 text-neutral-500 hover:text-white transition disabled:opacity-40"
+                className="shrink-0 text-neutral-500 hover:text-white transition disabled:opacity-40"
               >
                 ✕
               </button>
             </div>
 
-            {/* Reason grid */}
-            <div className="mb-4 grid grid-cols-2 gap-2">
+            {/* Reason section */}
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Reason</p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
               {TIP_REASONS.map((reason) => {
                 const used = usedReasons.has(reason);
                 const isSelected = selectedReason === reason;
@@ -179,15 +183,14 @@ export default function ChapterTipButton({ chapterId }: Props) {
                     onClick={() => {
                       if (used || submitting) return;
                       setSelectedReason(reason);
-                      setSelectedAmount(null);
                       setFlash(null);
                     }}
-                    className={`rounded-lg border px-3 py-2.5 text-left text-xs transition ${
+                    className={`rounded-lg border px-2 py-1.5 text-left text-xs transition ${
                       used
                         ? "cursor-not-allowed border-[rgba(120,120,120,0.15)] text-neutral-700 opacity-40"
                         : isSelected
-                        ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.22)] text-white"
-                        : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] text-neutral-300 hover:border-[rgba(120,120,120,0.5)] hover:bg-[rgba(120,120,120,0.14)]"
+                        ? "border-[rgba(245,158,11,0.6)] bg-[rgba(245,158,11,0.1)] text-amber-300"
+                        : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] text-neutral-300 hover:bg-[rgba(120,120,120,0.14)]"
                     }`}
                   >
                     <span className="block leading-snug">{reason}</span>
@@ -199,29 +202,25 @@ export default function ChapterTipButton({ chapterId }: Props) {
               })}
             </div>
 
-            {/* Coin amount — only visible once a reason is selected */}
-            {selectedReason && (
-              <div className="mb-4">
-                <p className="mb-2 text-xs text-neutral-400">Choose coin amount</p>
-                <div className="flex gap-2">
-                  {([5, 10] as const).map((amount) => (
-                    <button
-                      key={amount}
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => setSelectedAmount(amount)}
-                      className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition ${
-                        selectedAmount === amount
-                          ? "border-[rgba(120,120,120,0.8)] bg-[rgba(120,120,120,0.22)] text-white"
-                          : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] text-neutral-300 hover:border-[rgba(120,120,120,0.5)] hover:bg-[rgba(120,120,120,0.14)]"
-                      }`}
-                    >
-                      ✿ {amount}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Amount section */}
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Amount</p>
+            <div className="flex gap-2 mb-4">
+              {([5, 10] as const).map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setSelectedAmount(amount)}
+                  className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition ${
+                    selectedAmount === amount
+                      ? "btn-success border-green-700 text-white"
+                      : "border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] text-neutral-300 hover:bg-[rgba(120,120,120,0.14)]"
+                  }`}
+                >
+                  <span style={{ color: "#f59e0b" }}>✿</span> {amount}
+                </button>
+              ))}
+            </div>
 
             {/* Flash message */}
             {flash && (
@@ -237,22 +236,22 @@ export default function ChapterTipButton({ chapterId }: Props) {
             )}
 
             {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={submitting}
-                className="flex-1 rounded-lg border border-[rgba(120,120,120,0.3)] px-4 py-2 text-sm text-neutral-400 hover:text-white transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={!selectedReason || !selectedAmount || submitting}
-                className="flex-1 rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.18)] px-4 py-2 text-sm font-semibold text-white hover:bg-[rgba(120,120,120,0.28)] transition disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-success h-9 flex-1 rounded-lg border px-3 text-sm font-medium text-white disabled:opacity-40"
               >
                 {submitting ? "Sending…" : "Send Tip"}
+              </button>
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={submitting}
+                className="h-9 flex-1 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800 transition disabled:opacity-50"
+              >
+                Cancel
               </button>
             </div>
           </div>
