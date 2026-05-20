@@ -820,18 +820,25 @@ export default function NotificationsPage() {
     setClaimLoading(false);
   }
 
-  async function markOneAsRead(item: FeedItem) {
+  function markOneAsRead(item: FeedItem) {
     if (!userId) return;
     if (item.type === "admin") {
-      const { error } = await supabase
+      // Optimistic update: flip is_read in local state immediately so the
+      // item moves to the read tab without any page reload or re-fetch.
+      setItems((prev) =>
+        prev.map((i) => {
+          if (i.key !== item.key || i.type !== "admin") return i;
+          return { ...i, payload: { ...i.payload, is_read: true } };
+        })
+      );
+      window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
+      // Persist to DB in the background — fire-and-forget.
+      void supabase
         .from("system_notifications")
         .update({ is_read: true, read_at: new Date().toISOString() })
         .eq("id", item.payload.id)
         .eq("user_id", userId)
         .eq("is_read", false);
-      if (!error) window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
-      setMsg(error ? error.message : null);
-      await load();
       return;
     }
     if (!clientReadKeys.includes(item.key)) {
