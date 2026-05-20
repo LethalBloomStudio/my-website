@@ -9,12 +9,16 @@ export default function SubscriptionClient({
   youthLethalMode = false,
   onActivePromo = false,
   promotionExpiresAt = null,
+  onActiveGift = false,
+  giftAccessExpiresAt = null,
   hasBillingAccount = false,
 }: {
   currentStatus: string;
   youthLethalMode?: boolean;
   onActivePromo?: boolean;
   promotionExpiresAt?: string | null;
+  onActiveGift?: boolean;
+  giftAccessExpiresAt?: string | null;
   hasBillingAccount?: boolean;
 }) {
   const isFree = !currentStatus || currentStatus === "free";
@@ -22,6 +26,7 @@ export default function SubscriptionClient({
   const isAnnual = currentStatus === "lethal_annual" || currentStatus === "lethal_member_annual";
   const isLethal = isMonthly || isAnnual;
   const isPromoOnly = onActivePromo;
+  const isGiftOnly = onActiveGift && !isLethal;
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -77,6 +82,8 @@ export default function SubscriptionClient({
             <p className="mt-1 text-lg font-semibold text-neutral-100">
               {isPromoOnly
                 ? "Lethal Member - Promotional Access"
+                : isGiftOnly
+                ? "Lethal Member - Gift Access"
                 : isFree
                 ? "Bloom Member"
                 : isAnnual
@@ -86,6 +93,8 @@ export default function SubscriptionClient({
             <p className="mt-0.5 text-sm text-neutral-400">
               {isPromoOnly
                 ? `Free promotional access · no charge${promotionExpiresAt ? ` · expires ${new Date(promotionExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}`
+                : isGiftOnly
+                ? `Gift access · no charge${giftAccessExpiresAt ? ` · expires ${new Date(giftAccessExpiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}`
                 : isFree
                 ? "Free tier - limited uploads, earn coins to unlock more"
                 : isAnnual
@@ -97,20 +106,22 @@ export default function SubscriptionClient({
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
               isPromoOnly
                 ? "border border-violet-700/50 bg-violet-950/30 text-violet-400"
+                : isGiftOnly
+                ? "border border-blue-700/50 bg-blue-950/30 text-blue-400"
                 : isLethal
                 ? "border border-emerald-700/50 bg-emerald-950/30 text-emerald-400"
                 : "border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.1)] text-neutral-400"
             }`}
           >
-            {isPromoOnly ? "Promo" : isFree ? "Free" : "Active"}
+            {isPromoOnly ? "Promo" : isGiftOnly ? "Gift" : isFree ? "Free" : "Active"}
           </span>
         </div>
       </div>
 
-      {(isFree || isPromoOnly) && (
+      {(isFree || isPromoOnly || isGiftOnly) && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
-            {isPromoOnly ? "Start Paid Subscription" : youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
+            {(isPromoOnly || isGiftOnly) ? "Start Paid Subscription" : youthLethalMode ? "Activate Youth Lethal" : "Upgrade to Lethal Member"}
           </h2>
 
           {youthLethalMode ? (
@@ -202,6 +213,8 @@ export default function SubscriptionClient({
           <p className="text-center text-xs text-neutral-500">
             {isPromoOnly
               ? "Promotional access is free, but you can start a paid subscription at any time."
+              : isGiftOnly
+              ? "Gift access is free, but you can start a paid subscription at any time."
               : "Cancel anytime. No hidden fees."}
           </p>
         </div>

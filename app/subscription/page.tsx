@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
 import SubscriptionClient from "./SubscriptionClient";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function SubscriptionPage() {
 
   const { data } = await supabase
     .from("accounts")
-    .select("subscription_status, age_category, active_promotion_id, promotion_expires_at, stripe_customer_id, stripe_subscription_id")
+    .select("subscription_status, age_category, active_promotion_id, promotion_expires_at, stripe_customer_id, stripe_subscription_id, active_gift_membership_id, gift_access_expires_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -33,6 +34,8 @@ export default async function SubscriptionPage() {
     promotion_expires_at: string | null;
     stripe_customer_id: string | null;
     stripe_subscription_id: string | null;
+    active_gift_membership_id: string | null;
+    gift_access_expires_at: string | null;
   } | null;
   const admin = supabaseAdmin();
   const promoState = getPromotionState(account);
@@ -47,6 +50,8 @@ export default async function SubscriptionPage() {
     : account;
   const baseStatus = normalizedAccount?.subscription_status?.trim() || "free";
   const onActivePromo = promoState.shouldClearPromotion ? false : promoState.onActivePromo;
+  const { onActiveGift, expiresAt: giftExpiresAt } = getGiftState(normalizedAccount);
+  const giftAccessExpiresAt = giftExpiresAt ? giftExpiresAt.toISOString() : null;
   const isYouth = normalizedAccount?.age_category === "youth_13_17";
   const hasBillingAccount = !!(account?.stripe_customer_id || account?.stripe_subscription_id);
 
@@ -87,6 +92,7 @@ export default async function SubscriptionPage() {
   const isLethal = baseStatus === "lethal" || baseStatus === "lethal_annual" || baseStatus === "lethal_member" || baseStatus === "lethal_member_annual";
   const isAnnual = baseStatus === "lethal_annual" || baseStatus === "lethal_member_annual";
   const isPromoOnly = onActivePromo;
+  const isGiftOnly = onActiveGift && !isLethal;
   const baseMonthly = isLethal && !isPromoOnly ? (isAnnual ? 100 : 10) : 0;
   const unlimitedYouth = youthLinks.filter((l) => l.subscription_tier === "unlimited");
   const youthAddonMonthly = unlimitedYouth.length * 5;
@@ -109,6 +115,8 @@ export default async function SubscriptionPage() {
                 youthLethalMode
                 onActivePromo={onActivePromo}
                 promotionExpiresAt={normalizedAccount?.promotion_expires_at ?? null}
+                onActiveGift={onActiveGift}
+                giftAccessExpiresAt={giftAccessExpiresAt}
                 hasBillingAccount={hasBillingAccount}
               />
           ) : (
@@ -145,6 +153,8 @@ export default async function SubscriptionPage() {
                 currentStatus={baseStatus}
                 onActivePromo={onActivePromo}
                 promotionExpiresAt={normalizedAccount?.promotion_expires_at ?? null}
+                onActiveGift={onActiveGift}
+                giftAccessExpiresAt={giftAccessExpiresAt}
                 hasBillingAccount={hasBillingAccount}
               />
 
@@ -160,6 +170,8 @@ export default async function SubscriptionPage() {
                       <p className="text-sm text-neutral-200">
                         {isPromoOnly
                           ? "Lethal Member - Promotional Access"
+                          : isGiftOnly
+                          ? "Lethal Member - Gift Access"
                           : isLethal
                           ? isAnnual
                             ? "Lethal Member - Annual"
@@ -167,11 +179,11 @@ export default async function SubscriptionPage() {
                           : "Bloom Member"}
                       </p>
                       <p className="text-xs text-neutral-500">
-                        {isPromoOnly ? "Promotional period" : isLethal ? "Subscription" : "Base plan"}
+                        {isPromoOnly ? "Promotional period" : isGiftOnly ? "Gift period" : isLethal ? "Subscription" : "Base plan"}
                       </p>
                     </div>
-                    <span className={`text-sm font-medium shrink-0 ${isPromoOnly ? "text-violet-400" : "text-neutral-200"}`}>
-                      {isPromoOnly ? "Free" : isLethal ? (isAnnual ? "$100/yr" : "$10/mo") : "Free"}
+                    <span className={`text-sm font-medium shrink-0 ${isPromoOnly || isGiftOnly ? "text-blue-400" : "text-neutral-200"}`}>
+                      {isPromoOnly || isGiftOnly ? "Free" : isLethal ? (isAnnual ? "$100/yr" : "$10/mo") : "Free"}
                     </span>
                   </div>
 
@@ -210,10 +222,10 @@ export default async function SubscriptionPage() {
                         </span>
                       )}
                     </p>
-                    <span className={`text-sm font-bold shrink-0 ${isPromoOnly && youthAddonMonthly === 0 ? "text-violet-400" : "text-neutral-100"}`}>
-                      {isPromoOnly && youthAddonMonthly === 0
+                    <span className={`text-sm font-bold shrink-0 ${(isPromoOnly || isGiftOnly) && youthAddonMonthly === 0 ? "text-blue-400" : "text-neutral-100"}`}>
+                      {(isPromoOnly || isGiftOnly) && youthAddonMonthly === 0
                         ? "Free"
-                        : isPromoOnly
+                        : (isPromoOnly || isGiftOnly)
                         ? `$${youthAddonMonthly}/mo`
                         : isAnnual && youthAddonMonthly > 0
                         ? `$100/yr + $${youthAddonMonthly}/mo`
