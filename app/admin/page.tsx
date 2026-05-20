@@ -317,6 +317,19 @@ function formatLastActive(ts: string | null): { label: string; color: string } {
   return { label: `${days}d ago`, color: "text-red-500" };
 }
 
+// Mirrors the delete_inactive_accounts() SQL function: last_active_at < now() - interval '6 months'
+function formatInactivityCountdown(ts: string | null): { label: string; color: string } | null {
+  if (!ts) return null;
+  const deletionDate = new Date(ts);
+  deletionDate.setMonth(deletionDate.getMonth() + 6);
+  const daysRemaining = Math.ceil((deletionDate.getTime() - Date.now()) / 86400000);
+  if (daysRemaining <= 0) {
+    return { label: "Eligible for auto-deletion now", color: "text-red-500" };
+  }
+  const color = daysRemaining <= 30 ? "text-red-400" : daysRemaining <= 90 ? "text-amber-400" : "text-neutral-500";
+  return { label: `${daysRemaining}d until auto-deletion`, color };
+}
+
 function ageLabel(cat: string | null): string {
   if (cat === "youth_13_17") return "Youth (13–17)";
   if (cat === "adult_18_plus") return "Adult (18+)";
@@ -2426,11 +2439,18 @@ function AdminPageInner() {
               )}
             </div>
             <div className="mb-4 text-xs text-neutral-500">
-              Last active:{" "}
-              {(() => { const la = formatLastActive(selectedUser.last_active_at); return <span className={la.color}>{la.label}</span>; })()}
-              {selectedUser.last_active_at && (
-                <span className="ml-1 text-neutral-600">({new Date(selectedUser.last_active_at).toLocaleDateString()})</span>
-              )}
+              <div>
+                Last active:{" "}
+                {(() => { const la = formatLastActive(selectedUser.last_active_at); return <span className={la.color}>{la.label}</span>; })()}
+                {selectedUser.last_active_at && (
+                  <span className="ml-1 text-neutral-600">({new Date(selectedUser.last_active_at).toLocaleDateString()})</span>
+                )}
+              </div>
+              {(() => {
+                const cd = formatInactivityCountdown(selectedUser.last_active_at);
+                if (!cd) return null;
+                return <div className={`mt-0.5 ${cd.color}`}>{cd.label}</div>;
+              })()}
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
