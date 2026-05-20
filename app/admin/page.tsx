@@ -35,6 +35,8 @@ type UserRow = {
   manuscript_blacklisted: boolean;
   active_promotion_id: string | null;
   promotion_expires_at: string | null;
+  active_gift_membership_id: string | null;
+  gift_access_expires_at: string | null;
 };
 
 type Promotion = {
@@ -420,6 +422,10 @@ function AdminPageInner() {
   const [newNote, setNewNote] = useState("");
   const [coinInput, setCoinInput] = useState("");
   const [coinConfirm, setCoinConfirm] = useState<{ userId: string; oldBalance: number; newBalance: number } | null>(null);
+  const [giftMonths, setGiftMonths] = useState<1 | 2 | 3 | 6 | 12>(1);
+  const [giftConfirm, setGiftConfirm] = useState(false);
+  const [giftRevokeConfirm, setGiftRevokeConfirm] = useState(false);
+  const [giftLoading, setGiftLoading] = useState(false);
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
   const [annRewardCoins, setAnnRewardCoins] = useState<0 | 5 | 10 | 25 | 50 | 75 | 100>(0);
@@ -790,6 +796,54 @@ function AdminPageInner() {
     await loadUsers();
     setActionLoading(false);
     setMsg("Coin balance updated.");
+  }
+
+  async function grantGift() {
+    if (!selectedUser) return;
+    setGiftLoading(true);
+    const token = await getToken();
+    if (!token) { setGiftLoading(false); return; }
+    const res = await fetch("/api/admin/gift-membership/grant", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: selectedUser.user_id, months: giftMonths }),
+    });
+    const data = await res.json() as { ok?: boolean; gift_membership_id?: string; ends_at?: string; error?: string };
+    if (!res.ok) {
+      setMsg(data.error ?? "Failed to grant gift membership.");
+      setGiftLoading(false);
+      return;
+    }
+    const updated = { ...selectedUser, active_gift_membership_id: data.gift_membership_id ?? null, gift_access_expires_at: data.ends_at ?? null };
+    setSelectedUser(updated);
+    setUsers(prev => prev.map(u => u.user_id === selectedUser.user_id ? updated : u));
+    setGiftConfirm(false);
+    setGiftLoading(false);
+    setMsg("Gift membership granted.");
+  }
+
+  async function revokeGift() {
+    if (!selectedUser?.active_gift_membership_id) return;
+    setGiftLoading(true);
+    const token = await getToken();
+    if (!token) { setGiftLoading(false); return; }
+    const res = await fetch("/api/admin/gift-membership/revoke", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ gift_membership_id: selectedUser.active_gift_membership_id }),
+    });
+    if (!res.ok) {
+      const data = await res.json() as { error?: string };
+      setMsg(data.error ?? "Failed to revoke gift membership.");
+      setGiftLoading(false);
+      return;
+    }
+    const updated = { ...selectedUser, active_gift_membership_id: null, gift_access_expires_at: null };
+    setSelectedUser(updated);
+    setUsers(prev => prev.map(u => u.user_id === selectedUser.user_id ? updated : u));
+    setGiftRevokeConfirm(false);
+    setGiftLoading(false);
+    setMsg("Gift membership revoked.");
   }
 
   async function addModNote(targetType: string, targetId: string) {
@@ -2465,6 +2519,84 @@ function AdminPageInner() {
                 </button>
               </div>
             )}
+
+            {/* ── Gift Membership ── */}
+            <div className="border-t border-[rgba(120,120,120,0.2)] pt-4 mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Gift Membership</p>
+              {selectedUser.active_gift_membership_id && selectedUser.gift_access_expires_at ? (
+                <div className="space-y-2">
+                  <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 px-3 py-2">
+                    <p className="text-xs font-medium text-emerald-300">Gift access active</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Expires {new Date(selectedUser.gift_access_expires_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                  </div>
+                  {!giftRevokeConfirm ? (
+                    <button
+                      onClick={() => setGiftRevokeConfirm(true)}
+                      className="w-full rounded-lg border border-red-900/60 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-900/20 transition">
+                      Revoke Gift Membership
+                    </button>
+                  ) : (
+                    <div className="rounded-lg border border-red-800/50 bg-red-950/20 px-3 py-2.5 space-y-2">
+                      <p className="text-xs text-neutral-300">This will immediately remove gift access. Proceed?</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setGiftRevokeConfirm(false)}
+                          className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => void revokeGift()}
+                          disabled={giftLoading}
+                          className="flex-1 rounded-lg border border-red-700/60 bg-red-950/30 px-3 py-1.5 text-xs font-medium text-red-300 disabled:opacity-40 transition hover:bg-red-900/30">
+                          {giftLoading ? "Revoking…" : "Confirm Revoke"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <select
+                    value={giftMonths}
+                    onChange={e => setGiftMonths(Number(e.target.value) as 1 | 2 | 3 | 6 | 12)}
+                    className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-sm text-neutral-100 outline-none">
+                    <option value={1}>1 month</option>
+                    <option value={2}>2 months</option>
+                    <option value={3}>3 months</option>
+                    <option value={6}>6 months</option>
+                    <option value={12}>12 months</option>
+                  </select>
+                  {!giftConfirm ? (
+                    <button
+                      onClick={() => setGiftConfirm(true)}
+                      className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] px-3 py-2 text-xs font-medium text-neutral-300 hover:border-emerald-600/60 transition">
+                      Grant Gift Membership →
+                    </button>
+                  ) : (
+                    <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/20 px-3 py-2.5 space-y-2">
+                      <p className="text-xs text-neutral-300">
+                        Grant {selectedUser.full_name || "this user"} a {giftMonths}-month Lethal Membership?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setGiftConfirm(false)}
+                          className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => void grantGift()}
+                          disabled={giftLoading}
+                          className="flex-1 rounded-lg border border-emerald-700/60 bg-emerald-950/30 px-3 py-1.5 text-xs font-medium text-emerald-300 disabled:opacity-40 transition hover:bg-emerald-900/30">
+                          {giftLoading ? "Granting…" : "Confirm Grant"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Moderation notes */}
             <div className="border-t border-[rgba(120,120,120,0.2)] pt-4">
