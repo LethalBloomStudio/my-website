@@ -14,6 +14,25 @@ import FriendsPanel from "@/components/FriendsPanel";
 
 export const dynamic = "force-dynamic";
 
+// ── Author tip badges ─────────────────────────────────────────────────────────
+// Completely separate from the beta-reader badge system (reader_badges table).
+// Sourced from author_tip_badges, which is maintained by trg_update_author_tip_badges.
+type TipBadge = { rank: number; reason: string; count: number };
+
+const TIP_BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
+  "Beautifully Written":      { symbol: "✦", color: "#f9a8d4", bg: "rgba(249,168,212,0.15)" },
+  "Couldn't Put It Down":     { symbol: "◎", color: "#fb923c", bg: "rgba(251,146,60,0.15)"  },
+  "Masterful Storytelling":   { symbol: "❋", color: "#fbbf24", bg: "rgba(251,191,36,0.15)"  },
+  "Emotionally Devastating":  { symbol: "◆", color: "#f87171", bg: "rgba(248,113,113,0.15)" },
+  "Left Me Speechless":       { symbol: "✶", color: "#c084fc", bg: "rgba(192,132,252,0.15)" },
+  "Obsessed With This Story": { symbol: "∞", color: "#22d3ee", bg: "rgba(34,211,238,0.15)"  },
+  "Obsessed With FMC":        { symbol: "✿", color: "#e879f9", bg: "rgba(232,121,249,0.15)" },
+  "Obsessed With the MMC":    { symbol: "⬡", color: "#60a5fa", bg: "rgba(96,165,250,0.15)"  },
+  "This Chapter Broke Me":    { symbol: "✸", color: "#a78bfa", bg: "rgba(167,139,250,0.15)" },
+  "I Need More Immediately":  { symbol: "◉", color: "#4ade80", bg: "rgba(74,222,128,0.15)"  },
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 type Manuscript = {
   id: string;
   title: string;
@@ -317,6 +336,14 @@ export default async function PublicProfilePage(props: {
       ]
     : rawManuscripts;
 
+  // Fetch author's top-3 tip badges (publicly readable; only rows that exist are returned)
+  const { data: tipBadgesRaw } = await supabaseAdmin()
+    .from("author_tip_badges")
+    .select("rank, reason, count")
+    .eq("author_id", p.user_id)
+    .order("rank", { ascending: true });
+  const tipBadges = (tipBadgesRaw as TipBadge[] | null) ?? [];
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto max-w-6xl space-y-10 px-6 py-16">
@@ -390,6 +417,35 @@ export default async function PublicProfilePage(props: {
               )}
             </div>
           )}
+          {/* Author tip badges — top-right */}
+          {tipBadges.length > 0 && (
+            <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
+              {tipBadges.map((badge) => {
+                const cfg = TIP_BADGE_CONFIG[badge.reason];
+                if (!cfg) return null;
+                return (
+                  <div
+                    key={badge.rank}
+                    title={badge.reason}
+                    className="group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold backdrop-blur-sm cursor-default select-none"
+                    style={{
+                      color: cfg.color,
+                      borderColor: `${cfg.color}55`,
+                      background: cfg.bg,
+                    }}
+                  >
+                    <span aria-hidden="true">{cfg.symbol}</span>
+                    <span
+                      className="overflow-hidden whitespace-nowrap opacity-0 max-w-0 transition-all duration-200 group-hover:opacity-100 group-hover:max-w-[12rem]"
+                    >
+                      {badge.reason}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Follow/friend/message buttons — bottom-right */}
           {!profileOwnerIsYouth && viewerId && !isOwner && (
             <div className="absolute bottom-3 right-3 z-20 flex gap-2">
