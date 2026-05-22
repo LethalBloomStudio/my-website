@@ -185,12 +185,30 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Notify the post author when someone else replies
+  // Notify the post author when someone else comments / replies
   if (post_author_id && post_author_id !== user.id) {
     await supabase.from("system_notifications").insert({
       user_id: post_author_id,
       category: "social",
       title: "New reply on your discussion post",
+      body: content.trim().slice(0, 150),
+      metadata: { post_id, community: community ?? "adult" },
+    });
+  }
+
+  // Notify the author of the specific comment being replied to — but only when they
+  // are NOT the post author (who already received the notification above).  Sending
+  // both to the same person when post_author_id === reply_to_author_id was the source
+  // of the double-notification bug.
+  if (
+    reply_to_author_id &&
+    reply_to_author_id !== user.id &&
+    reply_to_author_id !== post_author_id
+  ) {
+    await supabase.from("system_notifications").insert({
+      user_id: reply_to_author_id,
+      category: "social",
+      title: "Someone replied to your comment",
       body: content.trim().slice(0, 150),
       metadata: { post_id, community: community ?? "adult" },
     });

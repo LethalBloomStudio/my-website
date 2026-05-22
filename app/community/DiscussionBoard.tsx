@@ -739,16 +739,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setCommentDrafts(prev => { const n = { ...prev }; delete n[draftKey]; return n; });
     setReplyingTo(null);
 
-    // Notify the person being replied to
-    if (replyToAuthorId && replyToAuthorId !== currentUserId) {
-      const replierName = author?.pen_name ?? author?.username ?? "Someone";
-      await supabase.from("system_notifications").insert({
-        user_id: replyToAuthorId,
-        title: "Someone replied to your comment",
-        body: `${replierName} replied to your comment on the discussion board.`,
-        metadata: { post_id: postId, community },
-      });
-    }
+    // Reply-to notification is created server-side in /api/discussion/submit-comment
+    // to prevent duplicates when the post author is also the comment author being replied to.
 
     setSubmittingComment(false);
   }

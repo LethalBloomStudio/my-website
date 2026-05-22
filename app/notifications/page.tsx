@@ -831,14 +831,19 @@ export default function NotificationsPage() {
           return { ...i, payload: { ...i.payload, is_read: true } };
         })
       );
-      window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
-      // Persist to DB in the background — fire-and-forget.
+      // Persist to DB; dispatch the badge-refresh only after the UPDATE
+      // commits so loadCount() queries the already-updated row.  Dispatching
+      // before the commit was causing the badge to flicker back to its old
+      // value until the realtime UPDATE event fired a second loadCount().
       void supabase
         .from("system_notifications")
         .update({ is_read: true, read_at: new Date().toISOString() })
         .eq("id", item.payload.id)
         .eq("user_id", userId)
-        .eq("is_read", false);
+        .eq("is_read", false)
+        .then(() => {
+          window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
+        });
       return;
     }
     if (!clientReadKeys.includes(item.key)) {
