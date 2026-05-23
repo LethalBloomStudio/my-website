@@ -2403,7 +2403,7 @@ function PageInner() {
                   <div ref={cardAreaRef} className="relative min-h-full">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
-                    const plainActiveText = activeText.replace(/<[^>]+>/g, "");
+                    const plainActiveText = activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
                     const allFeedback = chapterFeedbackSource
                       .filter((f) => {
                         if (f.resolved) return false;
