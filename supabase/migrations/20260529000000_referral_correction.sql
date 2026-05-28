@@ -151,7 +151,7 @@ begin
     v_new_referrer_id,
     'system',
     'Thank you for referring a new member',
-    'Thank you for referring someone to Lethal Bloom Studio. Your referral was verified and 100 Bloom Coins have been added to your account.',
+    'Thank you for referring ' || coalesce(nullif(trim(v_referral.referred_pen_name_snapshot), ''), coalesce('@' || v_referral.referred_username_snapshot, 'a new member')) || ' to Lethal Bloom Studio. Your referral was verified and 100 Bloom Coins have been added to your account.',
     'info',
     'referral-referrer-' || v_referral.referred_user_id::text
   )
@@ -162,7 +162,7 @@ begin
     v_referral.referred_user_id,
     'system',
     'Welcome to Lethal Bloom Studio',
-    'Thank you for joining Lethal Bloom Studio. Your referral was verified and 50 Bloom Coins have been added to your account.',
+    'You were referred to Lethal Bloom Studio by ' || coalesce(nullif(trim(v_new_referrer_pen_name), ''), '@' || v_new_referrer_username) || '. Your referral was verified and 50 Bloom Coins have been added to your account.',
     'info',
     'referral-referred-' || v_referral.referred_user_id::text
   )
