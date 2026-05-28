@@ -89,7 +89,7 @@ export async function GET(req: Request) {
       correction_coins_awarded: number | null;
     };
 
-    const r = referralData as RawReferral;
+    const r = referralData as unknown as RawReferral;
     const userIds = [r.referred_user_id, ...(r.referrer_user_id ? [r.referrer_user_id] : [])];
 
     const [{ data: accs }, { data: profiles }] = await Promise.all([
