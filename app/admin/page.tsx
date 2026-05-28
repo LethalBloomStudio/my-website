@@ -1912,7 +1912,7 @@ function AdminPageInner() {
                 {corrReferral && corrReferral !== "not_found" && (() => {
                   const r = corrReferral;
                   const referredLabel = r.referred_pen_name || r.referred_name || (r.referred_username ? `@${r.referred_username}` : r.referred_user_id);
-                  const currentReferrerLabel = r.referrer_pen_name || r.referrer_name || (r.referrer_username ? `@${r.referrer_username}` : null) ?? `input: @${r.referral_username_input}`;
+                  const currentReferrerLabel = (r.referrer_pen_name || r.referrer_name || (r.referrer_username ? `@${r.referrer_username}` : null)) ?? `input: @${r.referral_username_input}`;
 
                   // Already corrected — show read-only audit trail
                   if (r.corrected_at) {
