@@ -177,6 +177,12 @@ type ReferralEntry = {
   referrer_pen_name: string | null;
   referred_referral_access_disabled: boolean;
   referrer_referral_access_disabled: boolean;
+  correction_original_referrer_username: string | null;
+  correction_new_referrer_username: string | null;
+  corrected_at: string | null;
+  corrected_by: string | null;
+  corrected_by_name?: string | null;
+  correction_coins_awarded: number | null;
 };
 
 type ConductAppeal = {
@@ -432,6 +438,15 @@ function AdminPageInner() {
   const [promoBonusCoins, setPromoBonusCoins] = useState(0);
   const [promoMaxUsers, setPromoMaxUsers] = useState<number | null>(null);
   const [promoCreating, setPromoCreating] = useState(false);
+
+  // Referral correction panel
+  const [corrSearch, setCorrSearch] = useState("");
+  const [corrReferral, setCorrReferral] = useState<(ReferralEntry & { corrected_by_name?: string | null }) | null | "not_found">(null);
+  const [corrLookupLoading, setCorrLookupLoading] = useState(false);
+  const [corrNewReferrer, setCorrNewReferrer] = useState("");
+  const [corrApplying, setCorrApplying] = useState(false);
+  const [corrSuccess, setCorrSuccess] = useState<{ referrer_username: string; coins_to_referrer: number; coins_to_referred: number } | null>(null);
+  const [corrError, setCorrError] = useState<string | null>(null);
 
   // UI state
   const [msg, setMsg] = useState<string | null>(null);
@@ -1838,6 +1853,185 @@ function AdminPageInner() {
                   <p className="text-xs text-neutral-500">Invalid</p>
                   <p className="mt-0.5 text-xl font-semibold text-red-300">{invalidCount.toLocaleString()}</p>
                 </div>
+              </div>
+
+              {/* ── Fix Referral Panel ── */}
+              <div className="mb-6 rounded-xl border border-amber-700/30 bg-[rgba(18,18,18,0.95)] p-5">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-400">Fix Referral</p>
+                <p className="mb-4 text-xs text-neutral-500">Look up a new user by their username or user ID, then apply a correction to their referral record.</p>
+
+                {/* Search */}
+                <div className="flex gap-2 mb-4">
+                  <input
+                    value={corrSearch}
+                    onChange={(e) => { setCorrSearch(e.target.value); setCorrReferral(null); setCorrSuccess(null); setCorrError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && corrSearch.trim()) {
+                        setCorrLookupLoading(true);
+                        setCorrReferral(null);
+                        setCorrSuccess(null);
+                        setCorrError(null);
+                        setCorrNewReferrer("");
+                        void adminFetch(`/api/admin/referral-correction?scope=lookup_user&q=${encodeURIComponent(corrSearch.trim())}`)
+                          .then((d) => {
+                            const res = d as { referral: (ReferralEntry & { corrected_by_name?: string | null }) | null } | null;
+                            setCorrReferral(res?.referral ?? "not_found");
+                          })
+                          .finally(() => setCorrLookupLoading(false));
+                      }
+                    }}
+                    placeholder="@username or user ID…"
+                    className="flex-1 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:border-amber-700/50"
+                  />
+                  <button
+                    disabled={!corrSearch.trim() || corrLookupLoading}
+                    onClick={() => {
+                      setCorrLookupLoading(true);
+                      setCorrReferral(null);
+                      setCorrSuccess(null);
+                      setCorrError(null);
+                      setCorrNewReferrer("");
+                      void adminFetch(`/api/admin/referral-correction?scope=lookup_user&q=${encodeURIComponent(corrSearch.trim())}`)
+                        .then((d) => {
+                          const res = d as { referral: (ReferralEntry & { corrected_by_name?: string | null }) | null } | null;
+                          setCorrReferral(res?.referral ?? "not_found");
+                        })
+                        .finally(() => setCorrLookupLoading(false));
+                    }}
+                    className="rounded-lg border border-amber-700/40 bg-amber-900/10 px-4 py-2 text-xs text-amber-300 hover:bg-amber-900/20 transition disabled:opacity-40"
+                  >
+                    {corrLookupLoading ? "Searching…" : "Find"}
+                  </button>
+                </div>
+
+                {/* Results */}
+                {corrReferral === "not_found" && (
+                  <p className="text-sm text-red-400">No referral record found for that user.</p>
+                )}
+
+                {corrReferral && corrReferral !== "not_found" && (() => {
+                  const r = corrReferral;
+                  const referredLabel = r.referred_pen_name || r.referred_name || (r.referred_username ? `@${r.referred_username}` : r.referred_user_id);
+                  const currentReferrerLabel = r.referrer_pen_name || r.referrer_name || (r.referrer_username ? `@${r.referrer_username}` : null) ?? `input: @${r.referral_username_input}`;
+
+                  // Already corrected — show read-only audit trail
+                  if (r.corrected_at) {
+                    return (
+                      <div className="rounded-lg border border-emerald-700/30 bg-emerald-950/10 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-xs font-semibold text-emerald-300">Correction Already Applied</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Referred User</p>
+                            <p className="text-neutral-100">{referredLabel}</p>
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Original Referrer Input</p>
+                            <p className="text-neutral-300">@{r.correction_original_referrer_username ?? r.referral_username_input}</p>
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Corrected Referrer</p>
+                            <p className="text-emerald-300">@{r.correction_new_referrer_username}</p>
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Coins Awarded</p>
+                            <p className="text-amber-300">{r.correction_coins_awarded ?? 0} Bloom Coins</p>
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Corrected At</p>
+                            <p className="text-neutral-300">{new Date(r.corrected_at).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Corrected By</p>
+                            <p className="text-neutral-300">{r.corrected_by_name ?? r.corrected_by ?? "—"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Not yet corrected — show correction form
+                  return (
+                    <div className="space-y-4">
+                      {/* Current referral info */}
+                      <div className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] p-4">
+                        <p className="text-xs text-neutral-500 mb-2 font-medium uppercase tracking-wide">Current Referral Record</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Referred User</p>
+                            <p className="text-neutral-100">{referredLabel}</p>
+                            {r.referred_email && <p className="text-neutral-500">{r.referred_email}</p>}
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Recorded Referrer</p>
+                            <p className="text-neutral-300">{currentReferrerLabel}</p>
+                            {r.referrer_email && <p className="text-neutral-500">{r.referrer_email}</p>}
+                          </div>
+                          <div>
+                            <p className="text-neutral-500 mb-0.5">Status</p>
+                            {r.status === "verified" ? <Badge label="Verified" color="green" /> : r.status === "blocked" ? <Badge label="Blocked" color="red" /> : r.status === "invalid_self" ? <Badge label="Invalid Self" color="amber" /> : <Badge label="Invalid Referrer" color="red" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Correct referrer input */}
+                      <div>
+                        <label className="block text-xs text-neutral-400 mb-1.5">Correct Referrer Username</label>
+                        <input
+                          value={corrNewReferrer}
+                          onChange={(e) => { setCorrNewReferrer(e.target.value); setCorrError(null); setCorrSuccess(null); }}
+                          placeholder="@username of the correct referrer…"
+                          className="w-full max-w-xs rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:border-amber-700/50"
+                        />
+                      </div>
+
+                      {/* Coin preview */}
+                      {corrNewReferrer.trim() && (
+                        <div className="rounded-lg border border-amber-700/20 bg-amber-950/10 px-4 py-3 text-xs">
+                          <p className="text-amber-400 font-medium mb-1.5">Coins to Award (preview)</p>
+                          <p className="text-neutral-300">• {r.referrer_reward_coins} Bloom Coins → @{corrNewReferrer.trim().replace(/^@+/, "")} <span className="text-neutral-500">(referrer bonus)</span></p>
+                          <p className="text-neutral-300">• {r.referred_reward_coins} Bloom Coins → {referredLabel} <span className="text-neutral-500">(signup bonus)</span></p>
+                          <p className="mt-1.5 text-neutral-600">If coins were already awarded for this referral they will be skipped.</p>
+                        </div>
+                      )}
+
+                      {corrError && <p className="text-sm text-red-400">{corrError}</p>}
+
+                      {corrSuccess ? (
+                        <div className="rounded-lg border border-emerald-700/30 bg-emerald-950/10 px-4 py-3 text-xs">
+                          <p className="text-emerald-300 font-semibold mb-1">Correction Applied</p>
+                          <p className="text-neutral-300">Referrer updated to @{corrSuccess.referrer_username}</p>
+                          <p className="text-neutral-300">{corrSuccess.coins_to_referrer} coins awarded to referrer, {corrSuccess.coins_to_referred} coins awarded to referred user.</p>
+                        </div>
+                      ) : (
+                        <button
+                          disabled={!corrNewReferrer.trim() || corrApplying}
+                          onClick={() => {
+                            if (!corrNewReferrer.trim()) return;
+                            setCorrApplying(true);
+                            setCorrError(null);
+                            void adminFetch("/api/admin/referral-correction", {
+                              method: "POST",
+                              body: JSON.stringify({ referral_id: r.id, correct_referrer_username: corrNewReferrer.trim() }),
+                            }).then((d) => {
+                              const res = d as { ok?: boolean; error?: string; referrer_username?: string; coins_to_referrer?: number; coins_to_referred?: number } | null;
+                              if (!res || res.error) {
+                                setCorrError(res?.error ?? "Failed to apply correction.");
+                              } else {
+                                setCorrSuccess({ referrer_username: res.referrer_username!, coins_to_referrer: res.coins_to_referrer!, coins_to_referred: res.coins_to_referred! });
+                                void loadReferrals();
+                              }
+                            }).finally(() => setCorrApplying(false));
+                          }}
+                          className="rounded-lg border border-amber-700/50 bg-amber-900/15 px-4 py-2 text-sm text-amber-300 hover:bg-amber-900/30 transition disabled:opacity-40"
+                        >
+                          {corrApplying ? "Applying…" : "Apply Correction"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">

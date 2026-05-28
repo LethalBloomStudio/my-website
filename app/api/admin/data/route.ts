@@ -137,7 +137,7 @@ export async function GET(req: Request) {
   if (scope === "all" || scope === "referrals") {
     const { data: referralData } = await supabase
       .from("referrals")
-      .select("id, referred_user_id, referrer_user_id, referral_username_input, status, referrer_reward_coins, referred_reward_coins, verified_at, created_at, referred_email_snapshot, referred_name_snapshot, referred_username_snapshot, referred_pen_name_snapshot, referrer_email_snapshot, referrer_name_snapshot, referrer_username_snapshot, referrer_pen_name_snapshot")
+      .select("id, referred_user_id, referrer_user_id, referral_username_input, status, referrer_reward_coins, referred_reward_coins, verified_at, created_at, referred_email_snapshot, referred_name_snapshot, referred_username_snapshot, referred_pen_name_snapshot, referrer_email_snapshot, referrer_name_snapshot, referrer_username_snapshot, referrer_pen_name_snapshot, correction_original_referrer_username, correction_new_referrer_username, corrected_at, corrected_by, correction_coins_awarded")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -159,6 +159,11 @@ export async function GET(req: Request) {
       referrer_name_snapshot: string | null;
       referrer_username_snapshot: string | null;
       referrer_pen_name_snapshot: string | null;
+      correction_original_referrer_username: string | null;
+      correction_new_referrer_username: string | null;
+      corrected_at: string | null;
+      corrected_by: string | null;
+      correction_coins_awarded: number | null;
     }[];
 
     const userIds = [...new Set(rows.flatMap((r) => [r.referred_user_id, r.referrer_user_id].filter(Boolean) as string[]))];
