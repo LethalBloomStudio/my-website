@@ -789,6 +789,17 @@ function PageInner() {
     };
   }, [finishCustomSelection, selectionDragActive, updateDragPreview]);
 
+  const displayCategories =
+    manuscript?.categories && manuscript.categories.length > 0
+      ? manuscript.categories
+      : manuscript?.genre
+      ? [manuscript.genre]
+      : [];
+  const youthAudienceCategory = hasYouthAudienceCategory(manuscript?.categories, manuscript?.genre);
+  const adultReplyBlockedForFeedback = (readerId: string) =>
+    youthAudienceCategory && myAge === "adult_18_plus" && ages[readerId] === "youth_13_17";
+  const activeChapter = chapterId ? (chapters.find((c) => c.id === chapterId) ?? null) : null;
+
   // Mobile text selection: the mouse drag pipeline (above) never activates on touch
   // devices because onMouseDown does not fire from a native long-press selection.
   // selectionchange fires reliably on iOS Safari and Android Chrome as the user moves
@@ -831,16 +842,6 @@ function PageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLeaveLineEdits, activeChapter?.id]);
 
-  const displayCategories =
-    manuscript?.categories && manuscript.categories.length > 0
-      ? manuscript.categories
-      : manuscript?.genre
-      ? [manuscript.genre]
-      : [];
-  const youthAudienceCategory = hasYouthAudienceCategory(manuscript?.categories, manuscript?.genre);
-  const adultReplyBlockedForFeedback = (readerId: string) =>
-    youthAudienceCategory && myAge === "adult_18_plus" && ages[readerId] === "youth_13_17";
-  const activeChapter = chapterId ? (chapters.find((c) => c.id === chapterId) ?? null) : null;
   const activeText = activeChapter?.content ?? "";
   const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
   const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n"), [activeText]);
