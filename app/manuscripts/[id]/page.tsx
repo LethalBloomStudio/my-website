@@ -2282,7 +2282,7 @@ function PageInner() {
                         setSelectedFeedbackId(null);
                       }
                     }}
-                    onContextMenu={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); triggerCopyWarning(); } }}
+                    onContextMenu={(e) => { if (!isOwner && !isParentView) { const isTouch = e.clientX === 0 && e.clientY === 0; if (!isTouch) { e.preventDefault(); triggerCopyWarning(); } } }}
                     onCopy={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); triggerCopyWarning(); } }}
                     onCut={(e) => { if (!isOwner && !isParentView) e.preventDefault(); }}
                     onKeyDown={(e) => {
