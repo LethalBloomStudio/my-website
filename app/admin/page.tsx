@@ -1026,6 +1026,11 @@ function AdminPageInner() {
     if (userFilter === "adult" && u.age_category !== "adult_18_plus") return false;
     if (userFilter === "banned" && u.account_status !== "banned") return false;
     return true;
+  }).sort((a, b) => {
+    const aActive = a.last_active_at ? new Date(a.last_active_at).getTime() : -Infinity;
+    const bActive = b.last_active_at ? new Date(b.last_active_at).getTime() : -Infinity;
+    if (bActive !== aActive) return bActive - aActive;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const filteredManuscripts = manuscripts.filter(m => {
