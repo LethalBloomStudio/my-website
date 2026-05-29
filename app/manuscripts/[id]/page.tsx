@@ -146,6 +146,7 @@ function PageInner() {
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
+  const [isRowLayout, setIsRowLayout] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
   const [readerOverlayOffsetX, setReaderOverlayOffsetX] = useState(0);
   const manuscriptRef = useRef<Manuscript | null>(null);
@@ -1257,7 +1258,9 @@ function PageInner() {
       const col = asideRef.current;
       const anchor = proseBox ?? textBox;
       if (!anchor || !textBox || !col) return;
-      setReaderColumnOffsetY(anchor.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      const rowLayout = window.innerWidth >= 1024;
+      setIsRowLayout(rowLayout);
+      setReaderColumnOffsetY(rowLayout ? anchor.getBoundingClientRect().top - col.getBoundingClientRect().top : 0);
       setReaderOverlayOffsetY(anchor.getBoundingClientRect().top - textBox.getBoundingClientRect().top);
       setReaderOverlayOffsetX(anchor.getBoundingClientRect().left - textBox.getBoundingClientRect().left);
     }
@@ -2333,7 +2336,7 @@ function PageInner() {
                 <div
                   ref={asideRef}
                   className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 relative"
-                  style={{ minHeight: chapterHeight || undefined }}
+                  style={{ minHeight: isRowLayout ? (chapterHeight || undefined) : undefined }}
                 >
                   <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 space-y-2">
                   <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.88)] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-sm">
@@ -2457,7 +2460,7 @@ function PageInner() {
                             setSelectedFeedbackId(cluster[nextIndex].id);
                             setClickedMarkerTop(null);
                           };
-                          const cardStyle: React.CSSProperties = info
+                          const cardStyle: React.CSSProperties = isRowLayout && info
                             ? { position: "absolute", top: readerColumnOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
                             : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
 
@@ -2714,7 +2717,7 @@ function PageInner() {
 
       {pendingSelection && canLeaveLineEdits && (
         <div
-          className="feedback-inline-popup fixed z-50 w-72 rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
+          className="feedback-inline-popup fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
           style={{
             // Flip above the selection when the popup would overflow the viewport bottom.
             // 240px covers the tallest possible popup state (including paste warning).

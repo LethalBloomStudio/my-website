@@ -280,7 +280,7 @@ export function buildDragSelection(root: HTMLElement, startOffset: number, endOf
 
   const rootRect = root.getBoundingClientRect();
   const centerX = anchorRect.left + (anchorRect.right - anchorRect.left) / 2;
-  const clampedX = Math.min(Math.max(centerX, 152), viewportWidth - 152);
+  const clampedX = Math.min(Math.max(centerX, 160), viewportWidth - 160);
 
   return {
     text: trimmedText,
