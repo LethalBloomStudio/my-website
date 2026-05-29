@@ -840,7 +840,7 @@ function PageInner() {
           x: result.x,
           y: result.y,
         });
-      }, 600);
+      }, 400);
     }
 
     function onSelectionChange() {
@@ -2282,7 +2282,7 @@ function PageInner() {
                         setSelectedFeedbackId(null);
                       }
                     }}
-                    onContextMenu={(e) => { if (!isOwner && !isParentView) { const isTouch = e.clientX === 0 && e.clientY === 0; if (!isTouch) { e.preventDefault(); triggerCopyWarning(); } } }}
+                    onContextMenu={(e) => { if (!isOwner && !isParentView) { const isMouseRightClick = e.button === 2; if (isMouseRightClick) { e.preventDefault(); triggerCopyWarning(); } } }}
                     onCopy={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); triggerCopyWarning(); } }}
                     onCut={(e) => { if (!isOwner && !isParentView) e.preventDefault(); }}
                     onKeyDown={(e) => {
