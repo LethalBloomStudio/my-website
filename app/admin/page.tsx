@@ -1181,7 +1181,7 @@ function AdminPageInner() {
             </div>
           </aside>
 
-          <div className="min-w-0 flex-1 [&_.overflow-x-auto]:overflow-visible [&_table]:w-full [&_table]:table-fixed [&_th]:align-top [&_td]:align-top [&_th]:break-words [&_td]:break-words [&_td.whitespace-nowrap]:whitespace-normal [&_th.whitespace-nowrap]:whitespace-normal">
+          <div className="min-w-0 flex-1 [&_table]:w-full [&_th]:align-top [&_td]:align-top [&_th]:break-words [&_td]:break-words">
 
         {/* ── OVERVIEW ── */}
         {tab === "overview" && stats && (
@@ -1385,7 +1385,7 @@ function AdminPageInner() {
                 [&_td.whitespace-nowrap]:whitespace-normal arbitrary-variant overrides that
                 would otherwise defeat Tailwind utility classes here. */}
             <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'auto' }}>
-              <table className="w-full min-w-[900px] text-sm" style={{ tableLayout: 'auto' }}>
+              <table className="w-full min-w-[960px] text-sm" style={{ tableLayout: 'auto' }}>
                 <thead>
                   <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="px-4 py-3">User</th>
