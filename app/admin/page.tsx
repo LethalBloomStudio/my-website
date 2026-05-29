@@ -1181,6 +1181,8 @@ function AdminPageInner() {
             </div>
           </aside>
 
+          {/* Do not add [&_table]:table-fixed here — it silently discards min-width and breaks horizontal scroll on the Users table. */}
+          {/* Do not add [&_.overflow-x-auto]:overflow-visible here — it converts scroll containers to overflow:visible, defeating all table scroll fixes. */}
           <div className="min-w-0 flex-1 [&_table]:w-full [&_th]:align-top [&_td]:align-top [&_th]:break-words [&_td]:break-words">
 
         {/* ── OVERVIEW ── */}
