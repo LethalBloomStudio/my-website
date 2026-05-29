@@ -808,11 +808,20 @@ function PageInner() {
   useEffect(() => {
     if (!canLeaveLineEdits || !activeChapter) return;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let isTouchActive = false;
 
-    function onSelectionChange() {
+    function onTouchStart() { isTouchActive = true; }
+    function onTouchEnd() { isTouchActive = false; }
+
+    function schedulePopup() {
       if (debounceTimer != null) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         debounceTimer = null;
+        if (isTouchActive) {
+          // Finger still down — wait another cycle.
+          schedulePopup();
+          return;
+        }
         const prose = proseContentRef.current;
         if (!prose) return;
         const sel = window.getSelection();
@@ -831,12 +840,20 @@ function PageInner() {
           x: result.x,
           y: result.y,
         });
-      }, 300);
+      }, 600);
     }
 
+    function onSelectionChange() {
+      schedulePopup();
+    }
+
+    document.addEventListener("touchstart", onTouchStart, true);
+    document.addEventListener("touchend", onTouchEnd, true);
     document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       if (debounceTimer != null) clearTimeout(debounceTimer);
+      document.removeEventListener("touchstart", onTouchStart, true);
+      document.removeEventListener("touchend", onTouchEnd, true);
       document.removeEventListener("selectionchange", onSelectionChange);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
