@@ -1303,8 +1303,85 @@ function AdminPageInner() {
               ))}
             </div>
 
-            <div className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
-              <table className="w-full text-sm">
+            {/* Mobile card layout — shown below md breakpoint */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {filteredUsers.length === 0 && (
+                <p className="py-8 text-center text-sm text-neutral-500">No users found.</p>
+              )}
+              {filteredUsers.map(u => {
+                const now = new Date();
+                const onPromo = u.active_promotion_id && u.promotion_expires_at && new Date(u.promotion_expires_at) > now;
+                const onGift = u.active_gift_membership_id && u.gift_access_expires_at && new Date(u.gift_access_expires_at) > now;
+                const roleBadge = u.subscription_status === "lethal" || u.subscription_status === "lethal_annual"
+                  ? <Badge label="lethal" color="red" />
+                  : onGift ? <Badge label="gift" color="blue" />
+                  : onPromo ? <Badge label="promotion" color="amber" />
+                  : <Badge label={u.subscription_status} color="violet" />;
+                const la = formatLastActive(u.last_active_at);
+                return (
+                  <div key={u.user_id} className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.95)] p-4">
+                    {/* Name row + actions */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        {u.username ? (
+                          <Link href={`/u/${u.username}`} target="_blank" className="truncate font-medium text-neutral-100 hover:text-white hover:underline">
+                            {u.full_name || u.username}
+                          </Link>
+                        ) : (
+                          <span className="truncate font-medium text-neutral-100">{u.full_name || "-"}</span>
+                        )}
+                        {u.pen_name && <span className="truncate text-xs text-neutral-400">&ldquo;{u.pen_name}&rdquo;</span>}
+                        {u.username && <span className="truncate text-xs text-neutral-500">@{u.username}</span>}
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {u.is_admin && <span className="text-[10px] font-bold text-red-400 uppercase">Admin</span>}
+                          {u.messaging_restricted && <span className="text-[10px] text-amber-400">Msg restricted</span>}
+                        </div>
+                      </div>
+                      {/* Action buttons — always stay right-aligned, never wrap outside card */}
+                      <div className="flex shrink-0 flex-col gap-1.5">
+                        {u.username && (
+                          <Link href={`/u/${u.username}`} target="_blank"
+                            className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition text-center">
+                            Profile ↗
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); }}
+                          className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
+                          Manage
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <p className="mt-2 truncate text-xs text-neutral-400">{u.email || "-"}</p>
+
+                    {/* Badge row */}
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      <Badge label={u.account_status} color={statusColor(u.account_status)} />
+                      {roleBadge}
+                      <Badge label={ageLabel(u.age_category)} color={u.age_category === "youth_13_17" ? "blue" : "neutral"} />
+                      {u.age_category === "youth_13_17" && (
+                        <span className={`text-[10px] self-center ${u.parental_consent ? "text-emerald-500" : "text-amber-500"}`}>
+                          {u.parental_consent ? "Consent ✓" : "No consent"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Meta row */}
+                    <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-neutral-500">
+                      <span>Active: <span className={la.color}>{la.label}</span></span>
+                      <span>Coins: <span className="text-neutral-300">{u.bloom_coins.toLocaleString()}</span></span>
+                      <span>Joined: {new Date(u.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table — hidden below md, horizontally scrollable */}
+            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead>
                   <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="px-4 py-3">User</th>
@@ -1365,7 +1442,7 @@ function AdminPageInner() {
                       })()}</td>
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {u.username && (
                             <Link href={`/u/${u.username}`} target="_blank"
