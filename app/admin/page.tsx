@@ -1379,9 +1379,13 @@ function AdminPageInner() {
               })}
             </div>
 
-            {/* Desktop table — hidden below md, horizontally scrollable */}
-            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm">
+            {/* Desktop table — hidden below md, horizontally scrollable.
+                Inline styles are intentional: the parent content wrapper at line 1184 has
+                [&_.overflow-x-auto]:overflow-visible, [&_table]:table-fixed, and
+                [&_td.whitespace-nowrap]:whitespace-normal arbitrary-variant overrides that
+                would otherwise defeat Tailwind utility classes here. */}
+            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'auto' }}>
+              <table className="w-full min-w-[900px] text-sm" style={{ tableLayout: 'auto' }}>
                 <thead>
                   <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="px-4 py-3">User</th>
@@ -1442,7 +1446,7 @@ function AdminPageInner() {
                       })()}</td>
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-4 py-3" style={{ whiteSpace: 'nowrap' }}>
                         <div className="flex items-center gap-2">
                           {u.username && (
                             <Link href={`/u/${u.username}`} target="_blank"
