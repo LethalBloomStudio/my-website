@@ -13,7 +13,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, buildStoredFeedbackRange, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildDragSelection, buildSelectionFromRange, buildStoredFeedbackRange, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -788,6 +788,48 @@ function PageInner() {
       document.removeEventListener("mouseup", onMouseUp, true);
     };
   }, [finishCustomSelection, selectionDragActive, updateDragPreview]);
+
+  // Mobile text selection: the mouse drag pipeline (above) never activates on touch
+  // devices because onMouseDown does not fire from a native long-press selection.
+  // selectionchange fires reliably on iOS Safari and Android Chrome as the user moves
+  // selection handles, and one final time when they lift their finger. This is a
+  // completely additive parallel path — the mouse pipeline is unchanged.
+  useEffect(() => {
+    if (!canLeaveLineEdits || !activeChapter) return;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function onSelectionChange() {
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        const prose = proseContentRef.current;
+        if (!prose) return;
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        // Ignore selections that don't start inside the chapter prose.
+        if (!prose.contains(range.commonAncestorContainer)) return;
+        const result = buildSelectionFromRange(prose, range, window.innerWidth);
+        if (!result) return;
+        setPendingSelectionRects(result.rects);
+        setLineEditDraft("");
+        setPendingSelection({
+          text: result.text,
+          start: result.start,
+          end: result.end,
+          x: result.x,
+          y: result.y,
+        });
+      }, 300);
+    }
+
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => {
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      document.removeEventListener("selectionchange", onSelectionChange);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canLeaveLineEdits, activeChapter?.id]);
 
   const displayCategories =
     manuscript?.categories && manuscript.categories.length > 0

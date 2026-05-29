@@ -296,3 +296,14 @@ export function buildDragSelection(root: HTMLElement, startOffset: number, endOf
     })),
   };
 }
+
+// Converts a browser-native Range (e.g. from window.getSelection() on mobile)
+// into the same DragSelectionResult that buildDragSelection produces, using
+// the same clamping and whitespace-trim logic.
+export function buildSelectionFromRange(root: HTMLElement, range: Range, viewportWidth: number): DragSelectionResult | null {
+  if (!root.contains(range.commonAncestorContainer)) return null;
+  const startOff = visibleOffsetFromDomPoint(root, range.startContainer, range.startOffset);
+  const endOff = visibleOffsetFromDomPoint(root, range.endContainer, range.endOffset);
+  if (startOff == null || endOff == null) return null;
+  return buildDragSelection(root, startOff, endOff, viewportWidth);
+}
