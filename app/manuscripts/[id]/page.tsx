@@ -2398,7 +2398,7 @@ function PageInner() {
                   className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 relative"
                   style={{ minHeight: isRowLayout ? (chapterHeight || undefined) : undefined }}
                 >
-                  <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 space-y-2">
+                  <div className="pointer-events-none relative lg:absolute lg:left-0 lg:right-0 lg:top-0 z-30 space-y-2">
                   <div className="pointer-events-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.88)] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
