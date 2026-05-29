@@ -1381,13 +1381,17 @@ function AdminPageInner() {
               })}
             </div>
 
-            {/* Desktop table — hidden below md, horizontally scrollable.
-                Inline styles are intentional: the parent content wrapper at line 1184 has
-                [&_.overflow-x-auto]:overflow-visible, [&_table]:table-fixed, and
-                [&_td.whitespace-nowrap]:whitespace-normal arbitrary-variant overrides that
-                would otherwise defeat Tailwind utility classes here. */}
-            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'auto' }}>
-              <table className="w-full min-w-[960px] text-sm" style={{ tableLayout: 'auto' }}>
+            {/* Desktop table — hidden below md.
+                All layout-critical properties are inline styles so they cannot be
+                overridden by Tailwind arbitrary-variant rules on parent divs (e.g.
+                [&_table]:w-full forces width:100% which prevents overflow from occurring).
+                overflowX:'scroll' is intentional — 'scroll' always activates the scrollbar
+                regardless of parent container behaviour; 'auto' depends on overflow actually
+                being computed, which parent rules can silently defeat.
+                width:'max-content' + minWidth:'100%' lets the table size to its content
+                rather than its container, guaranteeing the scrollbar has something to scroll. */}
+            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'scroll' }}>
+              <table className="text-sm" style={{ tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
                 <thead>
                   <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="px-4 py-3">User</th>
