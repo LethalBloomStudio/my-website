@@ -466,6 +466,10 @@ function AdminPageInner() {
   const [giftConfirm, setGiftConfirm] = useState(false);
   const [giftRevokeConfirm, setGiftRevokeConfirm] = useState(false);
   const [giftLoading, setGiftLoading] = useState(false);
+  const [userBillingHistory, setUserBillingHistory] = useState<{
+    billingEvents: { id: string; stripe_invoice_id: string; stripe_subscription_id: string | null; amount_cents: number; currency: string; billing_reason: string | null; period_start: string | null; period_end: string | null; created_at: string }[];
+    coinPurchases: { id: string; delta: number; reason: string; metadata: { package_id?: string; price_cents?: number; currency?: string } | null; created_at: string }[];
+  } | null>(null);
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
   const [annRewardCoins, setAnnRewardCoins] = useState<0 | 5 | 10 | 25 | 50 | 75 | 100>(0);
@@ -922,6 +926,18 @@ function AdminPageInner() {
     setTipCounts(map);
   }
 
+  async function loadUserBillingHistory(userId: string) {
+    setUserBillingHistory(null);
+    const data = await adminFetch(`/api/admin/user-billing?user_id=${userId}`) as {
+      billingEvents?: { id: string; stripe_invoice_id: string; stripe_subscription_id: string | null; amount_cents: number; currency: string; billing_reason: string | null; period_start: string | null; period_end: string | null; created_at: string }[];
+      coinPurchases?: { id: string; delta: number; reason: string; metadata: { package_id?: string; price_cents?: number; currency?: string } | null; created_at: string }[];
+    } | null;
+    setUserBillingHistory({
+      billingEvents: data?.billingEvents ?? [],
+      coinPurchases: data?.coinPurchases ?? [],
+    });
+  }
+
   async function loadModNotes(targetId: string) {
     const rows = await adminFetch("/api/admin/action", {
       method: "POST",
@@ -1354,7 +1370,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1466,7 +1482,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2656,7 +2672,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">{selectedUser.email} {selectedUser.username ? `· @${selectedUser.username}` : ""}</p>
               </div>
-              <button onClick={() => setSelectedUser(null)} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -2869,6 +2885,53 @@ function AdminPageInner() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Paid Transaction History ── */}
+            <div className="border-t border-[rgba(120,120,120,0.2)] pt-4 mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Paid Transaction History</p>
+              {userBillingHistory === null ? (
+                <p className="text-xs text-neutral-600">Loading…</p>
+              ) : (userBillingHistory.billingEvents.length === 0 && userBillingHistory.coinPurchases.length === 0) ? (
+                <p className="text-xs text-neutral-600">No paid transactions found.</p>
+              ) : (
+                <div className="space-y-1 max-h-52 overflow-y-auto pr-0.5">
+                  {userBillingHistory.billingEvents.map(b => {
+                    const BILLING_LABELS: Record<string, string> = {
+                      subscription_create: "New Subscription",
+                      subscription_cycle:  "Renewal",
+                      subscription_update: "Plan Change",
+                      manual:              "Manual Charge",
+                    };
+                    return (
+                      <div key={b.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-neutral-200 font-medium">{BILLING_LABELS[b.billing_reason ?? ""] ?? b.billing_reason ?? "Subscription Charge"}</p>
+                          {b.period_start && b.period_end && (
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                              {new Date(b.period_start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – {new Date(b.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-emerald-300 shrink-0">${(b.amount_cents / 100).toFixed(2)} {b.currency.toUpperCase()}</span>
+                      </div>
+                    );
+                  })}
+                  {userBillingHistory.coinPurchases.map(cp => (
+                    <div key={cp.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-neutral-200 font-medium">Bloom Coin Pack</p>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">+{cp.delta.toLocaleString()} coins</p>
+                        <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(cp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-emerald-300 shrink-0">
+                        {cp.metadata?.price_cents ? `$${(cp.metadata.price_cents / 100).toFixed(2)}` : "—"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
