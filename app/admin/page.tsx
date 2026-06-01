@@ -2812,7 +2812,7 @@ function AdminPageInner() {
             {/* ── Gift Membership ── */}
             <div className="border-t border-[rgba(120,120,120,0.2)] pt-4 mb-4">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Gift Membership</p>
-              {selectedUser.active_gift_membership_id && selectedUser.gift_access_expires_at ? (
+              {selectedUser.active_gift_membership_id && selectedUser.gift_access_expires_at && !["lethal", "lethal_annual"].includes(selectedUser.subscription_status) ? (
                 <div className="space-y-2">
                   <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 px-3 py-2">
                     <p className="text-xs font-medium text-emerald-300">Gift access active</p>
