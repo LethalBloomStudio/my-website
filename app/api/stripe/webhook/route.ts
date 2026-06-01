@@ -54,15 +54,36 @@ export async function POST(req: Request) {
           ? session.customer
           : (session.customer as { id?: string } | null)?.id ?? null;
 
+        // Fetch the account first so we know if a gift needs to be voided
+        const { data: acctData } = await admin
+          .from("accounts")
+          .select("active_gift_membership_id")
+          .eq("user_id", user_id)
+          .maybeSingle();
+        const existingGiftId = (acctData as { active_gift_membership_id?: string | null } | null)?.active_gift_membership_id ?? null;
+
         await admin
           .from("accounts")
           .update({
             subscription_status: planToStoredStatus(plan_id),
             ...(subscriptionId ? { stripe_subscription_id: subscriptionId } : {}),
             ...(customerId ? { stripe_customer_id: customerId } : {}),
+            ...(existingGiftId ? { active_gift_membership_id: null, gift_access_expires_at: null } : {}),
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", user_id);
+
+        // If they had an active gift, mark it as superseded
+        if (existingGiftId) {
+          await admin
+            .from("gift_memberships")
+            .update({
+              status: "revoked",
+              revoked_at: new Date().toISOString(),
+              revoke_reason: "superseded_by_purchase",
+            })
+            .eq("id", existingGiftId);
+        }
 
         await admin.from("system_notifications").insert({
           user_id,

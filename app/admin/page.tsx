@@ -469,6 +469,7 @@ function AdminPageInner() {
   const [userBillingHistory, setUserBillingHistory] = useState<{
     billingEvents: { id: string; stripe_invoice_id: string; stripe_subscription_id: string | null; amount_cents: number; currency: string; billing_reason: string | null; period_start: string | null; period_end: string | null; created_at: string }[];
     coinPurchases: { id: string; delta: number; reason: string; metadata: { package_id?: string; price_cents?: number; currency?: string } | null; created_at: string }[];
+    giftHistory: { id: string; status: string; starts_at: string; ends_at: string; revoked_at: string | null; revoke_reason: string | null }[];
   } | null>(null);
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
@@ -931,10 +932,12 @@ function AdminPageInner() {
     const data = await adminFetch(`/api/admin/user-billing?user_id=${userId}`) as {
       billingEvents?: { id: string; stripe_invoice_id: string; stripe_subscription_id: string | null; amount_cents: number; currency: string; billing_reason: string | null; period_start: string | null; period_end: string | null; created_at: string }[];
       coinPurchases?: { id: string; delta: number; reason: string; metadata: { package_id?: string; price_cents?: number; currency?: string } | null; created_at: string }[];
+      giftHistory?: { id: string; status: string; starts_at: string; ends_at: string; revoked_at: string | null; revoke_reason: string | null }[];
     } | null;
     setUserBillingHistory({
       billingEvents: data?.billingEvents ?? [],
       coinPurchases: data?.coinPurchases ?? [],
+      giftHistory: data?.giftHistory ?? [],
     });
   }
 
@@ -2849,6 +2852,38 @@ function AdminPageInner() {
                 </div>
               ) : (
                 <div className="space-y-2">
+                  {(() => {
+                    const lastGift = userBillingHistory?.giftHistory?.[0];
+                    if (!lastGift) return null;
+                    if (lastGift.revoke_reason === "superseded_by_purchase") {
+                      return (
+                        <div className="rounded-lg border border-amber-800/50 bg-amber-950/20 px-3 py-2">
+                          <p className="text-xs font-medium text-amber-400">Gift voided — purchased paid membership</p>
+                          <p className="text-[10px] text-neutral-500 mt-0.5">
+                            Was active {new Date(lastGift.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – {new Date(lastGift.ends_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </p>
+                          {lastGift.revoked_at && (
+                            <p className="text-[10px] text-neutral-600 mt-0.5">
+                              Voided {new Date(lastGift.revoked_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (lastGift.revoke_reason === "manual_revoke") {
+                      return (
+                        <div className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/30 px-3 py-2">
+                          <p className="text-xs font-medium text-neutral-500">Previous gift revoked by admin</p>
+                          {lastGift.revoked_at && (
+                            <p className="text-[10px] text-neutral-600 mt-0.5">
+                              Revoked {new Date(lastGift.revoked_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <select
                     value={giftMonths}
                     onChange={e => setGiftMonths(Number(e.target.value) as 1 | 2 | 3 | 6 | 12)}

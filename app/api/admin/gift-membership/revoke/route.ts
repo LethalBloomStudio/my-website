@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   // Mark revoked in gift_memberships (CHECK constraint requires revoked_at when status = 'revoked')
   const { error: revokeError } = await supabase
     .from("gift_memberships")
-    .update({ status: "revoked", revoked_at: revokedAt })
+    .update({ status: "revoked", revoked_at: revokedAt, revoke_reason: "manual_revoke" })
     .eq("id", gift_membership_id);
 
   if (revokeError) return NextResponse.json({ error: revokeError.message }, { status: 500 });

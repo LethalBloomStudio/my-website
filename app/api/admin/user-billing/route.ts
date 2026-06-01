@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 
   const supabase = adminClient();
 
-  const [{ data: billingData }, { data: coinData }] = await Promise.all([
+  const [{ data: billingData }, { data: coinData }, { data: giftData }] = await Promise.all([
     supabase
       .from("stripe_billing_events")
       .select("id, stripe_invoice_id, stripe_subscription_id, amount_cents, currency, billing_reason, period_start, period_end, created_at")
@@ -40,10 +40,17 @@ export async function GET(req: Request) {
       .eq("user_id", userId)
       .eq("reason", "coin_purchase")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("gift_memberships")
+      .select("id, status, starts_at, ends_at, revoked_at, revoke_reason")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   return NextResponse.json({
     billingEvents: billingData ?? [],
     coinPurchases: coinData ?? [],
+    giftHistory: giftData ?? [],
   });
 }
