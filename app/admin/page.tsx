@@ -37,6 +37,7 @@ type UserRow = {
   promotion_expires_at: string | null;
   active_gift_membership_id: string | null;
   gift_access_expires_at: string | null;
+  gift_granted_at: string | null;
 };
 
 type Promotion = {
@@ -853,7 +854,7 @@ function AdminPageInner() {
       setGiftLoading(false);
       return;
     }
-    const updated = { ...selectedUser, active_gift_membership_id: data.gift_membership_id ?? null, gift_access_expires_at: data.ends_at ?? null };
+    const updated = { ...selectedUser, active_gift_membership_id: data.gift_membership_id ?? null, gift_access_expires_at: data.ends_at ?? null, gift_granted_at: new Date().toISOString() };
     setSelectedUser(updated);
     setUsers(prev => prev.map(u => u.user_id === selectedUser.user_id ? updated : u));
     setGiftConfirm(false);
@@ -877,7 +878,7 @@ function AdminPageInner() {
       setGiftLoading(false);
       return;
     }
-    const updated = { ...selectedUser, active_gift_membership_id: null, gift_access_expires_at: null };
+    const updated = { ...selectedUser, active_gift_membership_id: null, gift_access_expires_at: null, gift_granted_at: null };
     setSelectedUser(updated);
     setUsers(prev => prev.map(u => u.user_id === selectedUser.user_id ? updated : u));
     setGiftRevokeConfirm(false);
@@ -2796,6 +2797,11 @@ function AdminPageInner() {
                 <div className="space-y-2">
                   <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 px-3 py-2">
                     <p className="text-xs font-medium text-emerald-300">Gift access active</p>
+                    {selectedUser.gift_granted_at && (
+                      <p className="text-[11px] text-neutral-400 mt-0.5">
+                        Granted {new Date(selectedUser.gift_granted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                      </p>
+                    )}
                     <p className="text-[11px] text-neutral-400 mt-0.5">
                       Expires {new Date(selectedUser.gift_access_expires_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                     </p>

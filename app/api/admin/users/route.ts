@@ -41,19 +41,34 @@ export async function GET(req: Request) {
   const rows = accs ?? [];
   const ids = rows.map((r: { user_id: string }) => r.user_id);
 
-  const { data: profiles } = ids.length
-    ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", ids)
-    : { data: [] };
+  const activeGiftIds = (rows as { active_gift_membership_id: string | null }[])
+    .map(r => r.active_gift_membership_id)
+    .filter((id): id is string => id !== null);
+
+  const [profilesResult, giftsResult] = await Promise.all([
+    ids.length
+      ? supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", ids)
+      : { data: [] },
+    activeGiftIds.length
+      ? supabase.from("gift_memberships").select("id, starts_at").in("id", activeGiftIds)
+      : { data: [] },
+  ]);
 
   const profileMap: Record<string, { username: string | null; pen_name: string | null }> = {};
-  ((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).forEach(p => {
+  ((profilesResult.data ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).forEach(p => {
     profileMap[p.user_id] = { username: p.username, pen_name: p.pen_name };
   });
 
-  const users = rows.map((r: { user_id: string; [key: string]: unknown }) => ({
+  const giftGrantedMap: Record<string, string> = {};
+  ((giftsResult.data ?? []) as { id: string; starts_at: string }[]).forEach(g => {
+    giftGrantedMap[g.id] = g.starts_at;
+  });
+
+  const users = rows.map((r: { user_id: string; active_gift_membership_id?: string | null; [key: string]: unknown }) => ({
     ...r,
     username: profileMap[r.user_id]?.username ?? null,
     pen_name: profileMap[r.user_id]?.pen_name ?? null,
+    gift_granted_at: r.active_gift_membership_id ? (giftGrantedMap[r.active_gift_membership_id] ?? null) : null,
   }));
 
   return NextResponse.json(users);
