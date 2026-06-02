@@ -72,13 +72,14 @@ export default function DiscoverPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [isYouth, setIsYouth] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [ageCategory, setAgeCategory] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(15);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const chapterCountChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const sortedCategoryOptions = useMemo(
-    () => [...genreOptionsForAgeCategory(isYouth ? "youth_13_17" : null)].sort((a, b) => a.localeCompare(b)),
-    [isYouth],
+    () => [...genreOptionsForAgeCategory(ageCategory)].sort((a, b) => a.localeCompare(b)),
+    [ageCategory],
   );
 
   useEffect(() => {
@@ -92,10 +93,12 @@ export default function DiscoverPage() {
       if (user?.id) {
         const { data: acct } = await supabase
           .from("accounts")
-          .select("is_admin")
+          .select("is_admin, age_category")
           .eq("user_id", user.id)
           .maybeSingle();
-        setIsAdmin(!!(acct as { is_admin?: boolean } | null)?.is_admin);
+        const acctRow = acct as { is_admin?: boolean; age_category?: string | null } | null;
+        setIsAdmin(!!acctRow?.is_admin);
+        setAgeCategory(acctRow?.age_category ?? null);
       }
 
       const res = await fetch("/api/discover-manuscripts");

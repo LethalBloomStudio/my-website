@@ -11,7 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
-import { GENRE_OPTIONS } from "@/lib/profileOptions";
+import { genreOptionsForAgeCategory } from "@/lib/profileOptions";
 
 type ReaderProfile = {
   user_id: string;
@@ -78,6 +78,7 @@ function BetaReadersPageInner() {
   const [profiles, setProfiles] = useState<ReaderProfile[]>([]);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [_isYouth, setIsYouth] = useState(false);
+  const [ageCategory, setAgeCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState(initLevel);
@@ -96,8 +97,8 @@ function BetaReadersPageInner() {
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
   const sortedGenreOptions = useMemo(
-    () => ["", ...([...GENRE_OPTIONS].sort((a, b) => a.localeCompare(b)))],
-    [],
+    () => ["", ...[...genreOptionsForAgeCategory(ageCategory)].sort((a, b) => a.localeCompare(b))],
+    [ageCategory],
   );
 
   const load = useCallback(async () => {
@@ -107,6 +108,15 @@ function BetaReadersPageInner() {
     const { data: auth } = await supabase.auth.getSession();
     const uid = auth.session?.user?.id ?? null;
     setCurrentUserId(uid);
+
+    if (uid) {
+      const { data: acct } = await supabase
+        .from("accounts")
+        .select("age_category")
+        .eq("user_id", uid)
+        .maybeSingle();
+      setAgeCategory((acct as { age_category?: string | null } | null)?.age_category ?? null);
+    }
 
     const profilesUrl = isYouthView ? "/api/beta-reader-profiles?view=youth" : "/api/beta-reader-profiles";
     const [profilesRes, ownerRes] = await Promise.all([
