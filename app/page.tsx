@@ -51,7 +51,7 @@ export default function Home() {
       >
         <div className="mb-6 flex flex-col items-center gap-3">
           <span className="inline-block rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.12)] px-4 py-1 text-[0.7rem] font-medium uppercase tracking-widest text-neutral-400">
-            Now open to writers
+            A home for writers and readers
           </span>
           {activePromo && (
             <div className="inline-flex items-center gap-2 rounded-full border border-violet-600/50 bg-violet-950/40 px-4 py-1.5 text-xs font-medium text-violet-200">
