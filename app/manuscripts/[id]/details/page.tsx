@@ -171,8 +171,8 @@ export default function ManuscriptDetailsPage() {
   const [onlineReaderIds, setOnlineReaderIds] = useState<Set<string>>(new Set());
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
-  const [feedbackFilter, setFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
-  const [overviewFeedbackFilter, setOverviewFeedbackFilter] = useState<"unresolved" | "resolved" | "all">("unresolved");
+  const [feedbackFilter, setFeedbackFilter] = useState<"unresolved" | "agreed" | "disagreed" | "all">("unresolved");
+  const [overviewFeedbackFilter, setOverviewFeedbackFilter] = useState<"unresolved" | "agreed" | "disagreed" | "all">("unresolved");
   const [overviewExpandedIds, setOverviewExpandedIds] = useState<Set<string>>(new Set());
   const [feedbackNames, setFeedbackNames] = useState<Record<string, string>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
@@ -2459,7 +2459,7 @@ export default function ManuscriptDetailsPage() {
                     )}
                   </h2>
                   <div className="flex gap-1.5">
-                    {(["unresolved", "resolved", "all"] as const).map((opt) => (
+                    {(["unresolved", "agreed", "disagreed", "all"] as const).map((opt) => (
                       <button
                         key={opt}
                         type="button"
@@ -2477,9 +2477,10 @@ export default function ManuscriptDetailsPage() {
                 </div>
                 {(() => {
                   const overviewFiltered = feedbackItems.filter((f) => {
-                    const isResolved = f.resolved || !!f.author_response;
                     return overviewFeedbackFilter === "all" ? true :
-                      overviewFeedbackFilter === "resolved" ? isResolved : !isResolved;
+                      overviewFeedbackFilter === "agreed" ? f.author_response === "agree" :
+                      overviewFeedbackFilter === "disagreed" ? f.author_response === "disagree" :
+                      !f.resolved && !f.author_response;
                   });
                   return overviewFiltered.length === 0 ? (
                     <p className="text-sm italic text-neutral-500">
