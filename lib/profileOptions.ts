@@ -1,10 +1,13 @@
-import { ALL_MANUSCRIPT_CATEGORIES, YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
+import { ALL_MANUSCRIPT_CATEGORIES, EROTICA_CATEGORIES, YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
 
 export const GENRE_OPTIONS = ALL_MANUSCRIPT_CATEGORIES;
 
 export function genreOptionsForAgeCategory(ageCategory: string | null | undefined) {
   if (ageCategory === "youth_13_17") {
     return YOUTH_ALLOWED_CATEGORIES;
+  }
+  if (ageCategory === "adult_18_plus") {
+    return [...ALL_MANUSCRIPT_CATEGORIES, ...EROTICA_CATEGORIES];
   }
   return GENRE_OPTIONS;
 }

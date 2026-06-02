@@ -17,6 +17,10 @@ export const CORE_FICTION_GENRES = [
   "Paranormal",
   "Urban Fantasy",
   "Western",
+  "Speculative Fiction",
+  "Mythology/Folk",
+  "Cli-Fi",
+  "Cozy",
 ];
 
 export const ROMANCE_SUBGENRES = [
@@ -27,6 +31,10 @@ export const ROMANCE_SUBGENRES = [
   "Contemporary Romance",
   "Fantasy Romance",
   "Sci Fi Romance",
+  "Sports Romance",
+  "Romantasy",
+  "Reverse Harem/Why Choose",
+  "Monster Romance",
 ];
 
 export const MYSTERY_SUSPENSE_SUBGENRES = [
@@ -43,6 +51,8 @@ export const HORROR_SUBGENRES = [
   "Cosmic Horror",
   "Supernatural Horror",
   "Body Horror",
+  "Psychological Horror",
+  "Slasher",
 ];
 
 export const YOUTH_POPULAR_GENRES = [
@@ -65,6 +75,14 @@ export const NONFICTION_CATEGORIES = [
   "Narrative Nonfiction",
 ];
 
+export const LGBTQ_FICTION_CATEGORIES = [
+  "LGBTQ+ Fiction",
+];
+
+export const EROTICA_CATEGORIES = [
+  "Erotica/Erotic Fiction",
+];
+
 export const ALL_MANUSCRIPT_CATEGORIES = [
   ...CORE_FICTION_GENRES,
   ...ROMANCE_SUBGENRES,
@@ -72,6 +90,7 @@ export const ALL_MANUSCRIPT_CATEGORIES = [
   ...HORROR_SUBGENRES,
   ...YOUTH_POPULAR_GENRES,
   ...NONFICTION_CATEGORIES,
+  ...LGBTQ_FICTION_CATEGORIES,
 ];
 
 export const YOUTH_ALLOWED_CATEGORIES = [...YOUTH_POPULAR_GENRES];
@@ -79,6 +98,9 @@ export const YOUTH_ALLOWED_CATEGORIES = [...YOUTH_POPULAR_GENRES];
 export function categoriesForAgeCategory(ageCategory: string | null | undefined) {
   if (ageCategory === "youth_13_17") {
     return YOUTH_ALLOWED_CATEGORIES;
+  }
+  if (ageCategory === "adult_18_plus") {
+    return [...ALL_MANUSCRIPT_CATEGORIES, ...EROTICA_CATEGORIES];
   }
   return ALL_MANUSCRIPT_CATEGORIES;
 }
