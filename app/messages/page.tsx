@@ -114,6 +114,9 @@ function MessagesPageInner() {
   const withUser = searchParams.get("with") ?? "";
   const groupId = searchParams.get("group") ?? "";
   const isGroupChat = !!groupId;
+  const [mobileTab, setMobileTab] = useState<"friends" | "messages" | "notepad">(
+    (withUser || groupId) ? "messages" : "friends"
+  );
   const [myId, setMyId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -617,6 +620,15 @@ const [now] = useState(() => Date.now());
     }
     void loadChat(withUser, excludedRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reload chat when conversation changes; friends is read optimistically and loadChat is a component function
+  }, [withUser, groupId]);
+
+  // Auto-switch mobile tab when conversation URL params change
+  useEffect(() => {
+    if (withUser || groupId) {
+      setMobileTab("messages");
+    } else {
+      setMobileTab((current) => current === "messages" ? "friends" : current);
+    }
   }, [withUser, groupId]);
 
   // Realtime: new messages + typing indicator
@@ -1161,9 +1173,26 @@ const [now] = useState(() => Date.now());
       <div className="mx-auto max-w-[1440px] px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
 
+        {/* Mobile tab bar — hidden on lg+ where all three panels show side by side */}
+        <div className="mt-4 flex lg:hidden divide-x divide-[rgba(120,120,120,0.25)] rounded-xl border border-[rgba(120,120,120,0.45)] overflow-hidden">
+          {(["friends", "messages", "notepad"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className={`flex-1 py-2.5 text-sm font-medium transition ${
+                mobileTab === tab
+                  ? "bg-[rgba(120,120,120,0.22)] text-white"
+                  : "text-neutral-400 hover:text-neutral-200 hover:bg-[rgba(120,120,120,0.08)]"
+              }`}
+            >
+              {tab === "friends" ? "Friends" : tab === "messages" ? "Messages" : "Notepad"}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-6 grid items-start gap-4 lg:grid-cols-[290px_minmax(0,1fr)_280px]">
           {/* ── Sidebar ── */}
-          <aside className="space-y-4">
+          <aside className={`${mobileTab === "friends" ? "" : "hidden"} lg:block space-y-4`}>
             {/* Conversations list */}
             <div className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <p className="text-sm font-medium text-neutral-100">Conversations</p>
@@ -1470,6 +1499,7 @@ const [now] = useState(() => Date.now());
           </aside>
 
           {/* ── Main panel ── */}
+          <div className={`${mobileTab === "messages" ? "" : "hidden"} lg:block min-w-0`}>
           {!isGroupChat && withUser && blockedUsers.some((f) => f.userId === withUser) ? (
             <section className="flex h-[600px] flex-col rounded-xl border border-neutral-800 bg-[rgba(120,120,120,0.05)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
@@ -1764,9 +1794,10 @@ const [now] = useState(() => Date.now());
               {msg ? <p className="mt-2 shrink-0 text-sm text-red-300">{msg}</p> : null}
             </section>
           )}
+          </div>
 
           {/* ── Notes panel ── */}
-          <div className="hidden lg:block rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 sticky top-20 h-[634px] overflow-hidden">
+          <div className={`${mobileTab === "notepad" ? "" : "hidden"} lg:block rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4 lg:sticky lg:top-20 h-[634px] overflow-hidden`}>
             <NotesPanel manuscripts={myManuscripts} />
           </div>
         </div>
