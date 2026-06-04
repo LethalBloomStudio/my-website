@@ -2,6 +2,41 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 
+export async function PATCH(req: Request) {
+  const supabase = await supabaseServer();
+  const admin = supabaseAdmin();
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth?.user?.id;
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = (await req.json()) as { conversation_id?: string; title?: string };
+  const conversationId = String(body.conversation_id ?? "").trim();
+  const title = String(body.title ?? "").trim();
+
+  if (!conversationId) return NextResponse.json({ error: "conversation_id is required." }, { status: 400 });
+  if (!title) return NextResponse.json({ error: "Group name cannot be empty." }, { status: 400 });
+  if (title.length > 100) return NextResponse.json({ error: "Group name must be 100 characters or fewer." }, { status: 400 });
+
+  const { data: membership } = await admin
+    .from("group_message_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId)
+    .is("left_at", null)
+    .maybeSingle();
+
+  if (!membership) return NextResponse.json({ error: "You are not an active member of this group." }, { status: 403 });
+
+  const { error } = await admin
+    .from("group_message_conversations")
+    .update({ title, updated_at: new Date().toISOString() })
+    .eq("id", conversationId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ ok: true, title });
+}
+
 type AccountRow = {
   user_id: string;
   age_category: string | null;
