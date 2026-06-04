@@ -158,6 +158,8 @@ const [now] = useState(() => Date.now());
   const [prAppealSubmitted, setPrAppealSubmitted] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+  const [groupNameEditValue, setGroupNameEditValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
@@ -166,6 +168,8 @@ const [now] = useState(() => Date.now());
   const [myManuscripts, setMyManuscripts] = useState<{ id: string; title: string }[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const inboxChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const groupInboxChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const groupParticipantsRef = useRef<GroupParticipant[]>([]);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef(0);
   const [otherTyping, setOtherTyping] = useState(false);
@@ -174,6 +178,14 @@ const [now] = useState(() => Date.now());
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
 
+  // Sorted join of group IDs — recomputes when groupConversations changes but the string
+  // is stable as long as the same groups are in the list, so effects that depend on it
+  // won't re-fire just because an unread count was bumped.
+  const groupConversationIds = useMemo(
+    () => groupConversations.map((g) => g.id).sort().join(","),
+    [groupConversations]
+  );
+
   const EMOJIS = [
     "😀","😂","😍","🥰","😎","😢","😡","🤔","😴","🤯",
     "👍","👎","👏","🙌","🤝","🙏","💪","👀","🫶","❤️",
@@ -181,6 +193,10 @@ const [now] = useState(() => Date.now());
     "😬","🤦","🤷","💀","👻","🎶","📚","✍️","💬","🌹",
     "🌙","⭐","🎭","🖊️","📖","🌸","🦋","🌊","☕","🍀",
   ];
+
+  useEffect(() => {
+    groupParticipantsRef.current = groupParticipants;
+  }, [groupParticipants]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -590,6 +606,47 @@ const [now] = useState(() => Date.now());
     };
   }, [myId, withUser, supabase]);
 
+  // Group inbox watcher — bumps the sidebar unread badge for group conversations
+  // that are not currently open when a message arrives from another member.
+  useEffect(() => {
+    if (groupInboxChannelRef.current) {
+      void supabase.removeChannel(groupInboxChannelRef.current);
+      groupInboxChannelRef.current = null;
+    }
+    if (!myId || !groupConversationIds) return;
+
+    const ch = supabase
+      .channel(`group-inbox-${myId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_messages", filter: `conversation_id=in.(${groupConversationIds})` },
+        (payload: { new: Record<string, unknown> }) => {
+          const m = payload.new as { conversation_id: string; sender_id: string; created_at: string };
+          if (m.sender_id === myId) return;
+          if (m.conversation_id === groupId) return; // already handled by the active channel
+          const lastMessageAt = m.created_at ? new Date(m.created_at).getTime() : Date.now();
+          setGroupConversations((prev) =>
+            prev
+              .map((g) =>
+                g.id === m.conversation_id
+                  ? { ...g, unreadCount: g.unreadCount + 1, lastMessageAt }
+                  : g
+              )
+              .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
+          );
+        }
+      )
+      .subscribe();
+
+    groupInboxChannelRef.current = ch;
+    return () => {
+      if (groupInboxChannelRef.current) {
+        void supabase.removeChannel(groupInboxChannelRef.current);
+        groupInboxChannelRef.current = null;
+      }
+    };
+  }, [myId, groupConversationIds, groupId, supabase]);
+
   // When switching chats, only reload the messages - sidebar stays cached
   useEffect(() => {
     if (!sidebarLoadedRef.current) return; // initial load handles this
@@ -695,8 +752,26 @@ const [now] = useState(() => Date.now());
           const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
           forceScrollToBottomRef.current = distFromBottom < 150;
         }
-        if (m.sender_id !== myId) {
-          void loadGroupChat(groupId);
+        // Resolve sender info from the participants ref so we can enrich the
+        // message inline without doing a full thread reload.
+        const participant = groupParticipantsRef.current.find((p) => p.user_id === m.sender_id);
+        const enriched: Msg = {
+          ...m,
+          sender_name: participant?.label ?? "User",
+          sender_avatar_url: participant?.avatar_url ?? null,
+        };
+        setMessages((prev) => {
+          if (prev.some((p) => p.id === enriched.id)) return prev;
+          return [...prev, enriched].sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "group_message_conversations", filter: `id=eq.${groupId}` }, (payload: { new: Record<string, unknown> }) => {
+        const conv = payload.new as { id: string; title: string };
+        if (typeof conv.title === "string") {
+          setGroupLabel(conv.title);
+          setGroupConversations((prev) =>
+            prev.map((g) => (g.id === conv.id ? { ...g, title: conv.title } : g))
+          );
         }
       })
       .subscribe();
@@ -708,6 +783,7 @@ const [now] = useState(() => Date.now());
         channelRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: groupParticipantsRef is a ref (not reactive); all reactive deps listed
   }, [groupId, myId, supabase]);
 
   // Scroll to bottom on initial load; for subsequent updates (realtime) only
@@ -872,7 +948,11 @@ const [now] = useState(() => Date.now());
     if (inputRef.current) inputRef.current.style.height = "auto";
     if (json.message) {
       forceScrollToBottomRef.current = true;
-      setMessages((prev) => (prev.some((p) => p.id === json.message!.id) ? prev : [...prev, json.message!]));
+      setMessages((prev) => {
+        if (prev.some((p) => p.id === json.message!.id)) return prev;
+        const next = [...prev, json.message!];
+        return groupId ? next.sort((a, b) => a.created_at.localeCompare(b.created_at)) : next;
+      });
       requestAnimationFrame(() => {
         const container = messagesContainerRef.current;
         if (container) container.scrollTop = container.scrollHeight;
@@ -1166,6 +1246,25 @@ const [now] = useState(() => Date.now());
     }
     setGroupConversations((prev) => prev.filter((conversation) => conversation.id !== groupId));
     router.replace("/messages");
+  }
+
+  async function renameGroup(newTitle: string) {
+    if (!groupId) return;
+    const trimmed = newTitle.trim();
+    if (!trimmed) { setMsg("Group name cannot be empty."); return; }
+    const res = await fetch("/api/messages/group", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_id: groupId, title: trimmed }),
+    });
+    const json = (await res.json()) as { ok?: boolean; title?: string; error?: string };
+    if (!res.ok) { setMsg(json.error ?? "Failed to rename group."); return; }
+    const updatedTitle = json.title ?? trimmed;
+    setGroupLabel(updatedTitle);
+    setGroupConversations((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, title: updatedTitle } : g))
+    );
+    setIsEditingGroupName(false);
   }
 
   return (
@@ -1646,9 +1745,55 @@ const [now] = useState(() => Date.now());
             <section className="flex flex-col w-full rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-4">
               <div className="mb-3 shrink-0 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-neutral-300">
-                    {isGroupChat ? "Group chat:" : "Chatting with:"} <span className="text-white">{isGroupChat ? (groupLabel || "Group chat") : (withUserLabel || "Selected user")}</span>
-                  </p>
+                  {isGroupChat ? (
+                    isEditingGroupName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          autoFocus
+                          className="flex-1 min-w-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.15)] px-2 py-1 text-sm text-white focus:outline-none focus:border-[rgba(120,120,120,0.8)]"
+                          maxLength={100}
+                          value={groupNameEditValue}
+                          onChange={(e) => setGroupNameEditValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void renameGroup(groupNameEditValue);
+                            if (e.key === "Escape") setIsEditingGroupName(false);
+                          }}
+                        />
+                        <button
+                          onClick={() => void renameGroup(groupNameEditValue)}
+                          className="shrink-0 text-xs text-green-400 hover:text-green-300 transition"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setIsEditingGroupName(false)}
+                          className="shrink-0 text-xs text-neutral-400 hover:text-white transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm text-neutral-300">Group chat: <span className="text-white font-medium">{groupLabel || "Group chat"}</span></p>
+                        {!hasLeftGroup && (
+                          <button
+                            onClick={() => { setGroupNameEditValue(groupLabel || ""); setIsEditingGroupName(true); }}
+                            className="shrink-0 text-neutral-500 hover:text-neutral-300 transition"
+                            title="Rename group"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                              <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
+                              <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-sm text-neutral-300">
+                      Chatting with: <span className="text-white">{withUserLabel || "Selected user"}</span>
+                    </p>
+                  )}
                   {isGroupChat ? (
                     <p className="mt-1 truncate text-xs text-neutral-500">
                       {groupParticipants.map((participant) => participant.label).join(", ")}
