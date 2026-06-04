@@ -160,6 +160,7 @@ const [now] = useState(() => Date.now());
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [isEditingGroupName, setIsEditingGroupName] = useState(false);
   const [groupNameEditValue, setGroupNameEditValue] = useState("");
+  const [leaveGroupConfirmOpen, setLeaveGroupConfirmOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const initialScrollDoneRef = useRef(false);
@@ -1802,7 +1803,7 @@ const [now] = useState(() => Date.now());
                 </div>
                 {isGroupChat ? (
                   <button
-                    onClick={() => void leaveGroupChat()}
+                    onClick={() => setLeaveGroupConfirmOpen(true)}
                     className="text-xs text-amber-300 hover:text-amber-200 transition border border-amber-800/50 rounded-lg px-2 py-0.5"
                   >
                     Leave group
@@ -1953,6 +1954,31 @@ const [now] = useState(() => Date.now());
           onSubmit={(reason) => void submitReport(reason)}
           onCancel={() => setReportTarget(null)}
         />
+      )}
+
+      {leaveGroupConfirmOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-950 p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-neutral-100 mb-1">Leave group chat?</h2>
+            <p className="text-sm text-neutral-400 mb-4">
+              This is permanent. Once you leave, you cannot be re-added to this group.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLeaveGroupConfirmOpen(false)}
+                className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] px-4 py-2 text-sm text-neutral-300 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setLeaveGroupConfirmOpen(false); void leaveGroupChat(); }}
+                className="flex-1 rounded-lg bg-red-900/70 border border-red-700/50 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-800/70 transition"
+              >
+                Leave group
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {hideConfirmTarget && (
