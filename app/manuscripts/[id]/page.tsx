@@ -92,7 +92,7 @@ function PageInner() {
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
-  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "unresolved" | "agreed" | "disagreed">("unresolved");
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "unresolved" | "resolved">("unresolved");
   const [ownerFeedbackFilter, setOwnerFeedbackFilter] = useState<"unresolved" | "agreed" | "disagreed" | "all">("unresolved");
   const [names, setNames] = useState<Record<string, string>>({});
   const [usernames, setUsernames] = useState<Record<string, string>>({});
@@ -2082,7 +2082,7 @@ function PageInner() {
                   <span className="ml-2 rounded-full bg-[rgba(120,120,120,0.2)] px-2 py-0.5 text-[10px] font-normal text-[rgba(210,210,210,0.8)]">{myAllFeedback.length}</span>
                 </h2>
                 <div className="flex gap-1.5">
-                  {(["unresolved", "agreed", "disagreed", "all"] as const).map((f) => (
+                  {(["unresolved", "resolved", "all"] as const).map((f) => (
                     <button
                       key={f}
                       type="button"
@@ -2101,8 +2101,7 @@ function PageInner() {
               <div className="max-h-[480px] overflow-y-auto pr-1 space-y-4">
                 {myAllFeedback.filter((f) =>
                   feedbackFilter === "all" ? true :
-                  feedbackFilter === "agreed" ? f.author_response === "agree" :
-                  feedbackFilter === "disagreed" ? f.author_response === "disagree" :
+                  feedbackFilter === "resolved" ? (f.resolved || !!f.author_response) :
                   !f.resolved && !f.author_response
                 ).map((f) => {
                   const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
