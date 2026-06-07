@@ -5,6 +5,7 @@ import {
   consequenceFromStrike,
   consequenceMessage,
 } from "@/lib/messagePolicy";
+import { notifyAdminsConductEvent } from "@/lib/notifyAdminsConductEvent";
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -120,6 +121,17 @@ export async function POST(req: Request) {
       consequence,
       status: "pending_owner_review",
     });
+
+    if (consequence === "suspended_3_days" || consequence === "blacklisted") {
+      void notifyAdminsConductEvent({
+        adminClient: supabase,
+        violatorId: user.id,
+        consequence,
+        strikeNumber: nextStrike,
+        triggerSource: "discussion",
+        manuscriptId: null,
+      });
+    }
 
     // Notify linked parent account if this is a youth profile
     if (acct?.age_category === "youth_13_17") {

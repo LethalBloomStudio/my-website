@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { consequenceFromStrike, consequenceMessage, evaluateMessageTriggers } from "@/lib/messagePolicy";
+import { notifyAdminsConductEvent } from "@/lib/notifyAdminsConductEvent";
 
 type AccountRow = {
   age_category: string | null;
@@ -86,6 +87,17 @@ export async function POST(req: Request) {
         consequence,
         status: "pending_owner_review",
       });
+
+      if (consequence === "suspended_3_days" || consequence === "blacklisted") {
+        void notifyAdminsConductEvent({
+          adminClient: admin,
+          violatorId: userId,
+          consequence,
+          strikeNumber: nextStrike,
+          triggerSource: "feedback",
+          manuscriptId: body.manuscript_id ?? null,
+        });
+      }
 
       return NextResponse.json(
         { error: consequenceMessage(consequence), triggers, consequence },

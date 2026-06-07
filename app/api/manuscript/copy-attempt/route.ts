@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { consequenceFromStrike, consequenceMessage } from "@/lib/messagePolicy";
+import { notifyAdminsConductEvent } from "@/lib/notifyAdminsConductEvent";
 
 type AccountRow = {
   manuscript_conduct_strikes: number | null;
@@ -83,6 +84,18 @@ export async function POST(req: Request) {
       consequence,
       status: "pending_owner_review",
     });
+
+    if (consequence === "suspended_3_days" || consequence === "blacklisted") {
+      void notifyAdminsConductEvent({
+        adminClient: admin,
+        violatorId: userId,
+        consequence,
+        strikeNumber: nextStrike,
+        triggerSource: "copy_attempt",
+        manuscriptId: manuscript_id ?? null,
+        manuscriptTitle: manuscript_title ?? null,
+      });
+    }
 
     return NextResponse.json({
       ok: true,
