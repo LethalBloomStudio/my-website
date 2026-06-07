@@ -193,10 +193,20 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Abort any in-flight read-keys POST when the component unmounts (SPA navigation).
-  // localStorage already has the latest keys, so no data is lost on the current device.
+  // On SPA navigation (component unmount), fire sendBeacon so the DB write survives
+  // even though the in-flight fetch is cancelled by the browser. Without this, the POST
+  // is silently dropped and the DB is left stale — causing ghost notifications on any
+  // fresh session or second device that can't fall back to localStorage.
   useEffect(() => {
-    return () => { readKeysSaveAbortRef.current?.abort(); };
+    return () => {
+      const pending = pendingSaveDataRef.current;
+      if (pending) {
+        navigator.sendBeacon(
+          "/api/notifications/read-keys",
+          new Blob([JSON.stringify(pending)], { type: "application/json" })
+        );
+      }
+    };
   }, []);
 
   // sendBeacon fallback: fires on hard navigation / tab close where the fetch may
