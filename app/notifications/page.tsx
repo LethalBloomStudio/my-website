@@ -644,6 +644,23 @@ export default function NotificationsPage() {
           }
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new as { id?: string; is_read?: boolean; read_at?: string | null };
+          if (!row.id) return;
+          // Merge the updated fields into the matching item without replacing the list.
+          // This is the recovery path if an optimistic update was ever overwritten by a
+          // stale fetch: the DB UPDATE event will re-sync the correct is_read value.
+          setItems((prev) =>
+            prev.map((item) => {
+              if (item.type !== "admin" || (item.payload as SystemNotification).id !== row.id) return item;
+              return { ...item, payload: { ...(item.payload as SystemNotification), ...row } };
+            })
+          );
+        }
+      )
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load is a component function; subscription correctly restarts when userId/supabase change
