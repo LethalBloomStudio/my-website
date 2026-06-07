@@ -3138,6 +3138,12 @@ function AdminPageInner() {
             </div>
 
             {/* Quick actions */}
+            {!selectedManuscript.admin_hidden && (
+              <div className="mb-3">
+                <input type="text" placeholder="Reason (optional)" value={actionReason} onChange={e => setActionReason(e.target.value)}
+                  className="w-full rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-xs text-neutral-100 placeholder-neutral-500 outline-none" />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 mb-5">
               <button onClick={() => { setActionType("feature"); void applyManuscriptAction(); }}
                 className="rounded-lg border border-amber-700/50 bg-amber-900/10 px-3 py-2 text-xs font-medium text-amber-400 hover:bg-amber-900/30 transition">
