@@ -486,6 +486,7 @@ function AdminPageInner() {
   const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
   const [selectedUserFlags, setSelectedUserFlags] = useState<{ id: string; manuscript_id: string | null; manuscript_title: string | null; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; status: string }[]>([]);
   const usersTableRef = useRef<HTMLDivElement>(null);
+  const [showScrollArrows, setShowScrollArrows] = useState(false);
 
   // ─── Init ──────────────────────────────────────────────────────────────────
 
@@ -508,6 +509,22 @@ function AdminPageInner() {
     void init();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: runs once on mount; loadAll/loadAppeals are component functions, not reactive deps
   }, []);
+
+  // Show viewport-fixed scroll arrows while the Users table is visible on screen
+  useEffect(() => {
+    if (tab !== "users") {
+      setShowScrollArrows(false);
+      return;
+    }
+    const el = usersTableRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowScrollArrows(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [tab]);
 
   async function getToken(): Promise<string | null> {
     const { data } = await supabase.auth.getSession();
@@ -1475,27 +1492,7 @@ function AdminPageInner() {
                 being computed, which parent rules can silently defeat.
                 width:'max-content' + minWidth:'100%' lets the table size to its content
                 rather than its container, guaranteeing the scrollbar has something to scroll. */}
-            <div className="hidden md:block relative">
-              {/* Left scroll arrow */}
-              <button
-                onClick={() => usersTableRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
-                className="absolute left-0 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-neutral-900 text-neutral-400 shadow-md hover:border-[rgba(120,120,120,0.7)] hover:text-white transition"
-                aria-label="Scroll table left"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              {/* Right scroll arrow */}
-              <button
-                onClick={() => usersTableRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
-                className="absolute right-0 top-1/2 z-10 translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-neutral-900 text-neutral-400 shadow-md hover:border-[rgba(120,120,120,0.7)] hover:text-white transition"
-                aria-label="Scroll table right"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
+            <div className="hidden md:block">
               <div ref={usersTableRef} className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'scroll' }}>
               <table className="text-sm" style={{ tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
                 <thead>
@@ -1587,7 +1584,7 @@ function AdminPageInner() {
                 </tbody>
               </table>
             </div>
-            </div>{/* end relative wrapper */}
+            </div>
             <p className="mt-2 text-xs text-neutral-600">{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}</p>
           </div>
         )}
@@ -3381,6 +3378,31 @@ function AdminPageInner() {
             </div>
           </div>
         </div>
+      )}
+      {/* Viewport-fixed scroll arrows — visible while Users table intersects the viewport */}
+      {showScrollArrows && (
+        <>
+          <button
+            onClick={() => usersTableRef.current?.scrollBy({ left: -300, behavior: "smooth" })}
+            style={{ position: "fixed", left: 12, top: "50%", transform: "translateY(-50%)", zIndex: 50 }}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(120,120,120,0.45)] bg-neutral-950/80 text-neutral-400 shadow-lg backdrop-blur-sm hover:border-[rgba(120,120,120,0.75)] hover:text-white transition"
+            aria-label="Scroll Users table left"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            onClick={() => usersTableRef.current?.scrollBy({ left: 300, behavior: "smooth" })}
+            style={{ position: "fixed", right: 12, top: "50%", transform: "translateY(-50%)", zIndex: 50 }}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(120,120,120,0.45)] bg-neutral-950/80 text-neutral-400 shadow-lg backdrop-blur-sm hover:border-[rgba(120,120,120,0.75)] hover:text-white transition"
+            aria-label="Scroll Users table right"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </>
       )}
     </main>
   );
