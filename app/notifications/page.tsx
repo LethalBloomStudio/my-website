@@ -594,7 +594,10 @@ export default function NotificationsPage() {
     void load();
   }, [supabase]);
 
-  // Realtime: reload when a new system_notification is inserted for this user
+  // Realtime: append new system_notification without replacing the full list.
+  // Calling load() on every INSERT was the primary ghost-notification source: if a
+  // mark-as-read DB write hadn't committed yet when load() ran, the fresh fetch
+  // returned the old is_read=false value and overwrote the optimistic update.
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
@@ -602,7 +605,44 @@ export default function NotificationsPage() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "system_notifications", filter: `user_id=eq.${userId}` },
-        (payload: { new: Record<string, unknown> }) => { if ((payload.new as { category?: string })?.category !== "messages") void load(); }
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new as {
+            id?: string;
+            category?: string;
+            title?: string;
+            body?: string;
+            is_read?: boolean;
+            created_at?: string;
+            metadata?: SystemNotification["metadata"];
+          };
+          // Apply the same filters as prunedFeed in load()
+          if (row.category === "messages") return;
+          if (row.title?.startsWith("New message from")) return;
+          if ((row.metadata as { sender_id?: string } | null)?.sender_id) return;
+
+          if (row.id && row.title && row.body && row.created_at) {
+            // Append the new item without touching any existing read state
+            const newItem: FeedItem = {
+              key: `admin-${row.id}`,
+              type: "admin",
+              created_at: row.created_at,
+              payload: {
+                id: row.id,
+                category: row.category ?? "system",
+                title: row.title,
+                body: row.body,
+                is_read: row.is_read ?? false,
+                created_at: row.created_at,
+                metadata: row.metadata ?? null,
+              },
+            };
+            setItems((prev) => [newItem, ...prev]);
+          } else {
+            // Incomplete payload — fall back to full reload, but delay 1500 ms so
+            // any in-flight mark-as-read DB writes have time to commit first.
+            setTimeout(() => void load(), 1500);
+          }
+        }
       )
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
