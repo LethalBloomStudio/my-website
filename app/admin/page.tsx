@@ -979,7 +979,7 @@ function AdminPageInner() {
       await adminUpdate("manuscripts", "id", m.id, { admin_hidden: true, admin_note: actionReason || null });
       await audit("hide_manuscript", "manuscript", m.id, { admin_hidden: false }, { admin_hidden: true }, actionReason);
     } else if (actionType === "unhide") {
-      await adminUpdate("manuscripts", "id", m.id, { admin_hidden: false });
+      await adminUpdate("manuscripts", "id", m.id, { admin_hidden: false, admin_note: null });
       await audit("unhide_manuscript", "manuscript", m.id, { admin_hidden: true }, { admin_hidden: false }, actionReason);
     } else if (actionType === "feature") {
       await adminUpdate("manuscripts", "id", m.id, { is_featured: !m.is_featured });
