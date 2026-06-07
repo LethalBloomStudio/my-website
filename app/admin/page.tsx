@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
@@ -484,6 +484,7 @@ function AdminPageInner() {
     manuscript_lifetime_suspension_count: number;
   } | null>(null);
   const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
+  const usersTableRef = useRef<HTMLDivElement>(null);
 
   // ─── Init ──────────────────────────────────────────────────────────────────
 
@@ -1464,7 +1465,28 @@ function AdminPageInner() {
                 being computed, which parent rules can silently defeat.
                 width:'max-content' + minWidth:'100%' lets the table size to its content
                 rather than its container, guaranteeing the scrollbar has something to scroll. */}
-            <div className="hidden md:block rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'scroll' }}>
+            <div className="hidden md:block relative">
+              {/* Left scroll arrow */}
+              <button
+                onClick={() => usersTableRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
+                className="absolute left-0 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-neutral-900 text-neutral-400 shadow-md hover:border-[rgba(120,120,120,0.7)] hover:text-white transition"
+                aria-label="Scroll table left"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              {/* Right scroll arrow */}
+              <button
+                onClick={() => usersTableRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
+                className="absolute right-0 top-1/2 z-10 translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(120,120,120,0.4)] bg-neutral-900 text-neutral-400 shadow-md hover:border-[rgba(120,120,120,0.7)] hover:text-white transition"
+                aria-label="Scroll table right"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+              <div ref={usersTableRef} className="rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]" style={{ overflowX: 'scroll' }}>
               <table className="text-sm" style={{ tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
                 <thead>
                   <tr className="border-b border-[rgba(120,120,120,0.15)] text-left text-xs uppercase tracking-wide text-neutral-500">
@@ -1545,6 +1567,7 @@ function AdminPageInner() {
                 </tbody>
               </table>
             </div>
+            </div>{/* end relative wrapper */}
             <p className="mt-2 text-xs text-neutral-600">{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}</p>
           </div>
         )}
