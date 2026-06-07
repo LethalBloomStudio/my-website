@@ -136,6 +136,7 @@ export async function POST(req: Request) {
       await admin.from("message_moderation_flags").insert({
         sender_id: userId,
         receiver_id: manuscriptOwnerId ?? null,
+        manuscript_id: manuscriptId,
         content_excerpt: replyBody.slice(0, 500),
         triggers,
         consequence,

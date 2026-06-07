@@ -32,12 +32,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
 
-    const { data: accountData } = await supabase
-      .from("accounts")
-      .select("age_category, manuscript_conduct_strikes, manuscript_blacklisted, manuscript_suspended_until, manuscript_lifetime_suspension_count")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const [{ data: accountData }, { data: feedbackData }] = await Promise.all([
+      supabase
+        .from("accounts")
+        .select("age_category, manuscript_conduct_strikes, manuscript_blacklisted, manuscript_suspended_until, manuscript_lifetime_suspension_count")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("line_feedback")
+        .select("manuscript_id")
+        .eq("id", feedbackId)
+        .maybeSingle(),
+    ]);
     const account = (accountData as AccountRow | null) ?? null;
+    const editManuscriptId = (feedbackData as { manuscript_id?: string } | null)?.manuscript_id ?? null;
 
     if (account?.manuscript_blacklisted) {
       return NextResponse.json({ error: "Your manuscript privileges are blacklisted. You cannot edit feedback." }, { status: 403 });
@@ -76,6 +84,7 @@ export async function POST(req: Request) {
       await admin.from("message_moderation_flags").insert({
         sender_id: userId,
         receiver_id: body.manuscript_owner_id ?? null,
+        manuscript_id: editManuscriptId,
         content_excerpt: commentText.slice(0, 500),
         triggers,
         consequence,

@@ -113,6 +113,8 @@ export async function POST(req: Request) {
     await supabase.from("message_moderation_flags").insert({
       sender_id: user.id,
       receiver_id: post_author_id ?? user.id,
+      // manuscript_id is null here: community discussion posts are not tied to a specific manuscript
+      manuscript_id: null,
       content_excerpt: content.slice(0, 500),
       triggers,
       consequence,

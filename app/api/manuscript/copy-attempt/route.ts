@@ -77,6 +77,7 @@ export async function POST(req: Request) {
     await admin.from("message_moderation_flags").insert({
       sender_id: userId,
       receiver_id: ownerId,
+      manuscript_id: manuscript_id ?? null,
       content_excerpt: `Manuscript copy attempt: ${manuscript_title ?? manuscript_id ?? "unknown"}`,
       triggers: ["copy_attempt"],
       consequence,

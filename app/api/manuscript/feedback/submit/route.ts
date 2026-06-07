@@ -80,6 +80,7 @@ export async function POST(req: Request) {
       await admin.from("message_moderation_flags").insert({
         sender_id: userId,
         receiver_id: body.manuscript_owner_id ?? null,
+        manuscript_id: body.manuscript_id ?? null,
         content_excerpt: commentText.slice(0, 500),
         triggers,
         consequence,
