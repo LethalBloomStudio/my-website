@@ -484,6 +484,7 @@ function AdminPageInner() {
     manuscript_lifetime_suspension_count: number;
   } | null>(null);
   const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
+  const [selectedUserFlags, setSelectedUserFlags] = useState<{ id: string; manuscript_id: string | null; manuscript_title: string | null; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; status: string }[]>([]);
   const usersTableRef = useRef<HTMLDivElement>(null);
 
   // ─── Init ──────────────────────────────────────────────────────────────────
@@ -969,6 +970,15 @@ function AdminPageInner() {
     setSelectedMsFlags(data?.manuscriptFlags ?? []);
   }
 
+  async function loadUserFlags(userId: string) {
+    const data = await adminFetch(
+      `/api/admin/data?scope=user_flags&user_id=${encodeURIComponent(userId)}`
+    ) as {
+      userFlags?: { id: string; manuscript_id: string | null; manuscript_title: string | null; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; status: string }[];
+    } | null;
+    setSelectedUserFlags(data?.userFlags ?? []);
+  }
+
   // ─── Manuscript actions ────────────────────────────────────────────────────
 
   async function applyManuscriptAction() {
@@ -1423,7 +1433,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1498,11 +1508,12 @@ function AdminPageInner() {
                     <th className="px-4 py-3">Role</th>
                     <th className="px-4 py-3">Coins</th>
                     <th className="px-4 py-3">Joined</th>
+                    <th className="px-4 py-3">Conduct</th>
                     <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-neutral-500">No users found.</td></tr>}
+                  {filteredUsers.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-neutral-500">No users found.</td></tr>}
                   {filteredUsers.map(u => (
                     <tr key={u.user_id} className="border-b border-[rgba(120,120,120,0.08)] hover:bg-[rgba(120,120,120,0.04)]">
                       <td className="px-4 py-3">
@@ -1549,6 +1560,15 @@ function AdminPageInner() {
                       <td className="px-4 py-3 text-neutral-300 text-xs">{u.bloom_coins.toLocaleString()}</td>
                       <td className="px-4 py-3 text-neutral-500 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3" style={{ whiteSpace: 'nowrap' }}>
+                        {u.manuscript_blacklisted ? (
+                          <span className="inline-block rounded-full border border-red-700/50 bg-red-950/30 px-2 py-0.5 text-[10px] font-semibold text-red-400">Blacklisted</span>
+                        ) : u.manuscript_suspended_until && new Date(u.manuscript_suspended_until).getTime() > Date.now() ? (
+                          <span className="inline-block rounded-full border border-amber-700/50 bg-amber-950/30 px-2 py-0.5 text-[10px] font-semibold text-amber-400">Suspended</span>
+                        ) : u.manuscript_conduct_strikes > 0 ? (
+                          <span className="text-[10px] text-neutral-500">{u.manuscript_conduct_strikes} strike{u.manuscript_conduct_strikes !== 1 ? "s" : ""}</span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3" style={{ whiteSpace: 'nowrap' }}>
                         <div className="flex items-center gap-2">
                           {u.username && (
                             <Link href={`/u/${u.username}`} target="_blank"
@@ -1556,7 +1576,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2754,7 +2774,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">{selectedUser.email} {selectedUser.username ? `· @${selectedUser.username}` : ""}</p>
               </div>
-              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -2813,6 +2833,56 @@ function AdminPageInner() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* ── Manuscript Conduct (always visible) ── */}
+            <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Manuscript Conduct</p>
+              <div className="flex items-center gap-3 flex-wrap mb-1.5">
+                <span className="text-xs text-neutral-400">
+                  Strikes: <span className={`font-semibold ${selectedUser.manuscript_conduct_strikes > 0 ? "text-amber-300" : "text-neutral-300"}`}>{selectedUser.manuscript_conduct_strikes}</span>
+                </span>
+                <span className="text-xs text-neutral-400">
+                  Lifetime suspensions: <span className="font-semibold text-neutral-300">{selectedUser.manuscript_lifetime_suspension_count}</span>
+                </span>
+              </div>
+              {selectedUser.manuscript_blacklisted && (
+                <p className="text-xs font-semibold text-red-400 mb-1">⛔ Permanently blacklisted from reading manuscripts</p>
+              )}
+              {!selectedUser.manuscript_blacklisted && selectedUser.manuscript_suspended_until && new Date(selectedUser.manuscript_suspended_until).getTime() > Date.now() && (
+                <p className="text-xs font-semibold text-amber-400 mb-1">
+                  ⏸ Suspended until {new Date(selectedUser.manuscript_suspended_until).toLocaleString()}
+                </p>
+              )}
+              {!selectedUser.manuscript_blacklisted && (!selectedUser.manuscript_suspended_until || new Date(selectedUser.manuscript_suspended_until).getTime() <= Date.now()) && selectedUser.manuscript_conduct_strikes === 0 && (
+                <p className="text-xs text-neutral-600">No active conduct restrictions</p>
+              )}
+              {selectedUserFlags.length > 0 && (
+                <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-600 mb-1">Recent Flags</p>
+                  {selectedUserFlags.map(f => (
+                    <div key={f.id} className="rounded border border-[rgba(120,120,120,0.15)] bg-neutral-900/60 px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <span className={`text-[10px] font-semibold ${f.consequence === "blacklisted" ? "text-red-400" : f.consequence === "suspended_3_days" ? "text-amber-400" : "text-neutral-400"}`}>
+                            {f.consequence === "blacklisted" ? "Blacklisted" : f.consequence === "suspended_3_days" ? "Suspended 3d" : f.consequence === "warning_2" ? "Warning 2" : "Warning 1"}
+                          </span>
+                          {f.triggers.length > 0 && (
+                            <span className="ml-1.5 text-[10px] text-neutral-500">— {f.triggers.join(", ")}</span>
+                          )}
+                          {f.manuscript_title && (
+                            <p className="text-[10px] text-neutral-500 truncate mt-0.5">on &ldquo;{f.manuscript_title}&rdquo;</p>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-neutral-600 shrink-0">{new Date(f.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selectedUserFlags.length === 0 && selectedUser.manuscript_conduct_strikes > 0 && (
+                <p className="text-[10px] text-neutral-600 mt-1">No flag records found.</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-5">

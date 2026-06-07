@@ -493,6 +493,37 @@ export async function GET(req: Request) {
     }
   }
 
+  if (scope === "user_flags") {
+    const userId = searchParams.get("user_id");
+    if (userId) {
+      const { data: flagsData } = await supabase
+        .from("message_moderation_flags")
+        .select("id, manuscript_id, triggers, consequence, content_excerpt, created_at, status")
+        .eq("sender_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      const flagRows = (flagsData ?? []) as {
+        id: string;
+        manuscript_id: string | null;
+        triggers: string[];
+        consequence: string;
+        content_excerpt: string | null;
+        created_at: string;
+        status: string;
+      }[];
+      const msIds = [...new Set(flagRows.map(r => r.manuscript_id).filter(Boolean))] as string[];
+      const { data: mss } = msIds.length
+        ? await supabase.from("manuscripts").select("id, title").in("id", msIds)
+        : { data: [] };
+      const msMap: Record<string, string | null> = {};
+      ((mss ?? []) as { id: string; title: string | null }[]).forEach(m => { msMap[m.id] = m.title; });
+      result.userFlags = flagRows.map(r => ({
+        ...r,
+        manuscript_title: r.manuscript_id ? (msMap[r.manuscript_id] ?? null) : null,
+      }));
+    }
+  }
+
   if (scope === "youth_beta_readers") {
     const { data: profiles } = await supabase
       .from("public_profiles")
