@@ -172,6 +172,12 @@ export default function NotificationsPage() {
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const catMenuRef = useRef<HTMLDivElement>(null);
   const tabMenuRef = useRef<HTMLDivElement>(null);
+  // Tracks the AbortController for the in-flight read-keys POST so we can cancel
+  // it on unmount without losing the data (sendBeacon covers the navigation case).
+  const readKeysSaveAbortRef = useRef<AbortController | null>(null);
+  // Tracks the latest entries pending DB persistence so beforeunload can send
+  // them via sendBeacon if the fetch was aborted by navigation.
+  const pendingSaveDataRef = useRef<{ entries: { key: string; readAt: number }[] } | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -185,6 +191,28 @@ export default function NotificationsPage() {
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Abort any in-flight read-keys POST when the component unmounts (SPA navigation).
+  // localStorage already has the latest keys, so no data is lost on the current device.
+  useEffect(() => {
+    return () => { readKeysSaveAbortRef.current?.abort(); };
+  }, []);
+
+  // sendBeacon fallback: fires on hard navigation / tab close where the fetch may
+  // have been cancelled by the browser. The API uses cookie-based auth so no
+  // Authorization header is needed — the session cookie is sent automatically.
+  useEffect(() => {
+    function handleBeforeUnload() {
+      const pending = pendingSaveDataRef.current;
+      if (!pending) return;
+      navigator.sendBeacon(
+        "/api/notifications/read-keys",
+        new Blob([JSON.stringify(pending)], { type: "application/json" })
+      );
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -215,11 +243,23 @@ export default function NotificationsPage() {
     const entries = keys.map((k) => ({ key: k, readAt: existingMap.get(k) ?? now }));
     // Persist to localStorage (fast, same-device cache)
     window.localStorage.setItem(`notif_read_keys_${uid}`, JSON.stringify(entries));
+    // Track latest entries for the beforeunload sendBeacon fallback
+    pendingSaveDataRef.current = { entries };
+    // Cancel any previous in-flight POST before starting a new one
+    readKeysSaveAbortRef.current?.abort();
+    const controller = new AbortController();
+    readKeysSaveAbortRef.current = controller;
     // Persist to DB (survives across devices/browsers)
     void fetch("/api/notifications/read-keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entries }),
+      signal: controller.signal,
+    }).then(() => {
+      // Clear pending data once successfully written — sendBeacon no longer needed
+      pendingSaveDataRef.current = null;
+    }).catch(() => {
+      // Aborted or failed — beforeunload sendBeacon will cover the navigation case
     });
     window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
   }
