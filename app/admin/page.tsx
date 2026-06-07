@@ -1286,9 +1286,9 @@ function AdminPageInner() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { label: "Messaging Suspended", value: stats.msg_suspended, color: "amber" },
-                  { label: "Manuscript Suspended", value: stats.ms_suspended, color: "amber" },
+                  { label: "Readers Suspended from Manuscripts", value: stats.ms_suspended, color: "amber" },
                   { label: "Messaging Blacklisted", value: stats.msg_blacklisted, color: "red" },
-                  { label: "Manuscript Blacklisted", value: stats.ms_blacklisted, color: "red" },
+                  { label: "Readers Blacklisted from Manuscripts", value: stats.ms_blacklisted, color: "red" },
                 ].map(s => (
                   <div key={s.label}>
                     <p className="text-xs text-neutral-500 mb-0.5">{s.label}</p>
