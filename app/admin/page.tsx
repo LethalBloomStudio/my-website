@@ -3115,6 +3115,13 @@ function AdminPageInner() {
               {selectedManuscript.admin_hidden && <Badge label="Admin Hidden" color="red" />}
             </div>
 
+            {selectedManuscript.admin_note && (
+              <div className="mb-5 rounded-lg border border-red-800/40 bg-red-950/20 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red-400/70 mb-0.5">Suspension Reason</p>
+                <p className="text-sm text-red-200">{selectedManuscript.admin_note}</p>
+              </div>
+            )}
+
             {/* Edit metadata */}
             <div className="mb-5 space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Edit Metadata</p>
