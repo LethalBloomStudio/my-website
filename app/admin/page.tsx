@@ -68,6 +68,7 @@ type Manuscript = {
   created_at: string;
   owner_id: string;
   owner_name: string | null;
+  pending_flags: number;
 };
 
 type Report = {
@@ -476,6 +477,13 @@ function AdminPageInner() {
   const [annRewardCoins, setAnnRewardCoins] = useState<0 | 5 | 10 | 25 | 50 | 75 | 100>(0);
   const [annConfirmOpen, setAnnConfirmOpen] = useState(false);
   const [editingManuscript, setEditingManuscript] = useState<Partial<Manuscript> | null>(null);
+  const [selectedMsOwnerConduct, setSelectedMsOwnerConduct] = useState<{
+    manuscript_conduct_strikes: number;
+    manuscript_suspended_until: string | null;
+    manuscript_blacklisted: boolean;
+    manuscript_lifetime_suspension_count: number;
+  } | null>(null);
+  const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
 
   // ─── Init ──────────────────────────────────────────────────────────────────
 
@@ -949,6 +957,17 @@ function AdminPageInner() {
     setModNotes(rows ?? []);
   }
 
+  async function loadManuscriptDetail(manuscriptId: string, ownerId: string) {
+    const data = await adminFetch(
+      `/api/admin/data?scope=manuscript_detail&manuscript_id=${encodeURIComponent(manuscriptId)}&owner_id=${encodeURIComponent(ownerId)}`
+    ) as {
+      ownerConduct?: { manuscript_conduct_strikes: number; manuscript_suspended_until: string | null; manuscript_blacklisted: boolean; manuscript_lifetime_suspension_count: number } | null;
+      manuscriptFlags?: { id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[];
+    } | null;
+    setSelectedMsOwnerConduct(data?.ownerConduct ?? null);
+    setSelectedMsFlags(data?.manuscriptFlags ?? []);
+  }
+
   // ─── Manuscript actions ────────────────────────────────────────────────────
 
   async function applyManuscriptAction() {
@@ -979,11 +998,41 @@ function AdminPageInner() {
 
     await loadManuscripts();
     setSelectedManuscript(null);
+    setSelectedMsOwnerConduct(null);
+    setSelectedMsFlags([]);
     setActionType(null);
     setActionReason("");
     setEditingManuscript(null);
     setActionLoading(false);
     setMsg("Manuscript updated.");
+  }
+
+  async function clearManuscriptSuspension() {
+    if (!selectedManuscript) return;
+    setActionLoading(true);
+    await adminUpdate("accounts", "user_id", selectedManuscript.owner_id, {
+      manuscript_conduct_strikes: 0,
+      manuscript_suspended_until: null,
+      manuscript_blacklisted: false,
+      manuscript_lifetime_suspension_count: 0,
+      has_unacknowledged_violation: false,
+    });
+    await audit("clear_manuscript_suspension", "user", selectedManuscript.owner_id, {
+      manuscript_conduct_strikes: selectedMsOwnerConduct?.manuscript_conduct_strikes,
+      manuscript_suspended_until: selectedMsOwnerConduct?.manuscript_suspended_until,
+      manuscript_blacklisted: selectedMsOwnerConduct?.manuscript_blacklisted,
+    }, { manuscript_conduct_strikes: 0, manuscript_suspended_until: null, manuscript_blacklisted: false }, "Admin cleared manuscript suspension");
+    await loadManuscriptDetail(selectedManuscript.id, selectedManuscript.owner_id);
+    setActionLoading(false);
+    setMsg("Manuscript suspension cleared.");
+  }
+
+  async function resolveMsFlag(flagId: string) {
+    if (!selectedManuscript) return;
+    await adminUpdate("manuscript_moderation_flags", "id", flagId, { status: "resolved" });
+    await audit("resolve_flag", "manuscript_flag", flagId, { status: "pending_owner_review" }, { status: "resolved" });
+    await loadManuscriptDetail(selectedManuscript.id, selectedManuscript.owner_id);
+    setMsg("Flag resolved.");
   }
 
   // ─── Report actions ────────────────────────────────────────────────────────
@@ -1534,7 +1583,14 @@ function AdminPageInner() {
                       <td className="px-4 py-3"><Badge label={m.visibility} color={m.visibility === "public" ? "green" : "neutral"} /></td>
                       <td className="px-4 py-3 text-neutral-400 text-xs">{m.genre || "-"}</td>
                       <td className="px-4 py-3">
-                        {m.admin_note && <span className="text-xs text-amber-400" title={m.admin_note}>⚑ Note</span>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {m.pending_flags > 0 && (
+                            <span className="rounded-full bg-red-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-red-400">
+                              ⚑ {m.pending_flags} flag{m.pending_flags !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                          {m.admin_note && <span className="text-xs text-amber-400" title={m.admin_note}>⚑ Note</span>}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -1542,7 +1598,7 @@ function AdminPageInner() {
                             className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] px-2.5 py-1 text-xs text-neutral-400 hover:text-white transition">
                             View ↗
                           </Link>
-                          <button onClick={() => { setSelectedManuscript(m); setActionType(null); setActionReason(""); setEditingManuscript({ title: m.title, genre: m.genre, age_rating: m.age_rating }); void loadModNotes(m.id); }}
+                          <button onClick={() => { setSelectedManuscript(m); setActionType(null); setActionReason(""); setEditingManuscript({ title: m.title, genre: m.genre, age_rating: m.age_rating }); void loadModNotes(m.id); void loadManuscriptDetail(m.id, m.owner_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -3050,7 +3106,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">by {selectedManuscript.owner_name || "Unknown"}</p>
               </div>
-              <button onClick={() => setSelectedManuscript(null)} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedManuscript(null); setSelectedMsOwnerConduct(null); setSelectedMsFlags([]); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-5">
@@ -3091,6 +3147,78 @@ function AdminPageInner() {
                 </button>
               ))}
             </div>
+
+            {/* Owner manuscript conduct / suspension status */}
+            {selectedMsOwnerConduct && (
+              <div className="border-t border-[rgba(120,120,120,0.2)] pt-4 mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Owner Manuscript Conduct</p>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5 mb-3 space-y-1">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-xs text-neutral-400">
+                      Strikes: <span className="text-neutral-200 font-medium">{selectedMsOwnerConduct.manuscript_conduct_strikes}</span>
+                    </span>
+                    <span className="text-xs text-neutral-400">
+                      Lifetime suspensions: <span className="text-neutral-200 font-medium">{selectedMsOwnerConduct.manuscript_lifetime_suspension_count}</span>
+                    </span>
+                  </div>
+                  {selectedMsOwnerConduct.manuscript_blacklisted && (
+                    <p className="text-xs font-semibold text-red-400">⛔ Permanently blacklisted from reading manuscripts</p>
+                  )}
+                  {!selectedMsOwnerConduct.manuscript_blacklisted && selectedMsOwnerConduct.manuscript_suspended_until && new Date(selectedMsOwnerConduct.manuscript_suspended_until) > new Date() && (
+                    <p className="text-xs font-semibold text-amber-400">
+                      ⏸ Suspended until {new Date(selectedMsOwnerConduct.manuscript_suspended_until).toLocaleString()}
+                    </p>
+                  )}
+                  {!selectedMsOwnerConduct.manuscript_blacklisted && (!selectedMsOwnerConduct.manuscript_suspended_until || new Date(selectedMsOwnerConduct.manuscript_suspended_until) <= new Date()) && (
+                    <p className="text-xs text-neutral-500">No active suspension</p>
+                  )}
+                </div>
+                {(selectedMsOwnerConduct.manuscript_blacklisted || (selectedMsOwnerConduct.manuscript_suspended_until && new Date(selectedMsOwnerConduct.manuscript_suspended_until) > new Date())) && (
+                  <button onClick={() => void clearManuscriptSuspension()} disabled={actionLoading}
+                    className="rounded-lg border border-emerald-700/50 bg-emerald-900/10 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-900/30 disabled:opacity-40 transition">
+                    Lift Suspension / Clear Blacklist
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Moderation flags for this manuscript */}
+            {selectedMsFlags.length > 0 && (
+              <div className="border-t border-[rgba(120,120,120,0.2)] pt-4 mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+                  Moderation Flags
+                  {selectedMsFlags.filter(f => f.status !== "resolved").length > 0 && (
+                    <span className="ml-2 rounded-full bg-amber-900/40 px-1.5 py-0.5 text-[10px] text-amber-400">
+                      {selectedMsFlags.filter(f => f.status !== "resolved").length} open
+                    </span>
+                  )}
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {selectedMsFlags.map(f => (
+                    <div key={f.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-neutral-300">{f.reason}</p>
+                          {f.matched_terms?.length > 0 && (
+                            <p className="text-[10px] text-red-400 mt-0.5">Matched: {f.matched_terms.join(", ")}</p>
+                          )}
+                          <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(f.created_at).toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Badge label={f.status === "resolved" ? "resolved" : "pending"} color={f.status === "resolved" ? "green" : "amber"} />
+                          {f.status !== "resolved" && (
+                            <button onClick={() => void resolveMsFlag(f.id)}
+                              className="rounded-lg border border-emerald-700/50 bg-emerald-900/10 px-2 py-0.5 text-[10px] text-emerald-400 hover:bg-emerald-900/30 transition">
+                              Resolve
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Moderation notes */}
             <div className="border-t border-[rgba(120,120,120,0.2)] pt-4">

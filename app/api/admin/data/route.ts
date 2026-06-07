@@ -36,14 +36,18 @@ export async function GET(req: Request) {
       .from("manuscripts")
       .select("id, title, visibility, genre, categories, age_rating, is_featured, admin_hidden, admin_note, created_at, owner_id")
       .order("created_at", { ascending: false });
-    const rows = (msData ?? []) as { owner_id: string; [k: string]: unknown }[];
+    const rows = (msData ?? []) as { id: string; owner_id: string; [k: string]: unknown }[];
+    const msIds = rows.map(r => r.id);
     const ownerIds = [...new Set(rows.map(r => r.owner_id))];
-    const [{ data: owners }, { data: ownerAccounts }] = await Promise.all([
+    const [{ data: owners }, { data: ownerAccounts }, { data: flagCounts }] = await Promise.all([
       ownerIds.length
         ? supabase.from("public_profiles").select("user_id, pen_name, username").in("user_id", ownerIds)
         : Promise.resolve({ data: [] }),
       ownerIds.length
         ? supabase.from("accounts").select("user_id, full_name, email").in("user_id", ownerIds)
+        : Promise.resolve({ data: [] }),
+      msIds.length
+        ? supabase.from("manuscript_moderation_flags").select("manuscript_id").eq("status", "pending_owner_review").in("manuscript_id", msIds)
         : Promise.resolve({ data: [] }),
     ]);
     const ownerMap: Record<string, string | null> = {};
@@ -54,7 +58,11 @@ export async function GET(req: Request) {
       if (ownerMap[o.user_id]) return;
       ownerMap[o.user_id] = o.full_name?.trim() || o.email?.trim() || null;
     });
-    result.manuscripts = rows.map(r => ({ ...r, owner_name: ownerMap[r.owner_id] ?? null }));
+    const flagCountMap: Record<string, number> = {};
+    ((flagCounts ?? []) as { manuscript_id: string }[]).forEach(f => {
+      flagCountMap[f.manuscript_id] = (flagCountMap[f.manuscript_id] ?? 0) + 1;
+    });
+    result.manuscripts = rows.map(r => ({ ...r, owner_name: ownerMap[r.owner_id] ?? null, pending_flags: flagCountMap[r.id] ?? 0 }));
   }
 
   if (scope === "all" || scope === "reports") {
@@ -452,6 +460,37 @@ export async function GET(req: Request) {
       .select("id, user_id, email_snapshot, full_name_snapshot, username_snapshot, pen_name_snapshot, age_category, subscription_status, bloom_coins, reason, deleted_at")
       .order("deleted_at", { ascending: false });
     result.deletedAccounts = data ?? [];
+  }
+
+  if (scope === "manuscript_detail") {
+    const manuscriptId = searchParams.get("manuscript_id");
+    const ownerId = searchParams.get("owner_id");
+    if (manuscriptId && ownerId) {
+      const [{ data: conductData }, { data: flagsData }] = await Promise.all([
+        supabase.from("accounts")
+          .select("manuscript_conduct_strikes, manuscript_suspended_until, manuscript_blacklisted, manuscript_lifetime_suspension_count")
+          .eq("user_id", ownerId)
+          .maybeSingle(),
+        supabase.from("manuscript_moderation_flags")
+          .select("id, owner_id, reason, matched_terms, status, created_at")
+          .eq("manuscript_id", manuscriptId)
+          .order("created_at", { ascending: false }),
+      ]);
+      result.ownerConduct = conductData as {
+        manuscript_conduct_strikes: number;
+        manuscript_suspended_until: string | null;
+        manuscript_blacklisted: boolean;
+        manuscript_lifetime_suspension_count: number;
+      } | null;
+      result.manuscriptFlags = (flagsData ?? []) as {
+        id: string;
+        owner_id: string | null;
+        reason: string;
+        matched_terms: string[];
+        status: string;
+        created_at: string;
+      }[];
+    }
   }
 
   if (scope === "youth_beta_readers") {
