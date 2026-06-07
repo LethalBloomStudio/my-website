@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-type ReadEntry = { key: string; readAt: number };
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_AGO = () =>
+  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
 export async function GET() {
   const supabase = await supabaseServer();
@@ -12,15 +11,15 @@ export async function GET() {
   if (!userId) return NextResponse.json({ keys: [] });
 
   const { data } = await supabase
-    .from("accounts")
-    .select("notification_read_keys")
+    .from("notification_read_keys")
+    .select("notification_key")
     .eq("user_id", userId)
-    .maybeSingle();
+    .gt("read_at", THIRTY_DAYS_AGO());
 
-  const raw = (data as { notification_read_keys?: ReadEntry[] } | null)?.notification_read_keys ?? [];
-  const now = Date.now();
-  const active = raw.filter((e) => now - e.readAt < THIRTY_DAYS_MS);
-  return NextResponse.json({ keys: active.map((e) => e.key) });
+  const keys = ((data as { notification_key: string }[] | null) ?? []).map(
+    (r) => r.notification_key
+  );
+  return NextResponse.json({ keys });
 }
 
 export async function POST(req: Request) {
@@ -29,15 +28,17 @@ export async function POST(req: Request) {
   const userId = auth.user?.id;
   if (!userId) return NextResponse.json({ ok: false }, { status: 401 });
 
-  const body = (await req.json()) as { entries: ReadEntry[] };
-  const now = Date.now();
-  // Prune entries older than 30 days before saving
-  const pruned = (body.entries ?? []).filter((e) => now - e.readAt < THIRTY_DAYS_MS);
+  const body = (await req.json()) as { keys: string[] };
+  const keys = Array.isArray(body.keys) ? body.keys : [];
 
-  await supabase
-    .from("accounts")
-    .update({ notification_read_keys: pruned })
-    .eq("user_id", userId);
+  if (keys.length > 0) {
+    await supabase
+      .from("notification_read_keys")
+      .upsert(
+        keys.map((key) => ({ user_id: userId, notification_key: key })),
+        { onConflict: "user_id,notification_key", ignoreDuplicates: true }
+      );
+  }
 
   return NextResponse.json({ ok: true });
 }
