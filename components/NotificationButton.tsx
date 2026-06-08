@@ -25,29 +25,14 @@ export default function NotificationButton() {
         .eq("owner_id", userId);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
-      // Fetch read keys from DB so reads on other devices are reflected here
-      let dbReadKeys: string[] = [];
+      let readKeySet = new Set<string>();
       try {
         const rkRes = await fetch("/api/notifications/read-keys");
         if (rkRes.ok) {
           const rkData = (await rkRes.json()) as { keys: string[] };
-          dbReadKeys = rkData.keys ?? [];
+          readKeySet = new Set(rkData.keys ?? []);
         }
-      } catch { /* fall back to localStorage only */ }
-
-      const localReadKeys =
-        typeof window === "undefined"
-          ? []
-          : (() => {
-              try {
-                const raw = window.localStorage.getItem(`notif_read_keys_${userId}`);
-                const parsed = raw ? (JSON.parse(raw) as (string | { key: string; readAt: number })[]) : [];
-                return Array.isArray(parsed) ? parsed.map((e) => (typeof e === "string" ? e : e.key)) : [];
-              } catch {
-                return [];
-              }
-            })();
-      const readKeySet = new Set([...dbReadKeys, ...localReadKeys]);
+      } catch { /* readKeySet stays empty; items render as unread */ }
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 

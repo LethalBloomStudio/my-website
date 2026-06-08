@@ -26,30 +26,20 @@ export default function MobileNav() {
       unread_count?: number | null;
     };
 
-    function getReadKeySet(uid: string): Set<string> {
-      try {
-        const raw = typeof window !== "undefined" ? window.localStorage.getItem(`notif_read_keys_${uid}`) : null;
-        const parsed = raw ? (JSON.parse(raw) as (string | { key: string })[]) : [];
-        return new Set(Array.isArray(parsed) ? parsed.map((e) => (typeof e === "string" ? e : e.key)) : []);
-      } catch { return new Set(); }
-    }
-
     async function refreshCounts(uid: string) {
       const { data: manuscripts } = await supabase.from("manuscripts").select("id").eq("owner_id", uid);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
-      let dbReadKeys: string[] = [];
+      let readKeySet = new Set<string>();
       try {
         const rkRes = await fetch("/api/notifications/read-keys");
         if (rkRes.ok) {
           const rkData = (await rkRes.json()) as { keys: string[] };
-          dbReadKeys = rkData.keys ?? [];
+          readKeySet = new Set(rkData.keys ?? []);
         }
-      } catch {
-        dbReadKeys = [];
-      }
+      } catch { /* readKeySet stays empty; items render as unread */ }
 
-      const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, groupConversations] = await Promise.all([
+      const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, groupConversations, moderationFlags] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("profile_contact_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
         supabase.from("direct_messages").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "sent"),
@@ -68,16 +58,17 @@ export default function MobileNav() {
           : Promise.resolve({ data: [] as Array<{ id: string }> }),
         supabase.from("manuscript_invitations").select("*", { count: "exact", head: true }).eq("reader_id", uid).eq("status", "pending"),
         supabase.rpc("get_group_message_conversations", { p_user_id: uid }),
+        supabase.from("manuscript_moderation_flags").select("id").eq("owner_id", uid),
       ]);
       if (cancelled) return;
 
-      const localReadKeys = Array.from(getReadKeySet(uid));
-      const readKeySet = new Set([...dbReadKeys, ...localReadKeys]);
       const ownerFeedbackIds = ((ownerFeedback.data as Array<{ id: string }> | null) ?? []).map((f) => f.id);
       const accessIds = ((accessRequests.data as Array<{ id: string }> | null) ?? []).map((r) => r.id);
+      const moderationFlagIds = ((moderationFlags.data as Array<{ id: string }> | null) ?? []).map((m) => m.id);
       const localKeys = [
         ...ownerFeedbackIds.map((id) => `feedback-${id}`),
         ...accessIds.map((id) => `request-${id}`),
+        ...moderationFlagIds.map((id) => `mod-${id}`),
       ];
       const unreadLocal = localKeys.filter((k) => !readKeySet.has(k)).length;
       const groupUnreadCount = ((groupConversations.data as GroupConversationUnreadRow[] | null) ?? []).reduce(
