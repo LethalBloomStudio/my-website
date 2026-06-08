@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-const THIRTY_DAYS_AGO = () =>
-  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
 export async function GET() {
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
@@ -13,8 +10,7 @@ export async function GET() {
   const { data } = await supabase
     .from("notification_read_keys")
     .select("notification_key")
-    .eq("user_id", userId)
-    .gt("read_at", THIRTY_DAYS_AGO());
+    .eq("user_id", userId);
 
   const keys = ((data as { notification_key: string }[] | null) ?? []).map(
     (r) => r.notification_key
