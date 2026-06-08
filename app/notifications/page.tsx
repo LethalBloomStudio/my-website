@@ -242,6 +242,8 @@ export default function NotificationsPage() {
     ]);
     setClaimedIds(allClaimedIds);
 
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
     const [systemRes, modRes, feedbackRes, myFeedbackRes, accessRes, invitationsRes] = await Promise.all([
       supabase
         .from("system_notifications")
@@ -253,24 +255,28 @@ export default function NotificationsPage() {
         .from("manuscript_moderation_flags")
         .select("id, manuscript_id, reason, matched_terms, status, created_at")
         .eq("owner_id", signedInUserId)
+        .gte("created_at", thirtyDaysAgo)
         .order("created_at", { ascending: false }),
       manuscriptIds.length > 0
         ? supabase
             .from("line_feedback")
             .select("id, manuscript_id, reader_id, comment_text, chapter_id, created_at")
             .in("manuscript_id", manuscriptIds)
+            .gte("created_at", thirtyDaysAgo)
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: [], error: null }),
       supabase
         .from("line_feedback")
         .select("id, manuscript_id, reader_id, comment_text, chapter_id, created_at")
         .eq("reader_id", signedInUserId)
+        .gte("created_at", thirtyDaysAgo)
         .order("created_at", { ascending: false }),
       manuscriptIds.length > 0
         ? supabase
             .from("manuscript_access_requests")
             .select("id, manuscript_id, requester_id, status, created_at")
             .in("manuscript_id", manuscriptIds)
+            .gte("created_at", thirtyDaysAgo)
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: [], error: null }),
       supabase
@@ -309,8 +315,6 @@ export default function NotificationsPage() {
     // invitations table may not exist yet - silently skip if it errors
 
     // Social queries
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
     const [followerRes, followingRes, myAnnsRes] = await Promise.all([
       supabase.from("profile_follows").select("follower_id, created_at").eq("following_id", signedInUserId).gte("created_at", thirtyDaysAgo).order("created_at", { ascending: false }).limit(30),
       supabase.from("profile_follows").select("following_id").eq("follower_id", signedInUserId),
