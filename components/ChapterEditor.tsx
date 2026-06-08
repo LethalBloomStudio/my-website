@@ -294,7 +294,19 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     if (!sel?.rangeCount) return;
     const range = sel.getRangeAt(0);
 
-    const curP = currentParagraph(el);
+    // Capture the insertion point before any DOM mutation. insertionRange is a
+    // stable collapsed range at the selection start, unaffected by deleteContents.
+    const insertionRange = range.cloneRange();
+    insertionRange.collapse(true);
+
+    // Find the enclosing <p> from the stable pre-deletion position.
+    let curP: HTMLElement | null = null;
+    let node: Node | null = insertionRange.startContainer;
+    while (node && node !== el) {
+      if (node instanceof HTMLElement && node.tagName === "P") { curP = node; break; }
+      node = node.parentNode;
+    }
+
     range.deleteContents();
 
     const blocks = parseBlocks(text);
@@ -324,7 +336,7 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     }
 
     const afterRange = document.createRange();
-    afterRange.setStart(range.startContainer, range.startOffset);
+    afterRange.setStart(insertionRange.startContainer, insertionRange.startOffset);
     afterRange.setEnd(curP, curP.childNodes.length);
     const afterFrag = afterRange.extractContents();
     const tempDiv = document.createElement("div");
