@@ -515,6 +515,9 @@ export default function NotificationsPage() {
       if (item.type === "invitation" && item.payload.status !== "pending") {
         return Date.now() - new Date(item.created_at).getTime() < 30 * 24 * 60 * 60 * 1000;
       }
+      if (item.type === "feedback" || item.type === "moderation") {
+        return Date.now() - new Date(item.created_at).getTime() < 30 * 24 * 60 * 60 * 1000;
+      }
       return true;
     });
 
