@@ -158,7 +158,6 @@ export default function NotificationsPage() {
   const [feedbackMap, setFeedbackMap] = useState<Record<string, Feedback>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [clientReadKeys, setClientReadKeys] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "read">("unread");
   const [claimedIds, setClaimedIds] = useState<Set<string>>(new Set());
@@ -172,12 +171,7 @@ export default function NotificationsPage() {
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const catMenuRef = useRef<HTMLDivElement>(null);
   const tabMenuRef = useRef<HTMLDivElement>(null);
-  // Tracks the AbortController for the in-flight read-keys POST so we can cancel
-  // it on unmount without losing the data (sendBeacon covers the navigation case).
-  const readKeysSaveAbortRef = useRef<AbortController | null>(null);
-  // Tracks the latest entries pending DB persistence so beforeunload can send
-  // them via sendBeacon if the fetch was aborted by navigation.
-  const pendingSaveDataRef = useRef<{ entries: { key: string; readAt: number }[] } | null>(null);
+  const readKeySet = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -193,93 +187,13 @@ export default function NotificationsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // On SPA navigation (component unmount), fire sendBeacon so the DB write survives
-  // even though the in-flight fetch is cancelled by the browser. Without this, the POST
-  // is silently dropped and the DB is left stale — causing ghost notifications on any
-  // fresh session or second device that can't fall back to localStorage.
-  useEffect(() => {
-    return () => {
-      const pending = pendingSaveDataRef.current;
-      if (pending) {
-        navigator.sendBeacon(
-          "/api/notifications/read-keys",
-          new Blob([JSON.stringify(pending)], { type: "application/json" })
-        );
-      }
-    };
-  }, []);
-
-  // sendBeacon fallback: fires on hard navigation / tab close where the fetch may
-  // have been cancelled by the browser. The API uses cookie-based auth so no
-  // Authorization header is needed — the session cookie is sent automatically.
-  useEffect(() => {
-    function handleBeforeUnload() {
-      const pending = pendingSaveDataRef.current;
-      if (!pending) return;
-      navigator.sendBeacon(
-        "/api/notifications/read-keys",
-        new Blob([JSON.stringify(pending)], { type: "application/json" })
-      );
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
-
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
-  function loadClientReadKeys(uid: string) {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = window.localStorage.getItem(`notif_read_keys_${uid}`);
-      const parsed = raw ? (JSON.parse(raw) as (string | { key: string; readAt: number })[]) : [];
-      if (!Array.isArray(parsed)) return [];
-      const now = Date.now();
-      // Normalise legacy plain-string entries (no timestamp) and prune entries older than 30 days
-      const active = parsed
-        .map((entry) => (typeof entry === "string" ? { key: entry, readAt: now } : entry))
-        .filter((entry) => now - entry.readAt < THIRTY_DAYS_MS);
-      // Persist pruned list back
-      window.localStorage.setItem(`notif_read_keys_${uid}`, JSON.stringify(active));
-      return active.map((e) => e.key);
-    } catch {
-      return [];
-    }
-  }
-
-  function saveClientReadKeys(uid: string, keys: string[], existingEntries: { key: string; readAt: number }[] = []) {
-    if (typeof window === "undefined") return;
-    const now = Date.now();
-    const existingMap = new Map(existingEntries.map((e) => [e.key, e.readAt]));
-    const entries = keys.map((k) => ({ key: k, readAt: existingMap.get(k) ?? now }));
-    // Persist to localStorage (fast, same-device cache)
-    window.localStorage.setItem(`notif_read_keys_${uid}`, JSON.stringify(entries));
-    // Track latest entries for the beforeunload sendBeacon fallback
-    pendingSaveDataRef.current = { entries };
-    // Cancel any previous in-flight POST before starting a new one
-    readKeysSaveAbortRef.current?.abort();
-    const controller = new AbortController();
-    readKeysSaveAbortRef.current = controller;
-    // Persist to DB (survives across devices/browsers)
-    void fetch("/api/notifications/read-keys", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entries }),
-      signal: controller.signal,
-    }).then(() => {
-      // Clear pending data once successfully written — sendBeacon no longer needed
-      pendingSaveDataRef.current = null;
-    }).catch(() => {
-      // Aborted or failed — beforeunload sendBeacon will cover the navigation case
-    });
-    window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
-  }
 
   function isItemRead(item: FeedItem) {
     if (item.type === "admin") return item.payload.is_read;
     if (item.type === "read_request") return item.payload.status !== "pending";
     if (item.type === "invitation") return item.payload.status !== "pending";
     if (item.type === "friend_request") return false; // always unread while pending
-    return clientReadKeys.includes(item.key);
+    return readKeySet.current.has(item.key);
   }
 
   async function load() {
@@ -297,20 +211,6 @@ export default function NotificationsPage() {
       setMsg("Please sign in to view notifications.");
       setLoading(false);
       return;
-    }
-
-    // Load read keys from DB first (cross-device persistence), merge with localStorage cache
-    try {
-      const rkRes = await fetch("/api/notifications/read-keys");
-      if (rkRes.ok) {
-        const rkData = (await rkRes.json()) as { keys: string[] };
-        const localKeys = loadClientReadKeys(signedInUserId);
-        const merged = Array.from(new Set([...rkData.keys, ...localKeys]));
-        setClientReadKeys(merged);
-      }
-    } catch {
-      // fallback to localStorage only
-      setClientReadKeys(loadClientReadKeys(signedInUserId));
     }
 
     const { data: manuscripts, error: manuscriptsError } = await supabase
@@ -634,6 +534,17 @@ export default function NotificationsPage() {
       });
     }
 
+    // Populate in-memory read-key set from DB (single source of truth)
+    try {
+      const rkRes = await fetch("/api/notifications/read-keys");
+      if (rkRes.ok) {
+        const rkData = (await rkRes.json()) as { keys: string[] };
+        readKeySet.current = new Set(rkData.keys);
+      }
+    } catch {
+      // non-fatal — set stays as-is; items render with whatever keys were already present
+    }
+
     setFeedbackMap(feedbackLookup);
     setManuscriptTitles(manuscriptTitleMap);
     setItems(prunedFeed);
@@ -716,22 +627,18 @@ export default function NotificationsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load is a component function; subscription correctly restarts when userId/supabase change
   }, [userId, supabase]);
 
-  useEffect(() => {
-    if (!userId) {
-      setClientReadKeys([]);
-      return;
-    }
-    setClientReadKeys(loadClientReadKeys(userId));
-  }, [userId]);
-
   async function markAllAsRead() {
     if (!userId) return;
     const unreadNonAdminKeys = items.filter((item) => item.type !== "admin" && item.type !== "invitation" && item.type !== "friend_request" && !isItemRead(item)).map((item) => item.key);
-    const merged = Array.from(new Set([...clientReadKeys, ...unreadNonAdminKeys]));
-    const raw = typeof window !== "undefined" ? window.localStorage.getItem(`notif_read_keys_${userId}`) : null;
-    const existing: { key: string; readAt: number }[] = raw ? (JSON.parse(raw) as { key: string; readAt: number }[]) : [];
-    saveClientReadKeys(userId, merged, existing);
-    setClientReadKeys(merged);
+    unreadNonAdminKeys.forEach((k) => readKeySet.current.add(k));
+    if (unreadNonAdminKeys.length > 0) {
+      void fetch("/api/notifications/read-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keys: unreadNonAdminKeys }),
+      });
+      window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
+    }
 
     // Exclude admin notifications that have an unclaimed reward still within the 7-day window
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -953,12 +860,14 @@ export default function NotificationsPage() {
         });
       return;
     }
-    if (!clientReadKeys.includes(item.key)) {
-      const next = [...clientReadKeys, item.key];
-      const raw = typeof window !== "undefined" ? window.localStorage.getItem(`notif_read_keys_${userId}`) : null;
-      const existing: { key: string; readAt: number }[] = raw ? (JSON.parse(raw) as { key: string; readAt: number }[]) : [];
-      saveClientReadKeys(userId, next, existing);
-      setClientReadKeys(next);
+    if (!readKeySet.current.has(item.key)) {
+      readKeySet.current.add(item.key);
+      void fetch("/api/notifications/read-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keys: [item.key] }),
+      });
+      window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     }
   }
 
