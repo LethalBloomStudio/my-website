@@ -178,6 +178,7 @@ export default function ManuscriptDetailsPage() {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const feedbackIdsRef = useRef<string[]>([]);
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
+  const [unreadReplyCounts, setUnreadReplyCounts] = useState<Record<string, number>>({});
   const [editorOffsetY, setEditorOffsetY] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
   const [ownerPenName, setOwnerPenName] = useState("");
@@ -792,6 +793,11 @@ export default function ManuscriptDetailsPage() {
           .in("user_id", Array.from(new Set(fbRows.map((f) => f.reader_id)))),
       ]);
       setFeedbackReplies((repRes.data as FeedbackReply[] | null) ?? []);
+      const unreadRes = await fetch(`/api/feedback/unread-replies?feedback_ids=${fbIds.join(",")}`);
+      if (unreadRes.ok) {
+        const unreadData = await unreadRes.json() as { unread: Record<string, number> };
+        setUnreadReplyCounts(unreadData.unread);
+      }
       const nm: Record<string, string> = {};
       ((profRes.data as { user_id: string; pen_name: string | null; username: string | null }[] | null) ?? []).forEach((p) => {
         nm[p.user_id] = p.pen_name || (p.username ? `@${p.username}` : "Reader");
@@ -799,6 +805,7 @@ export default function ManuscriptDetailsPage() {
       setFeedbackNames(nm);
     } else {
       setFeedbackReplies([]);
+      setUnreadReplyCounts({});
       setFeedbackNames({});
     }
 
@@ -951,7 +958,7 @@ export default function ManuscriptDetailsPage() {
         const r = payload.new as FeedbackReply;
         if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
         setFeedbackReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
-        void refreshFeedbackReplies();
+        setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
       })
       .subscribe();
     replyChannelRef.current = ch;
@@ -973,7 +980,6 @@ export default function ManuscriptDetailsPage() {
         async (payload: { new: Record<string, unknown> }) => {
           const f = payload.new as LineFeedback;
           setFeedbackItems((prev) => prev.some((p) => p.id === f.id) ? prev : [f, ...prev]);
-          void refreshFeedbackItems();
           setFeedbackNames((prev) => {
             if (prev[f.reader_id]) return prev;
             void supabase
@@ -1276,6 +1282,22 @@ export default function ManuscriptDetailsPage() {
     }
     document.addEventListener("click", onDocClick, true);
     return () => document.removeEventListener("click", onDocClick, true);
+  }, [selectedFeedbackId]);
+
+  // Mark replies as read and clear unread indicator when a feedback box is opened
+  useEffect(() => {
+    if (!selectedFeedbackId) return;
+    setUnreadReplyCounts((prev) => {
+      if (!prev[selectedFeedbackId]) return prev;
+      const next = { ...prev };
+      delete next[selectedFeedbackId];
+      return next;
+    });
+    void fetch("/api/feedback/mark-replies-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback_id: selectedFeedbackId }),
+    });
   }, [selectedFeedbackId]);
 
   function categoryLimit(nextCategories: string[]) {
@@ -3043,6 +3065,7 @@ export default function ManuscriptDetailsPage() {
                         const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
                         const hasStack = cluster.length > 1;
+                        const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
                         const moveInStack = (direction: -1 | 1) => {
                           const nextIndex = (activeIndex + direction + cluster.length) % cluster.length;
                           setSelectedFeedbackId(cluster[nextIndex].id);
@@ -3071,25 +3094,34 @@ export default function ManuscriptDetailsPage() {
                                   <span className="shrink-0 text-[10px] font-semibold text-neutral-400">{readerName}</span>
                                   <span className="truncate text-[10px] italic text-neutral-500">&ldquo;{f.comment_text}&rdquo;</span>
                                 </div>
-                                {hasStack && (
+                                {(hasStack || unreadReplyCount > 0) && (
                                   <div className="flex shrink-0 items-center gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
-                                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
-                                      title="Previous stacked feedback"
-                                    >
-                                      ‹
-                                    </button>
-                                    <span className="text-[9px] font-semibold text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
-                                      className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
-                                      title="Next stacked feedback"
-                                    >
-                                      ›
-                                    </button>
+                                    {hasStack && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); moveInStack(-1); }}
+                                          className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                          title="Previous stacked feedback"
+                                        >
+                                          ‹
+                                        </button>
+                                        <span className="text-[9px] font-semibold text-neutral-500">{activeIndex + 1}/{cluster.length}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); moveInStack(1); }}
+                                          className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] text-[10px] text-neutral-300 transition hover:border-[rgba(120,120,120,0.6)] hover:text-white"
+                                          title="Next stacked feedback"
+                                        >
+                                          ›
+                                        </button>
+                                      </>
+                                    )}
+                                    {unreadReplyCount > 0 && (
+                                      <span className="shrink-0 rounded-full border border-red-500/40 bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-400">
+                                        {unreadReplyCount === 1 ? "New reply" : `${unreadReplyCount} new`}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
