@@ -1779,7 +1779,7 @@ const [now] = useState(() => Date.now());
                         {!hasLeftGroup && (
                           <button
                             onClick={() => { setGroupNameEditValue(groupLabel || ""); setIsEditingGroupName(true); }}
-                            className="shrink-0 text-neutral-500 hover:text-neutral-300 transition"
+                            className="shrink-0 rounded-lg text-neutral-500 hover:text-neutral-300 transition"
                             title="Rename group"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
