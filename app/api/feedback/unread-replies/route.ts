@@ -15,7 +15,8 @@ export async function GET(req: Request) {
   const { data: replies } = await supabase
     .from("line_feedback_replies")
     .select("id, feedback_id")
-    .in("feedback_id", feedbackIds);
+    .in("feedback_id", feedbackIds)
+    .neq("replier_id", userId);
 
   const replyRows = (replies as { id: string; feedback_id: string }[] | null) ?? [];
   if (replyRows.length === 0) return NextResponse.json({ unread: {} });

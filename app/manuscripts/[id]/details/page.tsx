@@ -958,7 +958,9 @@ export default function ManuscriptDetailsPage() {
         const r = payload.new as FeedbackReply;
         if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
         setFeedbackReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
-        setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
+        if (r.replier_id !== authorUserId) {
+          setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
+        }
       })
       .subscribe();
     replyChannelRef.current = ch;
