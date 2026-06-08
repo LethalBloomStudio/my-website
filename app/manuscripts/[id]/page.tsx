@@ -2443,7 +2443,7 @@ function PageInner() {
                                 body: JSON.stringify({ feedback_id: id }),
                               })));
                             }}
-                            className="text-[10px] text-neutral-500 hover:text-neutral-300 transition"
+                            className="rounded-lg text-[10px] text-neutral-500 hover:text-neutral-300 transition"
                           >
                             Mark all read
                           </button>
