@@ -1248,8 +1248,14 @@ function PageInner() {
           if (myFRows.length) {
             const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
             setReplies((rep as FeedbackReply[]) ?? []);
+            const unreadRes = await fetch(`/api/feedback/unread-replies?feedback_ids=${myFRows.map((x) => x.id).join(",")}`);
+            if (unreadRes.ok) {
+              const unreadData = await unreadRes.json() as { unread: Record<string, number> };
+              setUnreadReplyCounts(unreadData.unread);
+            }
           } else {
             setReplies([]);
+            setUnreadReplyCounts({});
           }
         }
       } else if (uid) {
@@ -1435,6 +1441,11 @@ function PageInner() {
       delete next[feedbackId];
       return next;
     });
+    void fetch("/api/feedback/mark-replies-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback_id: feedbackId }),
+    });
   }
 
   // Realtime - live feedback replies and resolution updates
@@ -1452,7 +1463,6 @@ function PageInner() {
         if (r.replier_id !== userId && selectedFeedbackIdRef.current !== r.feedback_id) {
           setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
         }
-        void refreshRepliesForCurrentFeedback();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "line_feedback" }, (payload: { new: Record<string, unknown> }) => {
         const updated = payload.new as LineFeedback;
@@ -1460,13 +1470,18 @@ function PageInner() {
         setMyChapterFeedback((prev) => prev.map((f) => f.id === updated.id ? { ...f, resolved: updated.resolved, author_response: updated.author_response } : f));
         setFeedback((prev) => prev.map((f) => f.id === updated.id ? { ...f, resolved: updated.resolved, author_response: updated.author_response } : f));
       })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback", filter: `manuscript_id=eq.${manuscriptId}` }, (payload: { new: Record<string, unknown> }) => {
+        const newFeedback = payload.new as LineFeedback;
+        if (newFeedback.reader_id !== userId) return;
+        setMyAllFeedback((prev) => prev.some((f) => f.id === newFeedback.id) ? prev : [newFeedback, ...prev]);
+      })
       .subscribe();
     replyChannelRef.current = ch;
 
     return () => {
       if (replyChannelRef.current) void supabase.removeChannel(replyChannelRef.current);
     };
-  }, [manuscriptId, refreshRepliesForCurrentFeedback, supabase, userId]);
+  }, [manuscriptId, supabase, userId]);
 
   // Broadcast reader presence so author workspace can show online status
   useEffect(() => {
@@ -2566,7 +2581,7 @@ function PageInner() {
                                       </>
                                     )}
                                     {unreadReplyCount > 0 && (
-                                      <span className="shrink-0 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300">
+                                      <span className="shrink-0 rounded-full border border-red-500/40 bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-400">
                                         {unreadReplyCount === 1 ? "New reply" : `${unreadReplyCount} new`}
                                       </span>
                                     )}
