@@ -181,6 +181,7 @@ export default function ManuscriptDetailsPage() {
   const [editorOffsetY, setEditorOffsetY] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
   const [ownerPenName, setOwnerPenName] = useState("");
+  const [isRowLayout, setIsRowLayout] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
@@ -1157,7 +1158,9 @@ export default function ManuscriptDetailsPage() {
       const wrapper = editorWrapperRef.current;
       const col = rightColumnRef.current;
       if (!wrapper || !col) return;
-      setEditorOffsetY(wrapper.getBoundingClientRect().top - col.getBoundingClientRect().top);
+      const rowLayout = window.innerWidth >= 1024;
+      setIsRowLayout(rowLayout);
+      setEditorOffsetY(rowLayout ? wrapper.getBoundingClientRect().top - col.getBoundingClientRect().top : 0);
     }
     measure();
     const ro = new ResizeObserver(measure);
@@ -2751,7 +2754,7 @@ export default function ManuscriptDetailsPage() {
             const activeExcerpt = activeFeedback?.selection_excerpt ?? "";
             const previewHtml = chapterTextToPreviewHtml(chapterEditorContent);
             return (
-              <div className="flex gap-6 items-start">
+              <div className="flex flex-col gap-4 items-start lg:flex-row lg:gap-6">
                 {/* Chapter editor / preview */}
                 <section ref={chapterSectionRef} className="min-w-0 flex-1 rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -2864,7 +2867,7 @@ export default function ManuscriptDetailsPage() {
 
                     <div>
                       {previewMode ? (
-                        <div className="chapter-editor relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-8 py-8 shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
+                        <div className="chapter-editor relative min-h-[44rem] overflow-y-auto rounded-xl border border-[rgba(120,120,120,0.28)] bg-[rgba(18,18,18,0.9)] px-4 py-4 md:px-8 md:py-8 shadow-[0_12px_34px_rgba(0,0,0,0.35)]">
                           {/* Owner watermark - tiled, same style as reader watermark */}
                           <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
                             {Array.from({ length: 16 }).map((_, row) =>
@@ -2908,7 +2911,7 @@ export default function ManuscriptDetailsPage() {
                             normalize={normalizeChapterText}
                             format={FORMATS[formatId]}
                             placeholder="Begin your chapter here. Press Enter to start a new paragraph. Shift+Enter for a line break within a paragraph."
-                            className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-8 py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
+                            className="min-h-[44rem] rounded-xl border border-neutral-800 bg-[rgba(18,18,18,0.85)] px-4 py-4 md:px-8 md:py-8 text-neutral-100 focus:border-[rgba(120,120,120,0.5)]"
                           />
                           {/* Dotted amber underlines - always visible, same style as reader view.
                               Dim (0.45 opacity) when idle, bright (0.95) + bg fill when selected. */}
@@ -3009,7 +3012,7 @@ export default function ManuscriptDetailsPage() {
 
                 {/* Inline feedback column — each card floats at the same Y as its text marker */}
                 {!previewMode && (
-                  <div ref={rightColumnRef} className="w-72 shrink-0 relative" style={{ minHeight: chapterSectionH || undefined }}>
+                  <div ref={rightColumnRef} className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 relative" style={{ minHeight: isRowLayout ? (chapterSectionH || undefined) : undefined }}>
                     {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
                     {(() => {
                       const filtered = chapterFeedback.filter((f) => {
@@ -3045,7 +3048,7 @@ export default function ManuscriptDetailsPage() {
                           setSelectedFeedbackId(cluster[nextIndex].id);
                         };
                         // Resolved/unmatched feedback has no marker — render in normal flow at top of column
-                        const cardStyle: React.CSSProperties = info
+                        const cardStyle: React.CSSProperties = isRowLayout && info
                           ? { position: "absolute", top: editorOffsetY + info.top, left: 0, right: 0, zIndex: isSelected ? 20 : 10 }
                           : { position: "relative", zIndex: isSelected ? 20 : 10, marginBottom: 8 };
                         const isExpanded = isSelected;
