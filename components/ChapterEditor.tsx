@@ -293,12 +293,12 @@ export default function ChapterEditor({ value, onChange, placeholder, className,
     const sel = window.getSelection();
     if (!sel?.rangeCount) return;
     const range = sel.getRangeAt(0);
+
+    const curP = currentParagraph(el);
     range.deleteContents();
 
     const blocks = parseBlocks(text);
     if (!blocks.length) return;
-
-    const curP = currentParagraph(el);
 
     if (!curP) {
       // Cursor is inside the editor but not inside any <p>. Insert after the last
