@@ -136,18 +136,13 @@ export default function MobileNav() {
       }
     });
 
-    function onStorage(ev: StorageEvent) {
-      if (ev.key?.startsWith("notif_read_keys_") && userId) void refreshCounts(userId);
-    }
     function onBadgeRefresh() { if (userId) void refreshCounts(userId); }
-    window.addEventListener("storage", onStorage);
     window.addEventListener("notif-badge-refresh", onBadgeRefresh);
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
-      window.removeEventListener("storage", onStorage);
       window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
   }, [supabase]);

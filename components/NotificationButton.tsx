@@ -125,20 +125,13 @@ export default function NotificationButton() {
       if (realtimeChannel) { void supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
       void init();
     });
-    function onStorage(ev: StorageEvent) {
-      if (ev.key && ev.key.startsWith("notif_read_keys_")) {
-        loadCount();
-      }
-    }
     function onBadgeRefresh() { void loadCount(); }
-    window.addEventListener("storage", onStorage);
     window.addEventListener("notif-badge-refresh", onBadgeRefresh);
 
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
-      window.removeEventListener("storage", onStorage);
       window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
   }, [supabase]);
