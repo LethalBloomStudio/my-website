@@ -3035,6 +3035,29 @@ export default function ManuscriptDetailsPage() {
                 {/* Inline feedback column — each card floats at the same Y as its text marker */}
                 {!previewMode && (
                   <div ref={rightColumnRef} className="chapter-feedback-aside w-full lg:w-72 lg:shrink-0 relative" style={{ minHeight: isRowLayout ? (chapterSectionH || undefined) : undefined }}>
+                    {chapterFeedback.some((f) => (unreadReplyCounts[f.id] ?? 0) > 0) && (
+                      <div className="mb-2 flex justify-end px-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ids = chapterFeedback.filter((f) => (unreadReplyCounts[f.id] ?? 0) > 0).map((f) => f.id);
+                            setUnreadReplyCounts((prev) => {
+                              const next = { ...prev };
+                              ids.forEach((id) => delete next[id]);
+                              return next;
+                            });
+                            void Promise.all(ids.map((id) => fetch("/api/feedback/mark-replies-read", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ feedback_id: id }),
+                            })));
+                          }}
+                          className="text-[10px] text-neutral-500 hover:text-neutral-300 transition"
+                        >
+                          Mark all read
+                        </button>
+                      </div>
+                    )}
                     {/* Absolutely-positioned cards — each aligned to its marker in the editor */}
                     {(() => {
                       const filtered = chapterFeedback.filter((f) => {

@@ -2423,9 +2423,32 @@ function PageInner() {
                           {myChapterFeedback.length}
                         </span>
                       </h2>
-                      {activeChapter?.chapter_type === "trigger_page" && (
-                        <span className="text-[10px] text-neutral-500">No coin reward</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {activeChapter?.chapter_type === "trigger_page" && (
+                          <span className="text-[10px] text-neutral-500">No coin reward</span>
+                        )}
+                        {myChapterFeedback.some((f) => (unreadReplyCounts[f.id] ?? 0) > 0) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const ids = myChapterFeedback.filter((f) => (unreadReplyCounts[f.id] ?? 0) > 0).map((f) => f.id);
+                              setUnreadReplyCounts((prev) => {
+                                const next = { ...prev };
+                                ids.forEach((id) => delete next[id]);
+                                return next;
+                              });
+                              void Promise.all(ids.map((id) => fetch("/api/feedback/mark-replies-read", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ feedback_id: id }),
+                              })));
+                            }}
+                            className="text-[10px] text-neutral-500 hover:text-neutral-300 transition"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {/* Total word count for this reader's feedback + coin progress */}
