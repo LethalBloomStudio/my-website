@@ -2761,7 +2761,7 @@ function PageInner() {
       {/* Bloom coin earned toast */}
       {coinToast && (
         <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-900 px-5 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(120,120,120,0.18)] text-xl">🪙</div>
+          <span className="text-3xl leading-none shrink-0" style={{ color: "#f59e0b" }}>✿</span>
           <div>
             <p className="text-sm font-semibold text-neutral-100">+{coinToast.coins} Bloom Coins earned!</p>
             <p className="text-xs text-neutral-400">New balance: {coinToast.newBalance.toLocaleString()} coins</p>
