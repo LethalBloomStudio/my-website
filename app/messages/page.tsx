@@ -1762,13 +1762,13 @@ const [now] = useState(() => Date.now());
                         />
                         <button
                           onClick={() => void renameGroup(groupNameEditValue)}
-                          className="shrink-0 text-xs text-green-400 hover:text-green-300 transition"
+                          className="shrink-0 rounded-lg text-xs text-green-400 hover:text-green-300 transition"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setIsEditingGroupName(false)}
-                          className="shrink-0 text-xs text-neutral-400 hover:text-white transition"
+                          className="shrink-0 rounded-lg text-xs text-neutral-400 hover:text-white transition"
                         >
                           Cancel
                         </button>
