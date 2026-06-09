@@ -2510,7 +2510,7 @@ function PageInner() {
                       .filter((f) => {
                         if (f.resolved) return false;
                         if (!f.selection_excerpt) return true;
-                        return plainActiveText.includes(f.selection_excerpt);
+                        return plainActiveText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, ""));
                       })
                       .sort((a, b) => {
                         // Prefer stored start_offset; fall back to text search position
