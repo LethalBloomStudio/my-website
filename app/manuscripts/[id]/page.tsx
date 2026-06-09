@@ -829,10 +829,11 @@ function PageInner() {
         const range = sel.getRangeAt(0);
         // Ignore selections that don't start inside the chapter prose.
         if (!prose.contains(range.commonAncestorContainer)) return;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const result = buildSelectionFromRange(prose, range, window.innerWidth);
-            if (!result) return;
+        let attempts = 0;
+        function tryShowPopup() {
+          attempts++;
+          const result = buildSelectionFromRange(prose, range, window.innerWidth);
+          if (result && result.y > 0) {
             setPendingSelectionRects(result.rects);
             setLineEditDraft("");
             setPendingSelection({
@@ -842,8 +843,11 @@ function PageInner() {
               x: result.x,
               y: result.y,
             });
-          });
-        });
+          } else if (attempts < 10) {
+            requestAnimationFrame(tryShowPopup);
+          }
+        }
+        requestAnimationFrame(tryShowPopup);
       }, 400);
     }
 
