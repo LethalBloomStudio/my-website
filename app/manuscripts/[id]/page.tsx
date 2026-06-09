@@ -2298,7 +2298,7 @@ function PageInner() {
                         setSelectedFeedbackId(null);
                       }
                     }}
-                    onContextMenu={(e) => { if (!isOwner && !isParentView) { const isMouseRightClick = e.button === 2; if (isMouseRightClick) { e.preventDefault(); triggerCopyWarning(); } } }}
+                    onContextMenu={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); if (e.button === 2) { triggerCopyWarning(); } } }}
                     onCopy={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); triggerCopyWarning(); } }}
                     onCut={(e) => { if (!isOwner && !isParentView) e.preventDefault(); }}
                     onKeyDown={(e) => {
