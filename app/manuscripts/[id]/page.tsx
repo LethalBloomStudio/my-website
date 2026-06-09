@@ -832,6 +832,7 @@ function PageInner() {
         let attempts = 0;
         function tryShowPopup() {
           attempts++;
+          if (!prose) return;
           const result = buildSelectionFromRange(prose, range, window.innerWidth);
           if (result && result.y > 0) {
             setPendingSelectionRects(result.rects);
