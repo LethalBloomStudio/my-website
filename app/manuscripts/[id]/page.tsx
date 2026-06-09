@@ -2300,7 +2300,7 @@ function PageInner() {
                         setSelectedFeedbackId(null);
                       }
                     }}
-                    onContextMenu={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); if (e.button === 2) { triggerCopyWarning(); } } }}
+                    onContextMenu={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); } }}
                     onCopy={(e) => { if (!isOwner && !isParentView) { e.preventDefault(); triggerCopyWarning(); } }}
                     onCut={(e) => { if (!isOwner && !isParentView) e.preventDefault(); }}
                     onKeyDown={(e) => {
