@@ -829,16 +829,18 @@ function PageInner() {
         const range = sel.getRangeAt(0);
         // Ignore selections that don't start inside the chapter prose.
         if (!prose.contains(range.commonAncestorContainer)) return;
-        const result = buildSelectionFromRange(prose, range, window.innerWidth);
-        if (!result) return;
-        setPendingSelectionRects(result.rects);
-        setLineEditDraft("");
-        setPendingSelection({
-          text: result.text,
-          start: result.start,
-          end: result.end,
-          x: result.x,
-          y: result.y,
+        requestAnimationFrame(() => {
+          const result = buildSelectionFromRange(prose, range, window.innerWidth);
+          if (!result) return;
+          setPendingSelectionRects(result.rects);
+          setLineEditDraft("");
+          setPendingSelection({
+            text: result.text,
+            start: result.start,
+            end: result.end,
+            x: result.x,
+            y: result.y,
+          });
         });
       }, 400);
     }
