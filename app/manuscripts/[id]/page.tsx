@@ -2828,20 +2828,20 @@ function PageInner() {
           className="feedback-inline-popup fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
           style={{
             top: (() => {
-              const vh = typeof window !== "undefined" && window.visualViewport
-                ? window.visualViewport.height
-                : typeof window !== "undefined" ? window.innerHeight : 600;
-              return pendingSelection.y + 8 + 240 <= vh
-                ? pendingSelection.y + 8
-                : undefined;
+              const sel = window.getSelection();
+              const y = sel && sel.rangeCount > 0
+                ? sel.getRangeAt(0).getBoundingClientRect().bottom
+                : pendingSelection.y;
+              const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+              return y + 8 + 240 <= vh ? y + 8 : undefined;
             })(),
             bottom: (() => {
-              const vh = typeof window !== "undefined" && window.visualViewport
-                ? window.visualViewport.height
-                : typeof window !== "undefined" ? window.innerHeight : 600;
-              return pendingSelection.y + 8 + 240 > vh
-                ? vh - (pendingSelection.y - 8)
-                : undefined;
+              const sel = window.getSelection();
+              const y = sel && sel.rangeCount > 0
+                ? sel.getRangeAt(0).getBoundingClientRect().bottom
+                : pendingSelection.y;
+              const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+              return y + 8 + 240 > vh ? vh - (y - 8) : undefined;
             })(),
             left: pendingSelection.x,
             transform: "translateX(-50%)",
