@@ -835,6 +835,14 @@ function PageInner() {
           if (!prose) return;
           const result = buildSelectionFromRange(prose, range, window.innerWidth);
           if (result && result.y > 0) {
+            const liveY = (() => {
+              const s = window.getSelection();
+              if (s && s.rangeCount > 0) {
+                const b = s.getRangeAt(0).getBoundingClientRect();
+                if (b.bottom > 0) return b.bottom;
+              }
+              return result.y;
+            })();
             setPendingSelectionRects(result.rects);
             setLineEditDraft("");
             setPendingSelection({
@@ -842,7 +850,7 @@ function PageInner() {
               start: result.start,
               end: result.end,
               x: result.x,
-              y: result.y,
+              y: liveY,
             });
           } else if (attempts < 10) {
             requestAnimationFrame(tryShowPopup);
@@ -2827,22 +2835,12 @@ function PageInner() {
         <div
           className="feedback-inline-popup fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
           style={{
-            top: (() => {
-              const sel = window.getSelection();
-              const y = sel && sel.rangeCount > 0
-                ? sel.getRangeAt(0).getBoundingClientRect().bottom
-                : pendingSelection.y;
-              const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-              return y + 8 + 240 <= vh ? y + 8 : undefined;
-            })(),
-            bottom: (() => {
-              const sel = window.getSelection();
-              const y = sel && sel.rangeCount > 0
-                ? sel.getRangeAt(0).getBoundingClientRect().bottom
-                : pendingSelection.y;
-              const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-              return y + 8 + 240 > vh ? vh - (y - 8) : undefined;
-            })(),
+            top: typeof window === "undefined" || pendingSelection.y + 8 + 240 <= window.innerHeight
+              ? pendingSelection.y + 8
+              : undefined,
+            bottom: typeof window !== "undefined" && pendingSelection.y + 8 + 240 > window.innerHeight
+              ? window.innerHeight - (pendingSelection.y - 8)
+              : undefined,
             left: pendingSelection.x,
             transform: "translateX(-50%)",
           }}
