@@ -2827,14 +2827,22 @@ function PageInner() {
         <div
           className="feedback-inline-popup fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-xl border border-[rgba(120,120,120,0.6)] bg-[rgba(18,18,18,0.96)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-sm p-3"
           style={{
-            // Flip above the selection when the popup would overflow the viewport bottom.
-            // 240px covers the tallest possible popup state (including paste warning).
-            top: typeof window === "undefined" || pendingSelection.y + 8 + 240 <= window.innerHeight
-              ? pendingSelection.y + 8
-              : undefined,
-            bottom: typeof window !== "undefined" && pendingSelection.y + 8 + 240 > window.innerHeight
-              ? window.innerHeight - (pendingSelection.y - 8)
-              : undefined,
+            top: (() => {
+              const vh = typeof window !== "undefined" && window.visualViewport
+                ? window.visualViewport.height
+                : typeof window !== "undefined" ? window.innerHeight : 600;
+              return pendingSelection.y + 8 + 240 <= vh
+                ? pendingSelection.y + 8
+                : undefined;
+            })(),
+            bottom: (() => {
+              const vh = typeof window !== "undefined" && window.visualViewport
+                ? window.visualViewport.height
+                : typeof window !== "undefined" ? window.innerHeight : 600;
+              return pendingSelection.y + 8 + 240 > vh
+                ? vh - (pendingSelection.y - 8)
+                : undefined;
+            })(),
             left: pendingSelection.x,
             transform: "translateX(-50%)",
           }}
