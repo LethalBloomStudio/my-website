@@ -856,30 +856,14 @@ function PageInner() {
       schedulePopup();
     }
 
-    function onScroll() {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
-      const prose = proseContentRef.current;
-      if (!prose) return;
-      const range = sel.getRangeAt(0);
-      if (!prose.contains(range.commonAncestorContainer)) return;
-      const result = buildSelectionFromRange(prose, range, window.innerWidth);
-      if (result && result.y > 0) {
-        setPendingSelectionRects(result.rects);
-        setPendingSelection(prev => prev ? { ...prev, x: result.x, y: result.y, rects: result.rects } : null);
-      }
-    }
-
     document.addEventListener("touchstart", onTouchStart, true);
     document.addEventListener("touchend", onTouchEnd, true);
     document.addEventListener("selectionchange", onSelectionChange);
-    document.addEventListener("scroll", onScroll, true);
     return () => {
       if (debounceTimer != null) clearTimeout(debounceTimer);
       document.removeEventListener("touchstart", onTouchStart, true);
       document.removeEventListener("touchend", onTouchEnd, true);
       document.removeEventListener("selectionchange", onSelectionChange);
-      document.removeEventListener("scroll", onScroll, true);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLeaveLineEdits, activeChapter?.id]);
