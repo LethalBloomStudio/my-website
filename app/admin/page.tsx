@@ -487,6 +487,7 @@ function AdminPageInner() {
   const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
   const [selectedUserFlags, setSelectedUserFlags] = useState<{ id: string; manuscript_id: string | null; manuscript_title: string | null; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; status: string }[]>([]);
   const [birthdayAwards, setBirthdayAwards] = useState<{ id: string; awarded_year: number; awarded_at: string; coins_awarded: number; claimed_at: string | null }[]>([]);
+  const [birthdaySendLoading, setBirthdaySendLoading] = useState(false);
   const usersTableRef = useRef<HTMLDivElement>(null);
   const [showScrollArrows, setShowScrollArrows] = useState(false);
 
@@ -951,6 +952,25 @@ function AdminPageInner() {
       .eq("user_id", userId)
       .order("awarded_year", { ascending: false });
     setBirthdayAwards((data as { id: string; awarded_year: number; awarded_at: string; coins_awarded: number; claimed_at: string | null }[] | null) ?? []);
+  }
+
+  async function sendBirthdayAward(userId: string) {
+    setBirthdaySendLoading(true);
+    const token = await getToken();
+    if (!token) { setBirthdaySendLoading(false); return; }
+    const res = await fetch("/api/admin/send-birthday-award", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string };
+    if (res.ok) {
+      setMsg("Birthday award sent.");
+      void loadBirthdayAwards(userId);
+    } else {
+      setMsg(data.error ?? "Failed to send birthday award.");
+    }
+    setBirthdaySendLoading(false);
   }
 
   async function loadTipCounts(userId: string) {
@@ -2915,31 +2935,51 @@ function AdminPageInner() {
               )}
             </div>
 
-            {birthdayAwards.length > 0 && (
-              <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Birthday Awards</p>
-                <div className="space-y-1.5">
-                  {birthdayAwards.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between gap-3 text-[11px]">
-                      <span className="text-neutral-400">
-                        <span style={{ color: "#f59e0b" }}>✿</span>{" "}
-                        {a.awarded_year} — {a.coins_awarded} coins
-                      </span>
-                      {a.claimed_at ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
-                          <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          Claimed {new Date(a.claimed_at).toLocaleDateString()}
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 font-medium">Unclaimed</span>
-                      )}
+            {selectedUser.dob && (() => {
+              const currentYear = new Date().getFullYear();
+              const awardedThisYear = birthdayAwards.some(a => a.awarded_year === currentYear);
+              return (
+                <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Birthday Awards</p>
+                    {!awardedThisYear && (
+                      <button
+                        onClick={() => void sendBirthdayAward(selectedUser.user_id)}
+                        disabled={birthdaySendLoading}
+                        className="inline-flex h-6 items-center gap-1 rounded-md border border-amber-700/50 bg-amber-950/30 px-2 text-[10px] font-medium text-amber-400 hover:bg-amber-900/30 disabled:opacity-50 transition"
+                      >
+                        <span style={{ color: "#f59e0b" }}>✿</span>
+                        {birthdaySendLoading ? "Sending…" : "Send Birthday Award"}
+                      </button>
+                    )}
+                  </div>
+                  {birthdayAwards.length === 0 ? (
+                    <p className="text-[11px] text-neutral-600">No awards sent yet.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {birthdayAwards.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between gap-3 text-[11px]">
+                          <span className="text-neutral-400">
+                            <span style={{ color: "#f59e0b" }}>✿</span>{" "}
+                            {a.awarded_year} — {a.coins_awarded} coins
+                          </span>
+                          {a.claimed_at ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                              <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              Claimed {new Date(a.claimed_at).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-medium">Unclaimed</span>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-2 mb-5">
               {selectedUser.account_status === "active" && <>
