@@ -126,12 +126,18 @@ export default async function PublicProfilePage(props: {
   // Must use supabaseAdmin - anon client is blocked by RLS for cross-user accounts reads
   const { data: accRow } = await supabaseAdmin()
     .from("accounts")
-    .select("is_admin, age_category")
+    .select("is_admin, age_category, dob")
     .eq("user_id", p.user_id)
     .maybeSingle();
-  const accRowTyped = accRow as { is_admin?: boolean; age_category?: string } | null;
+  const accRowTyped = accRow as { is_admin?: boolean; age_category?: string; dob?: string | null } | null;
   const isAdminProfile = !!accRowTyped?.is_admin;
   const profileOwnerIsYouth = accRowTyped?.age_category === "youth_13_17";
+  const isBirthdayToday = (() => {
+    if (profileOwnerIsYouth || !accRowTyped?.dob) return false;
+    const dob = new Date(accRowTyped.dob);
+    const today = new Date();
+    return dob.getUTCMonth() === today.getUTCMonth() && dob.getUTCDate() === today.getUTCDate();
+  })();
 
   // For private adult profiles: check if viewer is an accepted friend (friends can view each other's private profiles)
   let viewerIsFriend = false;
@@ -356,6 +362,15 @@ export default async function PublicProfilePage(props: {
              
               className="profile-banner-img absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
             />
+          )}
+
+          {/* Birthday pill — top-left */}
+          {isBirthdayToday && (
+            <div className="absolute top-3 left-3 z-20">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700/50 bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-300 backdrop-blur-sm">
+                🎂 Happy Birthday!
+              </span>
+            </div>
           )}
 
           {/* Social icons — bottom-left */}
