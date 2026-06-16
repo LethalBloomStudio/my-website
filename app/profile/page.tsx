@@ -106,7 +106,7 @@ export default async function ProfilePage() {
     if (!acctRow?.dob) return false;
     const dob = new Date(acctRow.dob);
     const today = new Date();
-    return dob.getUTCMonth() === today.getMonth() && dob.getUTCDate() === today.getDate();
+    return dob.getUTCMonth() === today.getUTCMonth() && dob.getUTCDate() === today.getUTCDate();
   })();
 
   // Fetch own manuscripts (all visibilities)
