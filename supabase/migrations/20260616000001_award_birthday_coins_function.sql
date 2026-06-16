@@ -46,7 +46,7 @@ BEGIN
       r.user_id,
       'birthday_coins',
       'Happy Birthday from Lethal Bloom!',
-      'Wishing you a beautiful birthday. Thank you for being part of the Lethal Bloom community here''s 100 bloom coins on us! ✿',
+      'Wishing you a beautiful birthday! 🌹 Thank you for being part of the Lethal Bloom community here''s 100 bloom coins on us! ✿',
       'info',
       'birthday-coins-' || current_year
     )
