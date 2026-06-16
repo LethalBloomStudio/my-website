@@ -37,7 +37,10 @@ export default function BirthdayAwardHistory() {
             <li key={a.id} className="flex items-center gap-2 text-sm text-neutral-200">
               <span className="text-neutral-400">{a.awarded_year}</span>
               <span className="text-neutral-500">—</span>
-              <span>{a.coins_awarded} bloom coins awarded on {formatted}</span>
+              <span>
+                <span style={{ color: "#f59e0b" }}>✿</span>{" "}
+                {a.coins_awarded} Bloom Coins awarded on {formatted}
+              </span>
             </li>
           );
         })}
