@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
+import BirthdayFriendCard from "./BirthdayFriendCard";
 
 type Manuscript = { id: string; title: string };
 type Feedback = {
@@ -1379,6 +1380,25 @@ export default function NotificationsPage() {
             )}
           </div>
         </li>
+      );
+    }
+
+    // ── Birthday friend notification ───────────────────────────────────────────
+    if (item.type === "admin" && item.payload.category === "birthday_friend") {
+      const n = item.payload;
+      const meta = n.metadata as { birthday_user_id?: string; birthday_user_name?: string; birthday_user_username?: string } | null;
+      return (
+        <BirthdayFriendCard
+          key={item.key}
+          notifId={(n as { id: string | number }).id}
+          title={n.title}
+          createdAt={n.created_at}
+          birthdayUserId={meta?.birthday_user_id ?? ""}
+          birthdayUserName={meta?.birthday_user_name ?? "your friend"}
+          birthdayUserUsername={meta?.birthday_user_username ?? ""}
+          isRead={isItemRead(item)}
+          onMarkRead={() => void markOneAsRead(item)}
+        />
       );
     }
 
