@@ -485,6 +485,7 @@ function AdminPageInner() {
   } | null>(null);
   const [selectedMsFlags, setSelectedMsFlags] = useState<{ id: string; owner_id: string | null; reason: string; matched_terms: string[]; status: string; created_at: string }[]>([]);
   const [selectedUserFlags, setSelectedUserFlags] = useState<{ id: string; manuscript_id: string | null; manuscript_title: string | null; triggers: string[]; consequence: string; content_excerpt: string | null; created_at: string; status: string }[]>([]);
+  const [birthdayAwards, setBirthdayAwards] = useState<{ id: string; awarded_year: number; awarded_at: string; coins_awarded: number; claimed_at: string | null }[]>([]);
   const usersTableRef = useRef<HTMLDivElement>(null);
   const [showScrollArrows, setShowScrollArrows] = useState(false);
 
@@ -940,6 +941,15 @@ function AdminPageInner() {
       (r) => { map[r.reward_type] = r.count; }
     );
     setRewardCounts(map);
+  }
+
+  async function loadBirthdayAwards(userId: string) {
+    const { data } = await supabase
+      .from("birthday_coin_awards")
+      .select("id, awarded_year, awarded_at, coins_awarded, claimed_at")
+      .eq("user_id", userId)
+      .order("awarded_year", { ascending: false });
+    setBirthdayAwards((data as { id: string; awarded_year: number; awarded_at: string; coins_awarded: number; claimed_at: string | null }[] | null) ?? []);
   }
 
   async function loadTipCounts(userId: string) {
@@ -1450,7 +1460,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1573,7 +1583,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2771,7 +2781,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">{selectedUser.email} {selectedUser.username ? `· @${selectedUser.username}` : ""}</p>
               </div>
-              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); setBirthdayAwards([]); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -2881,6 +2891,32 @@ function AdminPageInner() {
                 <p className="text-[10px] text-neutral-600 mt-1">No flag records found.</p>
               )}
             </div>
+
+            {birthdayAwards.length > 0 && (
+              <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Birthday Awards</p>
+                <div className="space-y-1.5">
+                  {birthdayAwards.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between gap-3 text-[11px]">
+                      <span className="text-neutral-400">
+                        <span style={{ color: "#f59e0b" }}>✿</span>{" "}
+                        {a.awarded_year} — {a.coins_awarded} coins
+                      </span>
+                      {a.claimed_at ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                          <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Claimed {new Date(a.claimed_at).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 font-medium">Unclaimed</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2 mb-5">
               {selectedUser.account_status === "active" && <>
