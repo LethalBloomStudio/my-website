@@ -38,6 +38,7 @@ type UserRow = {
   active_gift_membership_id: string | null;
   gift_access_expires_at: string | null;
   gift_granted_at: string | null;
+  dob: string | null;
 };
 
 type Promotion = {
