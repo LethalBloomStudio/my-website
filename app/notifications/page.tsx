@@ -161,9 +161,11 @@ export default function NotificationsPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "read">("unread");
   const [claimedIds, setClaimedIds] = useState<Set<string>>(new Set());
+  const [birthdayClaimedIds, setBirthdayClaimedIds] = useState<Set<string>>(new Set());
   const [ownedManuscriptIds, setOwnedManuscriptIds] = useState<Set<string>>(new Set());
   const [claimConfirm, setClaimConfirm] = useState<{ announcementId?: string; giveawayPostId?: string; rewardCoins: number } | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
+  const [birthdayClaimLoading, setBirthdayClaimLoading] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [friendRequestAction, setFriendRequestAction] = useState<string | null>(null);
@@ -232,15 +234,17 @@ export default function NotificationsPage() {
     });
 
     // Load which announcement rewards and giveaway prizes this user has already claimed
-    const [{ data: claimsData }, { data: giveawayClaimsData }] = await Promise.all([
+    const [{ data: claimsData }, { data: giveawayClaimsData }, { data: birthdayClaimsData }] = await Promise.all([
       supabase.from("announcement_coin_claims").select("announcement_id").eq("user_id", signedInUserId),
       supabase.from("giveaway_claims").select("post_id").eq("user_id", signedInUserId),
+      supabase.from("birthday_coin_awards").select("id").eq("user_id", signedInUserId).not("claimed_at", "is", null),
     ]);
     const allClaimedIds = new Set([
       ...((claimsData ?? []) as { announcement_id: string }[]).map(c => c.announcement_id),
       ...((giveawayClaimsData ?? []) as { post_id: string }[]).map(c => c.post_id),
     ]);
     setClaimedIds(allClaimedIds);
+    setBirthdayClaimedIds(new Set(((birthdayClaimsData ?? []) as { id: string }[]).map(c => c.id)));
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -841,6 +845,38 @@ export default function NotificationsPage() {
     setClaimLoading(false);
   }
 
+  async function claimBirthdayCoins(birthdayAwardId: string, rewardCoins: number) {
+    if (!userId || birthdayClaimLoading) return;
+    setBirthdayClaimLoading(true);
+    const res = await fetch("/api/birthday-awards/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ birthday_award_id: birthdayAwardId }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string; new_balance?: number };
+    if (res.ok) {
+      setBirthdayClaimedIds(prev => new Set([...prev, birthdayAwardId]));
+      setMsg(`🎉 ${rewardCoins} Bloom Coins added to your wallet!`);
+      window.dispatchEvent(new CustomEvent("bloom-coins-updated", { detail: { balance: data.new_balance } }));
+      const notif = items.find(
+        item => item.type === "admin" && (item.payload.metadata as { birthday_award_id?: string } | null)?.birthday_award_id === birthdayAwardId
+      );
+      if (notif && !(notif.payload as { is_read?: boolean }).is_read) {
+        await supabase
+          .from("system_notifications")
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq("id", (notif.payload as { id: string | number }).id)
+          .eq("user_id", userId);
+        window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
+      }
+      await load();
+    } else {
+      if (data.error === "Already claimed") setMsg("You already claimed your birthday coins!");
+      else setMsg(data.error ?? "Failed to claim birthday coins.");
+    }
+    setBirthdayClaimLoading(false);
+  }
+
   function markOneAsRead(item: FeedItem) {
     if (!userId) return;
     if (item.type === "admin") {
@@ -1340,6 +1376,48 @@ export default function NotificationsPage() {
               >
                 View Comment →
               </Link>
+            )}
+          </div>
+        </li>
+      );
+    }
+
+    // ── Birthday coin notification ─────────────────────────────────────────────
+    if (item.type === "admin" && item.payload.category === "birthday_coins") {
+      const n = item.payload;
+      const awardId = (n.metadata as { birthday_award_id?: string } | null)?.birthday_award_id;
+      const coins = (n.metadata as { reward_coins?: number } | null)?.reward_coins ?? 100;
+      const alreadyClaimed = !!(awardId && birthdayClaimedIds.has(awardId));
+      return (
+        <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+          <p className="text-sm font-medium text-neutral-100">{n.title}</p>
+          <p className="mt-1 text-sm text-neutral-300">{n.body}</p>
+          <p className="mt-2 text-xs text-neutral-500">{new Date(n.created_at).toLocaleString()}</p>
+          <div className="mt-3 flex flex-wrap gap-2 items-center">
+            {alreadyClaimed ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-500">
+                <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Coins claimed
+              </span>
+            ) : awardId ? (
+              <button
+                onClick={() => void claimBirthdayCoins(awardId, coins)}
+                disabled={birthdayClaimLoading}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 text-sm font-medium text-amber-400 hover:bg-amber-900/30 disabled:opacity-50 transition"
+              >
+                <span style={{ color: "#f59e0b" }}>✿</span>
+                {`Claim ${coins} Bloom Coins`}
+              </button>
+            ) : null}
+            {!isItemRead(item) && (
+              <button
+                onClick={() => void markOneAsRead(item)}
+                className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs transition ${CAT_MARK_READ[cat]}`}
+              >
+                Mark as read
+              </button>
             )}
           </div>
         </li>
