@@ -99,8 +99,15 @@ export default async function ProfilePage() {
 
   const p = data as ProfileData | null;
 
-  const { data: acct } = await supabase.from("accounts").select("age_category").eq("user_id", user.id).maybeSingle();
-  const isAdult = (acct as { age_category?: string } | null)?.age_category === "adult_18_plus";
+  const { data: acct } = await supabase.from("accounts").select("age_category, dob").eq("user_id", user.id).maybeSingle();
+  const acctRow = acct as { age_category?: string; dob?: string | null } | null;
+  const isAdult = acctRow?.age_category === "adult_18_plus";
+  const isBirthdayToday = (() => {
+    if (!acctRow?.dob) return false;
+    const dob = new Date(acctRow.dob);
+    const today = new Date();
+    return dob.getUTCMonth() === today.getMonth() && dob.getUTCDate() === today.getDate();
+  })();
 
   // Fetch own manuscripts (all visibilities)
   const { data: manuscriptData } = await supabase
@@ -213,6 +220,15 @@ export default async function ProfilePage() {
               className="profile-banner-img absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
             />
           )}
+          {/* Birthday pill — top-left */}
+          {isBirthdayToday && (
+            <div className="absolute top-3 left-3 z-20">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700/50 bg-amber-950/60 px-3 py-1 text-xs font-medium text-amber-300 backdrop-blur-sm">
+                🎂 Happy Birthday!
+              </span>
+            </div>
+          )}
+
           {/* Social icons — bottom-left */}
           <div className="absolute bottom-3 left-3 z-20 flex flex-wrap gap-2">
             <FriendsPanel friends={friends} profileUserId={user.id} viewerUserId={user.id} />
