@@ -2807,6 +2807,28 @@ function AdminPageInner() {
                 if (!cd) return null;
                 return <div className={`mt-0.5 ${cd.color}`}>{cd.label}</div>;
               })()}
+              {selectedUser.dob && (() => {
+                const dob = new Date(selectedUser.dob);
+                const today = new Date();
+                const isBirthdayToday =
+                  dob.getUTCMonth() === today.getMonth() &&
+                  dob.getUTCDate() === today.getDate();
+                return (
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <span>
+                      Birthday:{" "}
+                      <span className="text-neutral-300">
+                        {dob.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}
+                      </span>
+                    </span>
+                    {isBirthdayToday && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/40 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                        🎂 Birthday today
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
