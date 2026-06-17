@@ -421,6 +421,7 @@ function AdminPageInner() {
   const [rewardCounts, setRewardCounts] = useState<Record<string, number>>({});
   const [tipCounts, setTipCounts] = useState<Record<string, number>>({});
   const [userActivityStats, setUserActivityStats] = useState<{ feedbackCount: number; avgWordCount: number; chaptersRead: number } | null>(null);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [activityBreakdown, setActivityBreakdown] = useState<{
     feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
     chapterRows: { id: string; completed_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
@@ -1522,7 +1523,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); setBreakdownOpen(false); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1645,7 +1646,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); setBreakdownOpen(false); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2933,8 +2934,11 @@ function AdminPageInner() {
 
             {/* ── Activity Breakdown ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Activity Breakdown</p>
-              <div className="space-y-4">
+              <button onClick={() => setBreakdownOpen(o => !o)} className="flex w-full items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Activity Breakdown</p>
+                <span className="text-[10px] text-neutral-600">{breakdownOpen ? "▲" : "▼"}</span>
+              </button>
+              {breakdownOpen && <div className="mt-3 space-y-4">
                   {userActivityStats !== null && activityBreakdown !== null && (() => {
                     const totalRewards = Object.values(rewardCounts).reduce((s, v) => s + v, 0);
                     const fc = userActivityStats.feedbackCount;
@@ -3046,7 +3050,7 @@ function AdminPageInner() {
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
