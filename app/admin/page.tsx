@@ -39,6 +39,7 @@ type UserRow = {
   gift_access_expires_at: string | null;
   gift_granted_at: string | null;
   dob: string | null;
+  activity_score: number;
 };
 
 type Promotion = {
@@ -419,6 +420,7 @@ function AdminPageInner() {
   const [modNotes, setModNotes] = useState<ModNote[]>([]);
   const [rewardCounts, setRewardCounts] = useState<Record<string, number>>({});
   const [tipCounts, setTipCounts] = useState<Record<string, number>>({});
+  const [userActivityStats, setUserActivityStats] = useState<{ feedbackCount: number; avgWordCount: number; chaptersRead: number } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -943,6 +945,27 @@ function AdminPageInner() {
       (r) => { map[r.reward_type] = r.count; }
     );
     setRewardCounts(map);
+  }
+
+  async function loadUserActivityStats(userId: string) {
+    setUserActivityStats(null);
+    const [feedbackRes, chaptersRes] = await Promise.all([
+      supabase
+        .from("line_feedback")
+        .select("word_count")
+        .eq("reader_id", userId),
+      supabase
+        .from("chapter_read_completions")
+        .select("id", { count: "exact", head: true })
+        .eq("reader_id", userId),
+    ]);
+    const feedbackRows = (feedbackRes.data as Array<{ word_count: number | null }> | null) ?? [];
+    const feedbackCount = feedbackRows.length;
+    const avgWordCount = feedbackCount > 0
+      ? Math.round(feedbackRows.reduce((s, r) => s + (r.word_count ?? 0), 0) / feedbackCount)
+      : 0;
+    const chaptersRead = chaptersRes.count ?? 0;
+    setUserActivityStats({ feedbackCount, avgWordCount, chaptersRead });
   }
 
   async function loadBirthdayAwards(userId: string) {
@@ -1481,7 +1504,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1604,7 +1627,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2802,7 +2825,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">{selectedUser.email} {selectedUser.username ? `· @${selectedUser.username}` : ""}</p>
               </div>
-              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); setBirthdayAwards([]); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -2849,6 +2872,45 @@ function AdminPageInner() {
                   </div>
                 );
               })()}
+            </div>
+
+            {/* ── Activity ── */}
+            <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Activity</p>
+              {userActivityStats === null ? (
+                <p className="text-[11px] text-neutral-600">Loading…</p>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Feedback given</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.feedbackCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.feedbackCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Avg word count</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.avgWordCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.avgWordCount > 0 ? userActivityStats.avgWordCount : "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Chapters read</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.chaptersRead > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.chaptersRead}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Author rewards received</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${Object.values(rewardCounts).reduce((s, v) => s + v, 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{Object.values(rewardCounts).reduce((s, v) => s + v, 0)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Last active</span>
+                    <span className={`text-[11px] font-semibold ${formatLastActive(selectedUser.last_active_at).color}`}>{formatLastActive(selectedUser.last_active_at).label}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Conduct strikes</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.conduct_strikes > 0 ? "text-amber-300" : "text-neutral-600"}`}>{selectedUser.conduct_strikes}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Activity score</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.activity_score > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{selectedUser.activity_score}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
