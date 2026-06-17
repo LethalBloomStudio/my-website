@@ -2811,7 +2811,7 @@ function AdminPageInner() {
       {/* ── USER MANAGEMENT MODAL ── */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-10 overflow-y-auto">
-          <div className="w-full max-w-lg rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl">
+          <div className="w-full max-w-3xl rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
