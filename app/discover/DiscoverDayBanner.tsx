@@ -1,5 +1,15 @@
 "use client";
 
+const DAY_NAMES: Record<number, string> = {
+  0: "Sunday",
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+  6: "Saturday",
+};
+
 const LABELS: Record<number, string> = {
   1: "New Arrivals",
   2: "The Originals",
@@ -21,13 +31,14 @@ const COPY: Record<number, string> = {
 };
 
 export default function DiscoverDayBanner({ sortDay }: { sortDay: number }) {
+  const dayName = DAY_NAMES[sortDay];
   const label = LABELS[sortDay];
   const copy = COPY[sortDay];
-  if (!label || !copy) return null;
+  if (!dayName || !label || !copy) return null;
 
   return (
     <p className="mt-2 text-sm">
-      <span className="text-neutral-300">{label}</span>
+      <span className="text-neutral-300">{dayName} · {label}</span>
       <span className="text-neutral-500 italic"> — {copy}</span>
     </p>
   );
