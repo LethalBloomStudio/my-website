@@ -425,6 +425,8 @@ function AdminPageInner() {
     feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
     chapterRows: { id: string; completed_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
     rewardEvents: { id: string; created_at: string; reward_reason: string | null; from_user_name: string | null; manuscript_id: string | null }[];
+    manuscriptsUploaded: number;
+    chaptersUploaded: number;
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
@@ -978,8 +980,10 @@ function AdminPageInner() {
       feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
       chapterRows: { id: string; completed_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
       rewardEvents: { id: string; created_at: string; reward_reason: string | null; from_user_name: string | null; manuscript_id: string | null }[];
+      manuscriptsUploaded: number;
+      chaptersUploaded: number;
     } | null;
-    setActivityBreakdown(data ?? { feedbackRows: [], chapterRows: [], rewardEvents: [] });
+    setActivityBreakdown(data ?? { feedbackRows: [], chapterRows: [], rewardEvents: [], manuscriptsUploaded: 0, chaptersUploaded: 0 });
   }
 
   async function loadBirthdayAwards(userId: string) {
@@ -2920,7 +2924,7 @@ function AdminPageInner() {
                     <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.conduct_strikes > 0 ? "text-amber-300" : "text-neutral-600"}`}>{selectedUser.conduct_strikes}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-neutral-400">Activity score</span>
+                    <span className="text-[11px] text-neutral-400">Activity score <span className="text-[10px] font-normal text-neutral-600">(updated nightly)</span></span>
                     <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.activity_score > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{selectedUser.activity_score}</span>
                   </div>
                 </div>
@@ -2931,17 +2935,21 @@ function AdminPageInner() {
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Activity Breakdown</p>
               <div className="space-y-4">
-                  {userActivityStats !== null && (() => {
+                  {userActivityStats !== null && activityBreakdown !== null && (() => {
                     const totalRewards = Object.values(rewardCounts).reduce((s, v) => s + v, 0);
                     const fc = userActivityStats.feedbackCount;
                     const wc = userActivityStats.avgWordCount;
                     const cr = userActivityStats.chaptersRead;
                     const rw = totalRewards;
+                    const mu = activityBreakdown.manuscriptsUploaded;
+                    const cu = activityBreakdown.chaptersUploaded;
                     const fcPart = fc * 10;
                     const wcPart = Math.round(wc * 0.5 * 100) / 100;
                     const crPart = cr * 5;
                     const rwPart = rw * 15;
-                    const rawScore = fcPart + wcPart + crPart + rwPart;
+                    const muPart = mu * 8;
+                    const cuPart = cu * 2;
+                    const rawScore = Math.round((fcPart + wcPart + crPart + rwPart + muPart + cuPart) * 100) / 100;
                     const daysSinceActive = selectedUser.last_active_at
                       ? Math.floor((Date.now() - new Date(selectedUser.last_active_at).getTime()) / 86400000)
                       : 999;
@@ -2950,17 +2958,19 @@ function AdminPageInner() {
                     const finalScore = Math.round(rawScore * recencyMultiplier * conductPenalty * 100) / 100;
                     return (
                       <div className="rounded border border-[rgba(120,120,120,0.15)] bg-neutral-900/60 px-3 py-2 font-mono text-[11px] space-y-0.5">
-                        <p className="mb-1.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-neutral-600">Score Calculation</p>
+                        <p className="mb-1.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-neutral-600">Live Score Calculation</p>
                         <div className="flex justify-between"><span className="text-neutral-500">Feedback × 10</span><span className="text-neutral-300">{fc} × 10 = {fcPart}</span></div>
                         <div className="flex justify-between"><span className="text-neutral-500">Avg words × 0.5</span><span className="text-neutral-300">{wc} × 0.5 = {wcPart}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Chapters × 5</span><span className="text-neutral-300">{cr} × 5 = {crPart}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Chapters read × 5</span><span className="text-neutral-300">{cr} × 5 = {crPart}</span></div>
                         <div className="flex justify-between"><span className="text-neutral-500">Rewards × 15</span><span className="text-neutral-300">{rw} × 15 = {rwPart}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Manuscripts × 8</span><span className="text-neutral-300">{mu} × 8 = {muPart}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Chapters written × 2</span><span className="text-neutral-300">{cu} × 2 = {cuPart}</span></div>
                         <div className="my-1 border-t border-[rgba(120,120,120,0.15)]" />
                         <div className="flex justify-between"><span className="text-neutral-500">Raw score</span><span className="font-semibold text-neutral-200">{rawScore}</span></div>
                         <div className="flex justify-between"><span className="text-neutral-500">Recency ({daysSinceActive}d)</span><span className={recencyMultiplier === 1 ? "text-emerald-400" : recencyMultiplier === 0.6 ? "text-amber-400" : "text-red-400"}>× {recencyMultiplier}</span></div>
                         <div className="flex justify-between"><span className="text-neutral-500">Conduct ({selectedUser.conduct_strikes} strikes)</span><span className={conductPenalty === 1 ? "text-neutral-300" : "text-amber-400"}>× {conductPenalty.toFixed(1)}</span></div>
                         <div className="my-1 border-t border-[rgba(120,120,120,0.15)]" />
-                        <div className="flex justify-between"><span className="font-sans font-semibold text-neutral-400">Final score</span><span className="font-sans font-semibold text-white">{finalScore}</span></div>
+                        <div className="flex justify-between"><span className="font-sans font-semibold text-neutral-400">Live score</span><span className="font-sans font-semibold text-white">{finalScore}</span></div>
                       </div>
                     );
                   })()}

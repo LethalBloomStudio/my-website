@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const supabase = adminClient();
 
-  const [feedbackRes, chaptersRes, ledgerRes] = await Promise.all([
+  const [feedbackRes, chaptersRes, ledgerRes, manuscriptsRes] = await Promise.all([
     supabase
       .from("line_feedback")
       .select("id, word_count, created_at, chapter:manuscript_chapters(chapter_order, title), manuscript:manuscripts(title, owner_id)")
@@ -60,7 +60,22 @@ export async function GET(req: Request) {
       .eq("user_id", userId)
       .eq("reason", "author_reward")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("manuscripts")
+      .select("id")
+      .eq("owner_id", userId),
   ]);
+
+  const manuscriptIds = ((manuscriptsRes.data ?? []) as { id: string }[]).map(m => m.id);
+  const manuscriptsUploaded = manuscriptIds.length;
+  let chaptersUploaded = 0;
+  if (manuscriptIds.length > 0) {
+    const { count } = await supabase
+      .from("manuscript_chapters")
+      .select("id", { count: "exact", head: true })
+      .in("manuscript_id", manuscriptIds);
+    chaptersUploaded = count ?? 0;
+  }
 
   const feedbackRaw = ((feedbackRes.data ?? []) as unknown as Array<{
     id: string;
@@ -147,5 +162,5 @@ export async function GET(req: Request) {
     manuscript_id: r.metadata?.manuscript_id ?? null,
   }));
 
-  return NextResponse.json({ feedbackRows, chapterRows, rewardEvents });
+  return NextResponse.json({ feedbackRows, chapterRows, rewardEvents, manuscriptsUploaded, chaptersUploaded });
 }
