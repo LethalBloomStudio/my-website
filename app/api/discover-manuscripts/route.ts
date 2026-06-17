@@ -95,7 +95,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = (data ?? []) as Array<{ owner_id: string; categories?: string[] | null; genre?: string | null }>;
+  const rows = (data ?? []) as unknown as Array<{ owner_id: string; categories?: string[] | null; genre?: string | null }>;
 
   if (rows.length === 0) {
     return NextResponse.json({ manuscripts: [], isYouth: viewerIsYouth, sortDay: utcDay });
