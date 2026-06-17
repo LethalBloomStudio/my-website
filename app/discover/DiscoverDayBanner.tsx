@@ -38,7 +38,7 @@ export default function DiscoverDayBanner({ sortDay }: { sortDay: number }) {
 
   return (
     <p className="mt-2 text-sm">
-      <span className="text-neutral-300">{dayName} · {label}</span>
+      <span className="text-neutral-300"><span className="font-semibold">{dayName}</span> · {label}</span>
       <span className="text-neutral-500 italic"> — {copy}</span>
     </p>
   );
