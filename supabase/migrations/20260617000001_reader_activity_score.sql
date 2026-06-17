@@ -84,7 +84,7 @@ begin
     perform cron.schedule(
       'compute-reader-activity-scores',
       '0 3 * * *',
-      $$select public.compute_reader_activity_scores();$$
+      $cmd$select public.compute_reader_activity_scores();$cmd$
     );
   end if;
 end $$;

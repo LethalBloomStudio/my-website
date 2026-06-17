@@ -931,7 +931,7 @@ $$;
 
 -- Schedule these in Supabase SQL editor (pg_cron) if enabled:
 -- select cron.schedule('process-inactivity-lifecycle',        '0 12 * * *', $$select public.process_inactivity_lifecycle();$$);
--- select cron.schedule('compute-reader-activity-scores',      '0 3  * * *', $$select public.compute_reader_activity_scores();$$);
+-- select cron.schedule('compute-reader-activity-scores',      '0 3  * * *', $cmd$select public.compute_reader_activity_scores();$cmd$);
 
 do $$
 declare
