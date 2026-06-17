@@ -325,6 +325,8 @@ alter table public.accounts
   add column if not exists inactivity_warning_4m_sent_at timestamptz;
 alter table public.accounts
   add column if not exists inactivity_warning_5m_sent_at timestamptz;
+alter table public.accounts
+  add column if not exists activity_score numeric not null default 0;
 
 drop policy if exists "coin_ledger_select_own" on public.bloom_coin_ledger;
 create policy "coin_ledger_select_own"
@@ -867,8 +869,69 @@ $$;
 
 grant execute on function public.submit_line_feedback(uuid, text, text, uuid, int, int) to authenticated;
 
+-- ── compute_reader_activity_scores ────────────────────────────────────────────
+create or replace function public.compute_reader_activity_scores()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.accounts a
+  set activity_score = scores.final_score
+  from (
+    select
+      a2.user_id,
+      round(
+        (
+          coalesce(f.feedback_count, 0) * 10   +
+          coalesce(f.avg_word_count,  0) * 0.5 +
+          coalesce(r.chapters_read,   0) * 5   +
+          coalesce(rw.total_rewards,  0) * 15
+        )::numeric
+        *
+        case
+          when a2.last_active_at >= now() - interval '30 days' then 1.0
+          when a2.last_active_at >= now() - interval '60 days' then 0.6
+          else 0.2
+        end
+        *
+        greatest(0.0, 1.0 - a2.conduct_strikes * 0.2)
+      , 2) as final_score
+    from public.accounts a2
+    inner join public.public_profiles pp
+      on  pp.user_id = a2.user_id
+      and pp.beta_reader_level is not null
+    left join (
+      select
+        reader_id,
+        count(*)::numeric            as feedback_count,
+        coalesce(avg(word_count), 0) as avg_word_count
+      from public.line_feedback
+      group by reader_id
+    ) f  on f.reader_id  = a2.user_id
+    left join (
+      select
+        reader_id,
+        count(*)::numeric as chapters_read
+      from public.chapter_read_completions
+      group by reader_id
+    ) r  on r.reader_id  = a2.user_id
+    left join (
+      select
+        reader_id,
+        sum(count)::numeric as total_rewards
+      from public.reader_reward_counts
+      group by reader_id
+    ) rw on rw.reader_id = a2.user_id
+  ) scores
+  where a.user_id = scores.user_id;
+end;
+$$;
+
 -- Schedule these in Supabase SQL editor (pg_cron) if enabled:
--- select cron.schedule('process-inactivity-lifecycle', '0 12 * * *', $$select public.process_inactivity_lifecycle();$$);
+-- select cron.schedule('process-inactivity-lifecycle',        '0 12 * * *', $$select public.process_inactivity_lifecycle();$$);
+-- select cron.schedule('compute-reader-activity-scores',      '0 3  * * *', $$select public.compute_reader_activity_scores();$$);
 
 do $$
 declare
