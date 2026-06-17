@@ -4,6 +4,39 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { supabaseAdmin } from "@/lib/Supabase/admin";
 import { YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
+import { createHash } from "crypto";
+
+// mulberry32 seeded PRNG — deterministic, fast, good distribution
+function mulberry32(seed: number) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const rand = mulberry32(seed);
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Stable UTC week number (days since Unix epoch / 7, floored)
+function utcWeekNumber(now: Date): number {
+  return Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+}
+
+// Spread week seed across full int32 range via a quick hash
+function weekSeed(weekNum: number): number {
+  const hex = createHash("md5").update(String(weekNum)).digest("hex").slice(0, 8);
+  return parseInt(hex, 16) | 0;
+}
 
 export async function GET() {
   const serverClient = await supabaseServer();
@@ -22,13 +55,41 @@ export async function GET() {
     viewerIsYouth = (acct as { age_category?: string } | null)?.age_category === "youth_13_17";
   }
 
-  // Fetch all public manuscripts
-  const { data, error } = await admin
+  const now = new Date();
+  const utcDay = now.getUTCDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+
+  // Build the query with day-appropriate server-side sort.
+  // Sunday (0) is handled post-fetch with a seeded shuffle, so we use a
+  // stable fallback order (id ASC) to ensure the shuffle input is consistent.
+  type OrderCol = "created_at" | "tip_count" | "view_count" | "id";
+  const orderMap: Record<number, { col: OrderCol; asc: boolean }[]> = {
+    0: [{ col: "id", asc: true }],                                              // Sunday  — shuffle below
+    1: [{ col: "created_at", asc: false }],                                     // Monday  — newest first
+    2: [{ col: "created_at", asc: true }],                                      // Tuesday — oldest first
+    3: [{ col: "tip_count", asc: false }, { col: "created_at", asc: false }],   // Wednesday — most tipped
+    4: [{ col: "tip_count", asc: true },  { col: "created_at", asc: false }],   // Thursday  — least tipped
+    5: [{ col: "view_count", asc: true },  { col: "created_at", asc: false }],  // Friday    — fewest reads
+    6: [{ col: "view_count", asc: false }, { col: "created_at", asc: false }],  // Saturday  — most reads
+  };
+
+  const orders = orderMap[utcDay] ?? orderMap[1];
+
+  let q = admin
     .from("manuscripts")
-    .select("id, owner_id, title, genre, categories, word_count, chapter_count, requested_feedback, age_rating, created_at, cover_url, description, stage")
-    .eq("visibility", "public")
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .select(
+      "id, owner_id, title, genre, categories, word_count, chapter_count, " +
+      "requested_feedback, age_rating, created_at, cover_url, description, stage, " +
+      "tip_count, view_count"
+    )
+    .eq("visibility", "public");
+
+  for (const { col, asc } of orders) {
+    q = q.order(col, { ascending: asc });
+  }
+
+  q = q.limit(200);
+
+  const { data, error } = await q;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -37,7 +98,7 @@ export async function GET() {
   const rows = (data ?? []) as Array<{ owner_id: string; categories?: string[] | null; genre?: string | null }>;
 
   if (rows.length === 0) {
-    return NextResponse.json({ manuscripts: [], isYouth: viewerIsYouth });
+    return NextResponse.json({ manuscripts: [], isYouth: viewerIsYouth, sortDay: utcDay });
   }
 
   // Fetch age categories for all owners using admin (bypasses RLS)
@@ -58,14 +119,16 @@ export async function GET() {
   const filtered = rows.filter((m) => {
     const ownerIsYouth = ageCategoryMap.get(m.owner_id) === "youth_13_17";
     if (viewerIsYouth) {
-      // Youth viewers see any manuscript that has at least one youth-allowed category,
-      // regardless of whether the owner is adult or youth.
       const cats = (m.categories?.length ? m.categories : m.genre ? [m.genre] : []) as string[];
       return cats.some((c) => youthCategorySet.has(c));
     }
-    // Adult viewers never see manuscripts owned by youth
     return !ownerIsYouth;
   });
 
-  return NextResponse.json({ manuscripts: filtered, isYouth: viewerIsYouth });
+  // Sunday: apply seeded deterministic shuffle (consistent for all users same day)
+  const manuscripts = utcDay === 0
+    ? seededShuffle(filtered, weekSeed(utcWeekNumber(now)))
+    : filtered;
+
+  return NextResponse.json({ manuscripts, isYouth: viewerIsYouth, sortDay: utcDay });
 }

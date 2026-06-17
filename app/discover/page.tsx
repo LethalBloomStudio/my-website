@@ -11,6 +11,7 @@ import { genreOptionsForAgeCategory } from "@/lib/profileOptions";
 import { YOUTH_ALLOWED_CATEGORIES } from "@/lib/manuscriptOptions";
 import FeaturedCarousel from "./FeaturedCarousel";
 import BloomEventBanner from "./BloomEventBanner";
+import DiscoverDayBanner from "./DiscoverDayBanner";
 
 type Manuscript = {
   id: string;
@@ -74,6 +75,7 @@ export default function DiscoverPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [ageCategory, setAgeCategory] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [sortDay, setSortDay] = useState<number>(-1);
   const [visibleCount, setVisibleCount] = useState(15);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const chapterCountChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -108,10 +110,12 @@ export default function DiscoverPage() {
         return;
       }
 
-      const { manuscripts, isYouth: viewerIsYouth } = await res.json() as {
+      const { manuscripts, isYouth: viewerIsYouth, sortDay: day } = await res.json() as {
         manuscripts: Manuscript[];
         isYouth: boolean;
+        sortDay: number;
       };
+      setSortDay(day);
 
       setIsYouth(viewerIsYouth);
       setItems(manuscripts);
@@ -205,10 +209,6 @@ export default function DiscoverPage() {
       categories.join(" ").toLowerCase().includes(normalized) ||
       writerName.toLowerCase().includes(normalized)
     );
-  }).sort((a, b) => {
-    const aTime = new Date(a.created_at).getTime();
-    const bTime = new Date(b.created_at).getTime();
-    return bTime - aTime;
   });
 
   return (
@@ -220,6 +220,8 @@ export default function DiscoverPage() {
         {isAdmin && <BloomEventBanner isYouth={isYouth} />}
 
         <FeaturedCarousel />
+
+        {sortDay >= 0 && <DiscoverDayBanner sortDay={sortDay} />}
 
         <div className="mt-6 grid gap-3 md:grid-cols-5">
           <label className="md:col-span-2 flex flex-col gap-1">
