@@ -215,13 +215,12 @@ export default function DiscoverPage() {
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto max-w-6xl px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Discover</h1>
-        <p className="mt-2 text-neutral-300">Search books by category and writer level.</p>
+
+        {sortDay >= 0 && <DiscoverDayBanner sortDay={sortDay} />}
 
         {isAdmin && <BloomEventBanner isYouth={isYouth} />}
 
         <FeaturedCarousel />
-
-        {sortDay >= 0 && <DiscoverDayBanner sortDay={sortDay} />}
 
         <div className="mt-6 grid gap-3 md:grid-cols-5">
           <label className="md:col-span-2 flex flex-col gap-1">
