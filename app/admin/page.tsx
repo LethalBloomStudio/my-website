@@ -422,8 +422,8 @@ function AdminPageInner() {
   const [tipCounts, setTipCounts] = useState<Record<string, number>>({});
   const [userActivityStats, setUserActivityStats] = useState<{ feedbackCount: number; avgWordCount: number; chaptersRead: number } | null>(null);
   const [activityBreakdown, setActivityBreakdown] = useState<{
-    feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null }[];
-    chapterRows: { id: string; completed_at: string; manuscript_title: string | null }[];
+    feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
+    chapterRows: { id: string; completed_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
     rewardEvents: { id: string; created_at: string; reward_reason: string | null; from_user_name: string | null; manuscript_id: string | null }[];
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -975,8 +975,8 @@ function AdminPageInner() {
 
   async function loadActivityBreakdown(userId: string) {
     const data = await adminFetch(`/api/admin/user-activity-breakdown?user_id=${userId}`) as {
-      feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null }[];
-      chapterRows: { id: string; completed_at: string; manuscript_title: string | null }[];
+      feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
+      chapterRows: { id: string; completed_at: string; manuscript_title: string | null; chapter_order: number | null; chapter_title: string | null; author_name: string | null }[];
       rewardEvents: { id: string; created_at: string; reward_reason: string | null; from_user_name: string | null; manuscript_id: string | null }[];
     } | null;
     setActivityBreakdown(data ?? { feedbackRows: [], chapterRows: [], rewardEvents: [] });
@@ -2976,8 +2976,14 @@ function AdminPageInner() {
                         {activityBreakdown.feedbackRows.map(r => (
                           <div key={r.id} className="flex items-center justify-between gap-3 rounded border border-[rgba(120,120,120,0.12)] bg-neutral-900/50 px-2.5 py-1.5">
                             <div className="min-w-0">
-                              <p className="truncate text-[11px] text-neutral-300">{r.manuscript_title ?? "Unknown manuscript"}</p>
-                              <p className="text-[10px] text-neutral-600">{r.word_count != null ? `${r.word_count} words` : "No word count"}</p>
+                              <p className="truncate text-[11px] text-neutral-300">
+                                {r.manuscript_title ?? "Unknown manuscript"}
+                                {r.chapter_order != null ? ` · Ch. ${r.chapter_order}${r.chapter_title ? ` — ${r.chapter_title}` : ""}` : ""}
+                              </p>
+                              <p className="text-[10px] text-neutral-600">
+                                {r.author_name ? `by ${r.author_name}` : ""}
+                                {r.word_count != null ? `${r.author_name ? " · " : ""}${r.word_count} words` : ""}
+                              </p>
                             </div>
                             <span className="shrink-0 text-[10px] text-neutral-600">{new Date(r.created_at).toLocaleDateString()}</span>
                           </div>
@@ -2996,7 +3002,13 @@ function AdminPageInner() {
                       <div className="max-h-48 space-y-1 overflow-y-auto">
                         {activityBreakdown.chapterRows.map(r => (
                           <div key={r.id} className="flex items-center justify-between gap-3 rounded border border-[rgba(120,120,120,0.12)] bg-neutral-900/50 px-2.5 py-1.5">
-                            <p className="min-w-0 truncate text-[11px] text-neutral-300">{r.manuscript_title ?? "Unknown manuscript"}</p>
+                            <div className="min-w-0">
+                              <p className="truncate text-[11px] text-neutral-300">
+                                {r.manuscript_title ?? "Unknown manuscript"}
+                                {r.chapter_order != null ? ` · Ch. ${r.chapter_order}${r.chapter_title ? ` — ${r.chapter_title}` : ""}` : ""}
+                              </p>
+                              {r.author_name && <p className="text-[10px] text-neutral-600">by {r.author_name}</p>}
+                            </div>
                             <span className="shrink-0 text-[10px] text-neutral-600">{new Date(r.completed_at).toLocaleDateString()}</span>
                           </div>
                         ))}
