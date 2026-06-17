@@ -421,7 +421,6 @@ function AdminPageInner() {
   const [rewardCounts, setRewardCounts] = useState<Record<string, number>>({});
   const [tipCounts, setTipCounts] = useState<Record<string, number>>({});
   const [userActivityStats, setUserActivityStats] = useState<{ feedbackCount: number; avgWordCount: number; chaptersRead: number } | null>(null);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [activityBreakdown, setActivityBreakdown] = useState<{
     feedbackRows: { id: string; word_count: number | null; created_at: string; manuscript_title: string | null }[];
     chapterRows: { id: string; completed_at: string; manuscript_title: string | null }[];
@@ -983,18 +982,6 @@ function AdminPageInner() {
     setActivityBreakdown(data ?? { feedbackRows: [], chapterRows: [], rewardEvents: [] });
   }
 
-  function toggleSection(name: string) {
-    const isOpening = !openSections.has(name);
-    setOpenSections(prev => {
-      const next = new Set(prev);
-      if (prev.has(name)) next.delete(name); else next.add(name);
-      return next;
-    });
-    if (isOpening && name === "breakdown" && activityBreakdown === null && selectedUser) {
-      void loadActivityBreakdown(selectedUser.user_id);
-    }
-  }
-
   async function loadBirthdayAwards(userId: string) {
     const { data } = await supabase
       .from("birthday_coin_awards")
@@ -1531,7 +1518,7 @@ function AdminPageInner() {
                           </Link>
                         )}
                         <button
-                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setOpenSections(new Set()); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); }}
+                          onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
                           className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition">
                           Manage
                         </button>
@@ -1654,7 +1641,7 @@ function AdminPageInner() {
                               Profile ↗
                             </Link>
                           )}
-                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setOpenSections(new Set()); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); }}
+                          <button onClick={() => { setSelectedUser(u); setActionType(null); setActionReason(""); setNewNote(""); setRewardCounts({}); setTipCounts({}); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); void loadModNotes(u.user_id); void loadRewardCounts(u.user_id); void loadTipCounts(u.user_id); void loadUserBillingHistory(u.user_id); void loadUserFlags(u.user_id); void loadBirthdayAwards(u.user_id); void loadUserActivityStats(u.user_id); void loadActivityBreakdown(u.user_id); }}
                             className="rounded-lg border border-[rgba(120,120,120,0.4)] bg-[rgba(120,120,120,0.08)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
                             Manage
                           </button>
@@ -2838,7 +2825,7 @@ function AdminPageInner() {
       {/* ── USER MANAGEMENT MODAL ── */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-10 overflow-y-auto">
-          <div className="w-full max-w-3xl rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl">
+          <div className="w-full max-w-4xl rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-6 shadow-2xl">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -2852,7 +2839,7 @@ function AdminPageInner() {
                 </div>
                 <p className="text-xs text-neutral-500">{selectedUser.email} {selectedUser.username ? `· @${selectedUser.username}` : ""}</p>
               </div>
-              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setOpenSections(new Set()); setActivityBreakdown(null); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
+              <button onClick={() => { setSelectedUser(null); setUserBillingHistory(null); setSelectedUserFlags([]); setBirthdayAwards([]); setUserActivityStats(null); setActivityBreakdown(null); }} className="text-neutral-500 hover:text-white text-lg">✕</button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -2903,58 +2890,47 @@ function AdminPageInner() {
 
             {/* ── Activity ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("activity")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Activity</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("activity") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("activity") && (
-                <>
-                  {userActivityStats === null ? (
-                    <p className="mt-2 text-[11px] text-neutral-600">Loading…</p>
-                  ) : (
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Feedback given</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.feedbackCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.feedbackCount}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Avg word count</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.avgWordCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.avgWordCount > 0 ? userActivityStats.avgWordCount : "—"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Chapters read</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.chaptersRead > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.chaptersRead}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Author rewards received</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${Object.values(rewardCounts).reduce((s, v) => s + v, 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{Object.values(rewardCounts).reduce((s, v) => s + v, 0)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Last active</span>
-                        <span className={`text-[11px] font-semibold ${formatLastActive(selectedUser.last_active_at).color}`}>{formatLastActive(selectedUser.last_active_at).label}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Conduct strikes</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.conduct_strikes > 0 ? "text-amber-300" : "text-neutral-600"}`}>{selectedUser.conduct_strikes}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-neutral-400">Activity score</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.activity_score > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{selectedUser.activity_score}</span>
-                      </div>
-                    </div>
-                  )}
-                </>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Activity</p>
+              {userActivityStats === null ? (
+                <p className="text-[11px] text-neutral-600">Loading…</p>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Feedback given</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.feedbackCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.feedbackCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Avg word count</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.avgWordCount > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.avgWordCount > 0 ? userActivityStats.avgWordCount : "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Chapters read</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${userActivityStats.chaptersRead > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{userActivityStats.chaptersRead}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Author rewards received</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${Object.values(rewardCounts).reduce((s, v) => s + v, 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{Object.values(rewardCounts).reduce((s, v) => s + v, 0)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Last active</span>
+                    <span className={`text-[11px] font-semibold ${formatLastActive(selectedUser.last_active_at).color}`}>{formatLastActive(selectedUser.last_active_at).label}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Conduct strikes</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.conduct_strikes > 0 ? "text-amber-300" : "text-neutral-600"}`}>{selectedUser.conduct_strikes}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-neutral-400">Activity score</span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${selectedUser.activity_score > 0 ? "text-neutral-100" : "text-neutral-600"}`}>{selectedUser.activity_score}</span>
+                  </div>
+                </div>
               )}
             </div>
 
             {/* ── Activity Breakdown ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("breakdown")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Activity Breakdown</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("breakdown") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("breakdown") && (
-                <div className="mt-3 space-y-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Activity Breakdown</p>
+              <div className="space-y-4">
                   {userActivityStats !== null && (() => {
                     const totalRewards = Object.values(rewardCounts).reduce((s, v) => s + v, 0);
                     const fc = userActivityStats.feedbackCount;
@@ -3049,107 +3025,89 @@ function AdminPageInner() {
                     )}
                   </div>
                 </div>
-              )}
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("rewards")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Reward Tally</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("rewards") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("rewards") && (
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                  {REWARD_TALLY_CONFIG.map(({ type, symbol, color }) => (
-                    <div key={type} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                        <span style={{ color }}>{symbol}</span>
-                        {type}
-                      </span>
-                      <span className={`text-[11px] font-semibold tabular-nums ${(rewardCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
-                        {rewardCounts[type] ?? 0}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Reward Tally</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                {REWARD_TALLY_CONFIG.map(({ type, symbol, color }) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[11px] text-neutral-400">
+                      <span style={{ color }}>{symbol}</span>
+                      {type}
+                    </span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${(rewardCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
+                      {rewardCounts[type] ?? 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("tips")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Tip Tally</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("tips") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("tips") && (
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
-                  {TIP_TALLY_CONFIG.map(({ type, symbol, color }) => (
-                    <div key={type} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                        <span style={{ color }}>{symbol}</span>
-                        {type}
-                      </span>
-                      <span className={`text-[11px] font-semibold tabular-nums ${(tipCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
-                        {tipCounts[type] ?? 0}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Tip Tally</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                {TIP_TALLY_CONFIG.map(({ type, symbol, color }) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[11px] text-neutral-400">
+                      <span style={{ color }}>{symbol}</span>
+                      {type}
+                    </span>
+                    <span className={`text-[11px] font-semibold tabular-nums ${(tipCounts[type] ?? 0) > 0 ? "text-neutral-100" : "text-neutral-600"}`}>
+                      {tipCounts[type] ?? 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* ── Manuscript Conduct ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("conduct")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Manuscript Conduct</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("conduct") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("conduct") && (
-                <div className="mt-2">
-                  <div className="flex items-center gap-3 flex-wrap mb-1.5">
-                    <span className="text-xs text-neutral-400">
-                      Strikes: <span className={`font-semibold ${selectedUser.manuscript_conduct_strikes > 0 ? "text-amber-300" : "text-neutral-300"}`}>{selectedUser.manuscript_conduct_strikes}</span>
-                    </span>
-                    <span className="text-xs text-neutral-400">
-                      Lifetime suspensions: <span className="font-semibold text-neutral-300">{selectedUser.manuscript_lifetime_suspension_count}</span>
-                    </span>
-                  </div>
-                  {selectedUser.manuscript_blacklisted && (
-                    <p className="text-xs font-semibold text-red-400 mb-1">⛔ Permanently blacklisted from reading manuscripts</p>
-                  )}
-                  {!selectedUser.manuscript_blacklisted && selectedUser.manuscript_suspended_until && new Date(selectedUser.manuscript_suspended_until).getTime() > Date.now() && (
-                    <p className="text-xs font-semibold text-amber-400 mb-1">
-                      ⏸ Suspended until {new Date(selectedUser.manuscript_suspended_until).toLocaleString()}
-                    </p>
-                  )}
-                  {!selectedUser.manuscript_blacklisted && (!selectedUser.manuscript_suspended_until || new Date(selectedUser.manuscript_suspended_until).getTime() <= Date.now()) && selectedUser.manuscript_conduct_strikes === 0 && (
-                    <p className="text-xs text-neutral-600">No active conduct restrictions</p>
-                  )}
-                  {selectedUserFlags.length > 0 && (
-                    <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-600 mb-1">Recent Flags</p>
-                      {selectedUserFlags.map(f => (
-                        <div key={f.id} className="rounded border border-[rgba(120,120,120,0.15)] bg-neutral-900/60 px-2 py-1.5">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="min-w-0">
-                              <span className={`text-[10px] font-semibold ${f.consequence === "blacklisted" ? "text-red-400" : f.consequence === "suspended_3_days" ? "text-amber-400" : "text-neutral-400"}`}>
-                                {f.consequence === "blacklisted" ? "Blacklisted" : f.consequence === "suspended_3_days" ? "Suspended 3d" : f.consequence === "warning_2" ? "Warning 2" : "Warning 1"}
-                              </span>
-                              {f.triggers.length > 0 && (
-                                <span className="ml-1.5 text-[10px] text-neutral-500">— {f.triggers.join(", ")}</span>
-                              )}
-                              {f.manuscript_title && (
-                                <p className="text-[10px] text-neutral-500 truncate mt-0.5">on &ldquo;{f.manuscript_title}&rdquo;</p>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-neutral-600 shrink-0">{new Date(f.created_at).toLocaleDateString()}</span>
-                          </div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-2">Manuscript Conduct</p>
+              <div className="flex items-center gap-3 flex-wrap mb-1.5">
+                <span className="text-xs text-neutral-400">
+                  Strikes: <span className={`font-semibold ${selectedUser.manuscript_conduct_strikes > 0 ? "text-amber-300" : "text-neutral-300"}`}>{selectedUser.manuscript_conduct_strikes}</span>
+                </span>
+                <span className="text-xs text-neutral-400">
+                  Lifetime suspensions: <span className="font-semibold text-neutral-300">{selectedUser.manuscript_lifetime_suspension_count}</span>
+                </span>
+              </div>
+              {selectedUser.manuscript_blacklisted && (
+                <p className="text-xs font-semibold text-red-400 mb-1">⛔ Permanently blacklisted from reading manuscripts</p>
+              )}
+              {!selectedUser.manuscript_blacklisted && selectedUser.manuscript_suspended_until && new Date(selectedUser.manuscript_suspended_until).getTime() > Date.now() && (
+                <p className="text-xs font-semibold text-amber-400 mb-1">
+                  ⏸ Suspended until {new Date(selectedUser.manuscript_suspended_until).toLocaleString()}
+                </p>
+              )}
+              {!selectedUser.manuscript_blacklisted && (!selectedUser.manuscript_suspended_until || new Date(selectedUser.manuscript_suspended_until).getTime() <= Date.now()) && selectedUser.manuscript_conduct_strikes === 0 && (
+                <p className="text-xs text-neutral-600">No active conduct restrictions</p>
+              )}
+              {selectedUserFlags.length > 0 && (
+                <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-600 mb-1">Recent Flags</p>
+                  {selectedUserFlags.map(f => (
+                    <div key={f.id} className="rounded border border-[rgba(120,120,120,0.15)] bg-neutral-900/60 px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <span className={`text-[10px] font-semibold ${f.consequence === "blacklisted" ? "text-red-400" : f.consequence === "suspended_3_days" ? "text-amber-400" : "text-neutral-400"}`}>
+                            {f.consequence === "blacklisted" ? "Blacklisted" : f.consequence === "suspended_3_days" ? "Suspended 3d" : f.consequence === "warning_2" ? "Warning 2" : "Warning 1"}
+                          </span>
+                          {f.triggers.length > 0 && (
+                            <span className="ml-1.5 text-[10px] text-neutral-500">— {f.triggers.join(", ")}</span>
+                          )}
+                          {f.manuscript_title && (
+                            <p className="text-[10px] text-neutral-500 truncate mt-0.5">on &ldquo;{f.manuscript_title}&rdquo;</p>
+                          )}
                         </div>
-                      ))}
+                        <span className="text-[10px] text-neutral-600 shrink-0">{new Date(f.created_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                  )}
-                  {selectedUserFlags.length === 0 && selectedUser.manuscript_conduct_strikes > 0 && (
-                    <p className="text-[10px] text-neutral-600 mt-1">No flag records found.</p>
-                  )}
+                  ))}
                 </div>
+              )}
+              {selectedUserFlags.length === 0 && selectedUser.manuscript_conduct_strikes > 0 && (
+                <p className="text-[10px] text-neutral-600 mt-1">No flag records found.</p>
               )}
             </div>
 
@@ -3158,11 +3116,8 @@ function AdminPageInner() {
               const awardedThisYear = birthdayAwards.some(a => a.awarded_year === currentYear);
               return (
                 <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => toggleSection("birthday")} className="flex items-center gap-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Birthday Awards</p>
-                      <span className="text-[10px] text-neutral-600">{openSections.has("birthday") ? "▲" : "▼"}</span>
-                    </button>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Birthday Awards</p>
                     {!awardedThisYear && (
                       <button
                         onClick={() => void sendBirthdayAward(selectedUser.user_id)}
@@ -3174,32 +3129,28 @@ function AdminPageInner() {
                       </button>
                     )}
                   </div>
-                  {openSections.has("birthday") && (
-                    <div className="mt-2">
-                      {birthdayAwards.length === 0 ? (
-                        <p className="text-[11px] text-neutral-600">No awards sent yet.</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {birthdayAwards.map((a) => (
-                            <div key={a.id} className="flex items-center justify-between gap-3 text-[11px]">
-                              <span className="text-neutral-400">
-                                <span style={{ color: "#f59e0b" }}>✿</span>{" "}
-                                {a.awarded_year} — {a.coins_awarded} coins
-                              </span>
-                              {a.claimed_at ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
-                                  <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                    <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                  Claimed {new Date(a.claimed_at).toLocaleDateString()}
-                                </span>
-                              ) : (
-                                <span className="text-amber-400 font-medium">Unclaimed</span>
-                              )}
-                            </div>
-                          ))}
+                  {birthdayAwards.length === 0 ? (
+                    <p className="text-[11px] text-neutral-600">No awards sent yet.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {birthdayAwards.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between gap-3 text-[11px]">
+                          <span className="text-neutral-400">
+                            <span style={{ color: "#f59e0b" }}>✿</span>{" "}
+                            {a.awarded_year} — {a.coins_awarded} coins
+                          </span>
+                          {a.claimed_at ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                              <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <circle cx="6" cy="6" r="5" /><path d="M3.5 6l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              Claimed {new Date(a.claimed_at).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-medium">Unclaimed</span>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -3208,12 +3159,8 @@ function AdminPageInner() {
 
             {/* ── Admin Actions ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("actions")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Admin Actions</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("actions") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("actions") && (
-                <div className="mt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Admin Actions</p>
+              <div>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {selectedUser.account_status === "active" && <>
                       <button onClick={() => setActionType("suspend")} className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${actionType === "suspend" ? "border-amber-600 bg-amber-600/20 text-amber-300" : "border-[rgba(120,120,120,0.4)] text-neutral-300 hover:border-amber-600/60"}`}>Suspend</button>
@@ -3287,16 +3234,11 @@ function AdminPageInner() {
                     </div>
                   )}
                 </div>
-              )}
             </div>
 
             {/* ── Gift Membership ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("gift")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Gift Membership</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("gift") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("gift") && <div className="mt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Gift Membership</p>
               {selectedUser.active_gift_membership_id && selectedUser.gift_access_expires_at && !["lethal", "lethal_annual"].includes(selectedUser.subscription_status) ? (
                 <div className="space-y-2">
                   <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/30 px-3 py-2">
@@ -3407,90 +3349,75 @@ function AdminPageInner() {
                   )}
                 </div>
               )}
-            </div>}
             </div>
 
             {/* ── Paid Transaction History ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("transactions")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Paid Transaction History</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("transactions") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("transactions") && (
-                <div className="mt-3">
-                  {userBillingHistory === null ? (
-                    <p className="text-xs text-neutral-600">Loading…</p>
-                  ) : (userBillingHistory.billingEvents.length === 0 && userBillingHistory.coinPurchases.length === 0) ? (
-                    <p className="text-xs text-neutral-600">No paid transactions found.</p>
-                  ) : (
-                    <div className="space-y-1 max-h-52 overflow-y-auto pr-0.5">
-                      {userBillingHistory.billingEvents.map(b => {
-                        const BILLING_LABELS: Record<string, string> = {
-                          subscription_create: "New Subscription",
-                          subscription_cycle:  "Renewal",
-                          subscription_update: "Plan Change",
-                          manual:              "Manual Charge",
-                        };
-                        return (
-                          <div key={b.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs text-neutral-200 font-medium">{BILLING_LABELS[b.billing_reason ?? ""] ?? b.billing_reason ?? "Subscription Charge"}</p>
-                              {b.period_start && b.period_end && (
-                                <p className="text-[10px] text-neutral-500 mt-0.5">
-                                  {new Date(b.period_start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – {new Date(b.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                </p>
-                              )}
-                              <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                            </div>
-                            <span className="text-sm font-semibold text-emerald-300 shrink-0">${(b.amount_cents / 100).toFixed(2)} {b.currency.toUpperCase()}</span>
-                          </div>
-                        );
-                      })}
-                      {userBillingHistory.coinPurchases.map(cp => (
-                        <div key={cp.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-xs text-neutral-200 font-medium">Bloom Coin Pack</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">+{cp.delta.toLocaleString()} coins</p>
-                            <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(cp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                          </div>
-                          <span className="text-sm font-semibold text-emerald-300 shrink-0">
-                            {cp.metadata?.price_cents ? `$${(cp.metadata.price_cents / 100).toFixed(2)}` : "—"}
-                          </span>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Paid Transaction History</p>
+              {userBillingHistory === null ? (
+                <p className="text-xs text-neutral-600">Loading…</p>
+              ) : (userBillingHistory.billingEvents.length === 0 && userBillingHistory.coinPurchases.length === 0) ? (
+                <p className="text-xs text-neutral-600">No paid transactions found.</p>
+              ) : (
+                <div className="space-y-1 max-h-52 overflow-y-auto pr-0.5">
+                  {userBillingHistory.billingEvents.map(b => {
+                    const BILLING_LABELS: Record<string, string> = {
+                      subscription_create: "New Subscription",
+                      subscription_cycle:  "Renewal",
+                      subscription_update: "Plan Change",
+                      manual:              "Manual Charge",
+                    };
+                    return (
+                      <div key={b.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-neutral-200 font-medium">{BILLING_LABELS[b.billing_reason ?? ""] ?? b.billing_reason ?? "Subscription Charge"}</p>
+                          {b.period_start && b.period_end && (
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                              {new Date(b.period_start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – {new Date(b.period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                         </div>
-                      ))}
+                        <span className="text-sm font-semibold text-emerald-300 shrink-0">${(b.amount_cents / 100).toFixed(2)} {b.currency.toUpperCase()}</span>
+                      </div>
+                    );
+                  })}
+                  {userBillingHistory.coinPurchases.map(cp => (
+                    <div key={cp.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-neutral-200 font-medium">Bloom Coin Pack</p>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">+{cp.delta.toLocaleString()} coins</p>
+                        <p className="text-[10px] text-neutral-600 mt-0.5">{new Date(cp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-emerald-300 shrink-0">
+                        {cp.metadata?.price_cents ? `$${(cp.metadata.price_cents / 100).toFixed(2)}` : "—"}
+                      </span>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
 
             {/* ── Internal Moderation Notes ── */}
             <div className="mb-5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2.5">
-              <button onClick={() => toggleSection("notes")} className="flex w-full items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Internal Moderation Notes</p>
-                <span className="text-[10px] text-neutral-600">{openSections.has("notes") ? "▲" : "▼"}</span>
-              </button>
-              {openSections.has("notes") && (
-                <div className="mt-3">
-                  <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
-                    {modNotes.length === 0 && <p className="text-xs text-neutral-600">No notes yet.</p>}
-                    {modNotes.map(n => (
-                      <div key={n.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2">
-                        <p className="text-xs text-neutral-300">{n.note}</p>
-                        <p className="text-[10px] text-neutral-600 mt-1">{n.admin_name || "Admin"} · {new Date(n.created_at).toLocaleString()}</p>
-                      </div>
-                    ))}
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-3">Internal Moderation Notes</p>
+              <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
+                {modNotes.length === 0 && <p className="text-xs text-neutral-600">No notes yet.</p>}
+                {modNotes.map(n => (
+                  <div key={n.id} className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-neutral-900/40 px-3 py-2">
+                    <p className="text-xs text-neutral-300">{n.note}</p>
+                    <p className="text-[10px] text-neutral-600 mt-1">{n.admin_name || "Admin"} · {new Date(n.created_at).toLocaleString()}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Add internal note…" value={newNote} onChange={e => setNewNote(e.target.value)}
-                      className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-xs text-neutral-100 placeholder-neutral-500 outline-none" />
-                    <button onClick={() => void addModNote("user", selectedUser.user_id)} disabled={!newNote.trim()}
-                      className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 text-xs text-neutral-200 hover:text-white disabled:opacity-40 transition">
-                      Add
-                    </button>
-                  </div>
-                </div>
-              )}
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input type="text" placeholder="Add internal note…" value={newNote} onChange={e => setNewNote(e.target.value)}
+                  className="flex-1 rounded-lg border border-[rgba(120,120,120,0.4)] bg-neutral-900/60 px-3 py-2 text-xs text-neutral-100 placeholder-neutral-500 outline-none" />
+                <button onClick={() => void addModNote("user", selectedUser.user_id)} disabled={!newNote.trim()}
+                  className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 text-xs text-neutral-200 hover:text-white disabled:opacity-40 transition">
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>
