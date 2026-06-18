@@ -55,13 +55,15 @@ const PASTED_BLOCK_TAGS = new Set(["p", "div", "h1", "h2", "h3", "h4", "h5", "h6
 function processPastedBlockElement(el: Element, out: string[]) {
   const tag = el.tagName.toLowerCase();
   if (["p", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
-    const content = readPastedInlineChildren(el).trim();
+    const raw = readPastedInlineChildren(el).trim();
+    const content = raw.replace(/\n(?!\n)/g, " ").trim();
     if (content) out.push(content);
     return;
   }
 
   if (tag === "li") {
-    const content = readPastedInlineChildren(el).trim();
+    const raw = readPastedInlineChildren(el).trim();
+    const content = raw.replace(/\n(?!\n)/g, " ").trim();
     if (content) out.push(content);
     return;
   }
