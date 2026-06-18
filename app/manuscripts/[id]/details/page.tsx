@@ -16,7 +16,7 @@ import FormatPicker from "@/components/FormatPicker";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
-import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
+import { normalizeChapterText, chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
 import { extractVisibleText } from "@/lib/manuscript/readerSelection";
 import { shiftFeedbackOffsets } from "@/lib/manuscript/feedbackOffsets";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
@@ -2103,7 +2103,7 @@ export default function ManuscriptDetailsPage() {
     if (!manuscript) return;
     setExporting(true);
     try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = await import("docx");
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak, AlignmentType } = await import("docx");
       const sorted = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
       let chNum = 0;
       const chapterNumbers = new Map<string, number>();
@@ -2118,10 +2118,32 @@ export default function ManuscriptDetailsPage() {
           ch.chapter_type === "trigger_page" ? `Trigger Page: ${ch.title || "Untitled"}` :
           `Chapter ${chapterNumbers.get(ch.id) ?? ""}: ${ch.title || "Untitled"}`;
         children.push(new Paragraph({ text: label, heading: HeadingLevel.HEADING_1 }));
-        const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
-        for (const para of paras) {
-          children.push(new Paragraph({ children: htmlToTextRuns(para, { TextRun }) }));
-        }
+        const blocks = (ch.content ?? "")
+          .split(/\n\n/)
+          .map((b) => b.replace(/^\t/, "").trim())
+          .filter(Boolean);
+        blocks.forEach((block, i) => {
+          if (block === "***") {
+            children.push(new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: "***", characterSpacing: 100 })],
+            }));
+            return;
+          }
+          const prev = blocks[i - 1];
+          const noIndent = i === 0 || prev === "***";
+          const segments = sanitizeChapterHtml(block).split("\n");
+          const runs: InstanceType<typeof TextRun>[] = [];
+          segments.forEach((segment, segIndex) => {
+            if (segIndex > 0) runs.push(new TextRun({ break: 1 }));
+            runs.push(...htmlToTextRuns(segment, { TextRun }));
+          });
+          children.push(
+            noIndent
+              ? new Paragraph({ children: runs })
+              : new Paragraph({ indent: { firstLine: 720 }, children: runs })
+          );
+        });
         children.push(new Paragraph({ children: [new PageBreak()] }));
       }
       const doc = new Document({ sections: [{ children }] });
@@ -2145,17 +2167,28 @@ export default function ManuscriptDetailsPage() {
     let htmlChNum = 0;
     const htmlChapterNumbers = new Map<string, number>();
     for (const ch of sorted) { if (ch.chapter_type === "chapter") htmlChapterNumbers.set(ch.id, ++htmlChNum); }
-    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${manuscript.title || "Untitled"}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;line-height:1.8;font-size:16px;}h1{font-size:2em;margin-bottom:0.2em;}h2{font-size:1.4em;margin-top:2em;page-break-before:always;}p{text-indent:1.5em;margin:0.4em 0;}</style></head><body>`;
+    const textAlign = (manuscript as unknown as { text_align?: string }).text_align || "left";
+    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${manuscript.title || "Untitled"}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;line-height:1.8;font-size:16px;}h1{font-size:2em;margin-bottom:0.2em;}h2{font-size:1.4em;margin-top:2em;page-break-before:always;}p{margin:0 0 0.55em 0;font-family:Georgia,serif;line-height:1.65;}</style></head><body>`;
     html += `<h1>${manuscript.title || "Untitled"}</h1>`;
     for (const ch of sorted) {
       const label = ch.chapter_type === "prologue" ? `Prologue: ${ch.title || "Untitled"}` :
         ch.chapter_type === "trigger_page" ? `Trigger Page: ${ch.title || "Untitled"}` :
         `Chapter ${htmlChapterNumbers.get(ch.id) ?? ""}: ${ch.title || "Untitled"}`;
       html += `<h2>${label}</h2>`;
-      const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
-      for (const para of paras) {
-        html += `<p>${para}</p>`;
-      }
+      const blocks = (ch.content ?? "")
+        .split(/\n\n/)
+        .map((b) => b.replace(/^\t/, "").trim())
+        .filter(Boolean);
+      blocks.forEach((block, i) => {
+        if (block === "***") {
+          html += `<p style="text-align:center;text-indent:0;letter-spacing:0.3em;margin:1.25em 0">***</p>`;
+          return;
+        }
+        const prev = blocks[i - 1];
+        const noIndent = i === 0 || prev === "***";
+        const content = sanitizeChapterHtml(block).replace(/\n/g, "<br>");
+        html += `<p style="text-indent:${noIndent ? "0" : "2.5em"};text-align:${textAlign}">${content}</p>`;
+      });
     }
     html += `</body></html>`;
     const blob = new Blob([html], { type: "text/html" });
