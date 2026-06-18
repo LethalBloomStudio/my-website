@@ -39,6 +39,15 @@ function countVisibleText(node: Node): number {
   return total;
 }
 
+// Mirrors countVisibleText's traversal so the returned string's length lines up
+// with the offsets visibleOffsetFromDomPoint/domPointFromVisibleOffset compute.
+export function extractVisibleText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+  if (!(node instanceof HTMLElement)) return "";
+  if (node.tagName === "BR") return " ";
+  return Array.from(node.childNodes).map(extractVisibleText).join("");
+}
+
 function visibleOffsetFromDomPoint(root: HTMLElement, targetNode: Node, targetOffset: number): number | null {
   let total = 0;
 

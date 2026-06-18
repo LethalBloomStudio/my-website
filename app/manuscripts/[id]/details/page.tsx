@@ -17,6 +17,8 @@ import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
+import { extractVisibleText } from "@/lib/manuscript/readerSelection";
+import { shiftFeedbackOffsets } from "@/lib/manuscript/feedbackOffsets";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { getPromotionState } from "@/lib/promotionState";
@@ -79,6 +81,7 @@ type LineFeedback = {
   resolved: boolean;
   author_response?: "agree" | "disagree" | null;
   start_offset?: number | null;
+  end_offset?: number | null;
 };
 type FeedbackReply = { id: string; feedback_id: string; replier_id: string; body: string; created_at: string };
 
@@ -210,7 +213,7 @@ export default function ManuscriptDetailsPage() {
     if (!manuscriptId) return;
     const { data: fbData, error: fbError } = await supabase
       .from("line_feedback")
-      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset")
+      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset, end_offset")
       .eq("manuscript_id", manuscriptId)
       .order("created_at", { ascending: false });
     if (fbError) return;
@@ -299,6 +302,41 @@ export default function ManuscriptDetailsPage() {
     return () => ro.disconnect();
   }, []);
 
+  // Keep line_feedback start_offset/end_offset in sync with chapter content edits so
+  // highlight markers don't drift onto a later occurrence of the same text after a save.
+  async function syncFeedbackOffsetsForChapterSave(chapterId: string, oldContent: string, newContent: string) {
+    if (oldContent === newContent) return;
+    const items = feedbackItems.filter(
+      (f) => f.chapter_id === chapterId && f.start_offset != null && f.end_offset != null
+    ) as Array<{ id: string; start_offset: number; end_offset: number }>;
+    if (items.length === 0) return;
+
+    const toVisible = (text: string) => {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = chapterTextToPreviewHtml(text);
+      return extractVisibleText(tmp);
+    };
+    const shifted = shiftFeedbackOffsets(toVisible(oldContent), toVisible(newContent), items);
+
+    const changed = shifted.filter((s) => {
+      const orig = items.find((i) => i.id === s.id)!;
+      return orig.start_offset !== s.start_offset || orig.end_offset !== s.end_offset;
+    });
+    if (changed.length === 0) return;
+
+    await Promise.all(
+      changed.map((c) =>
+        supabase.from("line_feedback").update({ start_offset: c.start_offset, end_offset: c.end_offset }).eq("id", c.id)
+      )
+    );
+    setFeedbackItems((prev) =>
+      prev.map((f) => {
+        const c = changed.find((c) => c.id === f.id);
+        return c ? { ...f, start_offset: c.start_offset, end_offset: c.end_offset } : f;
+      })
+    );
+  }
+
   // ── Auto-save ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedChapterId) return;
@@ -313,6 +351,7 @@ export default function ManuscriptDetailsPage() {
     autoSaveTimer.current = setTimeout(() => {
       void (async () => {
         if (!chapterEditorContent.trim()) return;
+        const oldContent = lastSavedContent.current;
         setAutoSaveStatus("saving");
         const { error } = await supabase
           .from("manuscript_chapters")
@@ -334,6 +373,7 @@ export default function ManuscriptDetailsPage() {
           setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType, content: chapterEditorContent } : c));
           setAutoSaveStatus("saved");
           setTimeout(() => setAutoSaveStatus("idle"), 3000);
+          void syncFeedbackOffsetsForChapterSave(selectedChapterId, oldContent, chapterEditorContent.trim());
         }
       })();
     }, 2000);
@@ -774,7 +814,7 @@ export default function ManuscriptDetailsPage() {
     // Fetch line feedback for this manuscript
     const { data: fbData, error: fbError } = await supabase
       .from("line_feedback")
-      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset")
+      .select("id, reader_id, chapter_id, selection_excerpt, comment_text, created_at, resolved, author_response, start_offset, end_offset")
       .eq("manuscript_id", manuscriptId)
       .order("created_at", { ascending: false });
     if (fbError) {
@@ -1528,6 +1568,7 @@ export default function ManuscriptDetailsPage() {
     if (!selectedChapterId) return;
     if (!chapterEditorContent.trim()) return setMsg("Chapter content is required.");
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    const oldContent = lastSavedContent.current;
     setManualSaving(true);
     const { error } = await supabase
       .from("manuscript_chapters")
@@ -1545,6 +1586,7 @@ export default function ManuscriptDetailsPage() {
     setChapters((prev) => prev.map((c) => c.id === selectedChapterId ? { ...c, title: chapterEditorTitle.trim() || "Untitled Chapter", chapter_type: chapterType } : c));
     setAutoSaveStatus("saved");
     setTimeout(() => setAutoSaveStatus("idle"), 3000);
+    void syncFeedbackOffsetsForChapterSave(selectedChapterId, oldContent, chapterEditorContent.trim());
     // Show prominent toast
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 3000);
