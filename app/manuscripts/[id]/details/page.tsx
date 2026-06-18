@@ -2045,6 +2045,60 @@ export default function ManuscriptDetailsPage() {
     );
   };
 
+  function htmlToTextRuns(
+    para: string,
+    { TextRun }: { TextRun: typeof import("docx").TextRun }
+  ): InstanceType<typeof import("docx").TextRun>[] {
+    type Format = {
+      bold?: boolean;
+      italics?: boolean;
+      underline?: boolean;
+      strike?: boolean;
+      superScript?: boolean;
+      subScript?: boolean;
+    };
+
+    const runs: InstanceType<typeof import("docx").TextRun>[] = [];
+
+    function walk(node: ChildNode, format: Format) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent ?? "";
+        if (text) {
+          runs.push(
+            new TextRun({
+              text,
+              bold: format.bold,
+              italics: format.italics,
+              underline: format.underline ? {} : undefined,
+              strike: format.strike,
+              superScript: format.superScript,
+              subScript: format.subScript,
+            })
+          );
+        }
+        return;
+      }
+
+      if (!(node instanceof HTMLElement)) return;
+
+      const tag = node.tagName.toLowerCase();
+      const next: Format = { ...format };
+      if (tag === "strong" || tag === "b") next.bold = true;
+      if (tag === "em" || tag === "i") next.italics = true;
+      if (tag === "u") next.underline = true;
+      if (tag === "s" || tag === "del" || tag === "strike") next.strike = true;
+      if (tag === "sup") next.superScript = true;
+      if (tag === "sub") next.subScript = true;
+
+      for (const child of Array.from(node.childNodes)) walk(child, next);
+    }
+
+    const doc = new DOMParser().parseFromString(para, "text/html");
+    for (const node of Array.from(doc.body.childNodes)) walk(node, {});
+
+    return runs;
+  }
+
   async function exportAsDocx() {
     if (!manuscript) return;
     setExporting(true);
@@ -2066,7 +2120,7 @@ export default function ManuscriptDetailsPage() {
         children.push(new Paragraph({ text: label, heading: HeadingLevel.HEADING_1 }));
         const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
         for (const para of paras) {
-          children.push(new Paragraph({ children: [new TextRun({ text: para })] }));
+          children.push(new Paragraph({ children: htmlToTextRuns(para, { TextRun }) }));
         }
         children.push(new Paragraph({ children: [new PageBreak()] }));
       }
@@ -2100,7 +2154,7 @@ export default function ManuscriptDetailsPage() {
       html += `<h2>${label}</h2>`;
       const paras = (ch.content ?? "").split(/\n+/).filter((p) => p.trim());
       for (const para of paras) {
-        html += `<p>${para.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+        html += `<p>${para}</p>`;
       }
     }
     html += `</body></html>`;
