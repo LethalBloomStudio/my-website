@@ -1350,7 +1350,11 @@ function PageInner() {
     measure();
     const ro = new ResizeObserver(measure);
     if (chapterSectionRef.current) ro.observe(chapterSectionRef.current);
-    return () => ro.disconnect();
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, [activeChapter?.id, readerMarkerInfos]);
 
   // Recompute Range-API absolute marker positions when chapter or feedback changes.
