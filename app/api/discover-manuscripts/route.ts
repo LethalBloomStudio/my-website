@@ -27,9 +27,11 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
   return a;
 }
 
-// Stable UTC week number (days since Unix epoch / 7, floored)
-function utcWeekNumber(now: Date): number {
-  return Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+// Stable Pacific-Time week number (PT calendar date, days since Unix epoch / 7, floored)
+function ptWeekNumber(now: Date): number {
+  const ptDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
+  const [y, m, d] = ptDateStr.split("-").map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / (7 * 24 * 60 * 60 * 1000));
 }
 
 // Spread week seed across full int32 range via a quick hash
@@ -56,7 +58,10 @@ export async function GET() {
   }
 
   const now = new Date();
-  const utcDay = now.getUTCDay(); // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+  const PT_DAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const ptDay = PT_DAY_INDEX[
+    now.toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short" })
+  ]; // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat (Pacific Time)
 
   // Build the query with day-appropriate server-side sort.
   // Sunday (0) is handled post-fetch with a seeded shuffle, so we use a
@@ -72,7 +77,7 @@ export async function GET() {
     6: [{ col: "view_count", asc: false }, { col: "created_at", asc: false }],  // Saturday  — most reads
   };
 
-  const orders = orderMap[utcDay] ?? orderMap[1];
+  const orders = orderMap[ptDay] ?? orderMap[1];
 
   let q = admin
     .from("manuscripts")
@@ -98,7 +103,7 @@ export async function GET() {
   const rows = (data ?? []) as unknown as Array<{ owner_id: string; categories?: string[] | null; genre?: string | null }>;
 
   if (rows.length === 0) {
-    return NextResponse.json({ manuscripts: [], isYouth: viewerIsYouth, sortDay: utcDay });
+    return NextResponse.json({ manuscripts: [], isYouth: viewerIsYouth, sortDay: ptDay });
   }
 
   // Fetch age categories for all owners using admin (bypasses RLS)
@@ -126,9 +131,9 @@ export async function GET() {
   });
 
   // Sunday: apply seeded deterministic shuffle (consistent for all users same day)
-  const manuscripts = utcDay === 0
-    ? seededShuffle(filtered, weekSeed(utcWeekNumber(now)))
+  const manuscripts = ptDay === 0
+    ? seededShuffle(filtered, weekSeed(ptWeekNumber(now)))
     : filtered;
 
-  return NextResponse.json({ manuscripts, isYouth: viewerIsYouth, sortDay: utcDay });
+  return NextResponse.json({ manuscripts, isYouth: viewerIsYouth, sortDay: ptDay });
 }
