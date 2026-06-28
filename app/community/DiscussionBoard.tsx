@@ -842,7 +842,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
     setSubmittingPost(true); setPostError(null);
 
     const payload: Record<string, unknown> = {
-      author_id: currentUserId, type: creatorType,
+      type: creatorType,
       title: formTitle.trim(), content: formContent.trim() || null,
       community,
     };
@@ -852,16 +852,19 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       payload.ends_at = new Date(Date.now() + formDuration * 60 * 60 * 1000).toISOString();
     }
 
-    const { data, error } = await supabase
-      .from("discussion_posts")
-      .insert(payload)
-      .select("id, author_id, type, title, content, poll_options, created_at, is_pinned, pinned_at, coin_prize, ends_at, winner_id, winner_drawn")
-      .single();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    const res = await fetch("/api/discussion/submit-post", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json() as { ok?: boolean; post?: unknown; error?: string };
 
-    if (error) { setPostError(error.message); setSubmittingPost(false); return; }
+    if (!res.ok || result.error) { setPostError(result.error ?? "Failed to create post."); setSubmittingPost(false); return; }
 
-    if (data) {
-      const row = data as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; is_pinned: boolean | null; pinned_at: string | null; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean };
+    if (result.post) {
+      const row = result.post as { id: string; author_id: string; type: PostType; title: string; content: string | null; poll_options: string[] | null; created_at: string; is_pinned: boolean | null; pinned_at: string | null; coin_prize: number | null; ends_at: string | null; winner_id: string | null; winner_drawn: boolean };
       const { data: prof } = await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").eq("user_id", currentUserId).maybeSingle();
       const newPost: DiscussionPost = {
         ...row, is_pinned: !!row.is_pinned, pinned_at: row.pinned_at ?? null, like_count: 0, user_liked: false, comment_count: 0,
@@ -933,7 +936,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
       {/* Section header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Discussion Board</h2>
-        {isAdmin && (
+        {currentUserId && (
           <button onClick={openCreator}
             className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.1)] px-3 text-xs font-medium text-neutral-300 hover:text-white transition">
             + New Post
@@ -1284,7 +1287,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                 <h2 className="text-base font-semibold text-neutral-100">What would you like to post?</h2>
                 <p className="mt-1 text-xs text-neutral-500">Choose a format to get started.</p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  {POST_CATEGORIES.map(cat => (
+                  {POST_CATEGORIES.filter(cat => isAdmin || cat.type !== "giveaway").map(cat => (
                     <button key={cat.type} onClick={() => { setCreatorType(cat.type); setCreatorStep("form"); }}
                       className="flex flex-col items-start gap-1 rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.06)] p-3 text-left hover:border-[rgba(120,120,120,0.6)] hover:bg-[rgba(120,120,120,0.12)] transition">
                       <span className="text-xl">{cat.emoji}</span>
