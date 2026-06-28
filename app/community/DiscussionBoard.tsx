@@ -1103,13 +1103,13 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                   {/* Action bar */}
                   <div className="flex items-center gap-1 border-t border-[rgba(120,120,120,0.15)] px-3 py-1.5">
                     <button onClick={() => void togglePostLike(post.id)} disabled={!currentUserId}
-                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${post.user_liked ? "text-rose-400 hover:text-rose-300" : "text-neutral-300 hover:text-white disabled:cursor-default"}`}>
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition border-0 bg-transparent shadow-none hover:bg-transparent ${post.user_liked ? "text-rose-400 hover:text-rose-300" : "text-neutral-300 hover:text-white disabled:cursor-default"}`}>
                       <Heart filled={post.user_liked} />
                       <span>{post.like_count > 0 ? post.like_count : "Like"}</span>
                     </button>
                     <button
                       onClick={() => { setExpandedPostId(isExpanded ? null : post.id); setReplyingTo(null); setCommentError(null); }}
-                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${isExpanded ? "text-neutral-200" : "text-neutral-300 hover:text-white"}`}>
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition border-0 bg-transparent shadow-none hover:bg-transparent ${isExpanded ? "text-neutral-200" : "text-neutral-300 hover:text-white"}`}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
@@ -1121,7 +1121,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                           <button
                             onClick={() => void togglePinned(post.id, !post.is_pinned)}
                             title={post.is_pinned ? "Unpin post" : "Pin post"}
-                            className={`rounded px-2 py-1 text-[11px] transition ${post.is_pinned ? "text-amber-300 hover:text-amber-200" : "text-neutral-400 hover:text-amber-300"}`}>
+                            className={`rounded px-2 py-1 text-[11px] transition border-0 bg-transparent shadow-none hover:bg-transparent ${post.is_pinned ? "text-amber-300 hover:text-amber-200" : "text-neutral-400 hover:text-amber-300"}`}>
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M12 17v5" />
                               <path d="M8 3h8l-1 6 3 3H6l3-3-1-6z" />
@@ -1131,7 +1131,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                         <button
                           onClick={() => setEditingPost({ id: post.id, title: post.title, content: post.content ?? "" })}
                           title="Edit post"
-                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-neutral-200 transition">
+                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-neutral-200 transition border-0 bg-transparent shadow-none hover:bg-transparent">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
@@ -1139,7 +1139,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                         <button
                           onClick={() => setDeletingPostId(post.id)}
                           title="Delete post"
-                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-red-400 transition">
+                          className="rounded px-2 py-1 text-[11px] text-neutral-400 hover:text-red-400 transition border-0 bg-transparent shadow-none hover:bg-transparent">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
                           </svg>
