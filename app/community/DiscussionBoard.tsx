@@ -86,13 +86,13 @@ const TYPE_COLORS: Record<PostType, string> = {
 };
 
 const CARD_COLORS: Record<PostType, string> = {
-  discussion: "border-slate-500/80 bg-gradient-to-br from-slate-700/30 via-slate-800/15 to-neutral-900/10",
-  poll: "border-blue-700/80 bg-gradient-to-br from-blue-800/30 via-blue-900/15 to-neutral-900/10",
-  challenge: "border-emerald-600/80 bg-gradient-to-br from-emerald-800/30 via-emerald-900/15 to-neutral-900/10",
-  prompt: "border-purple-700/80 bg-gradient-to-br from-purple-800/30 via-purple-900/15 to-neutral-900/10",
-  recommendation: "border-sky-600/80 bg-gradient-to-br from-sky-800/30 via-sky-900/15 to-neutral-900/10",
-  qa: "border-rose-700/80 bg-gradient-to-br from-rose-800/30 via-rose-900/15 to-neutral-900/10",
-  giveaway: "border-amber-400/80 bg-gradient-to-br from-amber-700/30 via-amber-900/15 to-neutral-900/10",
+  discussion: "border-slate-500/60 bg-slate-800/40",
+  poll: "border-blue-700/60 bg-blue-900/30",
+  challenge: "border-emerald-600/60 bg-emerald-900/30",
+  prompt: "border-purple-700/60 bg-purple-900/30",
+  recommendation: "border-sky-600/60 bg-sky-900/30",
+  qa: "border-rose-700/60 bg-rose-900/30",
+  giveaway: "border-amber-400/60 bg-amber-900/30",
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
