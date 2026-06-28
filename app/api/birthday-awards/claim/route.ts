@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
+
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -10,10 +19,12 @@ export async function POST(req: Request) {
   const body = await req.json() as { birthday_award_id?: string };
   if (!body.birthday_award_id) return NextResponse.json({ error: "Missing birthday_award_id" }, { status: 400 });
 
+  const admin = adminClient();
+
   // Atomically claim the award: the UPDATE only matches a row that is still
   // unclaimed, so concurrent requests race on the same row and only one can
   // win -- the loser's UPDATE matches zero rows and .single() returns null.
-  const { data: award } = await supabase
+  const { data: award } = await admin
     .from("birthday_coin_awards")
     .update({ claimed_at: new Date().toISOString() })
     .eq("id", body.birthday_award_id)
@@ -27,14 +38,14 @@ export async function POST(req: Request) {
   const coins = award.coins_awarded as number;
 
   // Credit coins via the established RPC (UPDATE accounts + no ledger)
-  const { error: rpcErr } = await supabase.rpc("increment_bloom_coins", {
+  const { error: rpcErr } = await admin.rpc("increment_bloom_coins", {
     p_user_id: userId,
     p_amount: coins,
   });
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 });
 
   // Write ledger entry
-  await supabase.from("bloom_coin_ledger").insert({
+  await admin.from("bloom_coin_ledger").insert({
     user_id: userId,
     delta: coins,
     reason: "birthday_reward",
