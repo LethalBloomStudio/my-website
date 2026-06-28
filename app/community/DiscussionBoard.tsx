@@ -1074,7 +1074,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
                     {/* Poll */}
                     {post.type === "poll" && post.poll_options && (
-                      <div className="mt-2 space-y-1.5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] p-2">
+                      <div className="mt-2 space-y-1.5 p-2">
                         {post.poll_options.map((option, idx) => {
                           const voteCount = post.poll_votes[idx] ?? 0;
                           const pct = totalPollVotes > 0 ? Math.round((voteCount / totalPollVotes) * 100) : 0;
