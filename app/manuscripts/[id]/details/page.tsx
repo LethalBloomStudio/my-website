@@ -191,6 +191,7 @@ export default function ManuscriptDetailsPage() {
   const chapterSectionRef = useRef<HTMLElement>(null);
   const [chapterSectionH, setChapterSectionH] = useState(0);
   const prevMarkerInfosRef = useRef<Record<string, unknown>>({});
+  const overviewFeedbackSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     feedbackIdsRef.current = feedbackItems.map((f) => f.id);
@@ -918,6 +919,17 @@ export default function ManuscriptDetailsPage() {
           setSelectedFeedbackId(feedbackParam);
         }
       }
+    } else if (feedbackParam) {
+      // Chapterless feedback (e.g. a manuscript-level comment) has no chapter
+      // marker to navigate to - select it, auto-expand its thread in the
+      // beta-reader feedback list below, and scroll that section into view.
+      setSelectedFeedbackId(feedbackParam);
+      setOverviewExpandedIds((prev) => {
+        const next = new Set(prev);
+        next.add(feedbackParam);
+        return next;
+      });
+      overviewFeedbackSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [loading, chapters, searchParams]);
 
@@ -2606,7 +2618,7 @@ export default function ManuscriptDetailsPage() {
               )}
 
               {/* Feedback from Beta Readers - manuscript overview */}
-              <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
+              <section ref={overviewFeedbackSectionRef} className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-5 shadow-[0_20px_46px_rgba(0,0,0,0.35)]">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
                     Feedback from Beta Readers
@@ -2668,7 +2680,7 @@ export default function ManuscriptDetailsPage() {
                               <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">{readerName}</p>
                               <div className="flex items-center gap-2 text-[10px] text-neutral-500">
                                 {chapterLabel && <span className="rounded-lg bg-neutral-800 px-1.5 py-0.5">{chapterLabel}</span>}
-                                {f.chapter_id && !excerptDetached && (
+                                {f.chapter_id && (
                                   <button
                                     type="button"
                                     onClick={showInChapter}

@@ -177,7 +177,7 @@ export async function POST(req: Request) {
       const titleText = isAuthorReplying
         ? `The author replied to your feedback${manuscriptTitle ? ` on "${manuscriptTitle}"` : ""}`
         : `A reader replied to feedback${manuscriptTitle ? ` on "${manuscriptTitle}"` : ""}`;
-      const bodyText = replyBody.length > 120 ? replyBody.slice(0, 120) + "…" : replyBody;
+      const bodyText = replyBody.length > 300 ? replyBody.slice(0, 300) + "…" : replyBody;
       await admin.from("system_notifications").insert({
         user_id: recipientId,
         category: "feedback_reply",
