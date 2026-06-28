@@ -172,7 +172,7 @@ function CommentRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
-  const name = comment.author?.pen_name ?? comment.author?.username ?? "Member";
+  const name = comment.author?.pen_name || comment.author?.username || "Member";
   const username = comment.author?.username;
   const isOwn = comment.author_id === currentUserId;
 
@@ -394,7 +394,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
         ends_at: r.ends_at ?? null,
         winner_id: r.winner_id ?? null,
         winner_drawn: r.winner_drawn ?? false,
-        winner_name: r.winner_id ? (profileMap.get(r.winner_id)?.pen_name ?? profileMap.get(r.winner_id)?.username ?? null) : null,
+        winner_name: r.winner_id ? (profileMap.get(r.winner_id)?.pen_name || profileMap.get(r.winner_id)?.username || null) : null,
       };
     });
 
@@ -528,7 +528,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
           ...row,
           like_count: 0, user_liked: false,
           author: profileMap.get(row.author_id) ?? null,
-          reply_to_name: replyAuthor ? (replyAuthor.pen_name ?? replyAuthor.username) : null,
+          reply_to_name: replyAuthor ? (replyAuthor.pen_name || replyAuthor.username) : null,
         };
 
         // Append to comments if that post is loaded
@@ -584,7 +584,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
         like_count: likes.filter(l => l.comment_id === r.id).length,
         user_liked: currentUserId ? likes.some(l => l.comment_id === r.id && l.user_id === currentUserId) : false,
         author: profileMap.get(r.author_id) ?? null,
-        reply_to_name: replyAuthor ? (replyAuthor.pen_name ?? replyAuthor.username) : null,
+        reply_to_name: replyAuthor ? (replyAuthor.pen_name || replyAuthor.username) : null,
       };
     });
 
@@ -630,7 +630,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
           // Look up current user's profile from any loaded comment author info
           for (const postComments of Object.values(comments)) {
             const mine = postComments.find(x => x.author_id === currentUserId);
-            if (mine?.author) return mine.author.pen_name ?? mine.author.username ?? "Someone";
+            if (mine?.author) return mine.author.pen_name || mine.author.username || "Someone";
           }
           return "Someone";
         })();
@@ -958,7 +958,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
           <div className="space-y-4">
             {visiblePosts.map(post => {
               const cat = POST_CATEGORIES.find(c => c.type === post.type);
-              const authorName = post.author?.pen_name ?? post.author?.username ?? "Admin";
+              const authorName = post.author?.pen_name || post.author?.username || "Admin";
               const isExpanded = expandedPostId === post.id;
               const postComments = comments[post.id] ?? [];
               const topLevel = postComments.filter(c => !c.parent_id);
@@ -975,40 +975,41 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                 <div key={post.id} id={`discussion-post-${post.id}`} className={`rounded-xl border overflow-hidden ${CARD_COLORS[post.type]}`}>
 
                   {/* Post body */}
-                  <div className="px-4 pt-4 pb-3">
-                    <div className="flex items-start gap-3">
+                  <div className="px-3.5 pt-3 pb-2.5">
+                    <div className="flex items-center gap-2">
                       {post.author?.username ? (
-                        <Link href={`/u/${post.author.username}`} className="shrink-0 mt-0.5">
-                          <Avatar url={post.author.avatar_url ?? null} name={authorName} size={34} />
+                        <Link href={`/u/${post.author.username}`} className="shrink-0">
+                          <Avatar url={post.author.avatar_url ?? null} name={authorName} size={30} />
                         </Link>
                       ) : (
-                        <div className="mt-0.5"><Avatar url={post.author?.avatar_url ?? null} name={authorName} size={34} /></div>
+                        <Avatar url={post.author?.avatar_url ?? null} name={authorName} size={30} />
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {post.is_pinned ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-amber-950/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
-                              📌 Pinned
-                            </span>
-                          ) : null}
-                          <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_COLORS[post.type]}`}>
-                            {cat?.emoji} {cat?.label}
-                          </span>
-                          <span className="text-[10px] text-neutral-400">{timeAgo(post.created_at)}</span>
-                        </div>
-                        <p className="mt-1.5 text-sm font-semibold text-neutral-100 leading-snug">{post.title}</p>
+                      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
                         {post.author?.username ? (
-                          <Link href={`/u/${post.author.username}`} className="text-[11px] text-neutral-400 hover:text-neutral-200 transition">by {authorName}</Link>
+                          <Link href={`/u/${post.author.username}`} className="truncate text-[13px] font-medium text-neutral-100 hover:text-white transition">
+                            {authorName}
+                          </Link>
                         ) : (
-                          <span className="text-[11px] text-neutral-400">by {authorName}</span>
+                          <span className="truncate text-[13px] font-medium text-neutral-100">{authorName}</span>
                         )}
+                        {post.is_pinned && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-400/40 bg-amber-950/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                            📌 Pinned
+                          </span>
+                        )}
+                        <span className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_COLORS[post.type]}`}>
+                          {cat?.emoji} {cat?.label}
+                        </span>
                       </div>
+                      <span className="ml-auto shrink-0 text-[11px] text-neutral-500">{timeAgo(post.created_at)}</span>
                     </div>
 
+                    <p className="mt-1.5 mb-1 text-[14px] font-medium text-neutral-100 leading-snug">{post.title}</p>
+
                     {post.content && (
-                      <div className="mt-3 whitespace-pre-wrap break-words text-sm text-neutral-300 leading-relaxed">
+                      <p className={`break-words text-[13px] text-neutral-400 leading-relaxed ${isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
                         {post.content}
-                      </div>
+                      </p>
                     )}
 
                     {/* Giveaway */}
@@ -1033,10 +1034,10 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                       if (ended && !post.winner_drawn) void drawGiveaway(post.id);
 
                       return (
-                        <div className="mt-3 rounded-lg border border-amber-400 bg-amber-950/20 p-3 space-y-2">
+                        <div className="mt-2 rounded-lg border border-amber-400/70 bg-amber-950/20 p-2 space-y-1.5">
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xl">🎁</span>
+                              <span className="text-lg">🎁</span>
                               <div>
                                 <p className="text-sm font-semibold text-amber-300">
                                   <span style={{ color: "#f59e0b" }}>✿</span> {post.coin_prize} Bloom Coins
@@ -1056,7 +1057,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                           </div>
                           {post.winner_drawn && (
                             post.winner_id ? (
-                              <div className="flex items-center gap-1.5 rounded-md bg-amber-900/20 border border-amber-700/20 px-2.5 py-1.5">
+                              <div className="flex items-center gap-1.5 rounded-md bg-amber-900/20 border border-amber-700/20 px-2 py-1">
                                 <span className="text-base">🏆</span>
                                 <p className="text-xs text-amber-300 font-medium">
                                   Winner: {post.winner_name ?? "Member"}
@@ -1073,7 +1074,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
                     {/* Poll */}
                     {post.type === "poll" && post.poll_options && (
-                      <div className="mt-3 space-y-2">
+                      <div className="mt-2 space-y-1.5 rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] p-2">
                         {post.poll_options.map((option, idx) => {
                           const voteCount = post.poll_votes[idx] ?? 0;
                           const pct = totalPollVotes > 0 ? Math.round((voteCount / totalPollVotes) * 100) : 0;
@@ -1083,29 +1084,24 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                             <button key={idx}
                               onClick={() => !voted && currentUserId ? void votePoll(post.id, idx) : undefined}
                               disabled={voted || !currentUserId}
-                              className={`relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm transition ${isMyVote
-                                ? "border-blue-600/60 bg-blue-950/30 text-blue-300"
-                                : voted
-                                  ? "border-[rgba(120,120,120,0.2)] bg-[rgba(120,120,120,0.05)] text-neutral-400 cursor-default"
-                                  : "border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] text-neutral-200 hover:border-[rgba(120,120,120,0.5)] hover:bg-[rgba(120,120,120,0.14)]"
-                              }`}>
-                              {voted && (
-                                <span className="absolute inset-y-0 left-0 bg-blue-900/20 transition-all" style={{ width: `${pct}%` }} />
-                              )}
-                              <span className="relative flex items-center justify-between gap-2">
-                                <span>{option}</span>
-                                {voted && <span className="text-[11px] text-neutral-200">{pct}% · {voteCount}</span>}
+                              className={`flex w-full items-center gap-2 text-left transition ${voted ? "cursor-default" : "cursor-pointer"}`}>
+                              <span className={`max-w-[45%] shrink-0 truncate text-xs ${isMyVote ? "font-medium text-blue-300" : "text-neutral-200"}`}>{option}</span>
+                              <span className="relative h-1 flex-1 overflow-hidden rounded-full bg-[rgba(120,120,120,0.15)]">
+                                {voted && (
+                                  <span className={`absolute inset-y-0 left-0 rounded-full transition-all ${isMyVote ? "bg-blue-500" : "bg-[rgba(120,120,120,0.45)]"}`} style={{ width: `${pct}%` }} />
+                                )}
                               </span>
+                              {voted && <span className="w-9 shrink-0 text-right text-[11px] text-neutral-400">{pct}%</span>}
                             </button>
                           );
                         })}
-                        <p className="text-[10px] text-neutral-400">{totalPollVotes} vote{totalPollVotes !== 1 ? "s" : ""}</p>
+                        <p className="text-[10px] text-neutral-500">{totalPollVotes} vote{totalPollVotes !== 1 ? "s" : ""}</p>
                       </div>
                     )}
                   </div>
 
                   {/* Action bar */}
-                  <div className="flex items-center gap-1 border-t border-[rgba(120,120,120,0.15)] px-3 py-2">
+                  <div className="flex items-center gap-1 border-t border-[rgba(120,120,120,0.15)] px-3 py-1.5">
                     <button onClick={() => void togglePostLike(post.id)} disabled={!currentUserId}
                       className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition ${post.user_liked ? "text-rose-400 hover:text-rose-300" : "text-neutral-300 hover:text-white disabled:cursor-default"}`}>
                       <Heart filled={post.user_liked} />
@@ -1163,7 +1159,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                           )}
                           {topLevel.map(comment => {
                             const replies = repliesByParent[comment.id] ?? [];
-                            const commentAuthorName = comment.author?.pen_name ?? comment.author?.username ?? "Member";
+                            const commentAuthorName = comment.author?.pen_name || comment.author?.username || "Member";
                             // Is the active reply target inside this thread?
                             const replyInThisThread = replyingTo?.postId === post.id && (
                               replyingTo.commentId === comment.id || replies.some(r => r.id === replyingTo.commentId)
@@ -1180,7 +1176,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                                 {(replies.length > 0 || replyInThisThread) && (
                                   <div className="ml-8 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
                                     {replies.map(reply => {
-                                      const replyAuthorName = reply.author?.pen_name ?? reply.author?.username ?? "Member";
+                                      const replyAuthorName = reply.author?.pen_name || reply.author?.username || "Member";
                                       return (
                                         <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId}
                                           onLike={() => void toggleCommentLike(post.id, reply.id)}

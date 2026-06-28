@@ -1520,13 +1520,17 @@ export default function NotificationsPage() {
               {(n.metadata as { link?: string; link_label?: string } | null)?.link_label ?? "View Message"} →
             </Link>
           )}
-          {(n.title === "Someone replied to your comment" || n.title === "New reply on your discussion post") && n.metadata?.post_id && (
+          {n.metadata?.post_id && n.metadata?.community && (
             <Link
               href={`/${n.metadata.community === "youth" ? "youth-community" : "community"}?post=${n.metadata.post_id}`}
               onClick={() => void markOneAsRead(item)}
               className={`inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition ${CAT_BTN[cat]}`}
             >
-              {n.title === "New reply on your discussion post" ? "View Thread →" : "Reply in Thread →"}
+              {n.title === "New reply on your discussion post"
+                ? "View thread"
+                : n.title === "Someone replied to your comment"
+                ? "View reply"
+                : "View post"} →
             </Link>
           )}
           {n.category === "conduct_appeal" && isAdmin && (
