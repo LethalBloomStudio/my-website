@@ -10,16 +10,19 @@ export async function POST(req: Request) {
   const body = await req.json() as { birthday_award_id?: string };
   if (!body.birthday_award_id) return NextResponse.json({ error: "Missing birthday_award_id" }, { status: 400 });
 
-  // RLS ensures this row belongs to the requesting user
+  // Atomically claim the award: the UPDATE only matches a row that is still
+  // unclaimed, so concurrent requests race on the same row and only one can
+  // win -- the loser's UPDATE matches zero rows and .single() returns null.
   const { data: award } = await supabase
     .from("birthday_coin_awards")
-    .select("id, coins_awarded, claimed_at")
+    .update({ claimed_at: new Date().toISOString() })
     .eq("id", body.birthday_award_id)
     .eq("user_id", userId)
-    .maybeSingle();
+    .is("claimed_at", null)
+    .select("id, coins_awarded")
+    .single();
 
-  if (!award) return NextResponse.json({ error: "Award not found" }, { status: 404 });
-  if (award.claimed_at) return NextResponse.json({ error: "Already claimed" }, { status: 409 });
+  if (!award) return NextResponse.json({ error: "Already claimed" }, { status: 409 });
 
   const coins = award.coins_awarded as number;
 
@@ -37,12 +40,6 @@ export async function POST(req: Request) {
     reason: "birthday_reward",
     metadata: { birthday_award_id: body.birthday_award_id },
   });
-
-  // Mark the award as claimed
-  await supabase
-    .from("birthday_coin_awards")
-    .update({ claimed_at: new Date().toISOString() })
-    .eq("id", body.birthday_award_id);
 
   const { data: acct } = await supabase
     .from("accounts")
