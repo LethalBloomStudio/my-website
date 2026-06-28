@@ -1478,7 +1478,7 @@ export default function NotificationsPage() {
             i === 0 ? part : <span key={i}><span style={{ color: "#f59e0b" }}>✿</span>{part}</span>
           )}
         </p>
-        <p className="mt-1 text-sm text-neutral-300">{n.body}</p>
+        <p className="mt-1 text-sm text-neutral-300 whitespace-pre-wrap">{n.body}</p>
         <div className="mt-2 flex items-center gap-3 flex-wrap">
           <p className="text-xs text-neutral-500">{new Date(n.created_at).toLocaleString()}</p>
           {rewardCoins && claimId && (

@@ -224,7 +224,7 @@ function CommentRow({
             </div>
           </div>
         ) : (
-          <p className="mt-0.5 text-xs text-neutral-300 leading-relaxed break-words">{comment.content}</p>
+          <p className="mt-0.5 text-xs text-neutral-300 leading-relaxed break-words whitespace-pre-wrap">{comment.content}</p>
         )}
         {!editing && (
           <div className="mt-1.5 flex items-center gap-1.5">
