@@ -1084,7 +1084,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                             <button key={idx}
                               onClick={() => !voted && currentUserId ? void votePoll(post.id, idx) : undefined}
                               disabled={voted || !currentUserId}
-                              className={`flex w-full items-center gap-2 text-left transition appearance-none border-0 bg-transparent shadow-none hover:bg-transparent ${voted ? "cursor-default" : "cursor-pointer"}`}>
+                              className={`flex w-full items-center gap-2 text-left transition appearance-none border border-[rgba(120,120,120,0.25)] rounded-md bg-transparent shadow-none hover:bg-transparent px-2 py-1 ${voted ? "cursor-default" : "cursor-pointer"}`}>
                               <span className={`max-w-[45%] shrink-0 truncate text-xs ${isMyVote ? "font-medium text-blue-300" : "text-neutral-200"}`}>{option}</span>
                               <span className="relative h-1 flex-1 overflow-hidden rounded-full bg-[rgba(120,120,120,0.15)]">
                                 {voted && (
