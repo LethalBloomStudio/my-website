@@ -493,7 +493,7 @@ function PageInner() {
     setReplyDrafts((p) => ({ ...p, [f.id]: "" }));
     const ta = replyTextareaRefs.current.get(f.id);
     if (ta) { ta.style.height = "auto"; }
-    if (json.reply) setReplies((prev) => [...prev, json.reply!]);
+    if (json.reply) setReplies((prev) => [...prev, json.reply!].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
     void refreshRepliesForCurrentFeedback();
   }
 
@@ -1234,7 +1234,7 @@ function PageInner() {
 
           const allIds = fRows.map((x) => x.id);
           if (allIds.length) {
-            const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", allIds);
+            const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", allIds).order("created_at", { ascending: true });
             setReplies((rep as FeedbackReply[]) ?? []);
           } else {
             setReplies([]);
@@ -1263,7 +1263,7 @@ function PageInner() {
           setFeedback([]);
           setMyAllFeedback(myFRows);
           if (myFRows.length) {
-            const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
+            const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id)).order("created_at", { ascending: true });
             setReplies((rep as FeedbackReply[]) ?? []);
             const unreadRes = await fetch(`/api/feedback/unread-replies?feedback_ids=${myFRows.map((x) => x.id).join(",")}`);
             if (unreadRes.ok) {
@@ -1451,7 +1451,8 @@ function PageInner() {
     const { data } = await supabase
       .from("line_feedback_replies")
       .select("id, feedback_id, replier_id, body, created_at")
-      .in("feedback_id", ids);
+      .in("feedback_id", ids)
+      .order("created_at", { ascending: true });
     setReplies((data as FeedbackReply[] | null) ?? []);
   }, [supabase]);
 
@@ -1480,7 +1481,10 @@ function PageInner() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
         if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
-        setReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
+        setReplies((prev) => {
+          const next = prev.some((p) => p.id === r.id) ? prev : [...prev, r];
+          return [...next].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
         if (r.replier_id !== userId && selectedFeedbackIdRef.current !== r.feedback_id) {
           setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
         }
@@ -2029,7 +2033,7 @@ function PageInner() {
                   {/* Detail panel */}
                   {selectedOwnerFeedback && (() => {
                     const f = selectedOwnerFeedback;
-                    const feedbackReplies = replies.filter((r) => r.feedback_id === f.id);
+                    const feedbackReplies = replies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                     const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                     const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                     return (
@@ -2142,7 +2146,7 @@ function PageInner() {
                 ).map((f) => {
                   const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                   const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
-                  const fReplies = replies.filter((r) => r.feedback_id === f.id);
+                  const fReplies = replies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                   const isExpanded = expandedFeedbackIds.has(f.id);
                   const canReply = !f.resolved && !f.author_response;
                   const toggleExpand = () => setExpandedFeedbackIds((prev) => {
@@ -2571,7 +2575,7 @@ function PageInner() {
                             const activeIndex = cluster.findIndex((item) => item.id === activeFeedback.id);
                             const f = activeFeedback;
                           const isSelected = selectedFeedbackId === f.id;
-                          const cardReplies = replies.filter((r) => r.feedback_id === f.id);
+                          const cardReplies = replies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                           const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
                           const info = readerMarkerInfos[f.id];
                           const hasStack = cluster.length > 1;

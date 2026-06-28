@@ -206,7 +206,8 @@ export default function ManuscriptDetailsPage() {
     const { data } = await supabase
       .from("line_feedback_replies")
       .select("id, feedback_id, replier_id, body, created_at")
-      .in("feedback_id", ids);
+      .in("feedback_id", ids)
+      .order("created_at", { ascending: true });
     setFeedbackReplies((data as FeedbackReply[] | null) ?? []);
   }
 
@@ -446,7 +447,7 @@ export default function ManuscriptDetailsPage() {
     setReplyDrafts((p) => ({ ...p, [feedbackId]: "" }));
     const ta = replyTextareaRefs.current.get(feedbackId);
     if (ta) { ta.style.height = "auto"; }
-    if (json.reply) setFeedbackReplies((p) => [...p, json.reply!]);
+    if (json.reply) setFeedbackReplies((p) => [...p, json.reply!].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
     void refreshFeedbackReplies();
   }
 
@@ -829,7 +830,7 @@ export default function ManuscriptDetailsPage() {
     if (fbRows.length > 0) {
       const fbIds = fbRows.map((f) => f.id);
       const [repRes, profRes] = await Promise.all([
-        supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", fbIds),
+        supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", fbIds).order("created_at", { ascending: true }),
         supabase.from("public_profiles").select("user_id, pen_name, username")
           .in("user_id", Array.from(new Set(fbRows.map((f) => f.reader_id)))),
       ]);
@@ -1009,7 +1010,10 @@ export default function ManuscriptDetailsPage() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "line_feedback_replies" }, (payload: { new: Record<string, unknown> }) => {
         const r = payload.new as FeedbackReply;
         if (!feedbackIdsRef.current.includes(r.feedback_id)) return;
-        setFeedbackReplies((prev) => prev.some((p) => p.id === r.id) ? prev : [...prev, r]);
+        setFeedbackReplies((prev) => {
+          const next = prev.some((p) => p.id === r.id) ? prev : [...prev, r];
+          return [...next].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
         if (r.replier_id !== authorUserId) {
           setUnreadReplyCounts((prev) => ({ ...prev, [r.feedback_id]: (prev[r.feedback_id] ?? 0) + 1 }));
         }
@@ -2662,7 +2666,7 @@ export default function ManuscriptDetailsPage() {
                         const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                         const chapterLabel = chapterObj ? (chapterObj.chapter_type === "prologue" ? `Prologue: ${chapterObj.title || "Untitled"}` : chapterObj.chapter_type === "trigger_page" ? `Trigger Page: ${chapterObj.title || "Untitled"}` : `Ch. ${chapterNumFor(chapterObj.id)}: ${chapterObj.title || "Untitled"}`) : null;
                         const excerptDetached = !!f.selection_excerpt && !!chapterObj && !(chapterObj.content ?? "").replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n").includes(f.selection_excerpt);
-                        const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id);
+                        const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                         const isExpanded = overviewExpandedIds.has(f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
                         const toggleExpand = () => setOverviewExpandedIds((prev) => {
@@ -3228,7 +3232,7 @@ export default function ManuscriptDetailsPage() {
                         const f = activeFeedback;
                         const info = markerInfos[f.id];
                         const isSelected = selectedFeedbackId === f.id;
-                        const replies = feedbackReplies.filter((r) => r.feedback_id === f.id);
+                        const replies = feedbackReplies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                         const readerName = feedbackNames[f.reader_id] || "Reader";
                         const hasStack = cluster.length > 1;
                         const unreadReplyCount = unreadReplyCounts[f.id] ?? 0;
