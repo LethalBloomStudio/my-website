@@ -1115,17 +1115,19 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                       </svg>
                       <span>{post.comment_count > 0 ? post.comment_count : "Comment"}</span>
                     </button>
-                    {isAdmin && (
+                    {(isAdmin || post.author_id === currentUserId) && (
                       <div className="ml-auto flex items-center gap-1">
-                        <button
-                          onClick={() => void togglePinned(post.id, !post.is_pinned)}
-                          title={post.is_pinned ? "Unpin post" : "Pin post"}
-                          className={`rounded px-2 py-1 text-[11px] transition ${post.is_pinned ? "text-amber-300 hover:text-amber-200" : "text-neutral-400 hover:text-amber-300"}`}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 17v5" />
-                            <path d="M8 3h8l-1 6 3 3H6l3-3-1-6z" />
-                          </svg>
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => void togglePinned(post.id, !post.is_pinned)}
+                            title={post.is_pinned ? "Unpin post" : "Pin post"}
+                            className={`rounded px-2 py-1 text-[11px] transition ${post.is_pinned ? "text-amber-300 hover:text-amber-200" : "text-neutral-400 hover:text-amber-300"}`}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 17v5" />
+                              <path d="M8 3h8l-1 6 3 3H6l3-3-1-6z" />
+                            </svg>
+                          </button>
+                        )}
                         <button
                           onClick={() => setEditingPost({ id: post.id, title: post.title, content: post.content ?? "" })}
                           title="Edit post"
