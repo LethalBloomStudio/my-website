@@ -296,6 +296,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isAdmin, setIsAdmin] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
 
   // Comments per post (lazy-loaded on expand)
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
@@ -653,12 +654,23 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
   async function votePoll(postId: string, optionIndex: number) {
     if (!currentUserId) return;
     const post = posts.find(p => p.id === postId);
-    if (!post || post.user_vote !== null) return;
-    await supabase.from("discussion_poll_votes").insert({ post_id: postId, user_id: currentUserId, option_index: optionIndex });
-    setPosts(prev => prev.map(p => p.id === postId ? {
-      ...p, user_vote: optionIndex,
-      poll_votes: { ...p.poll_votes, [optionIndex]: (p.poll_votes[optionIndex] ?? 0) + 1 },
-    } : p));
+    if (!post) return;
+    if (post.user_vote !== null && post.user_vote === optionIndex) return;
+    setPollError(null);
+    const { error } = await supabase
+      .from("discussion_poll_votes")
+      .upsert({ post_id: postId, user_id: currentUserId, option_index: optionIndex }, { onConflict: "post_id,user_id" });
+    if (error) { setPollError(error.message); return; }
+    const previousVote = post.user_vote;
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      const nextPollVotes = { ...p.poll_votes };
+      if (previousVote !== null) {
+        nextPollVotes[previousVote] = Math.max(0, (nextPollVotes[previousVote] ?? 0) - 1);
+      }
+      nextPollVotes[optionIndex] = (nextPollVotes[optionIndex] ?? 0) + 1;
+      return { ...p, user_vote: optionIndex, poll_votes: nextPollVotes };
+    }));
   }
 
   async function saveCommentEdit(postId: string, commentId: string, content: string) {
@@ -1074,6 +1086,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
                     {/* Poll */}
                     {post.type === "poll" && post.poll_options && (
+                      <>
                       <div className="mt-2 space-y-1.5 p-2">
                         {post.poll_options.map((option, idx) => {
                           const voteCount = post.poll_votes[idx] ?? 0;
@@ -1082,8 +1095,8 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                           const isMyVote = post.user_vote === idx;
                           return (
                             <button key={idx}
-                              onClick={() => !voted && currentUserId ? void votePoll(post.id, idx) : undefined}
-                              disabled={voted || !currentUserId}
+                              onClick={() => currentUserId ? void votePoll(post.id, idx) : undefined}
+                              disabled={!currentUserId}
                               className={`flex w-full items-center gap-2 text-left transition appearance-none border border-[rgba(120,120,120,0.25)] rounded-md bg-transparent shadow-none hover:bg-transparent px-2 py-1 ${voted ? "cursor-default" : "cursor-pointer"}`}>
                               <span className={`max-w-[45%] shrink-0 truncate text-xs ${isMyVote ? "font-medium text-blue-300" : "text-neutral-200"}`}>{option}</span>
                               <span className="relative h-1 flex-1 overflow-hidden rounded-full bg-[rgba(120,120,120,0.15)]">
@@ -1097,6 +1110,10 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
                         })}
                         <p className="text-[10px] text-neutral-500">{totalPollVotes} vote{totalPollVotes !== 1 ? "s" : ""}</p>
                       </div>
+                      {pollError && (
+                        <p className="mt-1 text-[11px] text-red-400">{pollError}</p>
+                      )}
+                      </>
                     )}
                   </div>
 
