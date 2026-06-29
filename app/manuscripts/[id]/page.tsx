@@ -91,6 +91,7 @@ function PageInner() {
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const replyTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const replyingRef = useRef<Set<string>>(new Set());
+  const repliesEndRef = useRef<HTMLDivElement>(null);
   const [expandedFeedbackIds, setExpandedFeedbackIds] = useState<Set<string>>(new Set());
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "unresolved" | "resolved">("unresolved");
   const [ownerFeedbackFilter, setOwnerFeedbackFilter] = useState<"unresolved" | "agreed" | "disagreed" | "all">("unresolved");
@@ -1442,6 +1443,11 @@ function PageInner() {
     feedbackIdsRef.current = Array.from(new Set(allIds));
   }, [feedback, myAllFeedback]);
 
+  // Auto-scroll the open reply thread to the newest message
+  useEffect(() => {
+    repliesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [replies.length]);
+
   const refreshRepliesForCurrentFeedback = useCallback(async () => {
     const ids = feedbackIdsRef.current;
     if (ids.length === 0) {
@@ -2098,12 +2104,20 @@ function PageInner() {
                         {feedbackReplies.length > 0 && (
                           <div className="space-y-1.5">
                             <p className="text-[10px] uppercase tracking-wide text-neutral-500">Replies</p>
-                            {feedbackReplies.map((r) => (
-                              <div key={r.id} className={`rounded-lg px-2.5 py-2 text-[11px] ${r.replier_id === manuscript?.owner_id ? "bg-[rgba(120,120,120,0.12)]" : "bg-[rgba(255,255,255,0.04)]"}`}>
-                                <span className="font-semibold text-[rgba(210,210,210,0.7)] mr-1">{names[r.replier_id] || "User"}:</span>
-                                <span className="text-neutral-300">{r.body}</span>
-                              </div>
-                            ))}
+                            {feedbackReplies.map((r) => {
+                              const isMe = r.replier_id === userId;
+                              return (
+                                <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                    <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
+                                      {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
+                                    </p>
+                                    <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div ref={repliesEndRef} />
                           </div>
                         )}
                       </div>
@@ -2216,11 +2230,12 @@ function PageInner() {
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "You")}
                                     </p>
-                                    <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{r.body}</p>
+                                    <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                   </div>
                                 </div>
                               );
                             })}
+                            <div ref={repliesEndRef} />
                           </div>
                           {/* Reply box - only if not resolved */}
                           {canReply && (
@@ -2745,19 +2760,17 @@ function PageInner() {
                                   {cardReplies.map((r) => {
                                     const isMe = r.replier_id === userId;
                                     return (
-                                      <div
-                                        key={r.id}
-                                        className={`rounded-lg px-3 py-2 text-[11px] ${
-                                          isMe ? "bg-[rgba(120,120,120,0.12)]" : "bg-[rgba(255,255,255,0.04)]"
-                                        }`}
-                                      >
-                                        <span className="mr-1 text-[10px] font-semibold text-[rgba(210,210,210,0.7)]">
-                                          {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}:
-                                        </span>
-                                        <span className="text-neutral-300">{r.body}</span>
+                                      <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                          <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
+                                            {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
+                                          </p>
+                                          <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
+                                        </div>
                                       </div>
                                     );
                                   })}
+                                  <div ref={repliesEndRef} />
                                 </div>
                               )}
                               {!f.resolved && (isOwner || f.reader_id === userId) && (
