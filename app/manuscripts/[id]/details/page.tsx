@@ -2725,7 +2725,7 @@ export default function ManuscriptDetailsPage() {
                                 <div className="rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
                                   {/* Reader's original comment */}
                                   <div className="flex justify-start">
-                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other px-3 py-2">
+                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300 px-3 py-2">
                                       <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                     </div>
@@ -3337,7 +3337,7 @@ export default function ManuscriptDetailsPage() {
                             {/* Chat thread */}
                             <div className="mt-2 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
                               <div className="flex justify-start">
-                                <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other px-3 py-2">
+                                <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300 px-3 py-2">
                                   <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
                                   <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                 </div>
