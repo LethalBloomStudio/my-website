@@ -2734,7 +2734,7 @@ export default function ManuscriptDetailsPage() {
                                     const isAuthorReply = r.replier_id === authorUserId;
                                     return (
                                       <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                           <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                         </div>
@@ -3346,7 +3346,7 @@ export default function ManuscriptDetailsPage() {
                                 const isAuthorReply = r.replier_id === authorUserId;
                                 return (
                                   <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
                                       <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                     </div>

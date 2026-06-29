@@ -2108,7 +2108,7 @@ function PageInner() {
                               const isMe = r.replier_id === userId;
                               return (
                                 <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
                                     </p>
@@ -2226,7 +2226,7 @@ function PageInner() {
                               const isMe = r.replier_id === userId;
                               return (
                                 <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "You")}
                                     </p>
@@ -2761,7 +2761,7 @@ function PageInner() {
                                     const isMe = r.replier_id === userId;
                                     return (
                                       <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self" : "rounded-tl-sm bg-neutral-100 chat-bubble-other"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                             {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
                                           </p>
