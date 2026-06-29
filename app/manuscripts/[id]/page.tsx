@@ -2080,7 +2080,14 @@ function PageInner() {
                             &ldquo;{f.selection_excerpt}&rdquo;
                           </blockquote>
                         )}
-                        <p className="text-sm leading-relaxed text-neutral-200">{f.comment_text}</p>
+                        <div className="flex justify-end">
+                          <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self border border-neutral-200 px-3 py-2">
+                            <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">
+                              {names[f.reader_id] || "Reader"}
+                            </p>
+                            <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{f.comment_text}</p>
+                          </div>
+                        </div>
                         {f.author_response ? (
                           <p className={`text-[11px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
                             {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
@@ -2748,9 +2755,13 @@ function PageInner() {
                                 </div>
                               ) : (
                                 <div className="mt-2 space-y-2">
-                                  <div className="rounded-lg bg-neutral-950/50 px-3 py-2">
-                                    <p className="mb-0.5 text-[10px] font-semibold text-[rgba(210,210,210,0.7)]">You</p>
-                                    <p className="text-[11px] leading-relaxed text-neutral-300 break-words">{f.comment_text}</p>
+                                  <div className="flex justify-end">
+                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self border border-neutral-200 px-3 py-2">
+                                      <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">
+                                        {names[f.reader_id] || "Reader"}
+                                      </p>
+                                      <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{f.comment_text}</p>
+                                    </div>
                                   </div>
                                   {f.author_response && (
                                     <p className="text-[10px] font-medium text-neutral-400">
