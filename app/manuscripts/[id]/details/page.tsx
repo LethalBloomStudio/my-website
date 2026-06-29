@@ -2724,8 +2724,8 @@ export default function ManuscriptDetailsPage() {
                               <div className="mt-2">
                                 <div className="rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
                                   {/* Reader's original comment */}
-                                  <div className="flex justify-start">
-                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300 px-3 py-2">
+                                  <div className="flex justify-end">
+                                    <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self border border-neutral-200 px-3 py-2">
                                       <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                     </div>
@@ -2733,8 +2733,8 @@ export default function ManuscriptDetailsPage() {
                                   {fReplies.map((r) => {
                                     const isAuthorReply = r.replier_id === authorUserId;
                                     return (
-                                      <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
+                                      <div key={r.id} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                           <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                         </div>
@@ -3336,8 +3336,8 @@ export default function ManuscriptDetailsPage() {
 
                             {/* Chat thread */}
                             <div className="mt-2 rounded-lg bg-neutral-950/50 p-2 space-y-1.5">
-                              <div className="flex justify-start">
-                                <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300 px-3 py-2">
+                              <div className="flex justify-end">
+                                <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-tr-sm bg-white chat-bubble-self border border-neutral-200 px-3 py-2">
                                   <p className="text-[10px] font-semibold text-neutral-500 mb-0.5">{readerName}</p>
                                   <p className="text-[11px] leading-relaxed text-neutral-800 break-words">{f.comment_text}</p>
                                 </div>
@@ -3345,8 +3345,8 @@ export default function ManuscriptDetailsPage() {
                               {replies.map((r) => {
                                 const isAuthorReply = r.replier_id === authorUserId;
                                 return (
-                                  <div key={r.id} className={`flex ${isAuthorReply ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
+                                  <div key={r.id} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
+                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
                                       <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                     </div>

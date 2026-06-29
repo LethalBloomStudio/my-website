@@ -2107,8 +2107,8 @@ function PageInner() {
                             {feedbackReplies.map((r) => {
                               const isMe = r.replier_id === userId;
                               return (
-                                <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
+                                <div key={r.id} className={`flex ${isMe ? "justify-start" : "justify-end"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
                                     </p>
@@ -2758,12 +2758,12 @@ function PageInner() {
                                     </p>
                                   )}
                                   {cardReplies.map((r) => {
-                                    const isMe = r.replier_id === userId;
+                                    const isAuthor = r.replier_id === manuscript?.owner_id;
                                     return (
-                                      <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
+                                      <div key={r.id} className={`flex ${isAuthor ? "justify-start" : "justify-end"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthor ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
-                                            {isMe ? "You" : names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "Reader")}
+                                            {isAuthor ? names[r.replier_id] || "Author" : names[r.replier_id] || "Reader"}
                                           </p>
                                           <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                         </div>
