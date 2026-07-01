@@ -109,6 +109,7 @@ export default function ManuscriptDetailsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const manuscriptId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const isParentView = searchParams?.get("from") === "parent";
+  const filterParam = searchParams?.get("filter") ?? null;
   const urlParamsApplied = useRef<string>("");
 
   const [loading, setLoading] = useState(true);
@@ -915,10 +916,13 @@ export default function ManuscriptDetailsPage() {
     if (loading) return;
     const chapterParam = searchParams?.get("chapter");
     const feedbackParam = searchParams?.get("feedback");
-    if (!chapterParam && !feedbackParam) return;
-    const paramKey = `${chapterParam ?? ""}|${feedbackParam ?? ""}`;
+    if (!chapterParam && !feedbackParam && !filterParam) return;
+    const paramKey = `${chapterParam ?? ""}|${feedbackParam ?? ""}|${filterParam ?? ""}`;
     if (urlParamsApplied.current === paramKey) return;
     urlParamsApplied.current = paramKey;
+    if (filterParam === "agreed" || filterParam === "disagreed" || filterParam === "unresolved" || filterParam === "all") {
+      setOverviewFeedbackFilter(filterParam);
+    }
     if (chapterParam) {
       const exists = chapters.some((c) => c.id === chapterParam);
       if (exists) {

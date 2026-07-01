@@ -58,10 +58,10 @@ export async function POST(req: Request) {
     // Look up the parent feedback to get reader_id and manuscript info
     const { data: feedbackRow } = await supabase
       .from("line_feedback")
-      .select("manuscript_id, reader_id, chapter_id")
+      .select("manuscript_id, reader_id, chapter_id, resolved, author_response")
       .eq("id", feedbackId)
       .maybeSingle();
-    const feedbackRowTyped = feedbackRow as { manuscript_id?: string; reader_id?: string; chapter_id?: string | null } | null;
+    const feedbackRowTyped = feedbackRow as { manuscript_id?: string; reader_id?: string; chapter_id?: string | null; resolved?: boolean; author_response?: string | null } | null;
     const manuscriptId = feedbackRowTyped?.manuscript_id ?? null;
     const feedbackReaderId = feedbackRowTyped?.reader_id ?? null;
     const feedbackChapterId = feedbackRowTyped?.chapter_id ?? null;
@@ -183,7 +183,7 @@ export async function POST(req: Request) {
         category: "feedback_reply",
         title: titleText,
         body: bodyText,
-        metadata: { feedback_id: feedbackId, manuscript_id: manuscriptId, chapter_id: feedbackChapterId },
+        metadata: { feedback_id: feedbackId, manuscript_id: manuscriptId, chapter_id: feedbackChapterId, reply_id: (inserted as { id: string }).id, resolved: feedbackRowTyped?.resolved ?? false, author_response: feedbackRowTyped?.author_response ?? null },
       });
     }
 
