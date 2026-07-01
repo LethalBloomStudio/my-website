@@ -2562,7 +2562,6 @@ function PageInner() {
                     const plainActiveText = activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
                     const allFeedback = chapterFeedbackSource
                       .filter((f) => {
-                        if (f.resolved) return false;
                         if (!f.selection_excerpt) return true;
                         return plainActiveText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, ""));
                       })
@@ -2771,8 +2770,8 @@ function PageInner() {
                                     </div>
                                   </div>
                                   {f.author_response && (
-                                    <p className="text-[10px] font-medium text-neutral-400">
-                                      ✓ Resolved
+                                    <p className={`text-[10px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
+                                      {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
                                     </p>
                                   )}
                                   {cardReplies.map((r) => {
