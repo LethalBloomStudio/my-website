@@ -1459,7 +1459,14 @@ function PageInner() {
       .select("id, feedback_id, replier_id, body, created_at")
       .in("feedback_id", ids)
       .order("created_at", { ascending: true });
-    setReplies((data as FeedbackReply[] | null) ?? []);
+    const fetched = (data as FeedbackReply[] | null) ?? [];
+    setReplies((prev) => {
+      const merged = [...prev];
+      for (const r of fetched) {
+        if (!merged.some((p) => p.id === r.id)) merged.push(r);
+      }
+      return merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
   }, [supabase]);
 
   function markFeedbackRepliesRead(feedbackId: string) {
