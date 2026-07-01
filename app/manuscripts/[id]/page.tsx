@@ -142,6 +142,7 @@ function PageInner() {
   const proseContentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
+  const floatingCardRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
   const [clickedMarkerTop, setClickedMarkerTop] = useState<number | null>(null);
   const [chapterHeight, setChapterHeight] = useState(0);
@@ -1589,6 +1590,7 @@ function PageInner() {
     function onDocClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
       if (asideRef.current?.contains(target)) return;
+      if (floatingCardRef.current?.contains(target)) return;
       if (target.closest("[data-feedback-marker]")) return;
       setSelectedFeedbackId(null);
     }
@@ -2686,7 +2688,7 @@ function PageInner() {
 
                           // Expanded card (selected) - inline in the list
                           return (
-                            <div
+                            <div ref={floatingCardRef}
                               key={f.id}
                               id={`feedback-item-${f.id}`}
                               style={cardStyle}

@@ -189,6 +189,7 @@ export default function ManuscriptDetailsPage() {
   const [isRowLayout, setIsRowLayout] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
+  const floatingCardRef = useRef<HTMLDivElement>(null);
   const chapterSectionRef = useRef<HTMLElement>(null);
   const [chapterSectionH, setChapterSectionH] = useState(0);
   const prevMarkerInfosRef = useRef<Record<string, unknown>>({});
@@ -1346,6 +1347,7 @@ export default function ManuscriptDetailsPage() {
     function onDocClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
       if (rightColumnRef.current?.contains(target)) return;
+      if (floatingCardRef.current?.contains(target)) return;
       if (target.closest("[data-feedback-marker]")) return;
       setSelectedFeedbackId(null);
     }
@@ -3310,7 +3312,7 @@ export default function ManuscriptDetailsPage() {
 
                             {/* Expanded: full card */}
                             {isExpanded && (
-                              <>
+                              <div ref={floatingCardRef}>
                             {/* Header */}
                             <div className="flex items-center justify-between gap-1 mb-1.5">
                               <p className="text-[11px] font-medium text-[rgba(210,210,210,0.85)]">{readerName}</p>
@@ -3436,7 +3438,7 @@ export default function ManuscriptDetailsPage() {
                                   title="Disagree - acknowledges feedback and removes it from this view">Disagree</button>
                               </div>
                             )}
-                              </>
+                              </div>
                             )}
                           </div>
                         );
