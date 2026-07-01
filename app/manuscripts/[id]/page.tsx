@@ -2562,6 +2562,7 @@ function PageInner() {
                     const plainActiveText = activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
                     const allFeedback = chapterFeedbackSource
                       .filter((f) => {
+                        if (f.resolved) return false;
                         if (!f.selection_excerpt) return true;
                         return plainActiveText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, ""));
                       })
