@@ -71,6 +71,7 @@ function PageInner() {
   const backLabel = fromParam === "discover" ? "Back to discover" : fromParam === "details" ? "Back to book page" : fromParam === "parent" ? "Back to Youth Accounts" : "Back to manuscripts";
   const chapterParam = searchParams.get("chapter");
   const feedbackParam = searchParams.get("feedback");
+  const filterParam = searchParams.get("filter");
 
   const { theme } = useTheme();
   const [userId, setUserId] = useState<string | null>(null);
@@ -679,6 +680,21 @@ function PageInner() {
     if (!isOwner || !feedbackParam) return;
     setSelectedOwnerFeedbackId(feedbackParam);
   }, [isOwner, feedbackParam]);
+
+  // Reader deep-link from notification: switch to the resolved tab, expand the
+  // matching Block B card, and scroll to it once myAllFeedback loads.
+  useEffect(() => {
+    if (isOwner || !feedbackParam) return;
+    if (filterParam === "resolved") setFeedbackFilter("resolved");
+    setExpandedFeedbackIds((prev) => {
+      if (prev.has(feedbackParam)) return prev;
+      const next = new Set(prev);
+      next.add(feedbackParam);
+      return next;
+    });
+    const el = document.getElementById(`feedback-${feedbackParam}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [isOwner, feedbackParam, filterParam, myAllFeedback.length]);
   const canRead = isOwner || hasGrant || isParentView;
 
   const canLeaveLineEdits = canRead && !isParentView && !isOwner;
@@ -2183,7 +2199,7 @@ function PageInner() {
                     return n;
                   });
                   return (
-                    <div key={f.id} className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3">
+                    <div key={f.id} id={`feedback-${f.id}`} className="rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3">
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <p className="text-xs font-medium text-[rgba(210,210,210,0.85)]">You</p>
                         <div className="flex items-center gap-2 text-[10px] text-neutral-500">

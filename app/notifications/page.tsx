@@ -1350,10 +1350,18 @@ export default function NotificationsPage() {
       const manuscriptId = n.metadata?.manuscript_id as string | undefined;
       const chapterId = n.metadata?.chapter_id as string | undefined;
       const feedbackId = n.metadata?.feedback_id as string | undefined;
+      const meta = n.metadata as Record<string, unknown> | null | undefined;
+      const replyId = meta?.reply_id as string | undefined;
+      const isResolved = !!(meta?.resolved);
+      const authorResponse = meta?.author_response as string | null | undefined;
       const viewHref = manuscriptId
-        ? ownedManuscriptIds.has(manuscriptId)
-          ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
-          : `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
+        ? isResolved && feedbackId
+          ? ownedManuscriptIds.has(manuscriptId)
+            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details?feedback=${encodeURIComponent(feedbackId)}${authorResponse === "agree" ? "&filter=agreed" : authorResponse === "disagree" ? "&filter=disagreed" : ""}`
+            : `/manuscripts/${encodeURIComponent(manuscriptId)}?feedback=${encodeURIComponent(feedbackId)}&filter=resolved`
+          : ownedManuscriptIds.has(manuscriptId)
+            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
+            : `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}${replyId ? `&reply=${encodeURIComponent(replyId)}` : ""}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}${replyId ? `&reply=${encodeURIComponent(replyId)}` : ""}` : ""}`
         : null;
       return (
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
