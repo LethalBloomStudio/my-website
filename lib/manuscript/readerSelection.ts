@@ -257,37 +257,6 @@ export function readTextFromOffsets(root: HTMLElement, start: number, end: numbe
   return visibleTextFromOffsets(root, start, end) || null;
 }
 
-export function buildStoredFeedbackRange(
-  root: HTMLElement,
-  excerpt: string | null | undefined,
-  startOffset: number | null | undefined,
-  endOffset: number | null | undefined,
-): Range | null {
-  if (typeof startOffset === "number" && typeof endOffset === "number" && endOffset > startOffset) {
-    const exactRange = createRangeFromTextOffsets(root, startOffset, endOffset);
-    if (exactRange) {
-      const exactText = exactRange.toString();
-      const expected = (excerpt ?? "").trim();
-      if (!expected || exactText === expected) {
-        return exactRange;
-      }
-      if (exactText.trim() === expected) {
-        const leadingWhitespace = exactText.length - exactText.trimStart().length;
-        const trailingWhitespace = exactText.length - exactText.trimEnd().length;
-        const adjustedStart = startOffset + leadingWhitespace;
-        const adjustedEnd = endOffset - trailingWhitespace;
-        if (adjustedEnd > adjustedStart) {
-          const adjustedRange = createRangeFromTextOffsets(root, adjustedStart, adjustedEnd);
-          if (adjustedRange && adjustedRange.toString() === expected) {
-            return adjustedRange;
-          }
-        }
-      }
-    }
-  }
-  return null;
-}
-
 export function buildDragSelection(root: HTMLElement, startOffset: number, endOffset: number, viewportWidth: number): DragSelectionResult | null {
   let start = Math.min(startOffset, endOffset);
   let end = Math.max(startOffset, endOffset);

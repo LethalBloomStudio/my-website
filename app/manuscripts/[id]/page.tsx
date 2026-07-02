@@ -13,7 +13,8 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, buildSelectionFromRange, buildStoredFeedbackRange, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { useTheme } from "@/components/ThemeProvider";
 
 type Manuscript = {
@@ -529,42 +530,17 @@ function PageInner() {
     return bestIdx;
   }
 
-  function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) textNodes.push(n as Text);
-    const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    // Prefer the occurrence nearest the stored offset. This keeps repeated
-    // phrases anchored correctly while tolerating small offset drift caused by
-    // formatting or text normalization.
-    const idx = findNearestExcerptIndex(fullText, excerpt, startOffset != null ? Math.max(0, startOffset) : undefined);
-    if (idx === -1) return null;
-    let cumul = 0;
-    let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
-    for (const t of textNodes) {
-      const len = (t.textContent ?? "").length;
-      if (!startNode && cumul + len > idx) { startNode = t; startOff = idx - cumul; }
-      if (!endNode && cumul + len >= idx + excerpt.length) { endNode = t; endOff = idx + excerpt.length - cumul; break; }
-      cumul += len;
-    }
-    if (!startNode || !endNode) return null;
-    const range = document.createRange();
-    range.setStart(startNode, startOff);
-    range.setEnd(endNode, endOff);
-    return range;
-  }
-
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
     const container = proseContentRef.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
+    const chapterText = extractVisibleText(container);
     const newInfos: Record<string, ReaderMarkerInfo> = {};
     for (const f of markerFeedback) {
       if (!f.selection_excerpt) continue;
-      const range =
-        buildStoredFeedbackRange(container, f.selection_excerpt, f.start_offset, f.end_offset) ??
-        findExcerptRange(container, f.selection_excerpt, f.start_offset ?? undefined);
+      const anchor = resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterText);
+      if (anchor.status === "not-found") continue;
+      const range = createRangeFromTextOffsets(container, anchor.start, anchor.end);
       if (!range) continue;
       const clientRects = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height >= 4);
       if (!clientRects.length) continue;
@@ -1399,7 +1375,6 @@ function PageInner() {
       cancelAnimationFrame(rafId);
       clearTimeout(retryId);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
   // Recompute on resize (e.g. window resize or font load)
@@ -1410,7 +1385,6 @@ function PageInner() {
     const ro = new ResizeObserver(() => recomputeReaderMarkers(markerFeedback));
     ro.observe(container);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: recomputeReaderMarkers is a component function; all data deps are listed
   }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
 
 
