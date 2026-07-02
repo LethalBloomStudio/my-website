@@ -74,4 +74,18 @@ describe("resolveFeedbackAnchor - guardrail cases (synthetic)", () => {
     assert.equal(result.method, "nearest-raw");
     assert.equal(result.start, 5000);
   });
+
+  it("accepts a SHORT excerpt when it has a unique match, even far from the stored offset (regression guard)", () => {
+    // A blanket "reject anything under N chars" gate regressed 187 real rows
+    // in the audit dataset - most of them short excerpts with exactly one
+    // occurrence, which is not ambiguous, just short. The length gate must
+    // only apply once there's a second candidate to be confused with.
+    const target = "xyzq"; // 4 chars, well under the ambiguity length threshold
+    const chapterText = "a".repeat(3000) + target + "a".repeat(3000);
+    const result = resolveFeedbackAnchor(target, 10, 10 + target.length, chapterText);
+    assert.equal(result.status, "anchored-fuzzy");
+    if (result.status !== "anchored-fuzzy") throw new Error("unreachable");
+    assert.equal(result.method, "nearest-raw");
+    assert.equal(result.start, 3000);
+  });
 });

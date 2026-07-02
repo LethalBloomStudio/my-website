@@ -20,12 +20,13 @@ export type AnchorResult =
     }
   | { status: "not-found"; method: "none" };
 
-// Below this length, a whole-document fuzzy search is too ambiguous to trust
-// regardless of distance - see the audit: p50 excerpt length among the rows
-// that only pass via whitespace-collapsed matching was ~22 chars, and the
-// short end of that distribution is where occurrence counts spike (a 4-char
-// excerpt can occur dozens of times in one chapter).
-const MIN_EXCERPT_LENGTH_FOR_WHOLE_DOC_SEARCH = 20;
+// Only guards the AMBIGUOUS case (multiple candidate occurrences) - a short
+// excerpt with a single occurrence anywhere in the document is not ambiguous,
+// it's just short, and rejecting it regressed 187 real rows in the audit
+// dataset (median occurrence count among those was 1) for no safety benefit,
+// since pickNearest already returns a lone occurrence unconditionally. This
+// only kicks in once there's a second candidate to be confused with.
+const MIN_EXCERPT_LENGTH_FOR_AMBIGUOUS_MATCH = 20;
 
 // When multiple occurrences exist and we must pick by proximity to the stored
 // offset, only accept the nearest one if it's decisively closer than the
@@ -89,11 +90,14 @@ function buildNormalizedWithMap(raw: string): { normalized: string; map: number[
 
 // Picks the occurrence nearest `referenceOffset`, but refuses to guess when
 // there's a competing occurrence too close in distance to confidently prefer
-// one over the other. Returns null (caller falls through) when ambiguous or
-// when there's no reference point to disambiguate multiple candidates at all.
-function pickNearest(positions: number[], referenceOffset: number | null): number | null {
+// one over the other. A lone occurrence is never ambiguous and is accepted
+// regardless of length or distance; the length/ratio gates only apply once
+// there's a second candidate to potentially confuse it with.
+function pickNearest(positions: number[], referenceOffset: number | null, excerptLength: number): number | null {
   if (positions.length === 0) return null;
   if (positions.length === 1) return positions[0];
+
+  if (excerptLength < MIN_EXCERPT_LENGTH_FOR_AMBIGUOUS_MATCH) return null;
   if (referenceOffset == null) return null;
 
   const sorted = [...positions].sort(
@@ -134,6 +138,7 @@ export function resolveFeedbackAnchor(
       const picked = pickNearest(
         normOccurrences,
         (startOffset as number) - winStart,
+        normExcerpt.length,
       );
       if (picked != null) {
         const rawStart = winStart + map[picked];
@@ -150,18 +155,12 @@ export function resolveFeedbackAnchor(
     }
   }
 
-  // Below this point we search the whole document, which is only trustworthy
-  // for excerpts long enough to be unambiguous.
-  const trimmedExcerpt = excerpt.trim();
-  if (trimmedExcerpt.length < MIN_EXCERPT_LENGTH_FOR_WHOLE_DOC_SEARCH) {
-    return { status: "not-found", method: "none" };
-  }
-
+  // Below this point we search the whole document.
   const referenceOffset = hasOffsets ? (startOffset as number) : null;
 
   // Tier 3: nearest-raw - exact substring, anywhere in the document.
   const rawOccurrences = allOccurrences(chapterText, excerpt);
-  const rawPicked = pickNearest(rawOccurrences, referenceOffset);
+  const rawPicked = pickNearest(rawOccurrences, referenceOffset, excerpt.length);
   if (rawPicked != null) {
     const start = rawPicked;
     const end = rawPicked + excerpt.length;
@@ -174,7 +173,7 @@ export function resolveFeedbackAnchor(
     const { normalized: normChapter, map: fullMap } = buildNormalizedWithMap(chapterText);
     const normOccurrences = allOccurrences(normChapter, normExcerptWhole);
     const rawStartsByNormIdx = new Map(normOccurrences.map((normIdx) => [fullMap[normIdx], normIdx]));
-    const picked = pickNearest([...rawStartsByNormIdx.keys()], referenceOffset);
+    const picked = pickNearest([...rawStartsByNormIdx.keys()], referenceOffset, normExcerptWhole.length);
     if (picked != null) {
       const normIdx = rawStartsByNormIdx.get(picked) as number;
       const start = picked;
