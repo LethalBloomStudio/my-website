@@ -17,7 +17,7 @@ import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
-import { createRangeFromTextOffsets, extractVisibleText } from "@/lib/manuscript/readerSelection";
+import { createRangeFromTextOffsets, extractVisibleText, extractVisibleTextFromHtml } from "@/lib/manuscript/readerSelection";
 import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { shiftFeedbackOffsets } from "@/lib/manuscript/feedbackOffsets";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
@@ -2619,7 +2619,15 @@ export default function ManuscriptDetailsPage() {
                       {overviewFiltered.map((f) => {
                         const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                         const chapterLabel = chapterObj ? (chapterObj.chapter_type === "prologue" ? `Prologue: ${chapterObj.title || "Untitled"}` : chapterObj.chapter_type === "trigger_page" ? `Trigger Page: ${chapterObj.title || "Untitled"}` : `Ch. ${chapterNumFor(chapterObj.id)}: ${chapterObj.title || "Untitled"}`) : null;
-                        const excerptDetached = !!f.selection_excerpt && !!chapterObj && !(chapterObj.content ?? "").replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n").includes(f.selection_excerpt);
+                        // Reflects last-SAVED chapter state (chapterObj.content), not the live
+                        // editor buffer - this is a data-integrity question ("is this anchor
+                        // still valid against what's actually persisted"), not a rendering
+                        // question. Marker placement in the editor (recomputeMarkers) reads the
+                        // live unsaved DOM instead, since that answers a different question
+                        // ("where do I draw the highlight in what's on screen right now"). The
+                        // two can briefly disagree while the author is mid-edit, until they save.
+                        const excerptDetached = !!f.selection_excerpt && !!chapterObj &&
+                          resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
                         const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                         const isExpanded = overviewExpandedIds.has(f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
@@ -2865,14 +2873,21 @@ export default function ManuscriptDetailsPage() {
           )}
 
           {selectedChapterId && selectedChapter && (() => {
-            const plainChapterText = chapterEditorContent.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
+            // Last-SAVED chapter state, matching excerptDetached above - not
+            // chapterEditorContent (the live editor buffer). This card list's
+            // filter/warning is a data-integrity question, not a rendering one;
+            // see the comment on excerptDetached for the full reasoning. Marker
+            // placement (recomputeMarkers) still reads the live DOM, so the two
+            // can briefly disagree while the author has unsaved changes open.
+            const plainChapterText = extractVisibleTextFromHtml(selectedChapter.content ?? "");
+            const fallbackSortStart = (item: LineFeedback): number => {
+              if (!item.selection_excerpt) return Infinity;
+              const anchor = resolveFeedbackAnchor(item.selection_excerpt, item.start_offset, item.end_offset, plainChapterText);
+              return anchor.status !== "not-found" ? anchor.start : Infinity;
+            };
             const chapterFeedback = feedbackItems
               .filter((f) => f.chapter_id === selectedChapterId)
-              .sort((a, b) => {
-                const ia = a.start_offset ?? (a.selection_excerpt ? plainChapterText.indexOf(a.selection_excerpt) : Infinity);
-                const ib = b.start_offset ?? (b.selection_excerpt ? plainChapterText.indexOf(b.selection_excerpt) : Infinity);
-                return ia - ib;
-              });
+              .sort((a, b) => (a.start_offset ?? fallbackSortStart(a)) - (b.start_offset ?? fallbackSortStart(b)));
             const activeFeedback = chapterFeedback.find((f) => f.id === selectedFeedbackId) ?? null;
             const activeExcerpt = activeFeedback?.selection_excerpt ?? "";
             const previewHtml = chapterTextToPreviewHtml(chapterEditorContent);
@@ -3164,7 +3179,7 @@ export default function ManuscriptDetailsPage() {
                       const filtered = chapterFeedback.filter((f) => {
                         if (f.resolved || !!f.author_response) return false;
                         if (!f.selection_excerpt) return true;
-                        return plainChapterText.includes(f.selection_excerpt);
+                        return resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, plainChapterText).status !== "not-found";
                       });
                       if (filtered.length === 0) return (
                         <p className="text-[11px] text-neutral-600 italic mt-2">No unresolved feedback on this chapter yet.</p>
