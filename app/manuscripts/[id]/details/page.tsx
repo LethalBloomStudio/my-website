@@ -1405,19 +1405,6 @@ export default function ManuscriptDetailsPage() {
     return `Chapter ${num}: ${chapter.title}`;
   }
 
-  function highlightExcerpt(text: string, excerpt: string): React.ReactNode {
-    if (!excerpt) return <>{text}</>;
-    const idx = text.indexOf(excerpt);
-    if (idx === -1) return <>{text}</>;
-    return (
-      <>
-        {text.slice(0, idx)}
-        <mark className="rounded bg-[rgba(253,224,71,0.75)] px-0.5 text-neutral-900 not-italic">{text.slice(idx, idx + excerpt.length)}</mark>
-        {text.slice(idx + excerpt.length)}
-      </>
-    );
-  }
-
   async function addChapter() {
     if (!manuscript) return;
     const order = nextChapterOrder();

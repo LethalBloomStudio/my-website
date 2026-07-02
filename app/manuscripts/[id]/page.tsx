@@ -501,35 +501,6 @@ function PageInner() {
     void refreshRepliesForCurrentFeedback();
   }
 
-  /**
-   * Range API helpers for absolute-positioned overlay markers (same approach as details/page.tsx).
-   */
-  function findNearestExcerptIndex(text: string, excerpt: string, targetOffset?: number) {
-    if (!excerpt) return -1;
-    if (targetOffset == null) return text.indexOf(excerpt);
-
-    const matches: number[] = [];
-    let fromIndex = 0;
-    while (fromIndex <= text.length) {
-      const idx = text.indexOf(excerpt, fromIndex);
-      if (idx === -1) break;
-      matches.push(idx);
-      fromIndex = idx + 1;
-    }
-    if (matches.length === 0) return -1;
-
-    let bestIdx = matches[0];
-    let bestDistance = Math.abs(matches[0] - targetOffset);
-    for (const idx of matches) {
-      const distance = Math.abs(idx - targetOffset);
-      if (distance < bestDistance) {
-        bestIdx = idx;
-        bestDistance = distance;
-      }
-    }
-    return bestIdx;
-  }
-
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
     const container = proseContentRef.current;
     if (!container) return;
@@ -557,89 +528,6 @@ function PageInner() {
       };
     }
     setReaderMarkerInfos(newInfos);
-  }
-
-  function renderParagraphContent(
-    html: string,
-    markerItems: LineFeedback[],
-    paraCharOffset: number = 0,
-  ): React.ReactNode {
-    // Derive plain text (tag-stripped) for excerpt position searching
-    const plainText = html.replace(/<[^>]+>/g, "");
-
-    // Find non-overlapping positions of each excerpt in the plain text.
-    // Use start_offset (chapter-wide) minus paraCharOffset to find the correct
-    // occurrence within this paragraph rather than always the first occurrence.
-    const found: { start: number; end: number; id: string }[] = [];
-    for (const f of markerItems) {
-      if (!f.selection_excerpt) continue;
-      const idx = findNearestExcerptIndex(
-        plainText,
-        f.selection_excerpt,
-        f.start_offset != null ? Math.max(0, f.start_offset - paraCharOffset) : undefined,
-      );
-      if (idx === -1) continue;
-      found.push({ start: idx, end: idx + f.selection_excerpt.length, id: f.id });
-    }
-    if (found.length === 0) return <span dangerouslySetInnerHTML={{ __html: html }} />;
-
-    found.sort((a, b) => a.start - b.start);
-    const clean: typeof found = [];
-    let lastEnd = -1;
-    for (const item of found) {
-      if (item.start >= lastEnd) { clean.push(item); lastEnd = item.end; }
-    }
-
-    // Map a plain-text character offset → index in the HTML string
-    function plainToHtmlIdx(target: number): number {
-      let plain = 0;
-      let i = 0;
-      while (i < html.length) {
-        if (html[i] === "<") {
-          while (i < html.length && html[i] !== ">") i++;
-          i++;
-        } else {
-          if (plain === target) return i;
-          plain++;
-          i++;
-        }
-      }
-      return html.length;
-    }
-
-    const parts: React.ReactNode[] = [];
-    let lastHtmlIdx = 0;
-
-    for (const item of clean) {
-      const startH = plainToHtmlIdx(item.start);
-      const endH   = plainToHtmlIdx(item.end);
-
-      // Text before this excerpt
-      if (startH > lastHtmlIdx) {
-        parts.push(
-          <span key={`pre-${item.id}`} dangerouslySetInnerHTML={{ __html: html.slice(lastHtmlIdx, startH) }} />
-        );
-      }
-
-      // The excerpt - id used for scroll targeting; underline + bubble rendered as absolute overlays
-      const excerptHtml = html.slice(startH, endH);
-      parts.push(
-        <span key={item.id} id={`text-marker-${item.id}`} className="inline">
-          <span dangerouslySetInnerHTML={{ __html: excerptHtml }} />
-        </span>
-      );
-
-      lastHtmlIdx = endH;
-    }
-
-    // Remaining text after all excerpts
-    if (lastHtmlIdx < html.length) {
-      parts.push(
-        <span key="tail" dangerouslySetInnerHTML={{ __html: html.slice(lastHtmlIdx) }} />
-      );
-    }
-
-    return <>{parts}</>;
   }
 
   function friendlyDbError(message: string) {
