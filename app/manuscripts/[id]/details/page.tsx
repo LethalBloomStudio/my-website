@@ -17,7 +17,8 @@ import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
 import { normalizeChapterText, chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
-import { extractVisibleText } from "@/lib/manuscript/readerSelection";
+import { createRangeFromTextOffsets, extractVisibleText } from "@/lib/manuscript/readerSelection";
+import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { shiftFeedbackOffsets } from "@/lib/manuscript/feedbackOffsets";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
@@ -1244,56 +1245,6 @@ export default function ManuscriptDetailsPage() {
     return () => ro.disconnect();
   }, [selectedChapterId, markerInfos]);
 
-  // Find the DOM Range for an excerpt inside a root element using a TreeWalker
-  function findNearestExcerptIndex(text: string, excerpt: string, targetOffset?: number) {
-    if (!excerpt) return -1;
-    if (targetOffset == null) return text.indexOf(excerpt);
-
-    const matches: number[] = [];
-    let fromIndex = 0;
-    while (fromIndex <= text.length) {
-      const idx = text.indexOf(excerpt, fromIndex);
-      if (idx === -1) break;
-      matches.push(idx);
-      fromIndex = idx + 1;
-    }
-    if (matches.length === 0) return -1;
-
-    let bestIdx = matches[0];
-    let bestDistance = Math.abs(matches[0] - targetOffset);
-    for (const idx of matches) {
-      const distance = Math.abs(idx - targetOffset);
-      if (distance < bestDistance) {
-        bestIdx = idx;
-        bestDistance = distance;
-      }
-    }
-    return bestIdx;
-  }
-
-  function findExcerptRange(root: HTMLElement, excerpt: string, startOffset?: number): Range | null {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) textNodes.push(n as Text);
-    const fullText = textNodes.map((t) => t.textContent ?? "").join("");
-    const idx = findNearestExcerptIndex(fullText, excerpt, startOffset != null ? Math.max(0, startOffset) : undefined);
-    if (idx === -1) return null;
-    let cumul = 0;
-    let startNode: Text | null = null, startOff = 0, endNode: Text | null = null, endOff = 0;
-    for (const t of textNodes) {
-      const len = (t.textContent ?? "").length;
-      if (!startNode && cumul + len > idx) { startNode = t; startOff = idx - cumul; }
-      if (!endNode && cumul + len >= idx + excerpt.length) { endNode = t; endOff = idx + excerpt.length - cumul; break; }
-      cumul += len;
-    }
-    if (!startNode || !endNode) return null;
-    const range = document.createRange();
-    range.setStart(startNode, startOff);
-    range.setEnd(endNode, endOff);
-    return range;
-  }
-
   // Compute inline marker positions from the Range API - runs after the editor DOM has settled
   function recomputeMarkers() {
     const wrapper = editorWrapperRef.current;
@@ -1301,11 +1252,14 @@ export default function ManuscriptDetailsPage() {
     const editorEl = wrapper.querySelector(".chapter-editor") as HTMLElement | null;
     if (!editorEl || !selectedChapterId) return;
     const wrapperRect = wrapper.getBoundingClientRect();
+    const editorText = extractVisibleText(editorEl);
     const newInfos: Record<string, MarkerInfo> = {};
     for (const f of feedbackItems) {
       if (f.chapter_id !== selectedChapterId) continue;
       if (!f.selection_excerpt || f.resolved || !!f.author_response) continue;
-      const range = findExcerptRange(editorEl, f.selection_excerpt, f.start_offset ?? undefined);
+      const anchor = resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, editorText);
+      if (anchor.status === "not-found") continue;
+      const range = createRangeFromTextOffsets(editorEl, anchor.start, anchor.end);
       if (!range) continue;
       const clientRects = Array.from(range.getClientRects());
       if (!clientRects.length) continue;
