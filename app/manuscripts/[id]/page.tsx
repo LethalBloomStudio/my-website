@@ -13,7 +13,7 @@ import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
 import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, extractVisibleTextFromHtml, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -760,7 +760,7 @@ function PageInner() {
 
   const activeText = activeChapter?.content ?? "";
   const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
-  const activePlainText = useMemo(() => activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n"), [activeText]);
+  const activePlainText = useMemo(() => extractVisibleTextFromHtml(activeText), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -2439,23 +2439,21 @@ function PageInner() {
                   <div ref={cardAreaRef} className="relative min-h-full">
                   {(() => {
                     const chapterFeedbackSource = !isOwner ? myChapterFeedback : feedback;
-                    const plainActiveText = activeText.replace(/<[^>]+>/g, "").replace(/\t/g, "").replace(/\n\n/g, "\n");
                     const allFeedback = chapterFeedbackSource
-                      .filter((f) => {
-                        if (f.resolved) return false;
-                        if (!f.selection_excerpt) return true;
-                        return plainActiveText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, ""));
-                      })
+                      .filter((f) => !f.resolved)
+                      .map((f) => ({
+                        item: f,
+                        anchor: f.selection_excerpt
+                          ? resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, activePlainText)
+                          : null,
+                      }))
+                      .filter(({ anchor }) => !anchor || anchor.status !== "not-found")
                       .sort((a, b) => {
-                        // Prefer stored start_offset; fall back to text search position
-                        const ia = (a.start_offset ?? 0) > 0
-                          ? a.start_offset!
-                          : (a.selection_excerpt ? plainActiveText.indexOf(a.selection_excerpt) : Infinity);
-                        const ib = (b.start_offset ?? 0) > 0
-                          ? b.start_offset!
-                          : (b.selection_excerpt ? plainActiveText.indexOf(b.selection_excerpt) : Infinity);
+                        const ia = a.anchor && a.anchor.status !== "not-found" ? a.anchor.start : Infinity;
+                        const ib = b.anchor && b.anchor.status !== "not-found" ? b.anchor.start : Infinity;
                         return ia - ib;
-                      });
+                      })
+                      .map(({ item }) => item);
 
                     if (allFeedback.length === 0 && !pendingSelection) {
                       return (
@@ -2609,7 +2607,7 @@ function PageInner() {
                                   </button>
                                 </div>
                               </div>
-                              {f.selection_excerpt && !activePlainText.replace(/\s+/g, "").includes(f.selection_excerpt.replace(/\s+/g, "")) ? (
+                              {f.selection_excerpt && resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, activePlainText).status === "not-found" ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ The text this comment was anchored to has since been edited or removed.</p>
                               ) : (
                                 <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
