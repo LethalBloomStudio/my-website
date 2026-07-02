@@ -1893,6 +1893,10 @@ function PageInner() {
                       const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                       const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                       const isSelected = selectedOwnerFeedbackId === f.id;
+                      // Anchor health against last-SAVED chapter content - a data-integrity
+                      // question, matching the same source used everywhere else this is checked.
+                      const isDetached = !!f.selection_excerpt && !!chapterObj &&
+                        resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
                       return (
                         <button
                           key={f.id}
@@ -1912,6 +1916,9 @@ function PageInner() {
                               {chapterLabel && <span className="rounded bg-neutral-800 px-1.5 py-0.5">{chapterLabel}</span>}
                               <span>{new Date(f.created_at).toLocaleDateString()}</span>
                               {f.resolved && <span className="text-neutral-600">resolved</span>}
+                              {isDetached && (
+                                <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-1.5 py-0.5 font-semibold text-amber-400">⚠ Anchor lost</span>
+                              )}
                             </div>
                           </div>
                           {f.selection_excerpt && (
@@ -1929,6 +1936,8 @@ function PageInner() {
                     const feedbackReplies = replies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                     const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                     const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
+                    const isDetached = !!f.selection_excerpt && !!chapterObj &&
+                      resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
                     return (
                       <div className="flex-1 min-w-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.1)] p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
@@ -1962,7 +1971,9 @@ function PageInner() {
                             </button>
                           </div>
                         </div>
-                        {f.selection_excerpt && (
+                        {isDetached ? (
+                          <p className="text-[11px] italic text-amber-500/70">⚠ The text this comment was anchored to has since been edited or removed.</p>
+                        ) : f.selection_excerpt && (
                           <blockquote className="border-l-2 border-[rgba(120,120,120,0.5)] pl-3 text-xs italic text-neutral-400">
                             &ldquo;{f.selection_excerpt}&rdquo;
                           </blockquote>
