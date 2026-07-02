@@ -48,6 +48,29 @@ export function extractVisibleText(node: Node): string {
   return Array.from(node.childNodes).map(extractVisibleText).join("");
 }
 
+const HTML_ENTITY_DECODE: Record<string, string> = {
+  "&nbsp;": String.fromCharCode(32),
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": String.fromCharCode(34),
+  "&#39;": "'",
+  "&apos;": "'",
+};
+
+// String-only twin of extractVisibleText for callers with no live DOM (e.g. a
+// stored chapter HTML string in the log views). Must apply the exact same tag
+// rules - <br> contributes one space, every other tag contributes nothing - so
+// offsets computed against a rendered DOM stay comparable to offsets computed
+// against this string. Diverging here is what caused stale-looking anchors
+// whenever a tag boundary in the raw HTML had incidental whitespace around it
+// (e.g. a paragraph gap) that a naive tag-strip would keep as extra characters.
+export function extractVisibleTextFromHtml(html: string): string {
+  const brExpanded = html.replace(/<br[^>]*>/gi, String.fromCharCode(32));
+  const tagsStripped = brExpanded.replace(/<[^>]*>/g, "");
+  return tagsStripped.replace(/&[a-z#0-9]+;/gi, (entity) => HTML_ENTITY_DECODE[entity.toLowerCase()] ?? entity);
+}
+
 function visibleOffsetFromDomPoint(root: HTMLElement, targetNode: Node, targetOffset: number): number | null {
   let total = 0;
 

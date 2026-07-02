@@ -4,7 +4,7 @@ import {
   normalizeManuscriptText,
   parseManuscriptForPreview,
   sanitizePastedHtml,
-} from "../lib/format/normalizeManuscript";
+} from "../lib/format/normalizeManuscript.ts";
 
 describe("sanitizePastedHtml", () => {
   it("strips script/style and keeps text", () => {
