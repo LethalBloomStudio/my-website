@@ -1,3 +1,8 @@
+// Relative + explicit extension (not the "@/..." alias used elsewhere in the
+// app) so this file's own test can import it under node --test, which needs
+// this module resolvable without going through Next.js's webpack aliasing.
+import { extractVisibleTextFromHtml } from "../manuscript/readerSelection.ts";
+
 /**
  * Strips inline styles, class/id attributes, and non-whitelisted tags from
  * chapter HTML, preserving only the safe inline formatting tags writers use.
@@ -195,12 +200,17 @@ export function normalizeChapterText(raw: string): string {
  *
  * Use this to render a read-only preview that is pixel-identical to the editor view.
  */
-export function chapterTextToPreviewHtml(text: string): string {
-  if (!text.trim()) return "";
-  const blocks = text
+function splitChapterBlocks(text: string): string[] {
+  if (!text.trim()) return [];
+  return text
     .split(/\n\n/)
     .map((b) => b.replace(/^\t/, "").trim())
     .filter(Boolean);
+}
+
+export function chapterTextToPreviewHtml(text: string): string {
+  const blocks = splitChapterBlocks(text);
+  if (!blocks.length) return "";
   return blocks
     .map((b, i) => {
       if (b === "***") return `<p data-scene-break="1">***</p>`;
@@ -208,6 +218,32 @@ export function chapterTextToPreviewHtml(text: string): string {
       const prev = blocks[i - 1];
       const noIndent = i === 0 || prev === "***";
       return noIndent ? `<p data-no-indent="1">${html}</p>` : `<p>${html}</p>`;
+    })
+    .join("");
+}
+
+/**
+ * Twin of chapterTextToPreviewHtml that produces the plain text a reader's
+ * browser actually ends up with once that HTML is rendered - same block
+ * split, same per-block sanitize/soft-break handling, but projected through
+ * extractVisibleTextFromHtml (tags -> nothing, <br> -> one space) instead of
+ * wrapped in markup, and joined with NO separator between paragraphs, since
+ * that's what chapterTextToPreviewHtml's own join("") produces in the DOM -
+ * there is no whitespace between adjacent <p> elements to inherit.
+ *
+ * Use this (not a raw extractVisibleTextFromHtml(rawContent) call) wherever
+ * matching logic can't reach a live DOM to read from directly - e.g. a list
+ * spanning many chapters at once, most of which have no mounted DOM. Where a
+ * live DOM the reader/editor is genuinely showing right now is available,
+ * prefer extractVisibleText(container) directly instead of this function, so
+ * there's one fewer implementation of "what does the reader actually see."
+ */
+export function chapterTextToPlainText(text: string): string {
+  const blocks = splitChapterBlocks(text);
+  return blocks
+    .map((b) => {
+      if (b === "***") return "***";
+      return extractVisibleTextFromHtml(sanitizeChapterHtml(b).replace(/\n/g, "<br>"));
     })
     .join("");
 }

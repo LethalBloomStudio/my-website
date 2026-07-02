@@ -16,8 +16,8 @@ import FormatPicker from "@/components/FormatPicker";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { countWords } from "@/lib/format/normalizeManuscript";
-import { normalizeChapterText, chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
-import { createRangeFromTextOffsets, extractVisibleText, extractVisibleTextFromHtml } from "@/lib/manuscript/readerSelection";
+import { normalizeChapterText, chapterTextToPlainText, chapterTextToPreviewHtml, sanitizeChapterHtml } from "@/lib/format/chapterNormalize";
+import { createRangeFromTextOffsets, extractVisibleText } from "@/lib/manuscript/readerSelection";
 import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { shiftFeedbackOffsets } from "@/lib/manuscript/feedbackOffsets";
 import { genreOptionsForAgeCategory, WRITER_LEVELS, FEEDBACK_PREFERENCE_OPTIONS } from "@/lib/profileOptions";
@@ -252,6 +252,12 @@ export default function ManuscriptDetailsPage() {
   const [navH, setNavH] = useState(0);
   type MarkerInfo = { top: number; left: number; highlightRects: { top: number; left: number; width: number; height: number }[] };
   const [markerInfos, setMarkerInfos] = useState<Record<string, MarkerInfo>>({});
+  // The chapter text actually in the live .chapter-editor DOM right now,
+  // shared by the workspace card filter/sort below so they never disagree
+  // with marker placement about what's actually on screen. null means "not
+  // computed yet for the current chapter" - callers must treat that as
+  // pending, not as "not found."
+  const [editorChapterDomText, setEditorChapterDomText] = useState<string | null>(null);
   const markerOffsets = useMemo(() => {
     const entries = Object.entries(markerInfos)
       .map(([id, info]) => ({ id, ...info }))
@@ -1253,6 +1259,7 @@ export default function ManuscriptDetailsPage() {
     if (!editorEl || !selectedChapterId) return;
     const wrapperRect = wrapper.getBoundingClientRect();
     const editorText = extractVisibleText(editorEl);
+    setEditorChapterDomText(editorText);
     const newInfos: Record<string, MarkerInfo> = {};
     for (const f of feedbackItems) {
       if (f.chapter_id !== selectedChapterId) continue;
@@ -1278,6 +1285,13 @@ export default function ManuscriptDetailsPage() {
     }
     setMarkerInfos(newInfos);
   }
+
+  // Reset only on an actual chapter switch (not on every feedbackItems update
+  // while staying on the same chapter) so the workspace card filter/sort see
+  // "pending" instead of the previous chapter's stale editor text.
+  useEffect(() => {
+    setEditorChapterDomText(null);
+  }, [selectedChapterId]);
 
   useEffect(() => {
     // Wait one frame for the editor DOM to paint before measuring
@@ -2627,7 +2641,7 @@ export default function ManuscriptDetailsPage() {
                         // ("where do I draw the highlight in what's on screen right now"). The
                         // two can briefly disagree while the author is mid-edit, until they save.
                         const excerptDetached = !!f.selection_excerpt && !!chapterObj &&
-                          resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
+                          resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterTextToPlainText(chapterObj.content ?? "")).status === "not-found";
                         const fReplies = feedbackReplies.filter((r) => r.feedback_id === f.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                         const isExpanded = overviewExpandedIds.has(f.id);
                         const readerName = feedbackNames[f.reader_id] || "Reader";
@@ -2873,15 +2887,19 @@ export default function ManuscriptDetailsPage() {
           )}
 
           {selectedChapterId && selectedChapter && (() => {
-            // Last-SAVED chapter state, matching excerptDetached above - not
-            // chapterEditorContent (the live editor buffer). This card list's
-            // filter/warning is a data-integrity question, not a rendering one;
-            // see the comment on excerptDetached for the full reasoning. Marker
-            // placement (recomputeMarkers) still reads the live DOM, so the two
-            // can briefly disagree while the author has unsaved changes open.
-            const plainChapterText = extractVisibleTextFromHtml(selectedChapter.content ?? "");
+            // Shares recomputeMarkers' live editor DOM text (editorChapterDomText)
+            // instead of re-deriving text from saved content. This deliberately
+            // reintroduces a difference from excerptDetached's log (which must use
+            // saved content - it has no live DOM for chapters other than the one
+            // currently open) but eliminates a worse one: this card list and marker
+            // placement are visible in the SAME view at the SAME time, so they must
+            // agree with each other about the same chapter, or a marker can render
+            // with no card behind it (or vice versa) - the exact class of bug this
+            // whole pass exists to fix. null means "not measured yet for this
+            // chapter" - treat as pending (include, don't warn), not not-found.
+            const plainChapterText = editorChapterDomText;
             const fallbackSortStart = (item: LineFeedback): number => {
-              if (!item.selection_excerpt) return Infinity;
+              if (!item.selection_excerpt || plainChapterText == null) return Infinity;
               const anchor = resolveFeedbackAnchor(item.selection_excerpt, item.start_offset, item.end_offset, plainChapterText);
               return anchor.status !== "not-found" ? anchor.start : Infinity;
             };
@@ -3179,6 +3197,7 @@ export default function ManuscriptDetailsPage() {
                       const filtered = chapterFeedback.filter((f) => {
                         if (f.resolved || !!f.author_response) return false;
                         if (!f.selection_excerpt) return true;
+                        if (plainChapterText == null) return true; // pending - don't hide a possibly-healthy card
                         return resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, plainChapterText).status !== "not-found";
                       });
                       if (filtered.length === 0) return (

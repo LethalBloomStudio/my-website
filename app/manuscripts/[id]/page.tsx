@@ -11,9 +11,9 @@ import ManuscriptLayout, { DetailRow as _DetailRow } from "@/components/Manuscri
 import ChapterTipButton from "@/components/ChapterTipButton";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { hasYouthAudienceCategory } from "@/lib/manuscriptAudience";
-import { chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
+import { chapterTextToPlainText, chapterTextToPreviewHtml } from "@/lib/format/chapterNormalize";
 import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
-import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, extractVisibleTextFromHtml, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
+import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -149,6 +149,13 @@ function PageInner() {
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
+  // The chapter text actually in proseContentRef's live DOM right now, shared
+  // by the card filter/detached-warning below so they never disagree with
+  // marker placement about what the reader is actually looking at. null means
+  // "not computed yet for the current chapter" (reset on chapter change,
+  // populated once recomputeReaderMarkers's effect runs) - callers must treat
+  // that as pending, not as "not found."
+  const [readerChapterDomText, setReaderChapterDomText] = useState<string | null>(null);
   const [readerColumnOffsetY, setReaderColumnOffsetY] = useState(0);
   const [isRowLayout, setIsRowLayout] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [readerOverlayOffsetY, setReaderOverlayOffsetY] = useState(0);
@@ -506,6 +513,7 @@ function PageInner() {
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const chapterText = extractVisibleText(container);
+    setReaderChapterDomText(chapterText);
     const newInfos: Record<string, ReaderMarkerInfo> = {};
     for (const f of markerFeedback) {
       if (!f.selection_excerpt) continue;
@@ -760,7 +768,6 @@ function PageInner() {
 
   const activeText = activeChapter?.content ?? "";
   const readerPreviewHtml = useMemo(() => chapterTextToPreviewHtml(activeText), [activeText]);
-  const activePlainText = useMemo(() => extractVisibleTextFromHtml(activeText), [activeText]);
   const readerFormat = manuscript?.format_id && manuscript.format_id in FORMATS
     ? FORMATS[manuscript.format_id as FormatId]
     : null;
@@ -1243,6 +1250,14 @@ function PageInner() {
   // Wait for fonts to finish loading before measuring so Merriweather metrics are correct
   // on first navigation (no-refresh). After fonts resolve, request one RAF then schedule
   // a 500 ms retry to catch any layout pass that happens after the first frame.
+  // Reset only on an actual chapter switch (not on every feedback-list update
+  // while staying on the same chapter, which would flash "pending" for no
+  // reason - the previous recompute's text is still valid for this chapter).
+  // The effect below re-populates it once recomputeReaderMarkers runs.
+  useEffect(() => {
+    setReaderChapterDomText(null);
+  }, [activeChapter?.id]);
+
   useEffect(() => {
     const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
     let rafId: number;
@@ -1896,7 +1911,7 @@ function PageInner() {
                       // Anchor health against last-SAVED chapter content - a data-integrity
                       // question, matching the same source used everywhere else this is checked.
                       const isDetached = !!f.selection_excerpt && !!chapterObj &&
-                        resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
+                        resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterTextToPlainText(chapterObj.content ?? "")).status === "not-found";
                       return (
                         <button
                           key={f.id}
@@ -1937,7 +1952,7 @@ function PageInner() {
                     const chapterObj = f.chapter_id ? chapters.find((c) => c.id === f.chapter_id) : null;
                     const chapterLabel = chapterObj ? `${readerChapterLabel(chapterObj)}: ${chapterObj.title || "Untitled"}` : null;
                     const isDetached = !!f.selection_excerpt && !!chapterObj &&
-                      resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, extractVisibleTextFromHtml(chapterObj.content ?? "")).status === "not-found";
+                      resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterTextToPlainText(chapterObj.content ?? "")).status === "not-found";
                     return (
                       <div className="flex-1 min-w-0 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.1)] p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
@@ -2454,8 +2469,11 @@ function PageInner() {
                       .filter((f) => !f.resolved)
                       .map((f) => ({
                         item: f,
-                        anchor: f.selection_excerpt
-                          ? resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, activePlainText)
+                        // null covers both "no excerpt" and "DOM text not populated yet for
+                        // this chapter" - the filter below already treats null as "don't
+                        // exclude," so a pending chapter never flashes a false negative.
+                        anchor: f.selection_excerpt && readerChapterDomText != null
+                          ? resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, readerChapterDomText)
                           : null,
                       }))
                       .filter(({ anchor }) => !anchor || anchor.status !== "not-found")
@@ -2618,7 +2636,7 @@ function PageInner() {
                                   </button>
                                 </div>
                               </div>
-                              {f.selection_excerpt && resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, activePlainText).status === "not-found" ? (
+                              {f.selection_excerpt && readerChapterDomText != null && resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, readerChapterDomText).status === "not-found" ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ The text this comment was anchored to has since been edited or removed.</p>
                               ) : (
                                 <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
