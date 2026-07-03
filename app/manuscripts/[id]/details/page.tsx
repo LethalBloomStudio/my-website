@@ -183,6 +183,9 @@ export default function ManuscriptDetailsPage() {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const feedbackIdsRef = useRef<string[]>([]);
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
+  const [selectedReplyId, setSelectedReplyId] = useState<string | null>(null);
+  const [highlightedReplyId, setHighlightedReplyId] = useState<string | null>(null);
+  const hasScrolledToReplyRef = useRef<string | null>(null);
   const [unreadReplyCounts, setUnreadReplyCounts] = useState<Record<string, number>>({});
   const [editorOffsetY, setEditorOffsetY] = useState(0);
   const [previewMode, setPreviewMode] = useState(false);
@@ -924,10 +927,12 @@ export default function ManuscriptDetailsPage() {
     if (loading) return;
     const chapterParam = searchParams?.get("chapter");
     const feedbackParam = searchParams?.get("feedback");
+    const replyParam = searchParams?.get("reply");
     if (!chapterParam && !feedbackParam && !filterParam) return;
-    const paramKey = `${chapterParam ?? ""}|${feedbackParam ?? ""}|${filterParam ?? ""}`;
+    const paramKey = `${chapterParam ?? ""}|${feedbackParam ?? ""}|${filterParam ?? ""}|${replyParam ?? ""}`;
     if (urlParamsApplied.current === paramKey) return;
     urlParamsApplied.current = paramKey;
+    if (replyParam) setSelectedReplyId(replyParam);
     if (filterParam === "agreed" || filterParam === "disagreed" || filterParam === "unresolved" || filterParam === "all") {
       setOverviewFeedbackFilter(filterParam);
     }
@@ -1224,6 +1229,19 @@ export default function ManuscriptDetailsPage() {
     }
     prevMarkerInfosRef.current = markerInfos;
   }, [markerInfos, selectedFeedbackId]);
+
+  // Scroll to and briefly highlight the specific reply a "new reply" notification
+  // pointed at, once its parent card is expanded and the reply has loaded.
+  useEffect(() => {
+    if (!selectedReplyId || hasScrolledToReplyRef.current === selectedReplyId) return;
+    const el = document.getElementById(`reply-${selectedReplyId}`);
+    if (!el) return;
+    hasScrolledToReplyRef.current = selectedReplyId;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedReplyId(selectedReplyId);
+    const t = setTimeout(() => setHighlightedReplyId(null), 2500);
+    return () => clearTimeout(t);
+  }, [selectedReplyId, feedbackReplies, selectedFeedbackId, overviewExpandedIds]);
 
   // Track chapter section height
   useEffect(() => {
@@ -2709,8 +2727,8 @@ export default function ManuscriptDetailsPage() {
                                   {fReplies.map((r) => {
                                     const isAuthorReply = r.replier_id === authorUserId;
                                     return (
-                                      <div key={r.id} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
+                                      <div key={r.id} id={`reply-${r.id}`} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 transition-shadow ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"} ${highlightedReplyId === r.id ? "ring-2 ring-amber-400" : ""}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                           <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                         </div>
@@ -3333,8 +3351,8 @@ export default function ManuscriptDetailsPage() {
                               {replies.map((r) => {
                                 const isAuthorReply = r.replier_id === authorUserId;
                                 return (
-                                  <div key={r.id} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
-                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
+                                  <div key={r.id} id={`reply-${r.id}`} className={`flex ${isAuthorReply ? "justify-start" : "justify-end"}`}>
+                                    <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 transition-shadow ${isAuthorReply ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"} ${highlightedReplyId === r.id ? "ring-2 ring-amber-400" : ""}`}>
                                       <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">{isAuthorReply ? "You" : readerName}</p>
                                       <p className="text-[11px] leading-relaxed text-neutral-800 break-words whitespace-pre-wrap">{r.body}</p>
                                     </div>

@@ -1354,14 +1354,16 @@ export default function NotificationsPage() {
       const replyId = meta?.reply_id as string | undefined;
       const isResolved = !!(meta?.resolved);
       const authorResponse = meta?.author_response as string | null | undefined;
+      // Only meaningful alongside a feedback id - a reply always belongs to a parent thread.
+      const replyQuery = replyId ? `&reply=${encodeURIComponent(replyId)}` : "";
       const viewHref = manuscriptId
         ? isResolved && feedbackId
           ? ownedManuscriptIds.has(manuscriptId)
-            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details?feedback=${encodeURIComponent(feedbackId)}${authorResponse === "agree" ? "&filter=agreed" : authorResponse === "disagree" ? "&filter=disagreed" : ""}`
-            : `/manuscripts/${encodeURIComponent(manuscriptId)}?feedback=${encodeURIComponent(feedbackId)}&filter=resolved`
+            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details?feedback=${encodeURIComponent(feedbackId)}${authorResponse === "agree" ? "&filter=agreed" : authorResponse === "disagree" ? "&filter=disagreed" : ""}${replyQuery}`
+            : `/manuscripts/${encodeURIComponent(manuscriptId)}?feedback=${encodeURIComponent(feedbackId)}&filter=resolved${replyQuery}`
           : ownedManuscriptIds.has(manuscriptId)
-            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}` : ""}`
-            : `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}${replyId ? `&reply=${encodeURIComponent(replyId)}` : ""}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}${replyId ? `&reply=${encodeURIComponent(replyId)}` : ""}` : ""}`
+            ? `/manuscripts/${encodeURIComponent(manuscriptId)}/details${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}${replyQuery}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}${replyQuery}` : ""}`
+            : `/manuscripts/${encodeURIComponent(manuscriptId)}${chapterId ? `?chapter=${encodeURIComponent(chapterId)}${feedbackId ? `&feedback=${encodeURIComponent(feedbackId)}${replyQuery}` : ""}` : feedbackId ? `?feedback=${encodeURIComponent(feedbackId)}${replyQuery}` : ""}`
         : null;
       return (
         <li key={item.key} className="notification-item rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">

@@ -73,6 +73,7 @@ function PageInner() {
   const chapterParam = searchParams.get("chapter");
   const feedbackParam = searchParams.get("feedback");
   const filterParam = searchParams.get("filter");
+  const replyParam = searchParams.get("reply");
 
   const { theme } = useTheme();
   const [userId, setUserId] = useState<string | null>(null);
@@ -107,6 +108,7 @@ function PageInner() {
   const [editFeedbackDraft, setEditFeedbackDraft] = useState("");
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(feedbackParam);
   const [unreadReplyCounts, setUnreadReplyCounts] = useState<Record<string, number>>({});
+  const [highlightedReplyId, setHighlightedReplyId] = useState<string | null>(null);
   const [selectedOwnerFeedbackId, setSelectedOwnerFeedbackId] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState(false);
   const [myRequestStatus, setMyRequestStatus] = useState<string | null>(null);
@@ -1314,6 +1316,19 @@ function PageInner() {
     }
   }, [selectedFeedbackId, readerMarkerInfos]);
 
+  // Scroll to and briefly highlight the specific reply a "new reply" notification
+  // pointed at, once its parent card is expanded and the reply has loaded.
+  useEffect(() => {
+    if (!replyParam || hasScrolledToReplyRef.current === replyParam) return;
+    const el = document.getElementById(`reply-${replyParam}`);
+    if (!el) return;
+    hasScrolledToReplyRef.current = replyParam;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedReplyId(replyParam);
+    const t = setTimeout(() => setHighlightedReplyId(null), 2500);
+    return () => clearTimeout(t);
+  }, [replyParam, replies, selectedFeedbackId, expandedFeedbackIds]);
+
   useEffect(() => {
     selectedFeedbackIdRef.current = selectedFeedbackId;
     if (selectedFeedbackId) markFeedbackRepliesRead(selectedFeedbackId);
@@ -1329,6 +1344,7 @@ function PageInner() {
   // Tracks whether we've already scrolled to the URL-param selectedFeedbackId so the
   // readerMarkerInfos dependency below doesn't keep re-scrolling on subsequent recomputes
   const hasScrolledToSelectedRef = useRef<string | null>(null);
+  const hasScrolledToReplyRef = useRef<string | null>(null);
 
   // Keep a stable ref to feedback IDs so the realtime effect doesn't re-run on every feedback update
   const feedbackIdsRef = useRef<string[]>([]);
@@ -2145,8 +2161,8 @@ function PageInner() {
                             {fReplies.map((r) => {
                               const isMe = r.replier_id === userId;
                               return (
-                                <div key={r.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"}`}>
+                                <div key={r.id} id={`reply-${r.id}`} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                                  <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 transition-shadow ${isMe ? "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200" : "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300"} ${highlightedReplyId === r.id ? "ring-2 ring-amber-400" : ""}`}>
                                     <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                       {names[r.replier_id] || (r.replier_id === manuscript?.owner_id ? "Author" : "You")}
                                     </p>
@@ -2469,11 +2485,13 @@ function PageInner() {
                       .filter((f) => !f.resolved)
                       .map((f) => ({
                         item: f,
-                        // null covers both "no excerpt" and "DOM text not populated yet for
-                        // this chapter" - the filter below already treats null as "don't
-                        // exclude," so a pending chapter never flashes a false negative.
-                        anchor: f.selection_excerpt && readerChapterDomText != null
-                          ? resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, readerChapterDomText)
+                        // Anchor health against last-SAVED chapter content, matching the
+                        // string-based source used everywhere else this is checked (owner
+                        // overview, details.tsx). null covers both "no excerpt" and "chapter
+                        // not loaded yet" - the filter below treats null as "don't exclude,"
+                        // so a pending chapter never flashes a false negative.
+                        anchor: f.selection_excerpt && activeChapter != null
+                          ? resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterTextToPlainText(activeChapter.content ?? ""))
                           : null,
                       }))
                       .filter(({ anchor }) => !anchor || anchor.status !== "not-found")
@@ -2636,7 +2654,7 @@ function PageInner() {
                                   </button>
                                 </div>
                               </div>
-                              {f.selection_excerpt && readerChapterDomText != null && resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, readerChapterDomText).status === "not-found" ? (
+                              {f.selection_excerpt && activeChapter != null && resolveFeedbackAnchor(f.selection_excerpt, f.start_offset, f.end_offset, chapterTextToPlainText(activeChapter.content ?? "")).status === "not-found" ? (
                                 <p className="mt-1 text-[11px] italic text-amber-500/70">⚠ The text this comment was anchored to has since been edited or removed.</p>
                               ) : (
                                 <blockquote className="mt-2 border-l-2 border-[rgba(120,120,120,0.5)] pl-2 text-xs italic text-neutral-400">
@@ -2685,8 +2703,8 @@ function PageInner() {
                                   {cardReplies.map((r) => {
                                     const isAuthor = r.replier_id === manuscript?.owner_id;
                                     return (
-                                      <div key={r.id} className={`flex ${isAuthor ? "justify-start" : "justify-end"}`}>
-                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 ${isAuthor ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"}`}>
+                                      <div key={r.id} id={`reply-${r.id}`} className={`flex ${isAuthor ? "justify-start" : "justify-end"}`}>
+                                        <div className={`max-w-[80%] overflow-hidden rounded-2xl px-3 py-2 transition-shadow ${isAuthor ? "rounded-tl-sm bg-neutral-100 chat-bubble-other border border-neutral-300" : "rounded-tr-sm bg-white chat-bubble-self border border-neutral-200"} ${highlightedReplyId === r.id ? "ring-2 ring-amber-400" : ""}`}>
                                           <p className="text-[10px] font-semibold mb-0.5 text-neutral-500">
                                             {isAuthor ? names[r.replier_id] || "Author" : names[r.replier_id] || "Reader"}
                                           </p>
