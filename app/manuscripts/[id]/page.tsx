@@ -164,6 +164,11 @@ function PageInner() {
   const [readerOverlayOffsetX, setReaderOverlayOffsetX] = useState(0);
   const manuscriptRef = useRef<Manuscript | null>(null);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
+  // Feedback ids whose replies were marked read locally this session. A later
+  // GET /api/feedback/unread-replies (e.g. on chapter switch, which re-runs load())
+  // can resolve with a stale pre-write count; these ids are suppressed from that
+  // refetch so the optimistic clear isn't clobbered by a race with the mark-read POST.
+  const clearedReplyFeedbackIdsRef = useRef<Set<string>>(new Set());
   const selectionDragStartOffsetRef = useRef<number | null>(null);
   const selectionPreviewRafRef = useRef<number | null>(null);
   const pendingPreviewPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -1159,7 +1164,9 @@ function PageInner() {
             const unreadRes = await fetch(`/api/feedback/unread-replies?feedback_ids=${myFRows.map((x) => x.id).join(",")}`);
             if (unreadRes.ok) {
               const unreadData = await unreadRes.json() as { unread: Record<string, number> };
-              setUnreadReplyCounts(unreadData.unread);
+              const merged = { ...unreadData.unread };
+              for (const id of clearedReplyFeedbackIdsRef.current) delete merged[id];
+              setUnreadReplyCounts(merged);
             }
           } else {
             setReplies([]);
@@ -1380,17 +1387,30 @@ function PageInner() {
   }, [supabase]);
 
   function markFeedbackRepliesRead(feedbackId: string) {
+    let priorCount: number | undefined;
     setUnreadReplyCounts((prev) => {
       if (!prev[feedbackId]) return prev;
+      priorCount = prev[feedbackId];
       const next = { ...prev };
       delete next[feedbackId];
       return next;
     });
-    void fetch("/api/feedback/mark-replies-read", {
+    clearedReplyFeedbackIdsRef.current.add(feedbackId);
+    fetch("/api/feedback/mark-replies-read", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feedback_id: feedbackId }),
-    });
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`mark-replies-read responded ${res.status}`);
+      })
+      .catch((err) => {
+        console.error("Failed to persist read state for feedback replies", feedbackId, err);
+        clearedReplyFeedbackIdsRef.current.delete(feedbackId);
+        if (priorCount) {
+          setUnreadReplyCounts((prev) => ({ ...prev, [feedbackId]: priorCount! }));
+        }
+      });
   }
 
   // Realtime - live feedback replies and resolution updates
@@ -2408,15 +2428,25 @@ function PageInner() {
                             type="button"
                             onClick={() => {
                               const ids = myChapterFeedback.filter((f) => (unreadReplyCounts[f.id] ?? 0) > 0).map((f) => f.id);
+                              const priorCounts: Record<string, number> = {};
                               setUnreadReplyCounts((prev) => {
                                 const next = { ...prev };
-                                ids.forEach((id) => delete next[id]);
+                                ids.forEach((id) => { if (next[id]) priorCounts[id] = next[id]; delete next[id]; });
                                 return next;
                               });
+                              ids.forEach((id) => clearedReplyFeedbackIdsRef.current.add(id));
                               void Promise.all(ids.map((id) => fetch("/api/feedback/mark-replies-read", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ feedback_id: id }),
+                              }).then((res) => {
+                                if (!res.ok) throw new Error(`mark-replies-read responded ${res.status}`);
+                              }).catch((err) => {
+                                console.error("Failed to persist read state for feedback replies", id, err);
+                                clearedReplyFeedbackIdsRef.current.delete(id);
+                                if (priorCounts[id]) {
+                                  setUnreadReplyCounts((prev) => ({ ...prev, [id]: priorCounts[id] }));
+                                }
                               })));
                             }}
                             className="rounded-lg text-[10px] text-neutral-500 hover:text-neutral-300 transition"

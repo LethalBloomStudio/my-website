@@ -546,15 +546,51 @@ export default function NotificationsPage() {
       });
     }
 
-    // Populate in-memory read-key set from DB (single source of truth)
-    try {
-      const rkRes = await fetch("/api/notifications/read-keys");
-      if (rkRes.ok) {
-        const rkData = (await rkRes.json()) as { keys: string[] };
-        readKeySet.current = new Set(rkData.keys);
+    // Populate in-memory read-key set from DB (single source of truth), retrying a
+    // couple times on failure and falling back to the last known-good cached copy
+    // rather than an empty set — an empty set makes every previously-read item
+    // look unread again, which is worse than briefly-stale-but-correct data.
+    const readKeysCacheKey = `lbs-notif-read-keys:${signedInUserId}`;
+    const retryDelaysMs = [0, 500, 1500];
+    let fetchedKeys: string[] | null = null;
+    for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
+      if (retryDelaysMs[attempt] > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelaysMs[attempt]));
       }
-    } catch {
-      // non-fatal — set stays as-is; items render with whatever keys were already present
+      try {
+        const rkRes = await fetch("/api/notifications/read-keys");
+        if (rkRes.ok) {
+          const rkData = (await rkRes.json()) as { keys: string[] };
+          fetchedKeys = rkData.keys;
+          break;
+        }
+        console.error("[READ-KEYS-FETCH-FAILED] non-200 response", rkRes.status, rkRes.statusText, `attempt ${attempt + 1}/${retryDelaysMs.length}`);
+      } catch (err) {
+        console.error("[READ-KEYS-FETCH-FAILED] fetch threw", err, `attempt ${attempt + 1}/${retryDelaysMs.length}`);
+      }
+    }
+
+    if (fetchedKeys) {
+      readKeySet.current = new Set(fetchedKeys);
+      try {
+        localStorage.setItem(readKeysCacheKey, JSON.stringify(fetchedKeys));
+      } catch {
+        // localStorage may be unavailable (private browsing, quota) - safe to ignore
+      }
+    } else {
+      let cachedKeys: string[] | null = null;
+      try {
+        const raw = localStorage.getItem(readKeysCacheKey);
+        cachedKeys = raw ? (JSON.parse(raw) as string[]) : null;
+      } catch {
+        cachedKeys = null;
+      }
+      if (cachedKeys && cachedKeys.length > 0) {
+        readKeySet.current = new Set(cachedKeys);
+        console.error("[READ-KEYS-FETCH-FAILED] all retries failed — using cached read-keys", cachedKeys.length, "keys");
+      } else {
+        console.error("[READ-KEYS-FETCH-FAILED] all retries failed — no cache available (empty or first-ever load)");
+      }
     }
 
     setFeedbackMap(feedbackLookup);

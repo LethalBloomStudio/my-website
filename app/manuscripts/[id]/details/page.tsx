@@ -182,6 +182,11 @@ export default function ManuscriptDetailsPage() {
   const [feedbackNames, setFeedbackNames] = useState<Record<string, string>>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const feedbackIdsRef = useRef<string[]>([]);
+  // Feedback ids whose replies were marked read locally this session. A later
+  // GET /api/feedback/unread-replies can resolve with a stale pre-write count;
+  // these ids are suppressed from that refetch so the optimistic clear isn't
+  // clobbered by a race with the mark-read POST.
+  const clearedReplyFeedbackIdsRef = useRef<Set<string>>(new Set());
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [selectedReplyId, setSelectedReplyId] = useState<string | null>(null);
   const [highlightedReplyId, setHighlightedReplyId] = useState<string | null>(null);
@@ -857,7 +862,9 @@ export default function ManuscriptDetailsPage() {
       const unreadRes = await fetch(`/api/feedback/unread-replies?feedback_ids=${fbIds.join(",")}`);
       if (unreadRes.ok) {
         const unreadData = await unreadRes.json() as { unread: Record<string, number> };
-        setUnreadReplyCounts(unreadData.unread);
+        const merged = { ...unreadData.unread };
+        for (const id of clearedReplyFeedbackIdsRef.current) delete merged[id];
+        setUnreadReplyCounts(merged);
       }
       const nm: Record<string, string> = {};
       ((profRes.data as { user_id: string; pen_name: string | null; username: string | null }[] | null) ?? []).forEach((p) => {
@@ -1344,17 +1351,30 @@ export default function ManuscriptDetailsPage() {
   // Mark replies as read and clear unread indicator when a feedback box is opened
   useEffect(() => {
     if (!selectedFeedbackId) return;
+    let priorCount: number | undefined;
     setUnreadReplyCounts((prev) => {
       if (!prev[selectedFeedbackId]) return prev;
+      priorCount = prev[selectedFeedbackId];
       const next = { ...prev };
       delete next[selectedFeedbackId];
       return next;
     });
-    void fetch("/api/feedback/mark-replies-read", {
+    clearedReplyFeedbackIdsRef.current.add(selectedFeedbackId);
+    fetch("/api/feedback/mark-replies-read", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feedback_id: selectedFeedbackId }),
-    });
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`mark-replies-read responded ${res.status}`);
+      })
+      .catch((err) => {
+        console.error("Failed to persist read state for feedback replies", selectedFeedbackId, err);
+        clearedReplyFeedbackIdsRef.current.delete(selectedFeedbackId);
+        if (priorCount) {
+          setUnreadReplyCounts((prev) => ({ ...prev, [selectedFeedbackId]: priorCount! }));
+        }
+      });
   }, [selectedFeedbackId]);
 
   function categoryLimit(nextCategories: string[]) {
@@ -3193,15 +3213,25 @@ export default function ManuscriptDetailsPage() {
                           type="button"
                           onClick={() => {
                             const ids = chapterFeedback.filter((f) => (unreadReplyCounts[f.id] ?? 0) > 0).map((f) => f.id);
+                            const priorCounts: Record<string, number> = {};
                             setUnreadReplyCounts((prev) => {
                               const next = { ...prev };
-                              ids.forEach((id) => delete next[id]);
+                              ids.forEach((id) => { if (next[id]) priorCounts[id] = next[id]; delete next[id]; });
                               return next;
                             });
+                            ids.forEach((id) => clearedReplyFeedbackIdsRef.current.add(id));
                             void Promise.all(ids.map((id) => fetch("/api/feedback/mark-replies-read", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ feedback_id: id }),
+                            }).then((res) => {
+                              if (!res.ok) throw new Error(`mark-replies-read responded ${res.status}`);
+                            }).catch((err) => {
+                              console.error("Failed to persist read state for feedback replies", id, err);
+                              clearedReplyFeedbackIdsRef.current.delete(id);
+                              if (priorCounts[id]) {
+                                setUnreadReplyCounts((prev) => ({ ...prev, [id]: priorCounts[id] }));
+                              }
                             })));
                           }}
                           className="rounded-lg text-[10px] text-neutral-500 hover:text-neutral-300 transition"
