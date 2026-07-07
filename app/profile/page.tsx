@@ -391,7 +391,7 @@ export default async function ProfilePage() {
           </section>
 
           {/* Manuscripts right */}
-          <section className="flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
+          <section className="flex flex-col rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5 min-h-[500px] lg:min-h-0">
             <h2 className="mb-4 shrink-0 text-sm font-semibold uppercase tracking-widest text-neutral-400">Your Manuscripts</h2>
             <div className="relative flex-1 min-h-0">
               <div className="absolute inset-0">
