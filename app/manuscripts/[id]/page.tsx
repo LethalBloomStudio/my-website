@@ -172,8 +172,10 @@ function PageInner() {
   // confirmed current - set only once every relevant load() setter for a given
   // invocation has run, so effects that derive from that data can tell the
   // difference between "current manuscript" and "previous manuscript's data
-  // still sitting in state while a new load() is in flight."
-  const loadedManuscriptIdRef = useRef<string | null>(null);
+  // still sitting in state while a new load() is in flight." Real state (not a
+  // ref) so setting it correctly re-triggers the effects gated on it, instead
+  // of silently becoming true with nothing left to notice.
+  const [loadedManuscriptId, setLoadedManuscriptId] = useState<string | null>(null);
   const loadInFlightRef = useRef(false);
   const selectedFeedbackIdRef = useRef<string | null>(feedbackParam);
   // Feedback ids whose replies were marked read locally this session. A later
@@ -885,15 +887,16 @@ function PageInner() {
   useEffect(() => {
     // Skip while load() for the current manuscript is still in flight - chapters/
     // myAllFeedback may still belong to a previous manuscript for one or more
-    // renders on a cross-manuscript navigation. Re-runs naturally once
-    // loadedManuscriptIdRef catches up, since myAllFeedback itself changes then.
-    if (loadedManuscriptIdRef.current !== manuscriptId) return;
+    // renders on a cross-manuscript navigation. loadedManuscriptId is state, so
+    // this effect re-runs and re-checks the moment it's set, even if none of the
+    // other dependencies below change again after that point.
+    if (loadedManuscriptId !== manuscriptId) return;
     if (isOwner || isParentView) {
       setMyChapterFeedback([]);
       return;
     }
     setMyChapterFeedback(filterFeedbackForChapter(myAllFeedback, chapterId));
-  }, [chapterId, isOwner, isParentView, myAllFeedback, manuscriptId]);
+  }, [chapterId, isOwner, isParentView, myAllFeedback, manuscriptId, loadedManuscriptId]);
 
   // Sum word counts across all chapters for the "About" section
   const displayedWordCount = chapters.length > 0
@@ -960,7 +963,7 @@ function PageInner() {
         setParentDisabled(data.parentDisabled);
         setParentDisabledReason(data.parentDisabledReason);
         setParentPendingRequests(data.pendingRequests);
-        loadedManuscriptIdRef.current = targetManuscriptId;
+        setLoadedManuscriptId(targetManuscriptId);
       } catch {
         setMsg("Failed to load manuscript.");
       } finally {
@@ -1242,8 +1245,10 @@ function PageInner() {
       }
 
       // chapters and feedback/myAllFeedback have both landed for this manuscript now -
-      // safe for the recompute/myChapterFeedback effects to act on them.
-      loadedManuscriptIdRef.current = targetManuscriptId;
+      // safe for the recompute/myChapterFeedback effects to act on them. State (not a
+      // ref) so this re-triggers those effects even if none of their other
+      // dependencies change again after this point.
+      setLoadedManuscriptId(targetManuscriptId);
 
       const idSet = Array.from(new Set([row.owner_id, ...gRows.map((x) => x.reader_id), ...fRows.map((x) => x.reader_id)]));
       if (idSet.length) {
@@ -1326,9 +1331,10 @@ function PageInner() {
     // Also skip entirely while load() for the current manuscript is still in flight -
     // on a cross-manuscript navigation, chapters/myAllFeedback can belong to the
     // previous manuscript for one or more renders even after activeChapter?.id has
-    // already updated to the new manuscript's chapter. Re-runs naturally once
-    // loadedManuscriptIdRef catches up, since myAllFeedback itself changes then.
-    if (loadedManuscriptIdRef.current !== manuscriptId) return;
+    // already updated to the new manuscript's chapter. loadedManuscriptId is state,
+    // so this effect re-runs and re-checks the moment it's set, even if none of the
+    // other dependencies below change again after that point.
+    if (loadedManuscriptId !== manuscriptId) return;
     const markerFeedback = (!isOwner
       ? filterFeedbackForChapter(myAllFeedback, activeChapter?.id ?? null)
       : feedback
@@ -1354,7 +1360,7 @@ function PageInner() {
       cancelAnimationFrame(rafId);
       clearTimeout(retryId);
     };
-  }, [activeChapter?.id, myAllFeedback, feedback, isOwner, manuscriptId]);
+  }, [activeChapter?.id, myAllFeedback, feedback, isOwner, manuscriptId, loadedManuscriptId]);
 
   // Recompute on resize (e.g. window resize or font load)
   useEffect(() => {
