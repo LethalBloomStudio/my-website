@@ -505,19 +505,24 @@ function PageInner() {
     const body = (replyDrafts[f.id] ?? "").trim();
     if (!body || !userId || !manuscript) { replyingRef.current.delete(f.id); return; }
     if (adultReplyBlockedForFeedback(f.reader_id)) { replyingRef.current.delete(f.id); return; }
-    const res = await fetch("/api/manuscript/feedback/reply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ feedback_id: f.id, body }),
-    });
-    const json = (await res.json()) as { ok?: boolean; reply?: FeedbackReply; error?: string };
-    replyingRef.current.delete(f.id);
-    if (!res.ok || json.error) return setMsg(json.error ?? "Failed to submit reply.");
-    setReplyDrafts((p) => ({ ...p, [f.id]: "" }));
-    const ta = replyTextareaRefs.current.get(f.id);
-    if (ta) { ta.style.height = "auto"; }
-    if (json.reply) setReplies((prev) => [...prev, json.reply!].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-    void refreshRepliesForCurrentFeedback();
+    try {
+      const res = await fetch("/api/manuscript/feedback/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback_id: f.id, body }),
+      });
+      const json = (await res.json()) as { ok?: boolean; reply?: FeedbackReply; error?: string };
+      if (!res.ok || json.error) return setMsg(json.error ?? "Failed to submit reply.");
+      setReplyDrafts((p) => ({ ...p, [f.id]: "" }));
+      const ta = replyTextareaRefs.current.get(f.id);
+      if (ta) { ta.style.height = "auto"; }
+      if (json.reply) setReplies((prev) => [...prev, json.reply!].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+      void refreshRepliesForCurrentFeedback();
+    } catch {
+      setMsg("Failed to submit reply. Check your connection and try again.");
+    } finally {
+      replyingRef.current.delete(f.id);
+    }
   }
 
   function recomputeReaderMarkers(markerFeedback: LineFeedback[]) {
@@ -1552,23 +1557,6 @@ function PageInner() {
   }, []);
 
   // (body scroll lock removed - chapter now uses normal page scroll)
-
-  async function _reply(f: LineFeedback) {
-    const body = (replyDrafts[f.id] ?? "").trim();
-    if (!body || !userId || !manuscript) return;
-    if (adultReplyBlockedForFeedback(f.reader_id)) {
-      return setMsg("Adults cannot reply to youth feedback on YA/MG manuscripts.");
-    }
-    const res = await fetch("/api/manuscript/feedback/reply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ feedback_id: f.id, body }),
-    });
-    const json = (await res.json()) as { ok?: boolean; reply?: FeedbackReply; error?: string };
-    if (!res.ok || json.error) return setMsg(json.error ?? "Failed to submit reply.");
-    setReplyDrafts((p) => ({ ...p, [f.id]: "" }));
-    if (json.reply) setReplies((prev) => [...prev, json.reply!]);
-  }
 
   if (loading) return <main className="mx-auto max-w-[1600px] px-6 py-12 text-neutral-100">Loading...</main>;
   if (!manuscript) return <main className="mx-auto max-w-[1600px] px-6 py-12 text-neutral-100">Not available</main>;
