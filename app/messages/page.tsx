@@ -235,6 +235,10 @@ const [now] = useState(() => Date.now());
   const excludedRef = useRef<string[]>([]);
   const activeTargetRef = useRef<string>("");
   const hiddenFriendsRef = useRef<Friend[]>([]);
+  // Single source of truth for who send() targets - updated synchronously on
+  // conversation switch so it can't lag behind the async router.push/searchParams
+  // update that withUser/groupId depend on.
+  const sendTargetRef = useRef<{ type: "dm" | "group"; id: string }>({ type: "dm", id: "" });
 
   async function loadSidebar(signedInUserId: string) {
     const [hiddenThreadsRes, blockedReqRes, acceptedReqRes, statusRes] = await Promise.all([
@@ -541,11 +545,14 @@ const [now] = useState(() => Date.now());
 
       if (withUser) {
         initialScrollDoneRef.current = false;
+        sendTargetRef.current = { type: "dm", id: withUser };
         await loadChat(withUser, excludedRef.current);
       } else if (groupId) {
         initialScrollDoneRef.current = false;
+        sendTargetRef.current = { type: "group", id: groupId };
         await loadGroupChat(groupId);
       } else {
+        sendTargetRef.current = { type: "dm", id: "" };
         setMessages([]);
         setWithUserLabel("");
         setWithUserAvatar(null);
@@ -653,6 +660,7 @@ const [now] = useState(() => Date.now());
     if (!sidebarLoadedRef.current) return; // initial load handles this
     initialScrollDoneRef.current = false;
     if (!withUser && !groupId) {
+      sendTargetRef.current = { type: "dm", id: "" };
       setMessages([]);
       setWithUserLabel("");
       setWithUserAvatar(null);
@@ -662,6 +670,7 @@ const [now] = useState(() => Date.now());
       return;
     }
     if (groupId) {
+      sendTargetRef.current = { type: "group", id: groupId };
       const cachedGroup = groupConversations.find((conversation) => conversation.id === groupId);
       if (cachedGroup) {
         setGroupLabel(cachedGroup.title);
@@ -670,6 +679,7 @@ const [now] = useState(() => Date.now());
       void loadGroupChat(groupId);
       return;
     }
+    sendTargetRef.current = { type: "dm", id: withUser };
     // Optimistically set label from cached friends list before fetch completes
     const cached = friends.find((f) => f.userId === withUser);
     if (cached) {
@@ -917,12 +927,17 @@ const [now] = useState(() => Date.now());
       }
     }
 
+    const sendTarget = sendTargetRef.current;
     let res: Response;
     try {
       res = await fetch("/api/messages/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(groupId ? { group_id: groupId, content: text } : { to_user_id: withUser, content: text }),
+        body: JSON.stringify(
+          sendTarget.type === "group"
+            ? { group_id: sendTarget.id, content: text }
+            : { to_user_id: sendTarget.id, content: text }
+        ),
       });
     } catch {
       setMsg("Message failed to send. Check your connection and try again.");
@@ -1451,6 +1466,7 @@ const [now] = useState(() => Date.now());
                       <button
                         onClick={() => {
                           initialScrollDoneRef.current = false;
+                          sendTargetRef.current = { type: "dm", id: f.userId };
                           router.push(`/messages?with=${encodeURIComponent(f.userId)}`);
                           setWithUserLabel(f.penName);
                           setWithUserAvatar(f.avatarUrl);
@@ -1510,6 +1526,7 @@ const [now] = useState(() => Date.now());
                         key={conversation.id}
                         onClick={() => {
                           initialScrollDoneRef.current = false;
+                          sendTargetRef.current = { type: "group", id: conversation.id };
                           router.push(`/messages?group=${encodeURIComponent(conversation.id)}`);
                           setGroupLabel(conversation.title);
                           setGroupParticipants(conversation.participants);
