@@ -5,6 +5,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import { updateProfile } from "./actions";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import ProfileImageUpload from "@/components/ProfileImageUpload";
+import AvatarUploadStatusProvider, { AvatarUploadField, SaveChangesButton } from "@/components/AvatarUploadStatusProvider";
 import LevelSelectWithDescription from "@/components/LevelSelectWithDescription";
 import {
   FEEDBACK_PREFERENCE_OPTIONS,
@@ -120,13 +121,14 @@ export default async function ProfileAccountPage({
         ) : null}
 
         <div className="mt-8">
+          <AvatarUploadStatusProvider>
           <form action={updateProfile} className="space-y-5">
             <section className="rounded-xl border border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.18)] p-5">
               <h2 className="text-lg font-semibold">Profile Picture</h2>
               <p className="mt-1 text-sm text-neutral-300">This appears on your public profile.</p>
               <p className="mt-1 text-xs text-neutral-500">Recommended: 400 × 400 px or larger, square. JPG, PNG, or WebP.</p>
               <div className="mt-4">
-                <ProfileImageUpload initialUrl={profile?.avatar_url ?? ""} name="avatar_url" autoSave />
+                <AvatarUploadField initialUrl={profile?.avatar_url ?? ""} />
               </div>
             </section>
 
@@ -410,10 +412,9 @@ export default async function ProfileAccountPage({
               </section>
             )}
 
-            <button className="inline-flex h-12 items-center justify-center rounded-lg bg-neutral-100 px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200">
-              Save changes
-            </button>
+            <SaveChangesButton />
           </form>
+          </AvatarUploadStatusProvider>
         </div>
       </div>
     </main>
