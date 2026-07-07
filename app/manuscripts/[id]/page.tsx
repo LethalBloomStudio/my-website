@@ -890,6 +890,7 @@ function PageInner() {
     // renders on a cross-manuscript navigation. loadedManuscriptId is state, so
     // this effect re-runs and re-checks the moment it's set, even if none of the
     // other dependencies below change again after that point.
+    console.log("[MYCHAPTERFEEDBACK]", { loadedManuscriptId, manuscriptId, chapterId, myAllFeedbackLength: myAllFeedback.length, passes: loadedManuscriptId === manuscriptId, ts: Date.now() });
     if (loadedManuscriptId !== manuscriptId) return;
     if (isOwner || isParentView) {
       setMyChapterFeedback([]);
@@ -949,11 +950,13 @@ function PageInner() {
         };
         const data = await res.json() as WsData;
         setManuscript(data.manuscript);
+        console.log("[LOAD] setChapters (parent-view)", targetManuscriptId, data.chapters.length, Date.now());
         setChapters(data.chapters);
         setAllChapterMeta(data.chapters.map((c: Chapter) => ({ id: c.id, chapter_order: c.chapter_order, chapter_type: c.chapter_type })));
         setGrants(data.grants);
         setFeedback(data.chapterFeedback);
         setOwnerAllFeedback(data.ownerAllFeedback);
+        console.log("[LOAD] setMyAllFeedback (parent-view, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
         setMyChapterFeedback([]);
         setReplies(data.replies);
@@ -963,6 +966,7 @@ function PageInner() {
         setParentDisabled(data.parentDisabled);
         setParentDisabledReason(data.parentDisabledReason);
         setParentPendingRequests(data.pendingRequests);
+        console.log("[LOAD] setLoadedManuscriptId (parent-view)", targetManuscriptId, Date.now());
         setLoadedManuscriptId(targetManuscriptId);
       } catch {
         setMsg("Failed to load manuscript.");
@@ -1141,9 +1145,11 @@ function PageInner() {
             .order("chapter_order", { ascending: true }),
         ]);
         const cRows = (c as Chapter[]) ?? [];
+        console.log("[LOAD] setChapters (main)", targetManuscriptId, cRows.length, Date.now());
         setChapters(cRows);
         setAllChapterMeta((allMeta as { id: string; chapter_order: number; chapter_type?: string }[]) ?? []);
       } else {
+        console.log("[LOAD] setChapters (main, no access -> cleared)", targetManuscriptId, Date.now());
         setChapters([]);
         setAllChapterMeta([]);
       }
@@ -1163,6 +1169,7 @@ function PageInner() {
           if (fError) { setMsg(`Feedback load error: ${fError.message}. Run supabase/run_in_sql_editor.sql in your Supabase SQL editor.`); setLoading(false); return; }
           fRows = (f as LineFeedback[]) ?? [];
           setFeedback(fRows);
+          console.log("[LOAD] setMyAllFeedback (owner branch, cleared)", targetManuscriptId, Date.now());
           setMyAllFeedback([]);
           setMyChapterFeedback([]);
 
@@ -1203,6 +1210,7 @@ function PageInner() {
           const myFRows = (myF as LineFeedback[]) ?? [];
           fRows = myFRows;
           setFeedback([]);
+          console.log("[LOAD] setMyAllFeedback (reader branch)", targetManuscriptId, myFRows.length, Date.now());
           setMyAllFeedback(myFRows);
           if (myFRows.length) {
             const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id)).order("created_at", { ascending: true });
@@ -1231,6 +1239,7 @@ function PageInner() {
           .order("created_at", { ascending: false });
         const myFRows = (myF as LineFeedback[]) ?? [];
         fRows = myFRows;
+        console.log("[LOAD] setMyAllFeedback (no-grant branch)", targetManuscriptId, myFRows.length, Date.now());
         setMyAllFeedback(myFRows);
         if (myFRows.length) {
           const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
@@ -1240,6 +1249,7 @@ function PageInner() {
         }
       } else {
         setFeedback([]);
+        console.log("[LOAD] setMyAllFeedback (no access branch, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
         setReplies([]);
       }
@@ -1248,6 +1258,7 @@ function PageInner() {
       // safe for the recompute/myChapterFeedback effects to act on them. State (not a
       // ref) so this re-triggers those effects even if none of their other
       // dependencies change again after this point.
+      console.log("[LOAD] setLoadedManuscriptId (main)", targetManuscriptId, Date.now());
       setLoadedManuscriptId(targetManuscriptId);
 
       const idSet = Array.from(new Set([row.owner_id, ...gRows.map((x) => x.reader_id), ...fRows.map((x) => x.reader_id)]));
@@ -1334,6 +1345,7 @@ function PageInner() {
     // already updated to the new manuscript's chapter. loadedManuscriptId is state,
     // so this effect re-runs and re-checks the moment it's set, even if none of the
     // other dependencies below change again after that point.
+    console.log("[RECOMPUTE]", { loadedManuscriptId, manuscriptId, activeChapterId: activeChapter?.id ?? null, myAllFeedbackLength: myAllFeedback.length, passes: loadedManuscriptId === manuscriptId, ts: Date.now() });
     if (loadedManuscriptId !== manuscriptId) return;
     const markerFeedback = (!isOwner
       ? filterFeedbackForChapter(myAllFeedback, activeChapter?.id ?? null)
