@@ -561,6 +561,22 @@ function PageInner() {
   const isOwner = !!(manuscript && userId && manuscript.owner_id === userId);
   const hasGrant = grants.some((g) => g.reader_id === userId);
 
+  // Resync chapterId/selectedFeedbackId when chapterParam/feedbackParam change on an
+  // already-mounted instance of this page (e.g. a second notification "View Comment"
+  // link while already viewing this manuscript - same route segment, no remount, so
+  // the useState(param) seeding above only ever ran once at the original mount).
+  useEffect(() => {
+    if (chapterParam !== null && chapterParam !== chapterId) {
+      setChapterId(chapterParam);
+    }
+  }, [chapterParam]);
+
+  useEffect(() => {
+    if (feedbackParam !== null && feedbackParam !== selectedFeedbackId) {
+      setSelectedFeedbackId(feedbackParam);
+    }
+  }, [feedbackParam]);
+
   useEffect(() => {
     if (!isOwner || !feedbackParam) return;
     setSelectedOwnerFeedbackId(feedbackParam);
