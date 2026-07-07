@@ -1528,16 +1528,51 @@ function PageInner() {
     };
   }, [manuscriptId, supabase, userId]);
 
-  // Broadcast reader presence so author workspace can show online status
+  // Broadcast reader presence so author workspace can show online status.
+  // Retries the initial subscribe on transient failure (CHANNEL_ERROR/TIMED_OUT/
+  // CLOSED) instead of silently never tracking for the rest of the session, and
+  // re-tracks on tab foreground in case the underlying socket dropped while
+  // backgrounded.
   useEffect(() => {
     if (!userId || !manuscriptId) return;
     if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
-    const ch = supabase.channel(`manuscript-presence:${manuscriptId}`);
-    ch.subscribe((status: string) => {
-      if (status === "SUBSCRIBED") void ch.track({ user_id: userId });
-    });
-    presenceChannelRef.current = ch;
+    let cancelled = false;
+    let retryId: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+
+    function connect() {
+      const ch = supabase.channel(`manuscript-presence:${manuscriptId}`);
+      presenceChannelRef.current = ch;
+      ch.subscribe((status: string) => {
+        if (cancelled) return;
+        if (status === "SUBSCRIBED") {
+          retryCount = 0;
+          void ch.track({ user_id: userId });
+          return;
+        }
+        if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") && retryCount < MAX_RETRIES) {
+          retryCount += 1;
+          void supabase.removeChannel(ch);
+          retryId = setTimeout(() => {
+            if (!cancelled) connect();
+          }, 2000 + retryCount * 1000);
+        }
+      });
+    }
+    connect();
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible" && !cancelled && presenceChannelRef.current) {
+        void presenceChannelRef.current.track({ user_id: userId });
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
+      cancelled = true;
+      if (retryId) clearTimeout(retryId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       if (presenceChannelRef.current) void supabase.removeChannel(presenceChannelRef.current);
     };
   }, [userId, manuscriptId, supabase]);
