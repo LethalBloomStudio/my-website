@@ -1294,7 +1294,15 @@ function PageInner() {
   }, [activeChapter?.id]);
 
   useEffect(() => {
-    const markerFeedback = (!isOwner ? myChapterFeedback : feedback).filter((f) => !f.resolved);
+    // Derived synchronously from myAllFeedback + activeChapter?.id here, rather than
+    // reading the myChapterFeedback state, so this effect never fires with the new
+    // chapter's DOM text paired against the previous chapter's feedback items - the
+    // myChapterFeedback state is updated by its own, separately-scheduled effect and
+    // can lag activeChapter by one render on a chapter switch.
+    const markerFeedback = (!isOwner
+      ? filterFeedbackForChapter(myAllFeedback, activeChapter?.id ?? null)
+      : feedback
+    ).filter((f) => !f.resolved);
     let rafId: number;
     let retryId: ReturnType<typeof setTimeout>;
     let cancelled = false;
@@ -1316,7 +1324,7 @@ function PageInner() {
       cancelAnimationFrame(rafId);
       clearTimeout(retryId);
     };
-  }, [activeChapter?.id, myChapterFeedback, feedback, isOwner]);
+  }, [activeChapter?.id, myAllFeedback, feedback, isOwner]);
 
   // Recompute on resize (e.g. window resize or font load)
   useEffect(() => {
