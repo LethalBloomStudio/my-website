@@ -1530,7 +1530,6 @@ function PageInner() {
     if (!selectedFeedbackId) return;
     function onDocClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (asideRef.current?.contains(target)) return;
       if (floatingCardRef.current?.contains(target)) return;
       if (target.closest("[data-feedback-marker]")) return;
       setSelectedFeedbackId(null);
