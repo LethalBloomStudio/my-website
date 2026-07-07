@@ -151,6 +151,11 @@ function PageInner() {
   const [chapterHeight, setChapterHeight] = useState(0);
   const [navH, setNavH] = useState(0);
   const [readerMarkerInfos, setReaderMarkerInfos] = useState<Record<string, ReaderMarkerInfo>>({});
+  // True once the 500ms retry recompute pass has run for the current chapter/feedback
+  // set - i.e. marker positions have had a chance to settle after first paint. The
+  // deep-link auto-scroll effects below wait for this so they don't lock onto a
+  // pre-settle position (see the recompute effect's retry comment further down).
+  const [markersSettled, setMarkersSettled] = useState(false);
   // The chapter text actually in proseContentRef's live DOM right now, shared
   // by the card filter/detached-warning below so they never disagree with
   // marker placement about what the reader is actually looking at. null means
@@ -1272,13 +1277,16 @@ function PageInner() {
     let rafId: number;
     let retryId: ReturnType<typeof setTimeout>;
     let cancelled = false;
+    setMarkersSettled(false);
     void document.fonts.ready.then(() => {
       if (cancelled) return;
       rafId = requestAnimationFrame(() => {
         if (cancelled) return;
         recomputeReaderMarkers(markerFeedback);
         retryId = setTimeout(() => {
-          if (!cancelled) recomputeReaderMarkers(markerFeedback);
+          if (cancelled) return;
+          recomputeReaderMarkers(markerFeedback);
+          setMarkersSettled(true);
         }, 500);
       });
     });
@@ -1305,8 +1313,10 @@ function PageInner() {
   // readerMarkerInfos is included so this re-runs once markers populate after
   // first navigation (the URL param sets selectedFeedbackId before markers are ready).
   // hasScrolledToSelectedRef prevents re-scrolling on subsequent recomputes.
+  // markersSettled gates this on the post-retry recompute pass so a deep-link
+  // doesn't lock the scroll onto a pre-settle marker position.
   useEffect(() => {
-    if (!selectedFeedbackId) return;
+    if (!selectedFeedbackId || !markersSettled) return;
     const info = readerMarkerInfos[selectedFeedbackId];
     const container = proseContentRef.current;
 
@@ -1321,12 +1331,14 @@ function PageInner() {
       const targetScrollY = markerDocY - window.innerHeight * 0.35;
       window.scrollTo({ top: Math.max(0, targetScrollY), behavior: "smooth" });
     }
-  }, [selectedFeedbackId, readerMarkerInfos]);
+  }, [selectedFeedbackId, readerMarkerInfos, markersSettled]);
 
   // Scroll to and briefly highlight the specific reply a "new reply" notification
   // pointed at, once its parent card is expanded and the reply has loaded.
+  // markersSettled gates this the same way as the feedback-card scroll above,
+  // since the reply card's position also depends on settled marker info.
   useEffect(() => {
-    if (!replyParam || hasScrolledToReplyRef.current === replyParam) return;
+    if (!replyParam || !markersSettled || hasScrolledToReplyRef.current === replyParam) return;
     const el = document.getElementById(`reply-${replyParam}`);
     if (!el) return;
     hasScrolledToReplyRef.current = replyParam;
@@ -1334,7 +1346,7 @@ function PageInner() {
     setHighlightedReplyId(replyParam);
     const t = setTimeout(() => setHighlightedReplyId(null), 2500);
     return () => clearTimeout(t);
-  }, [replyParam, replies, selectedFeedbackId, expandedFeedbackIds]);
+  }, [replyParam, replies, selectedFeedbackId, expandedFeedbackIds, markersSettled]);
 
   useEffect(() => {
     selectedFeedbackIdRef.current = selectedFeedbackId;
