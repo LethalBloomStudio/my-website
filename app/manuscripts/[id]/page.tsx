@@ -959,6 +959,11 @@ function PageInner() {
         console.log("[LOAD] setMyAllFeedback (parent-view, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
         setMyChapterFeedback([]);
+        // chapters and feedback/myAllFeedback are both set now - safe for the
+        // recompute/myChapterFeedback effects. Everything below is trailing data
+        // (replies, names, parent-disable state) that neither effect reads.
+        console.log("[LOAD] setLoadedManuscriptId (parent-view)", targetManuscriptId, Date.now());
+        setLoadedManuscriptId(targetManuscriptId);
         setReplies(data.replies);
         setNames(data.names);
         setUsernames(data.usernames);
@@ -966,8 +971,6 @@ function PageInner() {
         setParentDisabled(data.parentDisabled);
         setParentDisabledReason(data.parentDisabledReason);
         setParentPendingRequests(data.pendingRequests);
-        console.log("[LOAD] setLoadedManuscriptId (parent-view)", targetManuscriptId, Date.now());
-        setLoadedManuscriptId(targetManuscriptId);
       } catch {
         setMsg("Failed to load manuscript.");
       } finally {
@@ -1172,6 +1175,11 @@ function PageInner() {
           console.log("[LOAD] setMyAllFeedback (owner branch, cleared)", targetManuscriptId, Date.now());
           setMyAllFeedback([]);
           setMyChapterFeedback([]);
+          // chapters and feedback are both set now - safe for the recompute/
+          // myChapterFeedback effects. The ownerAllFeedback/replies fetches below
+          // are trailing data neither effect reads, so don't gate on them.
+          console.log("[LOAD] setLoadedManuscriptId (owner branch)", targetManuscriptId, Date.now());
+          setLoadedManuscriptId(targetManuscriptId);
 
           // Owner: also fetch ALL feedback across every chapter for the overview log
           const { data: allF } = await supabase
@@ -1212,6 +1220,11 @@ function PageInner() {
           setFeedback([]);
           console.log("[LOAD] setMyAllFeedback (reader branch)", targetManuscriptId, myFRows.length, Date.now());
           setMyAllFeedback(myFRows);
+          // chapters and myAllFeedback are both set now - safe for the recompute/
+          // myChapterFeedback effects. The replies/unread-counts fetches below are
+          // trailing data neither effect reads, so don't gate on them.
+          console.log("[LOAD] setLoadedManuscriptId (reader branch)", targetManuscriptId, Date.now());
+          setLoadedManuscriptId(targetManuscriptId);
           if (myFRows.length) {
             const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id)).order("created_at", { ascending: true });
             setReplies((rep as FeedbackReply[]) ?? []);
@@ -1241,6 +1254,11 @@ function PageInner() {
         fRows = myFRows;
         console.log("[LOAD] setMyAllFeedback (no-grant branch)", targetManuscriptId, myFRows.length, Date.now());
         setMyAllFeedback(myFRows);
+        // chapters and myAllFeedback are both set now - safe for the recompute/
+        // myChapterFeedback effects. The replies fetch below is trailing data
+        // neither effect reads, so don't gate on it.
+        console.log("[LOAD] setLoadedManuscriptId (no-grant branch)", targetManuscriptId, Date.now());
+        setLoadedManuscriptId(targetManuscriptId);
         if (myFRows.length) {
           const { data: rep } = await supabase.from("line_feedback_replies").select("id, feedback_id, replier_id, body, created_at").in("feedback_id", myFRows.map((x) => x.id));
           setReplies((rep as FeedbackReply[]) ?? []);
@@ -1251,15 +1269,12 @@ function PageInner() {
         setFeedback([]);
         console.log("[LOAD] setMyAllFeedback (no access branch, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
+        // chapters and myAllFeedback are both set now - safe for the recompute/
+        // myChapterFeedback effects.
+        console.log("[LOAD] setLoadedManuscriptId (no-access branch)", targetManuscriptId, Date.now());
+        setLoadedManuscriptId(targetManuscriptId);
         setReplies([]);
       }
-
-      // chapters and feedback/myAllFeedback have both landed for this manuscript now -
-      // safe for the recompute/myChapterFeedback effects to act on them. State (not a
-      // ref) so this re-triggers those effects even if none of their other
-      // dependencies change again after this point.
-      console.log("[LOAD] setLoadedManuscriptId (main)", targetManuscriptId, Date.now());
-      setLoadedManuscriptId(targetManuscriptId);
 
       const idSet = Array.from(new Set([row.owner_id, ...gRows.map((x) => x.reader_id), ...fRows.map((x) => x.reader_id)]));
       if (idSet.length) {
