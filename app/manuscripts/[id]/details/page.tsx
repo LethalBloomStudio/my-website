@@ -1030,6 +1030,19 @@ export default function ManuscriptDetailsPage() {
     };
   }, [manuscriptId, supabase]);
 
+  // Display-only stable partition: online readers first, offline readers after,
+  // each group keeping acceptedReaders's existing relative order. Re-sorts live
+  // as onlineReaderIds changes, so readers can visibly shift position as they
+  // come online/offline - intentional. acceptedReaders itself is untouched.
+  const sortedAcceptedReaders = useMemo(
+    () => [...acceptedReaders].sort((a, b) => {
+      const aOnline = onlineReaderIds.has(a.user_id);
+      const bOnline = onlineReaderIds.has(b.user_id);
+      return aOnline === bOnline ? 0 : aOnline ? -1 : 1;
+    }),
+    [acceptedReaders, onlineReaderIds],
+  );
+
   // Realtime - live feedback replies
   // No polling: realtime INSERT events handle all live updates
   useEffect(() => {
@@ -2412,7 +2425,7 @@ export default function ManuscriptDetailsPage() {
                   className="flex w-0 flex-1 gap-3 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {Array.from({ length: readerSlots }).map((_, i) => {
-                    const reader = acceptedReaders[i];
+                    const reader = sortedAcceptedReaders[i];
                     const isOnline = reader ? onlineReaderIds.has(reader.user_id) : false;
                     return reader ? (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
