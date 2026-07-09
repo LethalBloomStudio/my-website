@@ -175,6 +175,11 @@ export default function NotificationsPage() {
   const catMenuRef = useRef<HTMLDivElement>(null);
   const tabMenuRef = useRef<HTMLDivElement>(null);
   const readKeySet = useRef<Set<string>>(new Set());
+  // Keys with a mark-as-read POST in flight (added optimistically, not yet
+  // confirmed by the server). A GET that resolves while a write is still
+  // pending must not drop these from readKeySet.current — otherwise a
+  // just-read item can flip back to "unread" once the fetch response lands.
+  const pendingReadKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -571,7 +576,10 @@ export default function NotificationsPage() {
     }
 
     if (fetchedKeys) {
-      readKeySet.current = new Set(fetchedKeys);
+      // Union with any still-unconfirmed optimistic keys so a fetch that
+      // started before markOneAsRead/markAllAsRead's POST committed can't
+      // clobber that optimistic read state.
+      readKeySet.current = new Set([...fetchedKeys, ...pendingReadKeysRef.current]);
       try {
         localStorage.setItem(readKeysCacheKey, JSON.stringify(fetchedKeys));
       } catch {
@@ -586,7 +594,7 @@ export default function NotificationsPage() {
         cachedKeys = null;
       }
       if (cachedKeys && cachedKeys.length > 0) {
-        readKeySet.current = new Set(cachedKeys);
+        readKeySet.current = new Set([...cachedKeys, ...pendingReadKeysRef.current]);
         console.error("[READ-KEYS-FETCH-FAILED] all retries failed — using cached read-keys", cachedKeys.length, "keys");
       } else {
         console.error("[READ-KEYS-FETCH-FAILED] all retries failed — no cache available (empty or first-ever load)");
@@ -678,13 +686,27 @@ export default function NotificationsPage() {
   async function markAllAsRead() {
     if (!userId) return;
     const unreadNonAdminKeys = items.filter((item) => item.type !== "admin" && item.type !== "invitation" && item.type !== "friend_request" && !isItemRead(item)).map((item) => item.key);
-    unreadNonAdminKeys.forEach((k) => readKeySet.current.add(k));
+    unreadNonAdminKeys.forEach((k) => {
+      readKeySet.current.add(k);
+      pendingReadKeysRef.current.add(k);
+    });
     if (unreadNonAdminKeys.length > 0) {
       void fetch("/api/notifications/read-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keys: unreadNonAdminKeys }),
-      });
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`read-keys POST responded ${res.status}`);
+          unreadNonAdminKeys.forEach((k) => pendingReadKeysRef.current.delete(k));
+        })
+        .catch((err) => {
+          console.error("[READ-KEYS-POST-FAILED] markAllAsRead", unreadNonAdminKeys, err);
+          unreadNonAdminKeys.forEach((k) => {
+            pendingReadKeysRef.current.delete(k);
+            readKeySet.current.delete(k);
+          });
+        });
       window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     }
 
@@ -942,11 +964,21 @@ export default function NotificationsPage() {
     }
     if (!readKeySet.current.has(item.key)) {
       readKeySet.current.add(item.key);
-      void fetch("/api/notifications/read-keys", {
+      pendingReadKeysRef.current.add(item.key);
+      fetch("/api/notifications/read-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keys: [item.key] }),
-      });
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(`read-keys POST responded ${res.status}`);
+          pendingReadKeysRef.current.delete(item.key);
+        })
+        .catch((err) => {
+          console.error("[READ-KEYS-POST-FAILED] markOneAsRead", item.key, err);
+          pendingReadKeysRef.current.delete(item.key);
+          readKeySet.current.delete(item.key);
+        });
       window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     }
   }
