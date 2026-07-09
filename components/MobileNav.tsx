@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
+import { useNotificationReadKeys } from "@/lib/useNotificationReadKeys";
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const { load: loadReadKeys } = useNotificationReadKeys();
   const [signedIn, setSignedIn] = useState(false);
   const [isDeactivated, setIsDeactivated] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -30,14 +32,7 @@ export default function MobileNav() {
       const { data: manuscripts } = await supabase.from("manuscripts").select("id").eq("owner_id", uid);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
-      let readKeySet = new Set<string>();
-      try {
-        const rkRes = await fetch("/api/notifications/read-keys");
-        if (rkRes.ok) {
-          const rkData = (await rkRes.json()) as { keys: string[] };
-          readKeySet = new Set(rkData.keys ?? []);
-        }
-      } catch { /* readKeySet stays empty; items render as unread */ }
+      const readKeySet = await loadReadKeys(uid);
 
       const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, groupConversations, moderationFlags] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
@@ -145,7 +140,7 @@ export default function MobileNav() {
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
       window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
-  }, [supabase]);
+  }, [supabase, loadReadKeys]);
 
   const showAuthNav = signedIn && !isDeactivated && !isLocked;
   const [mounted, setMounted] = useState(false);

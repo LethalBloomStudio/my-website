@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
+import { useNotificationReadKeys } from "@/lib/useNotificationReadKeys";
 import BirthdayFriendCard from "./BirthdayFriendCard";
 
 type Manuscript = { id: string; title: string };
@@ -174,12 +175,7 @@ export default function NotificationsPage() {
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const catMenuRef = useRef<HTMLDivElement>(null);
   const tabMenuRef = useRef<HTMLDivElement>(null);
-  const readKeySet = useRef<Set<string>>(new Set());
-  // Keys with a mark-as-read POST in flight (added optimistically, not yet
-  // confirmed by the server). A GET that resolves while a write is still
-  // pending must not drop these from readKeySet.current — otherwise a
-  // just-read item can flip back to "unread" once the fetch response lands.
-  const pendingReadKeysRef = useRef<Set<string>>(new Set());
+  const { isKeyRead, load: loadReadKeys, markOneAsRead: markKeyRead, markAllAsRead: markKeysAllRead } = useNotificationReadKeys();
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -201,7 +197,7 @@ export default function NotificationsPage() {
     if (item.type === "read_request") return item.payload.status !== "pending";
     if (item.type === "invitation") return item.payload.status !== "pending";
     if (item.type === "friend_request") return false; // always unread while pending
-    return readKeySet.current.has(item.key);
+    return isKeyRead(item.key);
   }
 
   async function load() {
@@ -551,55 +547,11 @@ export default function NotificationsPage() {
       });
     }
 
-    // Populate in-memory read-key set from DB (single source of truth), retrying a
-    // couple times on failure and falling back to the last known-good cached copy
-    // rather than an empty set — an empty set makes every previously-read item
-    // look unread again, which is worse than briefly-stale-but-correct data.
-    const readKeysCacheKey = `lbs-notif-read-keys:${signedInUserId}`;
-    const retryDelaysMs = [0, 500, 1500];
-    let fetchedKeys: string[] | null = null;
-    for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
-      if (retryDelaysMs[attempt] > 0) {
-        await new Promise((resolve) => setTimeout(resolve, retryDelaysMs[attempt]));
-      }
-      try {
-        const rkRes = await fetch("/api/notifications/read-keys");
-        if (rkRes.ok) {
-          const rkData = (await rkRes.json()) as { keys: string[] };
-          fetchedKeys = rkData.keys;
-          break;
-        }
-        console.error("[READ-KEYS-FETCH-FAILED] non-200 response", rkRes.status, rkRes.statusText, `attempt ${attempt + 1}/${retryDelaysMs.length}`);
-      } catch (err) {
-        console.error("[READ-KEYS-FETCH-FAILED] fetch threw", err, `attempt ${attempt + 1}/${retryDelaysMs.length}`);
-      }
-    }
-
-    if (fetchedKeys) {
-      // Union with any still-unconfirmed optimistic keys so a fetch that
-      // started before markOneAsRead/markAllAsRead's POST committed can't
-      // clobber that optimistic read state.
-      readKeySet.current = new Set([...fetchedKeys, ...pendingReadKeysRef.current]);
-      try {
-        localStorage.setItem(readKeysCacheKey, JSON.stringify(fetchedKeys));
-      } catch {
-        // localStorage may be unavailable (private browsing, quota) - safe to ignore
-      }
-    } else {
-      let cachedKeys: string[] | null = null;
-      try {
-        const raw = localStorage.getItem(readKeysCacheKey);
-        cachedKeys = raw ? (JSON.parse(raw) as string[]) : null;
-      } catch {
-        cachedKeys = null;
-      }
-      if (cachedKeys && cachedKeys.length > 0) {
-        readKeySet.current = new Set([...cachedKeys, ...pendingReadKeysRef.current]);
-        console.error("[READ-KEYS-FETCH-FAILED] all retries failed — using cached read-keys", cachedKeys.length, "keys");
-      } else {
-        console.error("[READ-KEYS-FETCH-FAILED] all retries failed — no cache available (empty or first-ever load)");
-      }
-    }
+    // Read-key fetch (GET + retry + localStorage fallback + pending-write
+    // union) now lives in the shared useNotificationReadKeys() store so
+    // NotificationButton/MobileNav/this page all read the same in-flight
+    // fetch and the same reconciled Set instead of each doing their own.
+    await loadReadKeys(signedInUserId);
 
     setFeedbackMap(feedbackLookup);
     setManuscriptTitles(manuscriptTitleMap);
@@ -686,27 +638,8 @@ export default function NotificationsPage() {
   async function markAllAsRead() {
     if (!userId) return;
     const unreadNonAdminKeys = items.filter((item) => item.type !== "admin" && item.type !== "invitation" && item.type !== "friend_request" && !isItemRead(item)).map((item) => item.key);
-    unreadNonAdminKeys.forEach((k) => {
-      readKeySet.current.add(k);
-      pendingReadKeysRef.current.add(k);
-    });
     if (unreadNonAdminKeys.length > 0) {
-      void fetch("/api/notifications/read-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keys: unreadNonAdminKeys }),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error(`read-keys POST responded ${res.status}`);
-          unreadNonAdminKeys.forEach((k) => pendingReadKeysRef.current.delete(k));
-        })
-        .catch((err) => {
-          console.error("[READ-KEYS-POST-FAILED] markAllAsRead", unreadNonAdminKeys, err);
-          unreadNonAdminKeys.forEach((k) => {
-            pendingReadKeysRef.current.delete(k);
-            readKeySet.current.delete(k);
-          });
-        });
+      markKeysAllRead(unreadNonAdminKeys);
       window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     }
 
@@ -962,23 +895,8 @@ export default function NotificationsPage() {
         });
       return;
     }
-    if (!readKeySet.current.has(item.key)) {
-      readKeySet.current.add(item.key);
-      pendingReadKeysRef.current.add(item.key);
-      fetch("/api/notifications/read-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keys: [item.key] }),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error(`read-keys POST responded ${res.status}`);
-          pendingReadKeysRef.current.delete(item.key);
-        })
-        .catch((err) => {
-          console.error("[READ-KEYS-POST-FAILED] markOneAsRead", item.key, err);
-          pendingReadKeysRef.current.delete(item.key);
-          readKeySet.current.delete(item.key);
-        });
+    if (!isKeyRead(item.key)) {
+      markKeyRead(item.key);
       window.dispatchEvent(new CustomEvent("notif-badge-refresh"));
     }
   }

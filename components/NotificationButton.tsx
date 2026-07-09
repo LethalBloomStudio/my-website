@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
+import { useNotificationReadKeys } from "@/lib/useNotificationReadKeys";
 
 export default function NotificationButton() {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const { load: loadReadKeys } = useNotificationReadKeys();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -25,14 +27,7 @@ export default function NotificationButton() {
         .eq("owner_id", userId);
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
-      let readKeySet = new Set<string>();
-      try {
-        const rkRes = await fetch("/api/notifications/read-keys");
-        if (rkRes.ok) {
-          const rkData = (await rkRes.json()) as { keys: string[] };
-          readKeySet = new Set(rkData.keys ?? []);
-        }
-      } catch { /* readKeySet stays empty; items render as unread */ }
+      const readKeySet = await loadReadKeys(userId);
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -134,7 +129,7 @@ export default function NotificationButton() {
       if (realtimeChannel) void supabase.removeChannel(realtimeChannel);
       window.removeEventListener("notif-badge-refresh", onBadgeRefresh);
     };
-  }, [supabase]);
+  }, [supabase, loadReadKeys]);
 
   return (
     <Link href="/notifications" className="iconTab" aria-label="Notifications" title="Notifications" data-tip="Notifications">
