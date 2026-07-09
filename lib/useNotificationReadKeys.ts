@@ -83,7 +83,7 @@ async function fetchReadKeys(userId: string): Promise<Set<string>> {
   return readKeySet;
 }
 
-function loadReadKeys(userId: string): Promise<Set<string>> {
+export function loadReadKeys(userId: string): Promise<Set<string>> {
   if (inFlightLoad) return inFlightLoad;
   inFlightLoad = fetchReadKeys(userId).finally(() => {
     inFlightLoad = null;
@@ -91,11 +91,19 @@ function loadReadKeys(userId: string): Promise<Set<string>> {
   return inFlightLoad;
 }
 
-function isKeyRead(key: string): boolean {
+export function isKeyRead(key: string): boolean {
   return readKeySet.has(key);
 }
 
-function markOneAsRead(key: string) {
+// Test-only: clears module-level state so tests don't leak into each other.
+// Never called from production code paths.
+export function __resetForTests() {
+  readKeySet.clear();
+  pendingReadKeysRef.clear();
+  inFlightLoad = null;
+}
+
+export function markOneAsRead(key: string) {
   if (readKeySet.has(key)) return;
   readKeySet.add(key);
   pendingReadKeysRef.add(key);
@@ -115,7 +123,7 @@ function markOneAsRead(key: string) {
     });
 }
 
-function markAllAsRead(keys: string[]) {
+export function markAllAsRead(keys: string[]) {
   const newKeys = keys.filter((k) => !readKeySet.has(k));
   if (newKeys.length === 0) return;
   newKeys.forEach((k) => {
