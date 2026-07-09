@@ -21,7 +21,22 @@ export async function POST(req: Request) {
   if (replyIds.length === 0) return NextResponse.json({ ok: true });
 
   const rows = replyIds.map((reply_id) => ({ user_id: userId, reply_id }));
-  await supabase.from("feedback_reply_reads").upsert(rows, { onConflict: "user_id,reply_id", ignoreDuplicates: true });
+  await Promise.all([
+    supabase.from("feedback_reply_reads").upsert(rows, { onConflict: "user_id,reply_id", ignoreDuplicates: true }),
+    // Opening the thread inline is a stronger read signal than dismissing a
+    // notification preview, so it also satisfies the matching System B
+    // notification(s). Deliberately one-directional: dismissing a
+    // notification must NOT write to feedback_reply_reads (see
+    // notifications/page.tsx markOneAsRead, which only touches
+    // system_notifications).
+    supabase
+      .from("system_notifications")
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("category", "feedback_reply")
+      .eq("is_read", false)
+      .eq("metadata->>feedback_id", feedback_id),
+  ]);
 
   return NextResponse.json({ ok: true });
 }
