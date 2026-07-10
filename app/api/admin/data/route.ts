@@ -85,7 +85,7 @@ export async function GET(req: Request) {
   if (scope === "all" || scope === "stats") {
     const [usersRes, msRes, reportsRes, flagsRes, referralsRes] = await Promise.all([
       supabase.from("accounts").select(
-        "user_id, account_status, created_at, heard_about_source, messaging_suspended_until, manuscript_suspended_until, blacklisted, manuscript_blacklisted, lifetime_suspension_count, manuscript_lifetime_suspension_count",
+        "user_id, account_status, created_at, last_active_at, heard_about_source, messaging_suspended_until, manuscript_suspended_until, blacklisted, manuscript_blacklisted, lifetime_suspension_count, manuscript_lifetime_suspension_count",
         { count: "exact" }
       ),
       supabase.from("manuscripts").select("id", { count: "exact" }),
@@ -96,6 +96,7 @@ export async function GET(req: Request) {
     type StatUser = {
       account_status: string;
       created_at: string;
+      last_active_at: string | null;
       heard_about_source: string | null;
       messaging_suspended_until: string | null;
       manuscript_suspended_until: string | null;
@@ -108,6 +109,7 @@ export async function GET(req: Request) {
     const allReferrals = (referralsRes.data ?? []) as { status: string; created_at: string }[];
     const now = new Date().toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const msgSuspended = allUsers.filter(u => u.messaging_suspended_until && u.messaging_suspended_until > now).length;
     const msSuspended = allUsers.filter(u => u.manuscript_suspended_until && u.manuscript_suspended_until > now).length;
     const msgBlacklisted = allUsers.filter(u => u.blacklisted).length;
@@ -123,7 +125,7 @@ export async function GET(req: Request) {
 
     result.stats = {
       total_users: usersRes.count ?? 0,
-      active_users: allUsers.filter(u => u.account_status === "active").length,
+      active_users: allUsers.filter(u => u.last_active_at && u.last_active_at >= thirtyDaysAgo).length,
       new_signups_7d: allUsers.filter(u => u.created_at >= sevenDaysAgo).length,
       total_manuscripts: msRes.count ?? 0,
       pending_reports: reportsRes.count ?? 0,
