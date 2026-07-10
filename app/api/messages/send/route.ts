@@ -174,7 +174,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This group chat has no active members." }, { status: 400 });
     }
 
-    const { data: memberAccounts } = await supabase
+    // Fixed: age_category lookups for other users must go through the admin
+    // client - RLS only lets a user read their own accounts row, so this
+    // lookup via the request-scoped client always returned nothing for any
+    // other member, meaning hasYouthMember silently evaluated to false 100%
+    // of the time. Comparison logic below is unchanged.
+    const admin = supabaseAdmin();
+    const { data: memberAccounts } = await admin
       .from("accounts")
       .select("user_id, age_category")
       .in("user_id", memberIds);
@@ -212,7 +218,6 @@ export async function POST(req: Request) {
 
     await supabase.from("accounts").update({ last_active_at: new Date().toISOString() }).eq("user_id", senderId);
 
-    const admin = supabaseAdmin();
     const [{ data: senderProfile }, { data: conversation }] = await Promise.all([
       admin
         .from("public_profiles")
@@ -277,7 +282,12 @@ export async function POST(req: Request) {
     });
   }
 
-  const { data: receiverAccount } = await supabase
+  // Fixed: same admin-client issue as the group path above - a request-scoped
+  // lookup of another user's age_category always returned nothing, so
+  // crossAge silently evaluated to false 100% of the time. Comparison logic
+  // below is unchanged.
+  const admin = supabaseAdmin();
+  const { data: receiverAccount } = await admin
     .from("accounts")
     .select("age_category")
     .eq("user_id", toUserId)
@@ -306,7 +316,6 @@ export async function POST(req: Request) {
   await supabase.from("accounts").update({ last_active_at: new Date().toISOString() }).eq("user_id", senderId);
 
   // Notify receiver (use admin client to write to another user's row)
-  const admin = supabaseAdmin();
   const { data: senderProfile } = await admin
     .from("public_profiles")
     .select("pen_name, username")
