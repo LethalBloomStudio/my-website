@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 // Shared client-side store for System A (notification_read_keys) read-state.
 // Consolidates what were three independent implementations
@@ -20,6 +20,32 @@ const pendingReadKeysRef = new Set<string>();
 // De-dupes concurrent load() calls (e.g. NotificationButton and MobileNav
 // both mounted and both reacting to the same event) into a single fetch.
 let inFlightLoad: Promise<Set<string>> | null = null;
+
+// readKeySet is a plain module-level Set, not React state, so mutating it
+// doesn't by itself cause any component to re-render. useNotificationReadKeys()
+// subscribes callers to `version` via useSyncExternalStore so every consumer
+// (not just the ones that happen to re-render for an unrelated reason, e.g.
+// system_notifications' own setItems or the 60s `now` tick) re-renders the
+// instant a key is marked read - matching the admin/system_notifications
+// path, which already forces its own re-render via setItems.
+const listeners = new Set<() => void>();
+let version = 0;
+
+function notify() {
+  version++;
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  return version;
+}
 
 function cacheKeyFor(userId: string) {
   return `lbs-notif-read-keys:${userId}`;
@@ -57,6 +83,7 @@ async function fetchReadKeys(userId: string): Promise<Set<string>> {
     const merged = new Set([...fetchedKeys, ...pendingReadKeysRef]);
     readKeySet.clear();
     merged.forEach((k) => readKeySet.add(k));
+    notify();
     try {
       localStorage.setItem(readKeysCacheKey, JSON.stringify(fetchedKeys));
     } catch {
@@ -74,6 +101,7 @@ async function fetchReadKeys(userId: string): Promise<Set<string>> {
       const merged = new Set([...cachedKeys, ...pendingReadKeysRef]);
       readKeySet.clear();
       merged.forEach((k) => readKeySet.add(k));
+      notify();
       console.error("[READ-KEYS-FETCH-FAILED] all retries failed — using cached read-keys", cachedKeys.length, "keys");
     } else {
       console.error("[READ-KEYS-FETCH-FAILED] all retries failed — no cache available (empty or first-ever load)");
@@ -101,12 +129,14 @@ export function __resetForTests() {
   readKeySet.clear();
   pendingReadKeysRef.clear();
   inFlightLoad = null;
+  version = 0;
 }
 
 export function markOneAsRead(key: string) {
   if (readKeySet.has(key)) return;
   readKeySet.add(key);
   pendingReadKeysRef.add(key);
+  notify();
   fetch("/api/notifications/read-keys", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -120,6 +150,7 @@ export function markOneAsRead(key: string) {
       console.error("[READ-KEYS-POST-FAILED] markOneAsRead", key, err);
       pendingReadKeysRef.delete(key);
       readKeySet.delete(key);
+      notify();
     });
 }
 
@@ -130,6 +161,7 @@ export function markAllAsRead(keys: string[]) {
     readKeySet.add(k);
     pendingReadKeysRef.add(k);
   });
+  notify();
   void fetch("/api/notifications/read-keys", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -145,10 +177,16 @@ export function markAllAsRead(keys: string[]) {
         pendingReadKeysRef.delete(k);
         readKeySet.delete(k);
       });
+      notify();
     });
 }
 
 export function useNotificationReadKeys() {
+  // Subscribes this component to `version` so it re-renders whenever any
+  // key's read state changes (mark one, mark all, or a fresh GET landing) -
+  // without this, isKeyRead() would only be re-evaluated on the component's
+  // next unrelated re-render.
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   return useMemo(
     () => ({ isKeyRead, load: loadReadKeys, markOneAsRead, markAllAsRead }),
     []
