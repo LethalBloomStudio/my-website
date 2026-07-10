@@ -83,9 +83,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Only admins can create giveaway posts." }, { status: 403 });
   }
 
-  // Evaluate post content against the same policy triggers used for discussion comments
+  // Evaluate post content against the same policy triggers used for discussion comments.
+  // A post has no single recipient (it's published into a community, not sent to
+  // someone) - use the destination community itself as the youth-contact signal,
+  // alongside the poster's own age, since posts made into the youth community are
+  // youth-facing regardless of the poster's own age category.
   const combinedText = `${title} ${content ?? ""}`;
-  const triggers = evaluateMessageTriggers(combinedText, acct?.age_category ?? null);
+  const recipientAgeCategory = community === "youth" ? "youth_13_17" : null;
+  const triggers = evaluateMessageTriggers(combinedText, acct?.age_category ?? null, recipientAgeCategory);
 
   if (triggers.length > 0) {
     const currentStrikes = Number(acct?.manuscript_conduct_strikes ?? 0);

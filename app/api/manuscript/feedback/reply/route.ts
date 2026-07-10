@@ -98,24 +98,36 @@ export async function POST(req: Request) {
       manuscriptTitle = (msRow as { owner_id?: string; title?: string } | null)?.title ?? null;
     }
 
-    // Block youth from replying on adult-owned manuscripts - adults can never reply to youth
-    // feedback, so there is no valid back-and-forth for a youth to participate in.
-    if (manuscriptOwnerId && senderAge === "youth_13_17") {
+    // Fetch the manuscript owner's age_category unconditionally (previously
+    // only fetched when the sender was youth, for the block below) so
+    // youth-contact triggers can also fire for the reverse case: an adult
+    // sender replying where the manuscript owner is youth.
+    let ownerAge: string | null = null;
+    if (manuscriptOwnerId) {
       const { data: ownerAcct } = await admin
         .from("accounts")
         .select("age_category")
         .eq("user_id", manuscriptOwnerId)
         .maybeSingle();
-      const ownerAge = (ownerAcct as { age_category?: string } | null)?.age_category ?? null;
-      if (ownerAge === "adult_18_plus") {
-        return NextResponse.json(
-          { error: "Youth profiles cannot reply to feedback on adult-owned manuscripts." },
-          { status: 403 }
-        );
-      }
+      ownerAge = (ownerAcct as { age_category?: string } | null)?.age_category ?? null;
     }
 
-    const triggers = evaluateMessageTriggers(replyBody, account?.age_category ?? null);
+    // Block youth from replying on adult-owned manuscripts - adults can never reply to youth
+    // feedback, so there is no valid back-and-forth for a youth to participate in.
+    // (Same net condition as before: manuscriptOwnerId present, sender youth, owner adult -
+    // just restructured so the owner-age fetch above always runs.)
+    if (manuscriptOwnerId && senderAge === "youth_13_17" && ownerAge === "adult_18_plus") {
+      return NextResponse.json(
+        { error: "Youth profiles cannot reply to feedback on adult-owned manuscripts." },
+        { status: 403 }
+      );
+    }
+
+    // The party who isn't replying - passed as recipientAgeCategory so
+    // youth-contact triggers fire when either side of the reply is youth.
+    const recipientAgeCategory = userId === manuscriptOwnerId ? readerAgeCategory : ownerAge;
+
+    const triggers = evaluateMessageTriggers(replyBody, account?.age_category ?? null, recipientAgeCategory);
     if (triggers.length > 0) {
       const nextStrike = (account?.manuscript_conduct_strikes ?? 0) + 1;
       const consequence = consequenceFromStrike(nextStrike);

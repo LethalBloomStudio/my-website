@@ -3,9 +3,13 @@ export type TriggerCode =
   | "social_media"
   | "cursing"
   | "foul_language"
-  | "sexual_language";
+  | "sexual_language"
+  | "poaching"
+  | "offsite_contact"
+  | "external_link"
+  | "secrecy";
 
-// BASE_TRIGGERS apply to adult profiles only — solicitation is the sole check
+// BASE_TRIGGERS apply to everyone — solicitation is the sole universal check
 const BASE_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
   {
     code: "solicitation",
@@ -20,6 +24,97 @@ const BASE_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
       "fiverr",
       "upwork",
       "freelancer.com",
+    ],
+  },
+];
+
+// YOUTH_CONTACT_TRIGGERS apply whenever either party to the interaction is a
+// youth account (sender OR recipient) - restored from the pre-c195968 policy,
+// byte-accurate to the original term lists, scoped narrower than before
+// (previously universal, now youth-involved only).
+const YOUTH_CONTACT_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
+  {
+    code: "poaching",
+    terms: [
+      "leave this site",
+      "poach",
+      "come to my site",
+      "better platform",
+      "i know a better place",
+      "take you somewhere else",
+      "work outside this site",
+      "collaborate outside",
+    ],
+  },
+  {
+    code: "offsite_contact",
+    terms: [
+      // email variants
+      "email",
+      "e-mail",
+      "mail me",
+      "send me your email",
+      "what's your email",
+      "whats your email",
+      "my email",
+      "email me",
+      "contact me at",
+      "gmail",
+      "yahoo",
+      "outlook",
+      "protonmail",
+      "aol",
+      "icloud",
+      "g m a i l",
+      "g-mail",
+      "g_mail",
+      "y a h o o",
+      "out look",
+      "proton mail",
+      "mail dot com",
+      "at gmail dot com",
+      "at yahoo dot com",
+      "dot com",
+      "dot net",
+      "dot org",
+      // legacy
+      "email me at",
+      "@gmail.com",
+      "@yahoo.com",
+      "@outlook.com",
+    ],
+  },
+  {
+    code: "external_link",
+    terms: [
+      "google doc",
+      "google docs",
+      "drive link",
+      "google drive",
+      "dropbox",
+      "pastebin",
+      "send link",
+      "link here",
+      "shared doc",
+      "shared document",
+      "pdf link",
+      "external link",
+      "upload link",
+      "file share",
+    ],
+  },
+  {
+    code: "secrecy",
+    terms: [
+      "don't tell mods",
+      "dont tell mods",
+      "keep this between us",
+      "just us",
+      "secret",
+      "trust me",
+      "no one has to know",
+      "won't report you",
+      "wont report you",
     ],
   },
 ];
@@ -58,12 +153,23 @@ const YOUTH_EXTRA_TRIGGERS: Array<{ code: TriggerCode; terms: string[] }> = [
   },
 ];
 
-export function evaluateMessageTriggers(message: string, senderAgeCategory: string | null) {
+export function evaluateMessageTriggers(
+  message: string,
+  senderAgeCategory: string | null,
+  recipientAgeCategory: string | null = null
+) {
   const input = message.toLowerCase();
-  const rules =
-    senderAgeCategory === "youth_13_17"
-      ? [...BASE_TRIGGERS, ...YOUTH_EXTRA_TRIGGERS]
-      : BASE_TRIGGERS;
+  const senderIsYouth = senderAgeCategory === "youth_13_17";
+  const involvesYouth = senderIsYouth || recipientAgeCategory === "youth_13_17";
+
+  const rules = [
+    ...BASE_TRIGGERS,
+    // Unchanged from before: gated on the sender's own age only, independent
+    // of involvesYouth below.
+    ...(senderIsYouth ? YOUTH_EXTRA_TRIGGERS : []),
+    // Restored contact-evasion triggers: fire when either party is youth.
+    ...(involvesYouth ? YOUTH_CONTACT_TRIGGERS : []),
+  ];
 
   const matched = rules
     .filter((r) => r.terms.some((term) => input.includes(term)))

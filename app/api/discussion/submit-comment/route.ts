@@ -81,8 +81,25 @@ export async function POST(req: Request) {
     }, { status: 403 });
   }
 
+  // Fetch the post author's and reply-target's age_category so youth-contact
+  // triggers can fire when either party to this comment is youth, not just
+  // the commenter. Both ids are already trusted, client-supplied "receiver"
+  // ids elsewhere in this route (see message_moderation_flags below).
+  const otherPartyIds = [...new Set([post_author_id, reply_to_author_id].filter(Boolean))] as string[];
+  let recipientAgeCategory: string | null = null;
+  if (otherPartyIds.length > 0) {
+    const { data: otherAccounts } = await supabase
+      .from("accounts")
+      .select("user_id, age_category")
+      .in("user_id", otherPartyIds);
+    recipientAgeCategory = ((otherAccounts ?? []) as Array<{ user_id: string; age_category: string | null }>)
+      .some((row) => row.age_category === "youth_13_17")
+      ? "youth_13_17"
+      : null;
+  }
+
   // Evaluate content against policy triggers
-  const triggers = evaluateMessageTriggers(content, acct?.age_category ?? null);
+  const triggers = evaluateMessageTriggers(content, acct?.age_category ?? null, recipientAgeCategory);
 
   if (triggers.length > 0) {
     const currentStrikes = Number(acct?.manuscript_conduct_strikes ?? 0);

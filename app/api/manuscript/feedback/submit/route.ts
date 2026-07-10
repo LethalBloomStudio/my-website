@@ -44,6 +44,21 @@ export async function POST(req: Request) {
       .maybeSingle();
     const account = (accountData as AccountRow | null) ?? null;
 
+    const admin = supabaseAdmin();
+
+    // Fetch the manuscript owner's age_category (via admin - RLS only lets the
+    // signed-in user read their own account row) so youth-contact triggers can
+    // fire when either party is youth, not just the sender.
+    let ownerAgeCategory: string | null = null;
+    if (body.manuscript_owner_id) {
+      const { data: ownerAccount } = await admin
+        .from("accounts")
+        .select("age_category")
+        .eq("user_id", body.manuscript_owner_id)
+        .maybeSingle();
+      ownerAgeCategory = (ownerAccount as { age_category?: string } | null)?.age_category ?? null;
+    }
+
     if (account?.manuscript_blacklisted) {
       return NextResponse.json({ error: "Your manuscript privileges are blacklisted. You cannot submit feedback." }, { status: 403 });
     }
@@ -58,7 +73,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const triggers = evaluateMessageTriggers(commentText, account?.age_category ?? null);
+    const triggers = evaluateMessageTriggers(commentText, account?.age_category ?? null, ownerAgeCategory);
     if (triggers.length > 0) {
       const nextStrike = (account?.manuscript_conduct_strikes ?? 0) + 1;
       const consequence = consequenceFromStrike(nextStrike);
@@ -77,7 +92,6 @@ export async function POST(req: Request) {
       }
       await supabase.from("accounts").update(updates).eq("user_id", userId);
 
-      const admin = supabaseAdmin();
       await admin.from("message_moderation_flags").insert({
         sender_id: userId,
         receiver_id: body.manuscript_owner_id ?? null,

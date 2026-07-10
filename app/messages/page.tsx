@@ -94,6 +94,10 @@ const TRIGGER_LABELS: Record<string, string> = {
   cursing: "Use of prohibited language (youth accounts)",
   foul_language: "Severely offensive language (youth accounts)",
   sexual_language: "Sexual or explicit language (youth accounts)",
+  poaching: "Encouraging a youth-involved member to leave the platform (youth accounts)",
+  offsite_contact: "Requesting off-platform contact info such as email or phone (youth accounts)",
+  external_link: "Sharing external file-share or redirect links (youth accounts)",
+  secrecy: "Asking a youth-involved member to hide the conversation from moderators (youth accounts)",
 };
 
 function Avatar({ name, url, size = 7 }: { name: string; url: string | null; size?: number }) {
