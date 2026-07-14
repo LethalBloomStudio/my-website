@@ -3788,16 +3788,16 @@ export default function ManuscriptDetailsPage() {
               </p>
 
               {!lastChapterUpdateLoading && (
-                <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2 text-xs text-neutral-400">
+                <div className="mb-4 rounded-lg border border-blue-600/40 bg-blue-950/20 px-3 py-2 text-xs text-blue-200">
                   {lastChapterUpdate ? (
                     <>
-                      <span className="font-semibold text-neutral-300">Last update:</span>{" "}
+                      <span className="font-semibold text-blue-300">Last update:</span>{" "}
                       {new Date(lastChapterUpdate.created_at).toLocaleString()}
                       {lastChapterUpdate.categories.length > 0 && ` — ${lastChapterUpdate.categories.join(", ")}`}
                       {lastChapterUpdate.note && ` — "${lastChapterUpdate.note}"`}
                     </>
                   ) : (
-                    <span className="italic text-neutral-500">No updates posted yet for this chapter.</span>
+                    <span className="italic text-blue-300/70">No updates posted yet for this chapter.</span>
                   )}
                 </div>
               )}
