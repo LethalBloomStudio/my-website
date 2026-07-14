@@ -1213,6 +1213,7 @@ html[data-theme="day"] textarea[class] {
   color: #4c1d95 !important;
 }
 [data-theme="day"] .beta-new-chapters-banner__icon { color: #6d28d9 !important; }
+[data-theme="day"] .text-violet-200 { color: #4c1d95 !important; }
 
 /* ── Hex grey brand backgrounds (used on <Link> CTA buttons) ── */
 [data-theme="day"] [class*="bg-[#787878]"]  { background-color: #d8d8d8 !important; border-color: rgba(80,80,80,0.28) !important; color: #1a1a1a !important; }
