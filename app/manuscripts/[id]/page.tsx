@@ -61,6 +61,30 @@ function filterFeedbackForChapter(rows: LineFeedback[], chapterId: string | null
     : rows.filter((row) => row.chapter_id === null);
 }
 
+async function loadChaptersWithNewUpdates(
+  supabase: ReturnType<typeof supabaseBrowser>,
+  uid: string,
+  chapterIds: string[]
+): Promise<Set<string>> {
+  if (chapterIds.length === 0) return new Set();
+  const [{ data: updates }, { data: reads }] = await Promise.all([
+    supabase.from("chapter_updates").select("chapter_id, created_at").in("chapter_id", chapterIds),
+    supabase.from("chapter_update_reads").select("chapter_id, last_read_at").eq("user_id", uid).in("chapter_id", chapterIds),
+  ]);
+  const lastReadByChapter = new Map<string, string>();
+  for (const r of (reads as { chapter_id: string; last_read_at: string }[] | null) ?? []) {
+    lastReadByChapter.set(r.chapter_id, r.last_read_at);
+  }
+  const result = new Set<string>();
+  for (const u of (updates as { chapter_id: string; created_at: string }[] | null) ?? []) {
+    const lastRead = lastReadByChapter.get(u.chapter_id);
+    if (!lastRead || new Date(u.created_at).getTime() > new Date(lastRead).getTime()) {
+      result.add(u.chapter_id);
+    }
+  }
+  return result;
+}
+
 function PageInner() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -381,6 +405,7 @@ function PageInner() {
   }
 
   const [completedChapterIds, setCompletedChapterIds] = useState<Set<string>>(new Set());
+  const [chaptersWithNewUpdates, setChaptersWithNewUpdates] = useState<Set<string>>(new Set());
   const [coinToast, setCoinToast] = useState<{ coins: number; newBalance: number } | null>(null);
   const [leaving, setLeaving] = useState(false);
 
@@ -506,6 +531,15 @@ function PageInner() {
     if (error) return setMsg(error.message);
     setFeedback((prev) => prev.map((f) => f.id === id ? { ...f, resolved: true, author_response: response } : f));
     setSelectedFeedbackId(null);
+    // Clear the reader's own "Your feedback on X" notification now that the
+    // author has responded - best-effort, doesn't block/fail the resolve
+    // action if it errors. Server-side because notification_read_keys can
+    // only be written by the reader themselves via RLS, not the owner.
+    void fetch("/api/manuscript/feedback/mark-resolved-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback_id: id }),
+    }).catch((err) => console.error("Failed to clear reader's feedback notification:", err));
   }
 
   async function replyToFeedback(f: LineFeedback) {
@@ -959,6 +993,7 @@ function PageInner() {
         console.log("[LOAD] setMyAllFeedback (parent-view, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
         setMyChapterFeedback([]);
+        setChaptersWithNewUpdates(new Set());
         // chapters and feedback/myAllFeedback are both set now - safe for the
         // recompute/myChapterFeedback effects. Everything below is trailing data
         // (replies, names, parent-disable state) that neither effect reads.
@@ -1175,6 +1210,7 @@ function PageInner() {
           console.log("[LOAD] setMyAllFeedback (owner branch, cleared)", targetManuscriptId, Date.now());
           setMyAllFeedback([]);
           setMyChapterFeedback([]);
+          setChaptersWithNewUpdates(new Set());
           // chapters and feedback are both set now - safe for the recompute/
           // myChapterFeedback effects. The ownerAllFeedback/replies fetches below
           // are trailing data neither effect reads, so don't gate on them.
@@ -1220,6 +1256,8 @@ function PageInner() {
           setFeedback([]);
           console.log("[LOAD] setMyAllFeedback (reader branch)", targetManuscriptId, myFRows.length, Date.now());
           setMyAllFeedback(myFRows);
+          const myUpdateChapterIds = Array.from(new Set(myFRows.map((f) => f.chapter_id).filter((id): id is string => !!id)));
+          setChaptersWithNewUpdates(await loadChaptersWithNewUpdates(supabase, uid, myUpdateChapterIds));
           // chapters and myAllFeedback are both set now - safe for the recompute/
           // myChapterFeedback effects. The replies/unread-counts fetches below are
           // trailing data neither effect reads, so don't gate on them.
@@ -1254,6 +1292,8 @@ function PageInner() {
         fRows = myFRows;
         console.log("[LOAD] setMyAllFeedback (no-grant branch)", targetManuscriptId, myFRows.length, Date.now());
         setMyAllFeedback(myFRows);
+        const myUpdateChapterIds = Array.from(new Set(myFRows.map((f) => f.chapter_id).filter((id): id is string => !!id)));
+        setChaptersWithNewUpdates(await loadChaptersWithNewUpdates(supabase, uid, myUpdateChapterIds));
         // chapters and myAllFeedback are both set now - safe for the recompute/
         // myChapterFeedback effects. The replies fetch below is trailing data
         // neither effect reads, so don't gate on it.
@@ -1269,6 +1309,7 @@ function PageInner() {
         setFeedback([]);
         console.log("[LOAD] setMyAllFeedback (no access branch, cleared)", targetManuscriptId, Date.now());
         setMyAllFeedback([]);
+        setChaptersWithNewUpdates(new Set());
         // chapters and myAllFeedback are both set now - safe for the recompute/
         // myChapterFeedback effects.
         console.log("[LOAD] setLoadedManuscriptId (no-access branch)", targetManuscriptId, Date.now());
@@ -1444,6 +1485,21 @@ function PageInner() {
     selectedFeedbackIdRef.current = selectedFeedbackId;
     if (selectedFeedbackId) markFeedbackRepliesRead(selectedFeedbackId);
   }, [selectedFeedbackId]);
+
+  useEffect(() => {
+    if (!activeChapter || !userId || isOwner) return;
+    if (!myAllFeedback.some((f) => f.chapter_id === activeChapter.id)) return;
+    setChaptersWithNewUpdates((prev) => {
+      if (!prev.has(activeChapter.id)) return prev;
+      const next = new Set(prev);
+      next.delete(activeChapter.id);
+      return next;
+    });
+    void supabase.from("chapter_update_reads").upsert(
+      { chapter_id: activeChapter.id, user_id: userId, last_read_at: new Date().toISOString() },
+      { onConflict: "chapter_id,user_id" }
+    );
+  }, [activeChapter, userId, isOwner, myAllFeedback, supabase]);
 
   // Auto-dismiss coin toast after 5 seconds
   useEffect(() => {
@@ -2002,6 +2058,7 @@ function PageInner() {
           onCoverClick={activeChapter ? () => setChapterId(null) : undefined}
           compactSidebar={!!chapterId}
           completedChapterIds={completedChapterIds}
+          chaptersWithNewUpdates={chaptersWithNewUpdates}
         >
           {!activeChapter && (
             <section className="rounded-xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.9)] p-5 shadow-[0_16px_38px_rgba(0,0,0,0.35)]">

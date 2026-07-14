@@ -47,6 +47,8 @@ type ManuscriptLayoutProps<T extends ChapterNavItem = ChapterNavItem> = {
   onTitleSave?: (newTitle: string) => void;
   /** Set of chapter IDs the current reader has completed (earned coins for). */
   completedChapterIds?: Set<string>;
+  /** Set of chapter IDs with an unread author update the current reader hasn't cleared. */
+  chaptersWithNewUpdates?: Set<string>;
 };
 
 export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavItem>({
@@ -72,6 +74,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
   titleEditable = false,
   onTitleSave,
   completedChapterIds,
+  chaptersWithNewUpdates,
 }: ManuscriptLayoutProps<T>) {
   const sortedChapters = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
 
@@ -219,7 +222,14 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1">
-                      <span className="font-semibold">{chapterNavLabel(c)}</span>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="font-semibold">{chapterNavLabel(c)}</span>
+                        {chaptersWithNewUpdates?.has(c.id) && (
+                          <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-400">
+                            New updates
+                          </span>
+                        )}
+                      </span>
                       {completedChapterIds?.has(c.id) && (
                         <span className="shrink-0 text-[10px] text-emerald-400" title="Chapter completed — coins earned">✓</span>
                       )}

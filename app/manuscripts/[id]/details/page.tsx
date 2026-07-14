@@ -95,6 +95,16 @@ const REWARD_REASONS = [
   "Above and beyond effort",
 ] as const;
 
+const CHAPTER_UPDATE_CATEGORIES = [
+  "Fixed typos/grammar",
+  "Revised dialogue",
+  "Added scene",
+  "Removed scene",
+  "Rewrote section",
+  "Changed pacing/structure",
+  "Other",
+] as const;
+
 const PARENT_DISABLE_REASONS = [
   "Inappropriate content",
   "Safety concern",
@@ -158,6 +168,10 @@ export default function ManuscriptDetailsPage() {
   const [rewardModal, setRewardModal] = useState<{ reader: AcceptedReader } | null>(null);
   const [rewardAmount, setRewardAmount] = useState<5 | 10>(5);
   const [rewardReason, setRewardReason] = useState("");
+  const [chapterUpdateModal, setChapterUpdateModal] = useState(false);
+  const [chapterUpdateCategories, setChapterUpdateCategories] = useState<string[]>([]);
+  const [chapterUpdateNote, setChapterUpdateNote] = useState("");
+  const [chapterUpdateSubmitting, setChapterUpdateSubmitting] = useState(false);
   const [authorUserId, setAuthorUserId] = useState<string | null>(null);
   const [manuscriptLedger, setManuscriptLedger] = useState<{ id: string; delta: number; reason: string; created_at: string; metadata?: Record<string, unknown> }[]>([]);
   const [readerCompletions, setReaderCompletions] = useState<{ chapter_id: string; reader_id: string; coins_awarded: number; completed_at: string }[]>([]);
@@ -480,6 +494,15 @@ export default function ManuscriptDetailsPage() {
     if (error) return setMsg(error.message);
     if (selectedFeedbackId === feedbackId) { setSelectedFeedbackId(null); }
     setFeedbackItems((prev) => prev.map((f) => f.id === feedbackId ? { ...f, resolved: true, author_response: response } : f));
+    // Clear the reader's own "Your feedback on X" notification now that the
+    // author has responded - best-effort, doesn't block/fail the resolve
+    // action if it errors. Server-side because notification_read_keys can
+    // only be written by the reader themselves via RLS, not the owner.
+    void fetch("/api/manuscript/feedback/mark-resolved-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback_id: feedbackId }),
+    }).catch((err) => console.error("Failed to clear reader's feedback notification:", err));
   }
 
   async function undoResolveFeedback(feedbackId: string) {
@@ -1574,6 +1597,33 @@ export default function ManuscriptDetailsPage() {
     setTimeout(() => setRewardToast(null), 3000);
   }
 
+  function toggleChapterUpdateCategory(cat: string) {
+    setChapterUpdateCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  }
+
+  async function submitChapterUpdate() {
+    if (!selectedChapter || !authorUserId) return;
+    if (chapterUpdateCategories.length === 0 && !chapterUpdateNote.trim()) {
+      setMsg("Select at least one category or add a note.");
+      return;
+    }
+    setChapterUpdateSubmitting(true);
+    const { error } = await supabase.from("chapter_updates").insert({
+      chapter_id: selectedChapter.id,
+      author_id: authorUserId,
+      categories: chapterUpdateCategories,
+      note: chapterUpdateNote.trim() || null,
+    });
+    setChapterUpdateSubmitting(false);
+    if (error) return setMsg(friendlyDbError(error.message));
+    setChapterUpdateModal(false);
+    setChapterUpdateCategories([]);
+    setChapterUpdateNote("");
+    setMsg("Readers who left feedback on this chapter will see a new update tag.");
+  }
+
   async function deleteChapter(chapterId: string) {
     const { error } = await supabase.from("manuscript_chapters").delete().eq("id", chapterId);
     if (error) return setMsg(friendlyDbError(error.message));
@@ -1711,8 +1761,15 @@ export default function ManuscriptDetailsPage() {
 
   async function setWholeVisibility(nextVisibility: "private" | "public") {
     if (!manuscript) return;
-    const { error } = await supabase.from("manuscripts").update({ visibility: nextVisibility }).eq("id", manuscript.id);
+    const { data, error } = await supabase
+      .from("manuscripts")
+      .update({ visibility: nextVisibility })
+      .eq("id", manuscript.id)
+      .select("id, visibility");
     if (error) return setMsg(friendlyDbError(error.message));
+    if (!data || data.length === 0) {
+      return setMsg("Publish failed — the manuscript wasn't updated. This may be a permissions issue; contact support.");
+    }
 
     if (nextVisibility === "public") {
       // Publish: make all chapters visible
@@ -3063,6 +3120,13 @@ export default function ManuscriptDetailsPage() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => { setChapterUpdateCategories([]); setChapterUpdateNote(""); setChapterUpdateModal(true); }}
+                            className="h-11 rounded-lg border border-blue-600/50 bg-blue-600/15 px-4 text-sm font-semibold text-blue-200 hover:bg-blue-600/25"
+                          >
+                            Update
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => void deleteChapter(selectedChapter.id)}
                             className="h-11 rounded-lg border border-neutral-600/70 bg-neutral-800/30 px-4 text-sm font-semibold text-neutral-100 hover:bg-neutral-800/50"
                           >
@@ -3655,6 +3719,73 @@ export default function ManuscriptDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setRewardModal(null)}
+                  className="h-9 flex-1 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {chapterUpdateModal && selectedChapter && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setChapterUpdateModal(false)}>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Flag chapter update"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-5 shadow-2xl"
+            >
+              <h2 className="mb-1 text-base font-semibold text-white">Flag update to readers</h2>
+              <p className="mb-4 text-sm text-neutral-400">
+                Readers who left feedback on this chapter will see a &quot;New updates&quot; tag.
+              </p>
+
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">What changed?</p>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {CHAPTER_UPDATE_CATEGORIES.map((cat) => {
+                  const active = chapterUpdateCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => toggleChapterUpdateCategory(cat)}
+                      className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                        active
+                          ? "border-blue-500/60 bg-blue-500/15 text-blue-300"
+                          : "border-[rgba(120,120,120,0.35)] bg-[rgba(120,120,120,0.08)] text-neutral-300 hover:bg-[rgba(120,120,120,0.14)]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Note (optional)</p>
+              <textarea
+                value={chapterUpdateNote}
+                onChange={(e) => setChapterUpdateNote(e.target.value.slice(0, 200))}
+                maxLength={200}
+                rows={3}
+                placeholder="Add any extra context for readers..."
+                className="mb-1 w-full rounded-lg border border-neutral-800 bg-neutral-900/50 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-[rgba(120,120,120,0.7)]"
+              />
+              <p className="mb-4 text-right text-[10px] text-neutral-600">{chapterUpdateNote.length}/200</p>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void submitChapterUpdate()}
+                  disabled={chapterUpdateSubmitting || (chapterUpdateCategories.length === 0 && !chapterUpdateNote.trim())}
+                  className="h-9 flex-1 rounded-lg border border-blue-600/60 bg-blue-600/20 px-3 text-sm font-medium text-blue-200 hover:bg-blue-600/30 disabled:opacity-40"
+                >
+                  Post update
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChapterUpdateModal(false)}
                   className="h-9 flex-1 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800"
                 >
                   Cancel
