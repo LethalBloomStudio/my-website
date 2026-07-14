@@ -48,7 +48,8 @@ export default function NotificationButton() {
       const moderationFlagsPromise = supabase
         .from("manuscript_moderation_flags")
         .select("id")
-        .eq("owner_id", userId);
+        .eq("owner_id", userId)
+        .gte("created_at", thirtyDaysAgo);
 
       const ownerFeedbackPromise =
         manuscriptIds.length > 0

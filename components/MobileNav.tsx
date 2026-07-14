@@ -33,6 +33,7 @@ export default function MobileNav() {
       const manuscriptIds = ((manuscripts as Array<{ id: string }> | null) ?? []).map((m) => m.id);
 
       const readKeySet = await loadReadKeys(uid);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [friendReq, contactReq, unreadMessages, systemUpdates, ownerFeedback, accessRequests, pendingInvitations, groupConversations, moderationFlags] = await Promise.all([
         supabase.from("profile_friend_requests").select("*", { count: "exact", head: true }).eq("receiver_id", uid).eq("status", "pending"),
@@ -46,14 +47,14 @@ export default function MobileNav() {
           .neq("category", "messages")
           .not("title", "like", "New message from%"),
         manuscriptIds.length > 0
-          ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds)
+          ? supabase.from("line_feedback").select("id").in("manuscript_id", manuscriptIds).gte("created_at", thirtyDaysAgo)
           : Promise.resolve({ data: [] as Array<{ id: string }> }),
         manuscriptIds.length > 0
           ? supabase.from("manuscript_access_requests").select("id").in("manuscript_id", manuscriptIds).eq("status", "pending")
           : Promise.resolve({ data: [] as Array<{ id: string }> }),
         supabase.from("manuscript_invitations").select("*", { count: "exact", head: true }).eq("reader_id", uid).eq("status", "pending"),
         supabase.rpc("get_group_message_conversations", { p_user_id: uid }),
-        supabase.from("manuscript_moderation_flags").select("id").eq("owner_id", uid),
+        supabase.from("manuscript_moderation_flags").select("id").eq("owner_id", uid).gte("created_at", thirtyDaysAgo),
       ]);
       if (cancelled) return;
 
