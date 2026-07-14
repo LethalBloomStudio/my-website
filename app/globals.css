@@ -1324,6 +1324,14 @@ html[data-theme="day"] textarea[class] {
 [data-theme="day"] .text-amber-300           { color: #92400e !important; }
 [data-theme="day"] .text-amber-400           { color: #b45309 !important; }
 
+/* ── Blue (chapter update) states ── */
+[data-theme="day"] [class*="bg-blue-500"]    { background-color: rgba(59,130,246,0.09) !important; }
+[data-theme="day"] [class*="bg-blue-950"]    { background-color: rgba(59,130,246,0.07) !important; }
+[data-theme="day"] [class*="border-blue-500"] { border-color: rgba(29,78,216,0.45) !important; }
+[data-theme="day"] [class*="border-blue-600"] { border-color: rgba(29,78,216,0.4) !important; }
+[data-theme="day"] .text-blue-200            { color: #1e40af !important; }
+[data-theme="day"] .text-blue-400            { color: #1d4ed8 !important; }
+
 /* ── Emerald (success / accepted) states ── */
 [data-theme="day"] [class*="bg-emerald-950"] { background-color: rgba(16,185,129,0.07) !important; }
 [data-theme="day"] [class*="border-emerald-700"] { border-color: rgba(5,150,105,0.45) !important; }

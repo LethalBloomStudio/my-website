@@ -90,6 +90,45 @@ function CoverThumb({ url, title }: { url: string | null; title: string }) {
   );
 }
 
+function ChapterAlertBanner({
+  variant,
+  text,
+  stacked,
+  isFront,
+  onBringToFront,
+}: {
+  variant: "added" | "updated";
+  text: string;
+  stacked: boolean;
+  isFront: boolean;
+  onBringToFront?: () => void;
+}) {
+  const isAdded = variant === "added";
+  return (
+    <div
+      onClick={stacked && !isFront ? onBringToFront : undefined}
+      className={`${isAdded ? "beta-new-chapters-banner" : ""} flex items-center gap-2 rounded-lg border px-3 py-1.5 shadow-sm transition-all duration-200 ${
+        isAdded
+          ? "border-violet-700/50 bg-violet-950/30 text-violet-200 shadow-violet-950/20"
+          : "border-blue-600/50 bg-blue-950/30 text-blue-200 shadow-blue-950/20"
+      } ${
+        stacked
+          ? `absolute inset-x-0 ${isFront ? "top-0 z-10 scale-100 opacity-100" : "top-4 z-0 scale-[0.97] opacity-90 cursor-pointer hover:top-[18px]"}`
+          : "relative"
+      }`}
+    >
+      <svg
+        className={`${isAdded ? "beta-new-chapters-banner__icon" : ""} h-3.5 w-3.5 shrink-0 ${isAdded ? "text-violet-400" : "text-blue-400"}`}
+        viewBox="0 0 14 14"
+        fill="currentColor"
+      >
+        <path d="M7 1l1.5 3.5L12 5.5l-2.5 2.5.6 3.5L7 9.8l-3.1 1.7.6-3.5L2 5.5l3.5-.5z" />
+      </svg>
+      <span className="text-xs font-semibold">{text}</span>
+    </div>
+  );
+}
+
 function feedbackBadge(value: string | null): { label: string; cls: string } | null {
   if (!value) return null;
   const v = value.toLowerCase();
@@ -121,6 +160,7 @@ export default function ManuscriptsPage() {
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
   const [manuscriptsWithActiveReaders, setManuscriptsWithActiveReaders] = useState<Set<string>>(new Set());
+  const [frontBannerByMs, setFrontBannerByMs] = useState<Record<string, "added" | "updated">>({});
   const presenceChannelsRef = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
   const now = Date.now();
 
@@ -642,28 +682,44 @@ export default function ManuscriptsPage() {
                       <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
 
                         {/* New/updated chapters alert */}
-                        {(m.new_chapters > 0 || m.updated_chapters > 0) && (
-                          <div className="beta-new-chapters-banner mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5 shadow-sm shadow-violet-950/20">
-                            <svg className="beta-new-chapters-banner__icon h-3.5 w-3.5 shrink-0 text-violet-400" viewBox="0 0 14 14" fill="currentColor">
-                              <path d="M7 1l1.5 3.5L12 5.5l-2.5 2.5.6 3.5L7 9.8l-3.1 1.7.6-3.5L2 5.5l3.5-.5z" />
-                            </svg>
-                            <span className="text-xs font-semibold">
-                              {m.new_chapters > 0 && (
-                                <span className="text-violet-200">
-                                  {m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added
-                                </span>
-                              )}
-                              {m.new_chapters > 0 && m.updated_chapters > 0 && (
-                                <span className="text-amber-300">, {m.updated_chapters === 1 ? "1 updated" : `${m.updated_chapters} updated`}</span>
-                              )}
-                              {m.new_chapters === 0 && m.updated_chapters > 0 && (
-                                <span className="text-amber-300">
-                                  {m.updated_chapters === 1 ? "1 chapter" : `${m.updated_chapters} chapters`} updated
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        )}
+                        {(m.new_chapters > 0 || m.updated_chapters > 0) && (() => {
+                          const addedText = `${m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added`;
+                          const updatedText = `${m.updated_chapters === 1 ? "1 chapter" : `${m.updated_chapters} chapters`} updated`;
+                          const bothPresent = m.new_chapters > 0 && m.updated_chapters > 0;
+
+                          if (!bothPresent) {
+                            return (
+                              <div className="mb-3">
+                                <ChapterAlertBanner
+                                  variant={m.new_chapters > 0 ? "added" : "updated"}
+                                  text={m.new_chapters > 0 ? addedText : updatedText}
+                                  stacked={false}
+                                  isFront
+                                />
+                              </div>
+                            );
+                          }
+
+                          const front = frontBannerByMs[m.id] ?? "added";
+                          return (
+                            <div className="relative mb-3 h-11">
+                              <ChapterAlertBanner
+                                variant="added"
+                                text={addedText}
+                                stacked
+                                isFront={front === "added"}
+                                onBringToFront={() => setFrontBannerByMs((p) => ({ ...p, [m.id]: "added" }))}
+                              />
+                              <ChapterAlertBanner
+                                variant="updated"
+                                text={updatedText}
+                                stacked
+                                isFront={front === "updated"}
+                                onBringToFront={() => setFrontBannerByMs((p) => ({ ...p, [m.id]: "updated" }))}
+                              />
+                            </div>
+                          );
+                        })()}
 
                         <Link href={`/manuscripts/${m.id}`} onClick={() => handleBetaProjectOpen(m.id)} className="group block w-full text-left">
                           <div className="flex gap-3">

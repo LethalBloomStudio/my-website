@@ -225,7 +225,7 @@ export default function ManuscriptLayout<T extends ChapterNavItem = ChapterNavIt
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span className="font-semibold">{chapterNavLabel(c)}</span>
                         {chaptersWithNewUpdates?.has(c.id) && (
-                          <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-400">
+                          <span className="shrink-0 rounded-full border border-blue-500/40 bg-blue-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-400">
                             New updates
                           </span>
                         )}
