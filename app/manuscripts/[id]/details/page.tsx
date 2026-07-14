@@ -172,6 +172,8 @@ export default function ManuscriptDetailsPage() {
   const [chapterUpdateCategories, setChapterUpdateCategories] = useState<string[]>([]);
   const [chapterUpdateNote, setChapterUpdateNote] = useState("");
   const [chapterUpdateSubmitting, setChapterUpdateSubmitting] = useState(false);
+  const [lastChapterUpdate, setLastChapterUpdate] = useState<{ categories: string[]; note: string | null; created_at: string } | null>(null);
+  const [lastChapterUpdateLoading, setLastChapterUpdateLoading] = useState(false);
   const [authorUserId, setAuthorUserId] = useState<string | null>(null);
   const [manuscriptLedger, setManuscriptLedger] = useState<{ id: string; delta: number; reason: string; created_at: string; metadata?: Record<string, unknown> }[]>([]);
   const [readerCompletions, setReaderCompletions] = useState<{ chapter_id: string; reader_id: string; coins_awarded: number; completed_at: string }[]>([]);
@@ -1601,6 +1603,19 @@ export default function ManuscriptDetailsPage() {
     setChapterUpdateCategories((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
+  }
+
+  async function loadLastChapterUpdate(chapterId: string) {
+    setLastChapterUpdateLoading(true);
+    const { data } = await supabase
+      .from("chapter_updates")
+      .select("categories, note, created_at")
+      .eq("chapter_id", chapterId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLastChapterUpdate((data as { categories: string[]; note: string | null; created_at: string } | null) ?? null);
+    setLastChapterUpdateLoading(false);
   }
 
   async function submitChapterUpdate() {
@@ -3150,7 +3165,7 @@ export default function ManuscriptDetailsPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => { setChapterUpdateCategories([]); setChapterUpdateNote(""); setChapterUpdateModal(true); }}
+                            onClick={() => { setChapterUpdateCategories([]); setChapterUpdateNote(""); setLastChapterUpdate(null); setChapterUpdateModal(true); void loadLastChapterUpdate(selectedChapter.id); }}
                             className="h-11 rounded-lg border border-blue-600/50 bg-blue-600/15 px-4 text-sm font-semibold text-blue-200 hover:bg-blue-600/25"
                           >
                             Update
@@ -3771,6 +3786,21 @@ export default function ManuscriptDetailsPage() {
               <p className="mb-4 text-sm text-neutral-400">
                 Readers who left feedback on this chapter will see a &quot;New updates&quot; tag.
               </p>
+
+              {!lastChapterUpdateLoading && (
+                <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2 text-xs text-neutral-400">
+                  {lastChapterUpdate ? (
+                    <>
+                      <span className="font-semibold text-neutral-300">Last update:</span>{" "}
+                      {new Date(lastChapterUpdate.created_at).toLocaleString()}
+                      {lastChapterUpdate.categories.length > 0 && ` — ${lastChapterUpdate.categories.join(", ")}`}
+                      {lastChapterUpdate.note && ` — "${lastChapterUpdate.note}"`}
+                    </>
+                  ) : (
+                    <span className="italic text-neutral-500">No updates posted yet for this chapter.</span>
+                  )}
+                </div>
+              )}
 
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">What changed?</p>
               <div className="mb-4 flex flex-wrap gap-2">
