@@ -1627,9 +1627,11 @@ export default function ManuscriptDetailsPage() {
     }
 
     const chapterLabel = chapterType === "prologue" ? "Prologue" : chapterType === "epilogue" ? "Epilogue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(selectedChapter.id)}`;
+    const manuscriptTitle = manuscript?.title || "your manuscript";
+    const authorLabel = ownerPenName || "The author";
     const title = chapterUpdateCategories.length > 0
-      ? `${chapterLabel} updated: ${chapterUpdateCategories.join(", ")}`
-      : `${chapterLabel} updated`;
+      ? `${authorLabel} updated ${chapterLabel} of "${manuscriptTitle}": ${chapterUpdateCategories.join(", ")}`
+      : `${authorLabel} updated ${chapterLabel} of "${manuscriptTitle}"`;
     const readerIds = Array.from(new Set(
       feedbackItems.filter((f) => f.chapter_id === selectedChapter.id).map((f) => f.reader_id)
     ));
