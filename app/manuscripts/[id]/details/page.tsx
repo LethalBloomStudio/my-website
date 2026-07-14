@@ -1610,14 +1610,42 @@ export default function ManuscriptDetailsPage() {
       return;
     }
     setChapterUpdateSubmitting(true);
-    const { error } = await supabase.from("chapter_updates").insert({
-      chapter_id: selectedChapter.id,
-      author_id: authorUserId,
-      categories: chapterUpdateCategories,
-      note: chapterUpdateNote.trim() || null,
-    });
+    const trimmedNote = chapterUpdateNote.trim();
+    const { data: inserted, error } = await supabase
+      .from("chapter_updates")
+      .insert({
+        chapter_id: selectedChapter.id,
+        author_id: authorUserId,
+        categories: chapterUpdateCategories,
+        note: trimmedNote || null,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      setChapterUpdateSubmitting(false);
+      return setMsg(friendlyDbError(error.message));
+    }
+
+    const chapterLabel = chapterType === "prologue" ? "Prologue" : chapterType === "epilogue" ? "Epilogue" : chapterType === "trigger_page" ? "Trigger Page" : `Chapter ${chapterNumFor(selectedChapter.id)}`;
+    const title = chapterUpdateCategories.length > 0
+      ? `${chapterLabel} updated: ${chapterUpdateCategories.join(", ")}`
+      : `${chapterLabel} updated`;
+    const readerIds = Array.from(new Set(
+      feedbackItems.filter((f) => f.chapter_id === selectedChapter.id).map((f) => f.reader_id)
+    ));
+    if (readerIds.length > 0) {
+      await supabase.from("system_notifications").insert(
+        readerIds.map((reader_id) => ({
+          user_id: reader_id,
+          category: "chapter_update",
+          title,
+          body: trimmedNote,
+          metadata: { manuscript_id: manuscriptId, chapter_id: selectedChapter.id, chapter_update_id: (inserted as { id: string }).id },
+        }))
+      );
+    }
+
     setChapterUpdateSubmitting(false);
-    if (error) return setMsg(friendlyDbError(error.message));
     setChapterUpdateModal(false);
     setChapterUpdateCategories([]);
     setChapterUpdateNote("");

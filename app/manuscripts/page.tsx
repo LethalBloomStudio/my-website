@@ -32,6 +32,7 @@ type BetaManuscript = {
   total_chapters: number;
   read_chapters: number;
   new_chapters: number;
+  updated_chapters: number;
 };
 
 type BetaChapterRow = {
@@ -324,7 +325,7 @@ export default function ManuscriptsPage() {
 
       if (grantedIds.length > 0) {
         try {
-        const [betaDataRes, chapters, completionsRes] = await Promise.all([
+        const [betaDataRes, chapters, completionsRes, myFeedbackRes] = await Promise.all([
           supabase
             .from("manuscripts")
             .select("id, title, genre, cover_url, owner_id")
@@ -336,10 +337,44 @@ export default function ManuscriptsPage() {
             .select("chapter_id, manuscript_id, completed_at")
             .in("manuscript_id", grantedIds)
             .eq("reader_id", uid),
+          supabase
+            .from("line_feedback")
+            .select("chapter_id, manuscript_id")
+            .in("manuscript_id", grantedIds)
+            .eq("reader_id", uid)
+            .not("chapter_id", "is", null),
         ]);
 
         const betaRows = (betaDataRes.data as Array<{ id: string; title: string; genre: string | null; cover_url: string | null; owner_id: string }> | null) ?? [];
         const completions = (completionsRes.data ?? []) as Array<{ chapter_id: string; manuscript_id: string; completed_at: string }>;
+
+        // Chapters this reader has left feedback on - only those chapters are eligible
+        // for the "updated" count, mirroring the chapter_updates RLS audience.
+        const myFeedbackRows = (myFeedbackRes.data ?? []) as Array<{ chapter_id: string; manuscript_id: string }>;
+        const chapterToManuscript = new Map(myFeedbackRows.map((f) => [f.chapter_id, f.manuscript_id]));
+        const feedbackChapterIds = Array.from(new Set(myFeedbackRows.map((f) => f.chapter_id)));
+
+        const updatedChapterCountByMs = new Map<string, number>();
+        if (feedbackChapterIds.length > 0) {
+          const [{ data: updatesData }, { data: readsData }] = await Promise.all([
+            supabase.from("chapter_updates").select("chapter_id, created_at").in("chapter_id", feedbackChapterIds),
+            supabase.from("chapter_update_reads").select("chapter_id, last_read_at").eq("user_id", uid).in("chapter_id", feedbackChapterIds),
+          ]);
+          const lastReadByChapter = new Map(
+            ((readsData ?? []) as Array<{ chapter_id: string; last_read_at: string }>).map((r) => [r.chapter_id, r.last_read_at])
+          );
+          const updatedChapterIdsByMs = new Map<string, Set<string>>();
+          for (const u of (updatesData ?? []) as Array<{ chapter_id: string; created_at: string }>) {
+            const lastRead = lastReadByChapter.get(u.chapter_id);
+            const isUnread = !lastRead || new Date(u.created_at).getTime() > new Date(lastRead).getTime();
+            if (!isUnread) continue;
+            const msId = chapterToManuscript.get(u.chapter_id);
+            if (!msId) continue;
+            if (!updatedChapterIdsByMs.has(msId)) updatedChapterIdsByMs.set(msId, new Set());
+            updatedChapterIdsByMs.get(msId)!.add(u.chapter_id);
+          }
+          for (const [msId, chapterIds] of updatedChapterIdsByMs) updatedChapterCountByMs.set(msId, chapterIds.size);
+        }
 
         // Group chapters by manuscript_id
         const chaptersByMs = new Map<string, BetaChapterRow[]>();
@@ -393,6 +428,7 @@ export default function ManuscriptsPage() {
                 total_chapters: msChapters.length,
                 read_chapters: msCompletions?.count ?? 0,
                 new_chapters: newChapters,
+                updated_chapters: updatedChapterCountByMs.get(r.id) ?? 0,
               };
             })
           );
@@ -605,14 +641,26 @@ export default function ManuscriptsPage() {
                     return (
                       <li key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 hover:border-[rgba(120,120,120,0.6)]">
 
-                        {/* New chapters alert */}
-                        {m.new_chapters > 0 && (
-                          <div className="beta-new-chapters-banner mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5 text-violet-200 shadow-sm shadow-violet-950/20">
+                        {/* New/updated chapters alert */}
+                        {(m.new_chapters > 0 || m.updated_chapters > 0) && (
+                          <div className="beta-new-chapters-banner mb-3 flex items-center gap-2 rounded-lg border border-violet-700/50 bg-violet-950/30 px-3 py-1.5 shadow-sm shadow-violet-950/20">
                             <svg className="beta-new-chapters-banner__icon h-3.5 w-3.5 shrink-0 text-violet-400" viewBox="0 0 14 14" fill="currentColor">
                               <path d="M7 1l1.5 3.5L12 5.5l-2.5 2.5.6 3.5L7 9.8l-3.1 1.7.6-3.5L2 5.5l3.5-.5z" />
                             </svg>
                             <span className="text-xs font-semibold">
-                              {m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added
+                              {m.new_chapters > 0 && (
+                                <span className="text-violet-200">
+                                  {m.new_chapters === 1 ? "1 new chapter" : `${m.new_chapters} new chapters`} added
+                                </span>
+                              )}
+                              {m.new_chapters > 0 && m.updated_chapters > 0 && (
+                                <span className="text-amber-300">, {m.updated_chapters === 1 ? "1 updated" : `${m.updated_chapters} updated`}</span>
+                              )}
+                              {m.new_chapters === 0 && m.updated_chapters > 0 && (
+                                <span className="text-amber-300">
+                                  {m.updated_chapters === 1 ? "1 chapter" : `${m.updated_chapters} chapters`} updated
+                                </span>
+                              )}
                             </span>
                           </div>
                         )}

@@ -1495,10 +1495,15 @@ function PageInner() {
       next.delete(activeChapter.id);
       return next;
     });
-    void supabase.from("chapter_update_reads").upsert(
-      { chapter_id: activeChapter.id, user_id: userId, last_read_at: new Date().toISOString() },
-      { onConflict: "chapter_id,user_id" }
-    );
+    // supabase-js query builders are lazy thenables - the request only fires once
+    // .then()/await is called, so this must not be a bare `void` on the builder.
+    supabase
+      .from("chapter_update_reads")
+      .upsert(
+        { chapter_id: activeChapter.id, user_id: userId, last_read_at: new Date().toISOString() },
+        { onConflict: "chapter_id,user_id" }
+      )
+      .then(() => {});
   }, [activeChapter, userId, isOwner, myAllFeedback, supabase]);
 
   // Auto-dismiss coin toast after 5 seconds
