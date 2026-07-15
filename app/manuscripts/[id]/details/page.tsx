@@ -2768,6 +2768,15 @@ export default function ManuscriptDetailsPage() {
                     ))}
                   </div>
                 </div>
+                <div className="mb-4 rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.07)] p-3">
+                  <p className="text-xs font-semibold text-neutral-300">Using Feedback Effectively</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
+                    Conversation with your beta readers is a valuable part of the revision process, but keeping feedback organized matters just as much. Once a discussion has run its course, mark each piece of feedback as Agree or Disagree to close out the thread and reflect your final decision.
+                  </p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
+                    Your beta readers will only see that feedback has been resolved, not whether you agreed or disagreed. This keeps the conversation history clean for you while preserving a positive experience for your readers.
+                  </p>
+                </div>
                 {(() => {
                   const overviewFiltered = feedbackItems.filter((f) => {
                     return overviewFeedbackFilter === "all" ? true :
