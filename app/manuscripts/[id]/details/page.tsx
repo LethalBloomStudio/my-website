@@ -2842,11 +2842,6 @@ export default function ManuscriptDetailsPage() {
                               </blockquote>
                             ) : null}
                             <p className="mt-1.5 text-sm leading-relaxed text-neutral-200">{f.comment_text}</p>
-                            {f.author_response && (
-                              <p className={`mt-2 text-[11px] font-medium ${f.author_response === "agree" ? "text-emerald-400" : "text-rose-400"}`}>
-                                {f.author_response === "agree" ? "✓ You agreed with this feedback" : "✗ You disagreed with this feedback"}
-                              </p>
-                            )}
                             {/* Expand button - show when there are replies OR feedback is unresolved */}
                             {(fReplies.length > 0 || !f.resolved && !f.author_response) && (
                               <button
