@@ -2768,12 +2768,12 @@ export default function ManuscriptDetailsPage() {
                     ))}
                   </div>
                 </div>
-                <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
-                  <p className="text-xs font-semibold text-emerald-300">Using Feedback Effectively</p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-emerald-200/70">
+                <div className="mb-4 rounded-lg border border-blue-500/40 bg-blue-500/10 p-3">
+                  <p className="text-xs font-semibold text-blue-200">Using Feedback Effectively</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-blue-400">
                     Conversation with your beta readers is a valuable part of the revision process, but keeping feedback organized matters just as much. Once a discussion has run its course, mark each piece of feedback as Agree or Disagree to close out the thread and reflect your final decision.
                   </p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-emerald-200/70">
+                  <p className="mt-1.5 text-xs leading-relaxed text-blue-400">
                     Your beta readers will only see that feedback has been resolved, not whether you agreed or disagreed. This keeps the conversation history clean for you while preserving a positive experience for your readers.
                   </p>
                 </div>
