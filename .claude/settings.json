@@ -3,7 +3,11 @@
     "allow": [
       "Bash(node -e ' *)",
       "Bash(grep -n \"Free\\\\|free\\\\|\\\\$5\\\\|\\\\$0\\\\|cost\\\\|price\\\\|tier\" app/manage-youth/page.tsx)",
-      "Bash(vercel --prod)"
+      "Bash(vercel --prod)",
+      "Bash(git log *)",
+      "Bash(grep -rn \"cron\\\\.\" supabase/migrations/)",
+      "Bash(grep -rln \"pg_cron\\\\|cron.schedule\" supabase/migrations/)",
+      "Bash(node --test __tests__/useNotificationReadKeys.test.ts)"
     ]
   }
 }
