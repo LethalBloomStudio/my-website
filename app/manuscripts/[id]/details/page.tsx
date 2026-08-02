@@ -1866,16 +1866,35 @@ export default function ManuscriptDetailsPage() {
         .filter((r) => !r.left && !r.disabled)
         .map((r) => r.user_id);
       if (activeReaderIds.length > 0) {
-        await supabase
+        // Only readers who came through the request/approve flow have a
+        // manuscript_access_requests row to flip to "disabled". Invite-path
+        // readers (manuscript_invitations, accepted directly) have no such
+        // row - deleting their grant here would strand them, since the
+        // republish branch below only restores readers found via that
+        // "disabled" status. Scope the status flip and grant delete to
+        // readers who actually have a request row; leave invite-path grants
+        // intact - manuscript_chapters.is_private (set above) already blocks
+        // their reads until republish.
+        const { data: requestRows } = await supabase
           .from("manuscript_access_requests")
-          .update({ status: "disabled" })
+          .select("requester_id")
           .eq("manuscript_id", manuscript.id)
           .in("requester_id", activeReaderIds);
-        await supabase
-          .from("manuscript_access_grants")
-          .delete()
-          .eq("manuscript_id", manuscript.id)
-          .in("reader_id", activeReaderIds);
+        const requestPathIds = ((requestRows as Array<{ requester_id: string }> | null) ?? []).map(
+          (r) => r.requester_id
+        );
+        if (requestPathIds.length > 0) {
+          await supabase
+            .from("manuscript_access_requests")
+            .update({ status: "disabled" })
+            .eq("manuscript_id", manuscript.id)
+            .in("requester_id", requestPathIds);
+          await supabase
+            .from("manuscript_access_grants")
+            .delete()
+            .eq("manuscript_id", manuscript.id)
+            .in("reader_id", requestPathIds);
+        }
         // Notify affected readers
         const title = manuscript.title || "Untitled manuscript";
         await Promise.all(
