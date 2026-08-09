@@ -314,6 +314,15 @@ export default function ManuscriptDetailsPage() {
   const [formatId, setFormatId] = useState<FormatId>("minimal");
   const [dragChapterId, setDragChapterId] = useState<string | null>(null);
   const [dragOverChapterId, setDragOverChapterId] = useState<string | null>(null);
+  // Only allow a drag to start when mousedown originated on the row's grip handle,
+  // not anywhere on the row (which also contains the chapter-select button).
+  const dragArmedFromHandle = useRef(false);
+  const [reorderUndo, setReorderUndo] = useState<{
+    manuscriptId: string;
+    label: string;
+    previousUpdates: Array<{ id: string; chapter_order: number; title: string }>;
+  } | null>(null);
+  const reorderUndoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -1420,8 +1429,18 @@ export default function ManuscriptDetailsPage() {
     return hasYouthAudienceCategory(nextCategories, null) ? 2 : 5;
   }
 
-  function nextChapterOrder() {
-    return (chapters[chapters.length - 1]?.chapter_order ?? 0) + 1;
+  async function nextChapterOrder() {
+    // Query fresh rather than reading the client's in-memory `chapters` array,
+    // which can be stale (e.g. a second "Add chapter" click before the first
+    // insert's response has landed) and hand out a duplicate chapter_order.
+    const { data } = await supabase
+      .from("manuscript_chapters")
+      .select("chapter_order")
+      .eq("manuscript_id", manuscript?.id ?? manuscriptId)
+      .order("chapter_order", { ascending: false })
+      .limit(1);
+    const rows = (data as { chapter_order: number }[] | null) ?? [];
+    return (rows[0]?.chapter_order ?? 0) + 1;
   }
 
   function isDefaultChapterTitle(title: string, chapterOrder: number) {
@@ -1451,7 +1470,7 @@ export default function ManuscriptDetailsPage() {
 
   async function addChapter() {
     if (!manuscript) return;
-    const order = nextChapterOrder();
+    const order = await nextChapterOrder();
     const isLethalMember = memberTier === "lethal";
     // Trigger pages don't count toward the free chapter limit; prologues and chapters do
     const nonTriggerCount = chapters.filter((c) => (c.chapter_type ?? "chapter") !== "trigger_page").length;
@@ -1730,6 +1749,7 @@ export default function ManuscriptDetailsPage() {
   }
 
   async function moveChapter(fromChapterId: string, toChapterId: string) {
+    if (!manuscript) return;
     if (fromChapterId === toChapterId) return;
     const ordered = [...chapters].sort((a, b) => a.chapter_order - b.chapter_order);
     const fromIndex = ordered.findIndex((c) => c.id === fromChapterId);
@@ -1776,6 +1796,13 @@ export default function ManuscriptDetailsPage() {
 
     if (updates.length === 0) return;
 
+    // Snapshot of what these same rows held before the move, so an undo can
+    // restore them exactly via the same atomic RPC.
+    const previousUpdates = updates.map((u) => {
+      const prev = previousById.get(u.id)!;
+      return { id: u.id, chapter_order: prev.chapter_order, title: prev.title };
+    });
+
     // Optimistic update - reflect order instantly in the sidebar
     const updatesById = new Map(updates.map((u) => [u.id, u]));
     setChapters(reordered.map((c, i) => {
@@ -1792,15 +1819,53 @@ export default function ManuscriptDetailsPage() {
       }
     }
 
-    const results = await Promise.all(
-      updates.map((u) =>
-        supabase.from("manuscript_chapters").update({ chapter_order: u.chapter_order, title: u.title }).eq("id", u.id),
-      ),
+    // Single atomic RPC call - either every row in `updates` lands, or none do.
+    // (Replaces N independent Promise.all() writes, which could partially fail.)
+    const { error } = await supabase.rpc("reorder_manuscript_chapters", {
+      p_manuscript_id: manuscript.id,
+      p_updates: updates,
+    });
+
+    if (error) {
+      setMsg(friendlyDbError(error.message));
+      await load(); // safe to fully resync - the RPC guarantees nothing partial was written
+      return;
+    }
+
+    const movedLabel = moved.chapter_type === "prologue" ? "Prologue"
+      : moved.chapter_type === "epilogue" ? "Epilogue"
+      : moved.chapter_type === "trigger_page" ? "Trigger Page"
+      : `Chapter ${newChapterNums.get(moved.id) ?? toIndex + 1}`;
+    if (reorderUndoTimer.current) clearTimeout(reorderUndoTimer.current);
+    setReorderUndo({ manuscriptId: manuscript.id, label: movedLabel, previousUpdates });
+    reorderUndoTimer.current = setTimeout(() => setReorderUndo(null), 8000);
+  }
+
+  async function undoReorder() {
+    if (!reorderUndo) return;
+    if (reorderUndoTimer.current) clearTimeout(reorderUndoTimer.current);
+    const { manuscriptId: undoManuscriptId, previousUpdates } = reorderUndo;
+    setReorderUndo(null);
+
+    const revertById = new Map(previousUpdates.map((u) => [u.id, u]));
+    setChapters((prev) =>
+      prev
+        .map((c) => {
+          const r = revertById.get(c.id);
+          return r ? { ...c, chapter_order: r.chapter_order, title: r.title } : c;
+        })
+        .sort((a, b) => a.chapter_order - b.chapter_order)
     );
-    const failed = results.find((r) => r.error);
-    if (failed?.error) {
-      setMsg(friendlyDbError(failed.error.message));
-      await load(); // revert optimistic update on error
+
+    const { error } = await supabase.rpc("reorder_manuscript_chapters", {
+      p_manuscript_id: undoManuscriptId,
+      p_updates: previousUpdates,
+    });
+    if (error) {
+      setMsg(friendlyDbError(error.message));
+      await load();
+    } else {
+      setMsg("Reorder undone.");
     }
   }
 
@@ -2158,7 +2223,13 @@ export default function ManuscriptDetailsPage() {
     return (
       <div
         draggable={!isParentView}
-        onDragStart={isParentView ? undefined : () => setDragChapterId(chapter.id)}
+        onDragStart={(e) => {
+          if (isParentView || !dragArmedFromHandle.current) {
+            e.preventDefault();
+            return;
+          }
+          setDragChapterId(chapter.id);
+        }}
         onDragOver={isParentView ? undefined : (e) => {
           e.preventDefault();
           setDragOverChapterId(chapter.id);
@@ -2170,14 +2241,32 @@ export default function ManuscriptDetailsPage() {
           setDragOverChapterId(null);
         }}
         onDragEnd={isParentView ? undefined : () => {
+          dragArmedFromHandle.current = false;
           setDragChapterId(null);
           setDragOverChapterId(null);
         }}
-        className={draggingOver ? "outline outline-1 outline-[rgba(120,120,120,0.5)] rounded-lg" : ""}
+        className={`flex items-stretch gap-1 ${draggingOver ? "outline outline-1 outline-[rgba(120,120,120,0.5)] rounded-lg" : ""}`}
       >
+        {!isParentView && (
+          <span
+            role="presentation"
+            aria-label="Drag to reorder"
+            title="Drag to reorder"
+            onMouseDown={() => { dragArmedFromHandle.current = true; }}
+            onMouseUp={() => { dragArmedFromHandle.current = false; }}
+            onMouseLeave={() => { dragArmedFromHandle.current = false; }}
+            className="flex shrink-0 cursor-grab items-center px-0.5 text-neutral-600 hover:text-neutral-300 active:cursor-grabbing"
+          >
+            <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+              <circle cx="2.5" cy="2.5" r="1.5" /><circle cx="7.5" cy="2.5" r="1.5" />
+              <circle cx="2.5" cy="8" r="1.5" /><circle cx="7.5" cy="8" r="1.5" />
+              <circle cx="2.5" cy="13.5" r="1.5" /><circle cx="7.5" cy="13.5" r="1.5" />
+            </svg>
+          </span>
+        )}
         <button
           onClick={() => setSelectedChapterId(chapter.id)}
-          className={`chapter-btn block w-full text-left rounded-lg border px-3 py-2 transition ${
+          className={`chapter-btn block w-full min-w-0 text-left rounded-lg border px-3 py-2 transition ${
             isActive
               ? "active-chapter !border-[rgba(120,120,120,0.85)] !bg-[rgba(120,120,120,0.15)] !text-white shadow-[0_12px_26px_rgba(120,120,120,0.18)]"
               : "!border-neutral-800 !bg-neutral-950/40 !text-neutral-200 hover:!border-[rgba(120,120,120,0.4)]"
@@ -2372,6 +2461,16 @@ export default function ManuscriptDetailsPage() {
       <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-amber-600/60 bg-amber-950/90 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] text-sm font-medium text-amber-300 transition-all duration-300 ${rewardToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}`}>
         <span className="shrink-0" style={{ color: "#f59e0b" }}>✿</span>
         {rewardToast}
+      </div>
+      {/* Chapter reorder undo toast */}
+      <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-blue-600/60 bg-blue-950/90 px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)] text-sm font-medium text-blue-200 transition-all duration-300 ${reorderUndo ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}`}>
+        <span>Moved &quot;{reorderUndo?.label ?? ""}&quot;.</span>
+        <button
+          onClick={() => void undoReorder()}
+          className="shrink-0 rounded-md border border-blue-400/60 px-2 py-1 text-xs font-semibold text-blue-100 hover:bg-blue-900/60"
+        >
+          Undo
+        </button>
       </div>
       <div className="mx-auto max-w-[1600px] px-6 py-12">
         {/* Hidden file input for cover uploads triggered by clicking the cover in the sidebar */}
