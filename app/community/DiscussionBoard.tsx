@@ -145,6 +145,37 @@ function Heart({ filled }: { filled: boolean }) {
   );
 }
 
+function PostContent({ content }: { content: string }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    function measure() {
+      const el = textRef.current;
+      if (!el) return;
+      setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [content]);
+
+  return (
+    <div>
+      <p ref={textRef} className={`break-words text-[13px] text-neutral-400 leading-relaxed ${isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
+        {content}
+      </p>
+      {(isTruncated || isExpanded) && (
+        <button type="button" onClick={() => setIsExpanded(v => !v)}
+          className="mt-0.5 rounded border-0 bg-transparent px-0 text-[11px] font-medium text-neutral-300 shadow-none transition hover:bg-transparent hover:text-white">
+          {isExpanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function sortPosts(posts: DiscussionPost[]) {
   return [...posts].sort((a, b) => {
     if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
@@ -1018,11 +1049,7 @@ export default function DiscussionBoard({ currentUserId, community = "adult" }: 
 
                     <p className="mt-1.5 mb-1 text-[14px] font-medium text-neutral-100 leading-snug">{post.title}</p>
 
-                    {post.content && (
-                      <p className={`break-words text-[13px] text-neutral-400 leading-relaxed ${isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
-                        {post.content}
-                      </p>
-                    )}
+                    {post.content && <PostContent content={post.content} />}
 
                     {/* Giveaway */}
                     {post.type === "giveaway" && (() => {
