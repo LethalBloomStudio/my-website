@@ -6,6 +6,7 @@ import BookClubSlateForm from "@/components/BookClubSlateForm";
 import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
 import BookClubComments from "@/components/BookClubComments";
+import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -87,13 +88,26 @@ export default async function BookClubPage() {
   }
 
   let winningBook: { book_title: string; book_author: string } | null = null;
-  if (cycle && isParticipant && cycle.status === "active" && cycle.winning_book_option_id) {
-    const { data: won } = await supabase
-      .from("book_club_book_options")
-      .select("book_title, book_author")
-      .eq("id", cycle.winning_book_option_id)
-      .maybeSingle();
-    winningBook = won ?? null;
+  let questions: { week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
+  if (cycle && isParticipant && cycle.status === "active") {
+    if (cycle.winning_book_option_id) {
+      const { data: won } = await supabase
+        .from("book_club_book_options")
+        .select("book_title, book_author")
+        .eq("id", cycle.winning_book_option_id)
+        .maybeSingle();
+      winningBook = won ?? null;
+    }
+
+    // RLS already scopes this correctly per viewer: the host sees every
+    // week they've authored (including ones not unlocked yet), everyone
+    // else only sees weeks that have actually started.
+    const { data: qs } = await supabase
+      .from("book_club_questionnaire_questions")
+      .select("week_number, prompt, source, preset_id")
+      .eq("cycle_id", cycle.id)
+      .order("week_number");
+    questions = qs ?? [];
   }
 
   return (
@@ -214,9 +228,24 @@ export default async function BookClubPage() {
                     <p className="text-xs text-neutral-400">by {winningBook.book_author}</p>
                   </div>
                 )}
-                <p className="text-sm text-neutral-500">
-                  The questionnaire and weekly checkmarks are coming in the next build phase.
-                </p>
+
+                {isHost && <BookClubQuestionnaireEditor cycleId={cycle.id} existingQuestions={questions} />}
+
+                {questions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">
+                      {isHost ? "Questions (you can see future weeks)" : "This week's question"}
+                    </p>
+                    {questions.map((q) => (
+                      <div key={q.week_number} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
+                        <p className="text-[11px] font-medium text-neutral-500">Week {q.week_number}</p>
+                        <p className="mt-0.5 text-sm text-neutral-200">{q.prompt}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-sm text-neutral-500">Weekly checkmarks are coming in the next build phase.</p>
                 <BookClubComments cycleId={cycle.id} currentUserId={user.id} />
               </>
             )}
