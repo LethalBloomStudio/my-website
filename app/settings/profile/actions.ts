@@ -102,6 +102,7 @@ export async function updateProfile(formData: FormData) {
       social_snapchat: String(formData.get("social_snapchat") ?? "").trim().replace(/^@/, "") || null,
       social_threads: String(formData.get("social_threads") ?? "").trim().replace(/^@/, "") || null,
       social_lemon8: String(formData.get("social_lemon8") ?? "").trim().replace(/^@/, "") || null,
+      social_goodreads: String(formData.get("social_goodreads") ?? "").trim().replace(/^@/, "") || null,
     } : {}),
   };
 
