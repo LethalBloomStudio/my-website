@@ -98,7 +98,7 @@ export default function AuthGatedNav() {
           </svg>
         </Link>
       )}
-      {isAdult && (
+      {isAdult && process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true" && (
         <Link href="/bloom-circle" className="iconTab" aria-label="Bloom Circle" title="Bloom Circle" data-tip="Bloom Circle">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="2.2" />

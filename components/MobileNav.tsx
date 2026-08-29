@@ -202,7 +202,7 @@ export default function MobileNav() {
           {isAdult && (
             <Link href="/community" className="mobileNavLink" onClick={close}>Community</Link>
           )}
-          {isAdult && (
+          {isAdult && process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true" && (
             <Link href="/bloom-circle" className="mobileNavLink" onClick={close}>Bloom Circle</Link>
           )}
           {isAdult && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true" && (
