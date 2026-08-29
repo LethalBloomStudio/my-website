@@ -202,6 +202,12 @@ export default function MobileNav() {
           {isAdult && (
             <Link href="/community" className="mobileNavLink" onClick={close}>Community</Link>
           )}
+          {isAdult && (
+            <Link href="/bloom-circle" className="mobileNavLink" onClick={close}>Bloom Circle</Link>
+          )}
+          {isAdult && (
+            <Link href="/book-club" className="mobileNavLink" onClick={close}>Book Club</Link>
+          )}
         </>
       )}
     </nav>,
