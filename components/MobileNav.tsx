@@ -205,7 +205,7 @@ export default function MobileNav() {
           {isAdult && (
             <Link href="/bloom-circle" className="mobileNavLink" onClick={close}>Bloom Circle</Link>
           )}
-          {isAdult && (
+          {isAdult && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true" && (
             <Link href="/book-club" className="mobileNavLink" onClick={close}>Book Club</Link>
           )}
         </>

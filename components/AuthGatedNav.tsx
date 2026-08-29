@@ -111,7 +111,7 @@ export default function AuthGatedNav() {
           </svg>
         </Link>
       )}
-      {isAdult && (
+      {isAdult && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true" && (
         <Link href="/book-club" className="iconTab" aria-label="Book Club" title="Book Club" data-tip="Book Club">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17z" />

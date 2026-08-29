@@ -14,6 +14,14 @@ import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 export const dynamic = "force-dynamic";
 
 export default async function BookClubPage() {
+  // Kill switch while this feature is still being tested -- flip
+  // NEXT_PUBLIC_BOOK_CLUB_ENABLED=true in .env.local to see it locally.
+  // Unset (or any other value) in production hides the page entirely,
+  // before any auth/RLS check even runs.
+  if (process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED !== "true") {
+    redirect("/discover");
+  }
+
   const supabase = await supabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
