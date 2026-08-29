@@ -69,5 +69,16 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
+  // A comment is one of the "+1 of any kind" weekly engagement actions --
+  // this is a no-op unless the week's question has also been answered.
+  const { data: weekNumber } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycleId });
+  if (weekNumber) {
+    await supabase.rpc("book_club_try_award_weekly_checkmark", {
+      p_cycle_id: cycleId,
+      p_user_id: userId,
+      p_week_number: weekNumber,
+    });
+  }
+
   return NextResponse.json({ ok: true, comment: inserted });
 }

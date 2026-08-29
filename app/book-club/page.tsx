@@ -7,6 +7,9 @@ import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
 import BookClubComments from "@/components/BookClubComments";
 import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
+import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
+import BookClubCheckInButton from "@/components/BookClubCheckInButton";
+import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +91,12 @@ export default async function BookClubPage() {
   }
 
   let winningBook: { book_title: string; book_author: string } | null = null;
-  let questions: { week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
+  let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
+  let currentWeek: number | null = null;
+  let myEarnedWeeks: number[] = [];
+  let myResponseBody = "";
+  let alreadyCheckedInThisWeek = false;
+
   if (cycle && isParticipant && cycle.status === "active") {
     if (cycle.winning_book_option_id) {
       const { data: won } = await supabase
@@ -104,11 +112,45 @@ export default async function BookClubPage() {
     // else only sees weeks that have actually started.
     const { data: qs } = await supabase
       .from("book_club_questionnaire_questions")
-      .select("week_number, prompt, source, preset_id")
+      .select("id, week_number, prompt, source, preset_id")
       .eq("cycle_id", cycle.id)
       .order("week_number");
     questions = qs ?? [];
+
+    const { data: weekNum } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycle.id });
+    currentWeek = (weekNum as number | null) ?? null;
+
+    const { data: checkmarks } = await supabase
+      .from("book_club_weekly_checkmarks")
+      .select("week_number")
+      .eq("cycle_id", cycle.id)
+      .eq("user_id", user.id);
+    myEarnedWeeks = (checkmarks ?? []).map((c) => c.week_number);
+
+    if (currentWeek) {
+      const { data: checkin } = await supabase
+        .from("book_club_check_ins")
+        .select("id")
+        .eq("cycle_id", cycle.id)
+        .eq("user_id", user.id)
+        .eq("week_number", currentWeek)
+        .maybeSingle();
+      alreadyCheckedInThisWeek = !!checkin;
+
+      const currentWeekQuestion = questions.find((q) => q.week_number === currentWeek);
+      if (currentWeekQuestion) {
+        const { data: resp } = await supabase
+          .from("book_club_question_responses")
+          .select("body")
+          .eq("question_id", currentWeekQuestion.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        myResponseBody = resp?.body ?? "";
+      }
+    }
   }
+
+  const currentWeekQuestion = questions.find((q) => q.week_number === currentWeek) ?? null;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -245,7 +287,24 @@ export default async function BookClubPage() {
                   </div>
                 )}
 
-                <p className="text-sm text-neutral-500">Weekly checkmarks are coming in the next build phase.</p>
+                <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
+                  <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
+                </div>
+
+                {currentWeekQuestion && (
+                  <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">
+                      Answer week {currentWeekQuestion.week_number} to earn this week&apos;s checkmark
+                    </p>
+                    <BookClubQuestionResponseForm questionId={currentWeekQuestion.id} initialBody={myResponseBody} />
+                    <p className="text-xs text-neutral-500">
+                      Plus one more thing this week -- comment below or:
+                    </p>
+                    <BookClubCheckInButton cycleId={cycle.id} alreadyCheckedInThisWeek={alreadyCheckedInThisWeek} />
+                  </div>
+                )}
+
                 <BookClubComments cycleId={cycle.id} currentUserId={user.id} />
               </>
             )}
