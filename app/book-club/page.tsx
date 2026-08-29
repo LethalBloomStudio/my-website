@@ -14,14 +14,6 @@ import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 export const dynamic = "force-dynamic";
 
 export default async function BookClubPage() {
-  // Kill switch while this feature is still being tested -- flip
-  // NEXT_PUBLIC_BOOK_CLUB_ENABLED=true in .env.local to see it locally.
-  // Unset (or any other value) in production hides the page entirely,
-  // before any auth/RLS check even runs.
-  if (process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED !== "true") {
-    redirect("/discover");
-  }
-
   const supabase = await supabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -39,6 +31,20 @@ export default async function BookClubPage() {
 
   // Silent redirect for non-adults, matching app/bloom-circle/page.tsx.
   if (!isAdult && !isAdmin) redirect("/discover");
+
+  // Admin-controlled kill switch (admin dashboard's Feature Flags tab).
+  // Admins always bypass it so they can preview/test regardless of the
+  // toggle state; NEXT_PUBLIC_BOOK_CLUB_ENABLED=true in .env.local is a
+  // local-only convenience so testing doesn't depend on which account
+  // you're signed in as (local dev hits the same remote DB as production).
+  if (!isAdmin && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED !== "true") {
+    const { data: flag } = await supabase
+      .from("feature_flags")
+      .select("is_enabled")
+      .eq("name", "book_club")
+      .maybeSingle();
+    if (!flag?.is_enabled) redirect("/discover");
+  }
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")

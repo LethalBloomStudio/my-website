@@ -15,6 +15,8 @@ export default function AuthGatedNav() {
   const [isAdult, setIsAdult] = useState(false);
   const [isYouth, setIsYouth] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [bloomCircleEnabled, setBloomCircleEnabled] = useState(false);
+  const [bookClubEnabled, setBookClubEnabled] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,16 @@ export default function AuthGatedNav() {
       setIsAdult(a?.age_category === "adult_18_plus");
       setIsYouth(a?.age_category === "youth_13_17");
       setIsAdmin(!!a?.is_admin);
+
+      const { data: flags } = await supabase
+        .from("feature_flags")
+        .select("name, is_enabled")
+        .in("name", ["bloom_circle", "book_club"]);
+      if (cancelled) return;
+      const flagRows = (flags ?? []) as { name: string; is_enabled: boolean }[];
+      setBloomCircleEnabled(!!flagRows.find((f) => f.name === "bloom_circle")?.is_enabled);
+      setBookClubEnabled(!!flagRows.find((f) => f.name === "book_club")?.is_enabled);
+
       setReady(true);
     }
 
@@ -98,7 +110,7 @@ export default function AuthGatedNav() {
           </svg>
         </Link>
       )}
-      {isAdult && process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true" && (
+      {isAdult && (isAdmin || bloomCircleEnabled || process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true") && (
         <Link href="/bloom-circle" className="iconTab" aria-label="Bloom Circle" title="Bloom Circle" data-tip="Bloom Circle">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="2.2" />
@@ -111,7 +123,7 @@ export default function AuthGatedNav() {
           </svg>
         </Link>
       )}
-      {isAdult && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true" && (
+      {isAdult && (isAdmin || bookClubEnabled || process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true") && (
         <Link href="/book-club" className="iconTab" aria-label="Book Club" title="Book Club" data-tip="Book Club">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17z" />

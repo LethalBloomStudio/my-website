@@ -16,6 +16,8 @@ export default function MobileNav() {
   const [isAdult, setIsAdult] = useState(false);
   const [isYouth, setIsYouth] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [bloomCircleEnabled, setBloomCircleEnabled] = useState(false);
+  const [bookClubEnabled, setBookClubEnabled] = useState(false);
   const [msgCount, setMsgCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
 
@@ -94,6 +96,15 @@ export default function MobileNav() {
       setIsAdult(a?.age_category === "adult_18_plus");
       setIsYouth(a?.age_category === "youth_13_17");
       setIsAdmin(!!a?.is_admin);
+
+      const { data: flags } = await supabase
+        .from("feature_flags")
+        .select("name, is_enabled")
+        .in("name", ["bloom_circle", "book_club"]);
+      if (cancelled) return;
+      const flagRows = (flags ?? []) as { name: string; is_enabled: boolean }[];
+      setBloomCircleEnabled(!!flagRows.find((f) => f.name === "bloom_circle")?.is_enabled);
+      setBookClubEnabled(!!flagRows.find((f) => f.name === "book_club")?.is_enabled);
 
       if (!a?.is_deactivated && a?.age_category !== "youth_13_17") {
         await refreshCounts(userId);
@@ -202,10 +213,10 @@ export default function MobileNav() {
           {isAdult && (
             <Link href="/community" className="mobileNavLink" onClick={close}>Community</Link>
           )}
-          {isAdult && process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true" && (
+          {isAdult && (isAdmin || bloomCircleEnabled || process.env.NEXT_PUBLIC_BLOOM_CIRCLE_ENABLED === "true") && (
             <Link href="/bloom-circle" className="mobileNavLink" onClick={close}>Bloom Circle</Link>
           )}
-          {isAdult && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true" && (
+          {isAdult && (isAdmin || bookClubEnabled || process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED === "true") && (
             <Link href="/book-club" className="mobileNavLink" onClick={close}>Book Club</Link>
           )}
         </>
