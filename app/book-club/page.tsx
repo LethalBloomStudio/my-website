@@ -5,6 +5,7 @@ import BookClubOptInButton from "@/components/BookClubOptInButton";
 import BookClubSlateForm from "@/components/BookClubSlateForm";
 import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
+import BookClubComments from "@/components/BookClubComments";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function BookClubPage() {
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, grace_window_deadline, tie_pending, voting_closes_at")
+    .select("id, status, host_user_id, grace_window_deadline, tie_pending, voting_closes_at, winning_book_option_id")
     .neq("status", "completed")
     .maybeSingle();
 
@@ -83,6 +84,16 @@ export default async function BookClubPage() {
       const ids = (tiedIds as string[] | null) ?? [];
       tiedOptions = bookOptions.filter((o) => ids.includes(o.id));
     }
+  }
+
+  let winningBook: { book_title: string; book_author: string } | null = null;
+  if (cycle && isParticipant && cycle.status === "active" && cycle.winning_book_option_id) {
+    const { data: won } = await supabase
+      .from("book_club_book_options")
+      .select("book_title, book_author")
+      .eq("id", cycle.winning_book_option_id)
+      .maybeSingle();
+    winningBook = won ?? null;
   }
 
   return (
@@ -187,17 +198,27 @@ export default async function BookClubPage() {
         )}
 
         {cycle?.status === "active" && (
-          <section className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-            <p className="text-sm text-neutral-300">
-              This cycle&apos;s book has been chosen and the discussion is running.
-              {!isParticipant && " Opt in to join."}
-            </p>
-            {!isParticipant && <BookClubOptInButton />}
+          <section className="space-y-4">
+            {!isParticipant && (
+              <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
+                <p className="text-sm text-neutral-300">This cycle&apos;s discussion is running. Opt in to join.</p>
+                <BookClubOptInButton />
+              </div>
+            )}
             {isParticipant && (
-              <p className="text-sm text-neutral-500">
-                Discussion thread, questionnaire, and weekly checkmarks are coming in the next
-                build phase.
-              </p>
+              <>
+                {winningBook && (
+                  <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
+                    <p className="mt-1 text-sm font-medium text-neutral-100">{winningBook.book_title}</p>
+                    <p className="text-xs text-neutral-400">by {winningBook.book_author}</p>
+                  </div>
+                )}
+                <p className="text-sm text-neutral-500">
+                  The questionnaire and weekly checkmarks are coming in the next build phase.
+                </p>
+                <BookClubComments cycleId={cycle.id} currentUserId={user.id} />
+              </>
             )}
           </section>
         )}
