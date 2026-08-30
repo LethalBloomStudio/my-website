@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
-import BookClubComments from "@/components/BookClubComments";
 import BookClubResponseReplies from "@/components/BookClubResponseReplies";
 import BookClubLikeButton from "@/components/BookClubLikeButton";
 
@@ -29,16 +28,15 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// One collapsible section per week: the question, your own answer,
-// everyone else's answers as a read-only feed, and -- reusing
-// BookClubComments rather than building a separate thread widget -- a
-// week-scoped discussion underneath for actual back-and-forth. A closed
-// week (its 7-day window has fully elapsed) stays expandable and fully
-// readable, it just greys out and drops the response form / comment
-// composer -- cycleId, currentUserId, closed determine that.
+// One collapsible section per week: the question, your own answer, and
+// everyone else's answers as a chat-style feed -- only actual answers to
+// this week's question belong here (general chatter has its own home in
+// the cycle-level "Group Thoughts and Discussion" section instead, so
+// there's no second freeform thread competing for the same space). A
+// closed week (its 7-day window has fully elapsed) stays expandable and
+// fully readable, it just greys out and drops the response form.
 export default function BookClubWeekSection({
   cycleId,
-  currentUserId,
   isHost,
   weekNumber,
   prompt,
@@ -54,7 +52,6 @@ export default function BookClubWeekSection({
   otherResponses,
 }: {
   cycleId: string;
-  currentUserId: string;
   isHost: boolean;
   weekNumber: number;
   prompt: string;
@@ -160,10 +157,6 @@ export default function BookClubWeekSection({
                   </div>
                 </div>
               ))}
-
-              <div className="border-t bookclub-divider pt-3">
-                <BookClubComments cycleId={cycleId} weekNumber={weekNumber} currentUserId={currentUserId} canPost={!closed} />
-              </div>
             </>
           )}
         </div>

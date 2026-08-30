@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import BookClubLikeButton from "@/components/BookClubLikeButton";
 
-const REPLY_MIN_WORDS_TO_QUALIFY = 100;
+const REPLY_MIN_WORDS_TO_QUALIFY = 50;
 
 function countWords(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;

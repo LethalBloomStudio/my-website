@@ -434,7 +434,6 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                   <BookClubWeekSection
                     key={weekNumber}
                     cycleId={cycle.id}
-                    currentUserId={user.id}
                     isHost={isHost}
                     weekNumber={weekNumber}
                     prompt={q?.prompt ?? ""}

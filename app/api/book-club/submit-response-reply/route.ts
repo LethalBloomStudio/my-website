@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 // No hard minimum to post -- REPLY_MIN_WORDS_TO_QUALIFY only gates the
 // coin reward (evaluated below, RPC-side), matching how ordinary comments
 // have never had a length requirement.
-const REPLY_MIN_WORDS_TO_QUALIFY = 100;
+const REPLY_MIN_WORDS_TO_QUALIFY = 50;
 
 function countWords(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
