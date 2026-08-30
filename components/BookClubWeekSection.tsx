@@ -86,14 +86,14 @@ export default function BookClubWeekSection({
   const canReplyToAnswers = started && !closed;
 
   return (
-    <div className={`overflow-hidden rounded-xl border border-l-4 bookclub-week-${weekNumber} transition ${closed ? "border-neutral-800/60 bg-neutral-900/30" : "border-neutral-800 bg-neutral-900/60"}`}>
+    <div className={`overflow-hidden rounded-xl border-2 bookclub-week-${weekNumber} transition ${closed ? "bg-neutral-900/30" : "bg-neutral-900/60"}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full flex-col gap-1 px-4 py-3 text-left"
       >
         <span className="flex items-center justify-between gap-3">
-          <span className={`text-sm font-semibold uppercase tracking-wide bookclub-week-${weekNumber}`}>
+          <span className={`text-sm font-semibold uppercase tracking-wide ${closed ? "text-neutral-500" : "text-neutral-200"}`}>
             Week {weekNumber}
           </span>
           <span className="flex items-center gap-2">
