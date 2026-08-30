@@ -12,6 +12,8 @@ import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars"
 import BookClubComments from "@/components/BookClubComments";
 import BookClubCoinProgress from "@/components/BookClubCoinProgress";
 import BookClubHostChecklist from "@/components/BookClubHostChecklist";
+import BookClubRatingPreview from "@/components/BookClubRatingPreview";
+import BookClubChecklistItem from "@/components/BookClubChecklistItem";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +54,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, tie_pending, voting_opens_at, voting_closes_at, winning_book_option_id, planned_starts_at, cycle_starts_at")
+    .select("id, status, host_user_id, tie_pending, voting_opens_at, voting_closes_at, winning_book_option_id, planned_starts_at, cycle_starts_at, cycle_ends_at")
     .eq("id", cycleId)
     .maybeSingle();
 
@@ -74,6 +76,9 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   const isHost = cycle.host_user_id === user.id;
   const cycleMonthLabel = cycle.planned_starts_at
     ? new Date(cycle.planned_starts_at).toLocaleDateString("en-US", { month: "long" })
+    : null;
+  const cycleEndsAtLabel = cycle.cycle_ends_at
+    ? new Date(cycle.cycle_ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })
     : null;
 
   let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null; slot_number: number }[] = [];
@@ -399,20 +404,24 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                 currentUserId={user.id}
                 initial={hostProgress}
                 initialQuestionWeeks={questions.map((q) => q.week_number).filter((w) => w >= 1 && w <= 4)}
+                cycleEndsAtLabel={cycleEndsAtLabel}
               />
             ) : (
               <BookClubCoinProgress coinTotal={myCoinProgress} />
             )}
 
             {winningBook && (
-              <div className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                <BookClubCoverThumb coverUrl={winningBook.cover_image_url} title={winningBook.book_title} width={48} height={68} />
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">{cycleMonthLabel ? `${cycleMonthLabel}'s Book` : "This cycle's book"}</p>
-                  <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
-                  <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
-                  {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <BookClubCoverThumb coverUrl={winningBook.cover_image_url} title={winningBook.book_title} width={48} height={68} />
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">{cycleMonthLabel ? `${cycleMonthLabel}'s Book` : "This cycle's book"}</p>
+                    <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                    <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                    {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+                  </div>
                 </div>
+                <BookClubRatingPreview opensAtLabel={cycleEndsAtLabel} />
               </div>
             )}
 
@@ -425,6 +434,11 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
               <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
                 <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
                 <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
+                {cycleEndsAtLabel && (
+                  <div className="pt-1">
+                    <BookClubChecklistItem done={false} label={`Rate book on ${cycleEndsAtLabel}`} />
+                  </div>
+                )}
               </div>
             )}
 

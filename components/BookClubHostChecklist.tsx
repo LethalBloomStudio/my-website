@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
+import BookClubChecklistItem from "@/components/BookClubChecklistItem";
 
 const CYCLE_LENGTH_WEEKS = 4;
 
@@ -17,18 +18,6 @@ type Progress = {
   alreadyReleased: boolean;
 };
 
-function ChecklistItem({ done, label, sub }: { done: boolean; label: string; sub?: string }) {
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold bookclub-chip ${done ? "bookclub-chip-active" : ""}`}>
-        {done && <span className="text-emerald-400">✓</span>}
-      </span>
-      <span className={done ? "text-neutral-300" : "text-neutral-500"}>{label}</span>
-      {sub && <span className="ml-auto text-[10px] text-neutral-600">{sub}</span>}
-    </div>
-  );
-}
-
 // Host-only checklist of everything that has to happen before the flat
 // 250-coin month-end reward pays out (released via book_club_submit_rating
 // like everyone else's coins). Every item is a live count against a
@@ -42,11 +31,13 @@ export default function BookClubHostChecklist({
   currentUserId,
   initial,
   initialQuestionWeeks,
+  cycleEndsAtLabel,
 }: {
   cycleId: string;
   currentUserId: string;
   initial: Progress;
   initialQuestionWeeks: number[];
+  cycleEndsAtLabel: string | null;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [progress, setProgress] = useState(initial);
@@ -103,28 +94,31 @@ export default function BookClubHostChecklist({
   return (
     <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
       <p className="text-xs uppercase tracking-wide text-neutral-500">
-        <span className="font-bold">Host reward:</span> 250 Bloom Coins at month end
+        <span className="font-bold">Host reward:</span> 250 Bloom Coins at close of book club{cycleEndsAtLabel ? ` (${cycleEndsAtLabel})` : ""}
       </p>
       <p className="text-[11px] text-neutral-600">Check every box by the time the month closes, released when you rate the book.</p>
       <div className="space-y-1.5 pt-1">
         {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => (
-          <ChecklistItem key={week} done={questionWeeks.has(week)} label={`Week ${week} question set`} />
+          <BookClubChecklistItem key={week} done={questionWeeks.has(week)} label={`Week ${week} question set`} />
         ))}
-        <ChecklistItem
+        <BookClubChecklistItem
           done={progress.replyCount >= progress.repliesNeeded}
           label="Replies to members' answers"
           sub={`${Math.min(progress.replyCount, progress.repliesNeeded)}/${progress.repliesNeeded}`}
         />
-        <ChecklistItem
+        <BookClubChecklistItem
           done={progress.likeCount >= progress.likesNeeded}
           label="Likes given"
           sub={`${Math.min(progress.likeCount, progress.likesNeeded)}/${progress.likesNeeded}`}
         />
-        <ChecklistItem
+        <BookClubChecklistItem
           done={progress.groupPostCount >= progress.groupPostsNeeded}
           label="Group Thoughts posts"
           sub={`${Math.min(progress.groupPostCount, progress.groupPostsNeeded)}/${progress.groupPostsNeeded}`}
         />
+        {cycleEndsAtLabel && (
+          <BookClubChecklistItem done={false} label={`Rate book on ${cycleEndsAtLabel}`} />
+        )}
       </div>
     </div>
   );
