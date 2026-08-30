@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import BookClubLikeButton from "@/components/BookClubLikeButton";
 
 const REPLY_MIN_WORDS_TO_QUALIFY = 100;
 
@@ -18,7 +19,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-type Reply = { id: string; author_name: string; created_at: string; body: string };
+type Reply = { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean };
 
 // Replies to one specific response (someone's actual weekly answer), not
 // the general per-week comment thread below it -- a reply here is what
@@ -26,10 +27,12 @@ type Reply = { id: string; author_name: string; created_at: string; body: string
 // Immutable once posted (no edit here, matching the table having no
 // update policy), so this only ever appends.
 export default function BookClubResponseReplies({
+  cycleId,
   responseId,
   canReply,
   initialReplies,
 }: {
+  cycleId: string;
   responseId: string;
   canReply: boolean;
   initialReplies: Reply[];
@@ -62,7 +65,7 @@ export default function BookClubResponseReplies({
       return;
     }
 
-    setReplies((prev) => [...prev, { id: data.reply!.id, author_name: "You", created_at: data.reply!.created_at, body: data.reply!.body }]);
+    setReplies((prev) => [...prev, { id: data.reply!.id, author_name: "You", created_at: data.reply!.created_at, body: data.reply!.body, likeCount: 0, likedByMe: false }]);
     setLastQualified(!!data.qualified);
     setSubmitting(false);
     setDraft("");
@@ -80,6 +83,7 @@ export default function BookClubResponseReplies({
                 <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
               </div>
               <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-400">{r.body}</p>
+              <BookClubLikeButton cycleId={cycleId} targetType="reply" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
             </div>
           ))}
         </div>

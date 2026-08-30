@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
+import BookClubLikeButton from "@/components/BookClubLikeButton";
 
 type Author = { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null };
 type Comment = {
@@ -48,14 +49,17 @@ function Avatar({ url, name, size = 24 }: { url: string | null; name: string; si
 }
 
 function CommentRow({
-  comment, isOwn, onReply, isReplying, onSaveEdit, canReply,
+  comment, cycleId, isOwn, onReply, isReplying, onSaveEdit, canReply, likeCount, likedByMe,
 }: {
   comment: Comment;
+  cycleId: string;
   isOwn: boolean;
   onReply: () => void;
   isReplying: boolean;
   onSaveEdit: (newBody: string) => Promise<void>;
   canReply: boolean;
+  likeCount: number;
+  likedByMe: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -114,6 +118,7 @@ function CommentRow({
 
         {!editing && (
           <div className="mt-1.5 flex items-center gap-1.5">
+            <BookClubLikeButton cycleId={cycleId} targetType="comment" targetId={comment.id} initialLiked={likedByMe} initialCount={likeCount} />
             {canReply && (
               <button onClick={onReply}
                 className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
@@ -163,6 +168,8 @@ function ReplyInput({ replyToName, value, onChange, onSubmit, onCancel, submitti
 export default function BookClubComments({ cycleId, weekNumber, currentUserId, canPost }: { cycleId: string; weekNumber: number; currentUserId: string | null; canPost: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; authorName: string } | null>(null);
@@ -185,12 +192,29 @@ export default function BookClubComments({ cycleId, weekNumber, currentUserId, c
         ? await supabase.from("public_profiles").select("user_id, username, pen_name, avatar_url").in("user_id", authorIds)
         : { data: [] };
       const profileMap = new Map(((profiles ?? []) as Author[]).map((p) => [p.user_id, p]));
+
+      const commentIds = list.map((c) => c.id);
+      const counts: Record<string, number> = {};
+      const mine = new Set<string>();
+      if (commentIds.length > 0) {
+        const { data: likeRows } = await supabase
+          .from("book_club_likes")
+          .select("comment_id, user_id")
+          .in("comment_id", commentIds);
+        for (const l of (likeRows ?? []) as { comment_id: string; user_id: string }[]) {
+          counts[l.comment_id] = (counts[l.comment_id] ?? 0) + 1;
+          if (l.user_id === currentUserId) mine.add(l.comment_id);
+        }
+      }
+
       if (cancelled) return;
       setComments(list.map((c) => ({ ...c, author: profileMap.get(c.author_id) ?? null })));
+      setLikeCounts(counts);
+      setLikedByMe(mine);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [supabase, cycleId, weekNumber]);
+  }, [supabase, cycleId, weekNumber, currentUserId]);
 
   async function post(body: string, parentCommentId: string | null) {
     if (!body.trim() || submitting) return;
@@ -253,22 +277,26 @@ export default function BookClubComments({ cycleId, weekNumber, currentUserId, c
         const isReplyingHere = replyingTo?.commentId === comment.id || replies.some((r) => replyingTo?.commentId === r.id);
         return (
           <div key={comment.id} className="space-y-2">
-            <CommentRow comment={comment} isOwn={currentUserId === comment.author_id}
+            <CommentRow comment={comment} cycleId={cycleId} isOwn={currentUserId === comment.author_id}
               onReply={() => setReplyingTo(replyingTo?.commentId === comment.id ? null : { commentId: comment.id, authorName })}
               isReplying={replyingTo?.commentId === comment.id}
               onSaveEdit={(body) => saveEdit(comment.id, body)}
-              canReply={canPost} />
+              canReply={canPost}
+              likeCount={likeCounts[comment.id] ?? 0}
+              likedByMe={likedByMe.has(comment.id)} />
 
             {replies.length > 0 && (
               <div className="ml-8 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
                 {replies.map((reply) => {
                   const replyAuthorName = reply.author?.pen_name || reply.author?.username || "Member";
                   return (
-                    <CommentRow key={reply.id} comment={reply} isOwn={currentUserId === reply.author_id}
+                    <CommentRow key={reply.id} comment={reply} cycleId={cycleId} isOwn={currentUserId === reply.author_id}
                       onReply={() => setReplyingTo(replyingTo?.commentId === reply.id ? null : { commentId: reply.id, authorName: replyAuthorName })}
                       isReplying={replyingTo?.commentId === reply.id}
                       onSaveEdit={(body) => saveEdit(reply.id, body)}
-                      canReply={canPost} />
+                      canReply={canPost}
+                      likeCount={likeCounts[reply.id] ?? 0}
+                      likedByMe={likedByMe.has(reply.id)} />
                   );
                 })}
               </div>

@@ -10,6 +10,7 @@ import BookClubWeekSection from "@/components/BookClubWeekSection";
 import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubComments from "@/components/BookClubComments";
+import BookClubCoinProgress from "@/components/BookClubCoinProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -108,8 +109,11 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   let myEarnedWeeks: number[] = [];
   const myResponsesByQuestionId: Record<string, string> = {};
   const myResponseIdByQuestionId: Record<string, string> = {};
-  const myResponseRepliesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
-  const otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; replies: { id: string; author_name: string; created_at: string; body: string }[] }[]> = {};
+  const myResponseRepliesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean }[]> = {};
+  const myResponseLikesByQuestionId: Record<string, { count: number; likedByMe: boolean }> = {};
+  const otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; replies: { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean }[]; likeCount: number; likedByMe: boolean }[]> = {};
+  let myCoinProgress = 0;
+  let hostProgress: { replyCount: number; likeCount: number; groupPostCount: number; repliesNeeded: number; likesNeeded: number; groupPostsNeeded: number; alreadyReleased: boolean } | null = null;
 
   if (cycle.status === "questions_pending" || cycle.status === "active") {
     if (cycle.winning_book_option_id) {
@@ -196,25 +200,54 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
       // answer" (replies you received) and each of the others' answers
       // (replies to those, plus your own reply affordance).
       const responseIds = responseRows.map((r) => r.id);
-      const repliesByResponseId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
+      let replyRows: { id: string; response_id: string; author_id: string; body: string; created_at: string }[] = [];
+      const repliesByResponseId: Record<string, { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean }[]> = {};
       if (responseIds.length > 0) {
-        const { data: replyRows } = await supabase
+        const { data } = await supabase
           .from("book_club_response_replies")
           .select("id, response_id, author_id, body, created_at")
           .in("response_id", responseIds)
           .order("created_at");
-        const replies = (replyRows ?? []) as { id: string; response_id: string; author_id: string; body: string; created_at: string }[];
-        const replyAuthorIds = [...new Set(replies.map((r) => r.author_id))];
+        replyRows = (data ?? []) as typeof replyRows;
+      }
+      const replyIds = replyRows.map((r) => r.id);
+
+      // Likes on both responses and replies for this week -- one query per
+      // target type (book_club_likes' target columns are separate, not a
+      // single polymorphic id).
+      const responseLikeCounts: Record<string, number> = {};
+      const responseLikedByMe = new Set<string>();
+      const replyLikeCounts: Record<string, number> = {};
+      const replyLikedByMe = new Set<string>();
+      if (responseIds.length > 0) {
+        const { data: likeRows } = await supabase.from("book_club_likes").select("response_id, user_id").in("response_id", responseIds);
+        for (const l of (likeRows ?? []) as { response_id: string; user_id: string }[]) {
+          responseLikeCounts[l.response_id] = (responseLikeCounts[l.response_id] ?? 0) + 1;
+          if (l.user_id === user.id) responseLikedByMe.add(l.response_id);
+        }
+      }
+      if (replyIds.length > 0) {
+        const { data: likeRows } = await supabase.from("book_club_likes").select("reply_id, user_id").in("reply_id", replyIds);
+        for (const l of (likeRows ?? []) as { reply_id: string; user_id: string }[]) {
+          replyLikeCounts[l.reply_id] = (replyLikeCounts[l.reply_id] ?? 0) + 1;
+          if (l.user_id === user.id) replyLikedByMe.add(l.reply_id);
+        }
+      }
+
+      if (replyIds.length > 0) {
+        const replyAuthorIds = [...new Set(replyRows.map((r) => r.author_id))];
         const { data: replyProfiles } = replyAuthorIds.length > 0
           ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", replyAuthorIds)
           : { data: [] };
         const replyNameMap = new Map(((replyProfiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
-        for (const r of replies) {
+        for (const r of replyRows) {
           (repliesByResponseId[r.response_id] ??= []).push({
             id: r.id,
             author_name: r.author_id === user.id ? "You" : replyNameMap.get(r.author_id) ?? "Member",
             created_at: r.created_at,
             body: r.body,
+            likeCount: replyLikeCounts[r.id] ?? 0,
+            likedByMe: replyLikedByMe.has(r.id),
           });
         }
       }
@@ -224,6 +257,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
           myResponsesByQuestionId[r.question_id] = r.body;
           myResponseIdByQuestionId[r.question_id] = r.id;
           myResponseRepliesByQuestionId[r.question_id] = repliesByResponseId[r.id] ?? [];
+          myResponseLikesByQuestionId[r.question_id] = { count: responseLikeCounts[r.id] ?? 0, likedByMe: responseLikedByMe.has(r.id) };
         } else {
           (otherResponsesByQuestionId[r.question_id] ??= []).push({
             id: r.id,
@@ -231,9 +265,29 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             created_at: r.created_at,
             body: r.body,
             replies: repliesByResponseId[r.id] ?? [],
+            likeCount: responseLikeCounts[r.id] ?? 0,
+            likedByMe: responseLikedByMe.has(r.id),
           });
         }
       }
+    }
+
+    if (isHost) {
+      const { data: rows } = await supabase.rpc("book_club_host_reward_progress", { p_cycle_id: cycle.id });
+      const row = (rows as {
+        reply_count: number; like_count: number; group_post_count: number;
+        replies_needed: number; likes_needed: number; group_posts_needed: number; already_released: boolean;
+      }[] | null)?.[0];
+      if (row) {
+        hostProgress = {
+          replyCount: Number(row.reply_count), likeCount: Number(row.like_count), groupPostCount: Number(row.group_post_count),
+          repliesNeeded: row.replies_needed, likesNeeded: row.likes_needed, groupPostsNeeded: row.group_posts_needed,
+          alreadyReleased: row.already_released,
+        };
+      }
+    } else {
+      const { data: progress } = await supabase.rpc("book_club_my_cycle_coin_progress", { p_cycle_id: cycle.id });
+      myCoinProgress = Number(progress ?? 0);
     }
   }
 
@@ -312,6 +366,8 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
         {cycle.status === "active" && (
           <section className="space-y-4">
+            <BookClubCoinProgress isHost={isHost} coinTotal={myCoinProgress} hostProgress={hostProgress} />
+
             {winningBook && (
               <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
                 <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
@@ -351,6 +407,8 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                     myResponseId={q ? myResponseIdByQuestionId[q.id] ?? null : null}
                     myResponseBody={q ? myResponsesByQuestionId[q.id] ?? "" : ""}
                     myResponseReplies={q ? myResponseRepliesByQuestionId[q.id] ?? [] : []}
+                    myResponseLikeCount={q ? myResponseLikesByQuestionId[q.id]?.count ?? 0 : 0}
+                    myResponseLikedByMe={q ? myResponseLikesByQuestionId[q.id]?.likedByMe ?? false : false}
                     otherResponses={q ? otherResponsesByQuestionId[q.id] ?? [] : []}
                   />
                 );

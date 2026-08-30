@@ -5,8 +5,9 @@ import Link from "next/link";
 import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
 import BookClubComments from "@/components/BookClubComments";
 import BookClubResponseReplies from "@/components/BookClubResponseReplies";
+import BookClubLikeButton from "@/components/BookClubLikeButton";
 
-type Reply = { id: string; author_name: string; created_at: string; body: string };
+type Reply = { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean };
 
 type OtherResponse = {
   id: string;
@@ -14,6 +15,8 @@ type OtherResponse = {
   created_at: string;
   body: string;
   replies: Reply[];
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 function timeAgo(dateStr: string) {
@@ -46,6 +49,8 @@ export default function BookClubWeekSection({
   myResponseId,
   myResponseBody,
   myResponseReplies,
+  myResponseLikeCount,
+  myResponseLikedByMe,
   otherResponses,
 }: {
   cycleId: string;
@@ -60,6 +65,8 @@ export default function BookClubWeekSection({
   myResponseId: string | null;
   myResponseBody: string;
   myResponseReplies: Reply[];
+  myResponseLikeCount: number;
+  myResponseLikedByMe: boolean;
   otherResponses: OtherResponse[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -120,8 +127,11 @@ export default function BookClubWeekSection({
               ) : (
                 <BookClubQuestionResponseForm questionId={questionId} initialBody={myResponseBody} />
               )}
+              {myResponseId && myResponseBody && (
+                <BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} />
+              )}
               {myResponseId && myResponseReplies.length > 0 && (
-                <BookClubResponseReplies responseId={myResponseId} canReply={false} initialReplies={myResponseReplies} />
+                <BookClubResponseReplies cycleId={cycleId} responseId={myResponseId} canReply={false} initialReplies={myResponseReplies} />
               )}
 
               {otherResponses.length > 0 && (
@@ -137,7 +147,8 @@ export default function BookClubWeekSection({
                           <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
                         </div>
                         <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{r.body}</p>
-                        <BookClubResponseReplies responseId={r.id} canReply={canReplyToAnswers} initialReplies={r.replies} />
+                        <BookClubLikeButton cycleId={cycleId} targetType="response" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
+                        <BookClubResponseReplies cycleId={cycleId} responseId={r.id} canReply={canReplyToAnswers} initialReplies={r.replies} />
                       </div>
                     </div>
                   ))}
