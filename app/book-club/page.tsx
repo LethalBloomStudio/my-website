@@ -3,8 +3,17 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubHostSignupButton from "@/components/BookClubHostSignupButton";
 import BookClubOptInButton from "@/components/BookClubOptInButton";
+import BookClubClosedMonthCard from "@/components/BookClubClosedMonthCard";
 
 export const dynamic = "force-dynamic";
+
+const CLOSED_MONTHS_SHOWN = 12;
+
+type Participant = { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null };
+
+function monthLabel(dateStr: string | null) {
+  return dateStr ? new Date(dateStr).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : null;
+}
 
 export default async function BookClubPage() {
   const supabase = await supabaseServer();
@@ -25,11 +34,6 @@ export default async function BookClubPage() {
   // Silent redirect for non-adults, matching app/bloom-circle/page.tsx.
   if (!isAdult && !isAdmin) redirect("/discover");
 
-  // Admin-controlled kill switch (admin dashboard's Feature Flags tab).
-  // Admins always bypass it so they can preview/test regardless of the
-  // toggle state; NEXT_PUBLIC_BOOK_CLUB_ENABLED=true in .env.local is a
-  // local-only convenience so testing doesn't depend on which account
-  // you're signed in as (local dev hits the same remote DB as production).
   if (!isAdmin && process.env.NEXT_PUBLIC_BOOK_CLUB_ENABLED !== "true") {
     const { data: flag } = await supabase
       .from("feature_flags")
@@ -39,63 +43,138 @@ export default async function BookClubPage() {
     if (!flag?.is_enabled) redirect("/discover");
   }
 
-  const { data: cycle } = await supabase
+  // -- Active month --
+  const { data: activeCycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, grace_window_deadline, cycle_starts_at, winning_book_option_id")
-    .neq("status", "completed")
+    .select("id, host_user_id, cycle_starts_at, winning_book_option_id")
+    .eq("status", "active")
     .maybeSingle();
 
-  let alreadySignedUpToHost = false;
-  let isParticipant = false;
-  if (cycle) {
-    const [{ data: signup }, { data: participant }] = await Promise.all([
-      supabase
-        .from("book_club_host_signups")
-        .select("id")
-        .eq("cycle_id", cycle.id)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("book_club_participants")
-        .select("id")
-        .eq("cycle_id", cycle.id)
-        .eq("user_id", user.id)
-        .maybeSingle(),
+  let activeIsParticipant = false;
+  let activeHostName: string | null = null;
+  let activeWinningBook: { book_title: string; book_author: string } | null = null;
+  if (activeCycle) {
+    const [{ data: participant }, { data: hostProfile }] = await Promise.all([
+      supabase.from("book_club_participants").select("id").eq("cycle_id", activeCycle.id).eq("user_id", user.id).maybeSingle(),
+      activeCycle.host_user_id
+        ? supabase.from("public_profiles").select("username, pen_name").eq("user_id", activeCycle.host_user_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
-    alreadySignedUpToHost = !!signup;
-    isParticipant = !!participant;
+    activeIsParticipant = !!participant;
+    activeHostName = hostProfile?.pen_name || hostProfile?.username || null;
+    if (activeCycle.winning_book_option_id) {
+      const { data: won } = await supabase
+        .from("book_club_book_options")
+        .select("book_title, book_author")
+        .eq("id", activeCycle.winning_book_option_id)
+        .maybeSingle();
+      activeWinningBook = won ?? null;
+    }
   }
 
-  // Both readable by any adult regardless of opt-in status -- the decided
-  // host and book are the public "here's what's happening" announcement;
-  // the slate/votes that led to it stay opt-in-gated (see
-  // 20260829040024_book_club_public_winning_book.sql for the book side).
-  let hostName: string | null = null;
-  let winningBook: { book_title: string; book_author: string } | null = null;
-  if (cycle?.host_user_id) {
-    const { data: hostProfile } = await supabase
-      .from("public_profiles")
-      .select("username, pen_name")
-      .eq("user_id", cycle.host_user_id)
-      .maybeSingle();
-    hostName = hostProfile?.pen_name || hostProfile?.username || "Member";
-  }
-  if (cycle?.winning_book_option_id) {
-    const { data: won } = await supabase
-      .from("book_club_book_options")
-      .select("book_title, book_author")
-      .eq("id", cycle.winning_book_option_id)
-      .maybeSingle();
-    winningBook = won ?? null;
+  // -- Upcoming months (rolling signup pipeline, up to 3) --
+  const { data: upcomingRows } = await supabase
+    .from("book_club_cycles")
+    .select("id, status, host_user_id, planned_starts_at, winning_book_option_id, tie_pending")
+    .in("status", ["host_pending", "voting", "questions_pending"])
+    .order("planned_starts_at", { ascending: true })
+    .limit(3);
+
+  const upcoming = [];
+  for (const row of upcomingRows ?? []) {
+    const [{ data: signup }, { data: participant }] = await Promise.all([
+      row.status === "host_pending"
+        ? supabase.from("book_club_host_signups").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.from("book_club_participants").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    let hostName: string | null = null;
+    if (row.host_user_id) {
+      const { data: hostProfile } = await supabase
+        .from("public_profiles")
+        .select("username, pen_name")
+        .eq("user_id", row.host_user_id)
+        .maybeSingle();
+      hostName = hostProfile?.pen_name || hostProfile?.username || "Member";
+    }
+
+    // Public once decided, same carve-out as the active cycle's book --
+    // visible pre-opt-in during questions_pending.
+    let winningBook: { book_title: string; book_author: string } | null = null;
+    if (row.winning_book_option_id) {
+      const { data: won } = await supabase
+        .from("book_club_book_options")
+        .select("book_title, book_author")
+        .eq("id", row.winning_book_option_id)
+        .maybeSingle();
+      winningBook = won ?? null;
+    }
+
+    upcoming.push({
+      id: row.id,
+      status: row.status as "host_pending" | "voting" | "questions_pending",
+      plannedStartsAt: row.planned_starts_at as string | null,
+      alreadySignedUpToHost: !!signup,
+      isParticipant: !!participant,
+      isHost: row.host_user_id === user.id,
+      hostName,
+      winningBook,
+    });
   }
 
-  const monthLabel = cycle?.cycle_starts_at
-    ? new Date(cycle.cycle_starts_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
-    : null;
+  // -- Closed months (summary cards only) --
+  const { data: closedRows } = await supabase
+    .from("book_club_cycles")
+    .select("id, winning_book_option_id, host_user_id, cycle_ends_at")
+    .eq("status", "completed")
+    .order("cycle_ends_at", { ascending: false })
+    .limit(CLOSED_MONTHS_SHOWN);
+
+  const closed = [];
+  for (const row of closedRows ?? []) {
+    const [{ data: won }, { data: hostProfile }, { data: participantRows }, { data: statsRows }, { data: myParticipant }, { data: myRating }] = await Promise.all([
+      row.winning_book_option_id
+        ? supabase.from("book_club_book_options").select("book_title, book_author").eq("id", row.winning_book_option_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      row.host_user_id
+        ? supabase.from("public_profiles").select("username, pen_name").eq("user_id", row.host_user_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.from("book_club_participants").select("user_id").eq("cycle_id", row.id),
+      supabase.rpc("book_club_cycle_completion_stats", { p_cycle_id: row.id }),
+      supabase.from("book_club_participants").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle(),
+      supabase.from("book_club_ratings").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    const participantIds = ((participantRows ?? []) as { user_id: string }[]).map((r) => r.user_id);
+    let participants: Participant[] = [];
+    if (participantIds.length > 0) {
+      const { data } = await supabase
+        .from("public_profiles")
+        .select("user_id, username, pen_name, avatar_url")
+        .in("user_id", participantIds);
+      participants = data ?? [];
+    }
+
+    const statsRow = (statsRows as { participant_count: number; full_sweep_count: number }[] | null)?.[0];
+    const stats = statsRow
+      ? { participantCount: Number(statsRow.participant_count), fullSweepCount: Number(statsRow.full_sweep_count) }
+      : null;
+
+    closed.push({
+      id: row.id,
+      bookTitle: won?.book_title ?? null,
+      bookAuthor: won?.book_author ?? null,
+      hostName: hostProfile?.pen_name || hostProfile?.username || null,
+      participants,
+      stats,
+      needsRating: !!myParticipant && !myRating,
+    });
+  }
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
+      <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Book Club</h1>
           <p className="mt-2 text-sm text-neutral-400">
@@ -103,65 +182,141 @@ export default async function BookClubPage() {
           </p>
         </header>
 
-        {!cycle && (
-          <p className="text-sm text-neutral-400">
-            Book Club is between cycles right now. Check back soon for the next host signup.
-          </p>
-        )}
-
-        {cycle?.status === "host_pending" && (
-          <section className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-            <p className="text-sm text-neutral-300">
-              No one has signed up to host the next cycle yet. Sign up and you&apos;ll be selected
-              as soon as the host-signup window closes.
-            </p>
-            <BookClubHostSignupButton initiallySignedUp={alreadySignedUpToHost} />
-          </section>
-        )}
-
-        {cycle?.status === "host_grace" && (
-          <section className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-            <p className="text-sm text-neutral-300">
-              Someone has signed up to host. There&apos;s still time to join the running
-              {cycle.grace_window_deadline
-                ? ` before the host is picked (by ${new Date(cycle.grace_window_deadline).toLocaleString()}).`
-                : "."}
-            </p>
-            <BookClubHostSignupButton initiallySignedUp={alreadySignedUpToHost} />
-          </section>
-        )}
-
-        {cycle && ["slate_building", "voting", "active"].includes(cycle.status) && (
-          <section className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-neutral-500">
-                {monthLabel ? `${monthLabel} Book Club` : "This cycle's Book Club"}
-              </p>
-              {winningBook ? (
-                <>
-                  <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
-                  <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-neutral-400">
-                  {cycle.status === "slate_building" ? "The host is building the book slate." : "Voting is underway."}
+        {/* -- Active month -- */}
+        <section className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">This month</h2>
+          {!activeCycle && (
+            <p className="text-sm text-neutral-400">No Book Club month is running right now.</p>
+          )}
+          {activeCycle && (
+            <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-neutral-500">
+                  {monthLabel(activeCycle.cycle_starts_at) ?? "This month"}
                 </p>
-              )}
-              {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
-            </div>
-
-            {isParticipant ? (
-              <Link href="/book-club/cycle" className="bookclub-btn">
-                Enter Book Club →
-              </Link>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-neutral-400">
-                  Opt in to see the book slate, vote, and join the discussion.
-                </p>
-                <BookClubOptInButton />
+                {activeWinningBook ? (
+                  <>
+                    <p className="mt-1 text-lg font-medium text-neutral-100">{activeWinningBook.book_title}</p>
+                    <p className="text-sm text-neutral-400">by {activeWinningBook.book_author}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-neutral-400">The book is being decided.</p>
+                )}
+                {activeHostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {activeHostName}</p>}
               </div>
-            )}
+
+              {activeIsParticipant ? (
+                <Link href={`/book-club/cycle/${activeCycle.id}`} className="bookclub-btn">
+                  Enter Book Club →
+                </Link>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-neutral-400">Opt in to join the discussion.</p>
+                  <BookClubOptInButton cycleId={activeCycle.id} />
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* -- Upcoming months -- */}
+        <section className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Upcoming</h2>
+          {upcoming.length === 0 && (
+            <p className="text-sm text-neutral-500">Nothing queued up yet.</p>
+          )}
+          <div className="space-y-3">
+            {upcoming.map((c) => (
+              <div key={c.id} className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">
+                  {monthLabel(c.plannedStartsAt) ?? "Next up"}
+                </p>
+
+                {c.status === "host_pending" && (
+                  <>
+                    <p className="text-sm text-neutral-300">Host signup is open for this month.</p>
+                    <BookClubHostSignupButton cycleId={c.id} initiallySignedUp={c.alreadySignedUpToHost} />
+                    {c.isParticipant ? (
+                      <Link href={`/book-club/cycle/${c.id}`} className="block text-sm text-neutral-300 underline underline-offset-2 hover:text-white transition">
+                        Help build the book slate →
+                      </Link>
+                    ) : (
+                      <div className="space-y-1.5 border-t border-neutral-800 pt-3">
+                        <p className="text-xs text-neutral-500">Opt in to help build the book slate.</p>
+                        <BookClubOptInButton cycleId={c.id} />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {c.status === "voting" && (
+                  <>
+                    <p className="text-sm text-neutral-300">Voting on the book slate is underway.</p>
+                    {c.hostName && <p className="text-xs text-neutral-500">Hosted by {c.hostName}</p>}
+                    {c.isParticipant ? (
+                      <Link href={`/book-club/cycle/${c.id}`} className="block text-sm text-neutral-300 underline underline-offset-2 hover:text-white transition">
+                        Vote now →
+                      </Link>
+                    ) : (
+                      <div className="space-y-1.5 border-t border-neutral-800 pt-3">
+                        <p className="text-xs text-neutral-500">Opt in to vote.</p>
+                        <BookClubOptInButton cycleId={c.id} />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {c.status === "questions_pending" && (
+                  <>
+                    {c.winningBook ? (
+                      <>
+                        <p className="text-sm font-medium text-neutral-100">{c.winningBook.book_title}</p>
+                        <p className="text-xs text-neutral-400">by {c.winningBook.book_author}</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-neutral-300">The book&apos;s been decided.</p>
+                    )}
+                    {c.hostName && <p className="text-xs text-neutral-500">Hosted by {c.hostName}</p>}
+                    <p className="text-xs text-neutral-500">
+                      {c.isHost ? "Finalize this month's discussion questions before launch." : "Questions are being finalized before launch."}
+                    </p>
+                    {c.isParticipant ? (
+                      c.isHost && (
+                        <Link href={`/book-club/cycle/${c.id}`} className="block text-sm text-neutral-300 underline underline-offset-2 hover:text-white transition">
+                          Finalize questions →
+                        </Link>
+                      )
+                    ) : (
+                      <div className="space-y-1.5 border-t border-neutral-800 pt-3">
+                        <p className="text-xs text-neutral-500">Opt in to follow along.</p>
+                        <BookClubOptInButton cycleId={c.id} />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* -- Closed months -- */}
+        {closed.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Closed</h2>
+            <div className="space-y-3">
+              {closed.map((c) => (
+                <BookClubClosedMonthCard
+                  key={c.id}
+                  bookTitle={c.bookTitle}
+                  bookAuthor={c.bookAuthor}
+                  hostName={c.hostName}
+                  participants={c.participants}
+                  stats={c.stats}
+                  cycleId={c.id}
+                  needsRating={c.needsRating}
+                />
+              ))}
+            </div>
           </section>
         )}
       </div>

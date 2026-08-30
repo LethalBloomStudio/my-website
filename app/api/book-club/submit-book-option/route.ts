@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-type Body = { book_title?: string; book_author?: string };
+type Body = { cycle_id?: string; book_title?: string; book_author?: string };
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -19,16 +19,22 @@ export async function POST(req: Request) {
   }
 
   const raw = (await req.json()) as Body;
+  const cycleId = String(raw.cycle_id ?? "").trim();
   const bookTitle = String(raw.book_title ?? "").trim();
   const bookAuthor = String(raw.book_author ?? "").trim();
-  if (!bookTitle || !bookAuthor) {
-    return NextResponse.json({ error: "Book title and author are required." }, { status: 400 });
+  if (!cycleId || !bookTitle || !bookAuthor) {
+    return NextResponse.json({ error: "Cycle, book title, and author are required." }, { status: 400 });
   }
 
+  // Slate submissions happen during host_pending now (open as soon as a
+  // cycle is queued up, not a dedicated slate_building phase) -- multiple
+  // upcoming cycles can be host_pending at once, so this is scoped to the
+  // specific cycle_id the client is submitting into.
   const { data: cycle } = await supabase
     .from("book_club_cycles")
     .select("id, host_user_id")
-    .eq("status", "slate_building")
+    .eq("id", cycleId)
+    .eq("status", "host_pending")
     .maybeSingle();
   if (!cycle) {
     return NextResponse.json({ error: "The book slate isn't open right now." }, { status: 400 });

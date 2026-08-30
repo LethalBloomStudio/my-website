@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubSlateForm from "@/components/BookClubSlateForm";
 import BookClubVoteBallot from "@/components/BookClubVoteBallot";
@@ -12,12 +12,15 @@ import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars"
 
 export const dynamic = "force-dynamic";
 
-// The "inside" view -- everything opting in actually unlocks. Reached from
-// the /book-club landing summary's "Enter Book Club" link; redirects back
-// there if there's nothing to enter yet (no cycle, still forming a host)
-// or the viewer hasn't opted in (RLS would hide all the data here anyway,
-// but redirecting is a clearer experience than a page full of empty states).
-export default async function BookClubCyclePage() {
+// The "inside" view for one specific upcoming/active cycle -- reached from
+// /book-club's active card or one of its up-to-3 upcoming cards. Several
+// non-completed cycles can exist at once now (the rolling pipeline), so
+// this is keyed by cycleId instead of resolving "the" cycle. A completed
+// cycle has nothing here any more -- its RLS-enforced lockout means every
+// query below just comes back empty/null for one, so it 404s rather than
+// rendering a blank shell.
+export default async function BookClubCyclePage({ params }: { params: Promise<{ cycleId: string }> }) {
+  const { cycleId } = await params;
   const supabase = await supabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -46,11 +49,14 @@ export default async function BookClubCyclePage() {
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, tie_pending, voting_closes_at, winning_book_option_id")
-    .neq("status", "completed")
+    .select("id, status, host_user_id, tie_pending, voting_closes_at, winning_book_option_id, planned_starts_at")
+    .eq("id", cycleId)
     .maybeSingle();
 
-  if (!cycle || !["slate_building", "voting", "active"].includes(cycle.status)) {
+  if (!cycle || cycle.status === "completed") {
+    notFound();
+  }
+  if (!["host_pending", "voting", "questions_pending", "active"].includes(cycle.status)) {
     redirect("/book-club");
   }
 
@@ -68,7 +74,7 @@ export default async function BookClubCyclePage() {
   let myVoteBookOptionId: string | null = null;
   let tiedOptions: { id: string; book_title: string; book_author: string }[] = [];
 
-  if (cycle.status === "slate_building" || cycle.status === "voting") {
+  if (cycle.status === "host_pending" || cycle.status === "voting") {
     const { data: options } = await supabase
       .from("book_club_book_options")
       .select("id, book_title, book_author")
@@ -103,7 +109,7 @@ export default async function BookClubCyclePage() {
   let otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
   let alreadyCheckedInThisWeek = false;
 
-  if (cycle.status === "active") {
+  if (cycle.status === "questions_pending" || cycle.status === "active") {
     if (cycle.winning_book_option_id) {
       const { data: won } = await supabase
         .from("book_club_book_options")
@@ -121,10 +127,21 @@ export default async function BookClubCyclePage() {
         .maybeSingle();
       hostName = hostProfile?.pen_name || hostProfile?.username || "Member";
     }
+  }
 
-    // book_club_participants_select_cycle (added alongside the participant
-    // avatar row) is what makes this return every participant instead of
-    // just the caller's own row.
+  if (cycle.status === "questions_pending" && isHost) {
+    const { data: qs } = await supabase
+      .from("book_club_questionnaire_questions")
+      .select("id, week_number, prompt, source, preset_id")
+      .eq("cycle_id", cycle.id)
+      .order("week_number");
+    questions = qs ?? [];
+  }
+
+  if (cycle.status === "active") {
+    // book_club_participants_select_cycle only opens this up once the
+    // cycle is active/completed -- host_pending/voting/questions_pending
+    // stay opt-in-only, matching the slate's own visibility.
     const { data: participantRows } = await supabase
       .from("book_club_participants")
       .select("user_id")
@@ -138,9 +155,6 @@ export default async function BookClubCyclePage() {
       participants = participantProfiles ?? [];
     }
 
-    // RLS already scopes this correctly per viewer: the host sees every
-    // week they've authored (including ones not unlocked yet), everyone
-    // else only sees weeks that have actually started.
     const { data: qs } = await supabase
       .from("book_club_questionnaire_questions")
       .select("id, week_number, prompt, source, preset_id")
@@ -169,9 +183,6 @@ export default async function BookClubCyclePage() {
       alreadyCheckedInThisWeek = !!checkin;
     }
 
-    // Started weeks only -- RLS already hides responses to weeks that
-    // haven't unlocked yet, but we only want to render a discussion feed
-    // for weeks the viewer can actually answer/read.
     const startedQuestionIds = questions
       .filter((q) => currentWeek !== null && q.week_number <= currentWeek)
       .map((q) => q.id);
@@ -215,14 +226,13 @@ export default async function BookClubCyclePage() {
           <h1 className="text-3xl font-semibold tracking-tight">Book Club</h1>
         </header>
 
-        {cycle.status === "slate_building" && (
+        {cycle.status === "host_pending" && (
           <section className="space-y-4">
             <p className="text-sm text-neutral-400">
-              {isHost
-                ? "Fill in some or all of the slate yourself, or leave slots for participants."
-                : "Add a book to the slate (one per person)."}
+              Host selection for this month happens closer to launch. In the meantime, add a book to the slate
+              (one per person -- whoever&apos;s picked as host may fill several).
             </p>
-            <BookClubSlateForm />
+            <BookClubSlateForm cycleId={cycle.id} />
             {bookOptions.length > 0 && (
               <ul className="space-y-2">
                 {bookOptions.map((o) => (
@@ -245,6 +255,32 @@ export default async function BookClubCyclePage() {
               Voting closes {cycle.voting_closes_at ? new Date(cycle.voting_closes_at).toLocaleString() : "soon"}.
             </p>
             <BookClubVoteBallot cycleId={cycle.id} options={bookOptions} myVoteBookOptionId={myVoteBookOptionId} />
+          </section>
+        )}
+
+        {cycle.status === "questions_pending" && (
+          <section className="space-y-4">
+            {winningBook && (
+              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">Next month&apos;s book</p>
+                <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+              </div>
+            )}
+            {isHost ? (
+              <>
+                <p className="text-sm text-neutral-400">
+                  Final week before launch -- finalize the discussion questions for all 4 weeks.
+                </p>
+                <BookClubQuestionnaireEditor cycleId={cycle.id} existingQuestions={questions} currentWeek={null} />
+              </>
+            ) : (
+              <p className="text-sm text-neutral-400">
+                The book&apos;s decided -- {hostName ?? "the host"} is finalizing this month&apos;s discussion questions.
+                This month launches automatically once that&apos;s done.
+              </p>
+            )}
           </section>
         )}
 

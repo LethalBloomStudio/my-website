@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-export async function POST() {
+type Body = { cycle_id?: string };
+
+export async function POST(req: Request) {
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
@@ -16,9 +18,14 @@ export async function POST() {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
+  const raw = (await req.json().catch(() => ({}))) as Body;
+  const cycleId = String(raw.cycle_id ?? "").trim();
+  if (!cycleId) return NextResponse.json({ error: "Missing cycle." }, { status: 400 });
+
   const { data: cycle } = await supabase
     .from("book_club_cycles")
     .select("id")
+    .eq("id", cycleId)
     .neq("status", "completed")
     .maybeSingle();
 

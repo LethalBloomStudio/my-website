@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-export default function BookClubSlateForm() {
+export default function BookClubSlateForm({ cycleId }: { cycleId: string }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -18,7 +18,7 @@ export default function BookClubSlateForm() {
       const res = await fetch("/api/book-club/submit-book-option", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_title: title, book_author: author }),
+        body: JSON.stringify({ cycle_id: cycleId, book_title: title, book_author: author }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {

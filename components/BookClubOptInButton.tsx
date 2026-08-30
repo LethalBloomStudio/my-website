@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function BookClubOptInButton() {
+export default function BookClubOptInButton({ cycleId }: { cycleId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +12,11 @@ export default function BookClubOptInButton() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/book-club/opt-in", { method: "POST" });
+      const res = await fetch("/api/book-club/opt-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cycle_id: cycleId }),
+      });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
         setError(data.error ?? "Something went wrong.");
