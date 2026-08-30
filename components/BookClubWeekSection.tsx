@@ -4,12 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
 import BookClubComments from "@/components/BookClubComments";
+import BookClubResponseReplies from "@/components/BookClubResponseReplies";
+
+type Reply = { id: string; author_name: string; created_at: string; body: string };
 
 type OtherResponse = {
   id: string;
   author_name: string;
   created_at: string;
   body: string;
+  replies: Reply[];
 };
 
 function timeAgo(dateStr: string) {
@@ -39,7 +43,9 @@ export default function BookClubWeekSection({
   closed,
   defaultOpen,
   questionId,
+  myResponseId,
   myResponseBody,
+  myResponseReplies,
   otherResponses,
 }: {
   cycleId: string;
@@ -51,12 +57,17 @@ export default function BookClubWeekSection({
   closed: boolean;
   defaultOpen: boolean;
   questionId: string | null;
+  myResponseId: string | null;
   myResponseBody: string;
+  myResponseReplies: Reply[];
   otherResponses: OtherResponse[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
   const statusLabel = !started ? "Not started yet" : closed ? "Closed" : "In progress";
+  // Replies (and their reward) are only open on the current week -- same
+  // "started && !closed" window everything else in this component uses.
+  const canReplyToAnswers = started && !closed;
 
   return (
     <div className={`rounded-xl border transition ${closed ? "border-neutral-800/60 bg-neutral-900/30" : "border-neutral-800 bg-neutral-900/60"}`}>
@@ -109,6 +120,9 @@ export default function BookClubWeekSection({
               ) : (
                 <BookClubQuestionResponseForm questionId={questionId} initialBody={myResponseBody} />
               )}
+              {myResponseId && myResponseReplies.length > 0 && (
+                <BookClubResponseReplies responseId={myResponseId} canReply={false} initialReplies={myResponseReplies} />
+              )}
 
               {otherResponses.length > 0 && (
                 <div className="space-y-3 border-t border-neutral-800 pt-3">
@@ -123,6 +137,7 @@ export default function BookClubWeekSection({
                           <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
                         </div>
                         <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{r.body}</p>
+                        <BookClubResponseReplies responseId={r.id} canReply={canReplyToAnswers} initialReplies={r.replies} />
                       </div>
                     </div>
                   ))}

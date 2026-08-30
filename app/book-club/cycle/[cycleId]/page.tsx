@@ -7,9 +7,9 @@ import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
 import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
 import BookClubWeekSection from "@/components/BookClubWeekSection";
-import BookClubCheckInButton from "@/components/BookClubCheckInButton";
 import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
+import BookClubComments from "@/components/BookClubComments";
 
 export const dynamic = "force-dynamic";
 
@@ -106,9 +106,10 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
   let currentWeek: number | null = null;
   let myEarnedWeeks: number[] = [];
-  let myResponsesByQuestionId: Record<string, string> = {};
-  let otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
-  let alreadyCheckedInThisWeek = false;
+  const myResponsesByQuestionId: Record<string, string> = {};
+  const myResponseIdByQuestionId: Record<string, string> = {};
+  const myResponseRepliesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
+  const otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; replies: { id: string; author_name: string; created_at: string; body: string }[] }[]> = {};
 
   if (cycle.status === "questions_pending" || cycle.status === "active") {
     if (cycle.winning_book_option_id) {
@@ -173,17 +174,6 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
       .eq("user_id", user.id);
     myEarnedWeeks = (checkmarks ?? []).map((c) => c.week_number);
 
-    if (currentWeek) {
-      const { data: checkin } = await supabase
-        .from("book_club_check_ins")
-        .select("id")
-        .eq("cycle_id", cycle.id)
-        .eq("user_id", user.id)
-        .eq("week_number", currentWeek)
-        .maybeSingle();
-      alreadyCheckedInThisWeek = !!checkin;
-    }
-
     const startedQuestionIds = questions
       .filter((q) => currentWeek !== null && q.week_number <= currentWeek)
       .map((q) => q.id);
@@ -202,15 +192,45 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
         : { data: [] };
       const nameMap = new Map(((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
 
+      // Replies to any of this week's answers -- shown under both "your
+      // answer" (replies you received) and each of the others' answers
+      // (replies to those, plus your own reply affordance).
+      const responseIds = responseRows.map((r) => r.id);
+      const repliesByResponseId: Record<string, { id: string; author_name: string; created_at: string; body: string }[]> = {};
+      if (responseIds.length > 0) {
+        const { data: replyRows } = await supabase
+          .from("book_club_response_replies")
+          .select("id, response_id, author_id, body, created_at")
+          .in("response_id", responseIds)
+          .order("created_at");
+        const replies = (replyRows ?? []) as { id: string; response_id: string; author_id: string; body: string; created_at: string }[];
+        const replyAuthorIds = [...new Set(replies.map((r) => r.author_id))];
+        const { data: replyProfiles } = replyAuthorIds.length > 0
+          ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", replyAuthorIds)
+          : { data: [] };
+        const replyNameMap = new Map(((replyProfiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
+        for (const r of replies) {
+          (repliesByResponseId[r.response_id] ??= []).push({
+            id: r.id,
+            author_name: r.author_id === user.id ? "You" : replyNameMap.get(r.author_id) ?? "Member",
+            created_at: r.created_at,
+            body: r.body,
+          });
+        }
+      }
+
       for (const r of responseRows) {
         if (r.user_id === user.id) {
           myResponsesByQuestionId[r.question_id] = r.body;
+          myResponseIdByQuestionId[r.question_id] = r.id;
+          myResponseRepliesByQuestionId[r.question_id] = repliesByResponseId[r.id] ?? [];
         } else {
           (otherResponsesByQuestionId[r.question_id] ??= []).push({
             id: r.id,
             author_name: nameMap.get(r.user_id) ?? "Member",
             created_at: r.created_at,
             body: r.body,
+            replies: repliesByResponseId[r.id] ?? [],
           });
         }
       }
@@ -328,21 +348,22 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                     closed={closed}
                     defaultOpen={weekNumber === currentWeek}
                     questionId={started && q ? q.id : null}
+                    myResponseId={q ? myResponseIdByQuestionId[q.id] ?? null : null}
                     myResponseBody={q ? myResponsesByQuestionId[q.id] ?? "" : ""}
+                    myResponseReplies={q ? myResponseRepliesByQuestionId[q.id] ?? [] : []}
                     otherResponses={q ? otherResponsesByQuestionId[q.id] ?? [] : []}
                   />
                 );
               })}
             </div>
 
-            {currentWeek !== null && (
-              <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                <p className="text-xs text-neutral-500">
-                  Plus one more thing this week to earn your checkmark -- comment below or:
-                </p>
-                <BookClubCheckInButton cycleId={cycle.id} alreadyCheckedInThisWeek={alreadyCheckedInThisWeek} />
-              </div>
-            )}
+            <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Group Thoughts and Discussion</p>
+              <p className="text-xs text-neutral-500">
+                Anything about the book, on your mind -- not tied to a specific week&apos;s question.
+              </p>
+              <BookClubComments cycleId={cycle.id} weekNumber={0} currentUserId={user.id} canPost={true} />
+            </div>
           </section>
         )}
       </div>

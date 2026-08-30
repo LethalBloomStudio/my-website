@@ -5,6 +5,10 @@ type Body = {
   cycle_id?: string;
   body?: string;
   parent_comment_id?: string | null;
+  // Posts into the week_number = 0 "Group Thoughts" sentinel thread instead
+  // of deriving the current week -- still validated by RLS either way, this
+  // just picks which of the two the server should attempt.
+  general?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -42,10 +46,18 @@ export async function POST(req: Request) {
 
   // Comments are scoped to the current week only -- closed (past) weeks are
   // read-only, matching book_club_question_responses' same current-week-only
-  // write rule.
-  const { data: weekNumber } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycleId });
-  if (!weekNumber) {
-    return NextResponse.json({ error: "This week has closed and no longer accepts new comments." }, { status: 403 });
+  // write rule. Group Thoughts (general: true) skips that entirely -- it's
+  // the week_number = 0 sentinel thread, open for the life of the active
+  // month regardless of which week is current.
+  let weekNumber: number;
+  if (raw.general) {
+    weekNumber = 0;
+  } else {
+    const { data: currentWeek } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycleId });
+    if (!currentWeek) {
+      return NextResponse.json({ error: "This week has closed and no longer accepts new comments." }, { status: 403 });
+    }
+    weekNumber = currentWeek;
   }
 
   // Flatten to 2 levels, same as Bloom Circle's comments: replying to a
@@ -78,13 +90,16 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // A comment is one of the "+1 of any kind" weekly engagement actions --
-  // this is a no-op unless the week's question has also been answered.
-  await supabase.rpc("book_club_try_award_weekly_checkmark", {
-    p_cycle_id: cycleId,
-    p_user_id: userId,
-    p_week_number: weekNumber,
-  });
+  // The checkmark is answer-only now (no more "+1 engagement action"), so
+  // this call is a harmless idempotent re-check, not this comment's own
+  // trigger -- skipped entirely for Group Thoughts, which isn't a real week.
+  if (weekNumber > 0) {
+    await supabase.rpc("book_club_try_award_weekly_checkmark", {
+      p_cycle_id: cycleId,
+      p_user_id: userId,
+      p_week_number: weekNumber,
+    });
+  }
 
   return NextResponse.json({ ok: true, comment: inserted });
 }

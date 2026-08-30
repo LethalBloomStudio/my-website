@@ -200,7 +200,7 @@ export default function BookClubComments({ cycleId, weekNumber, currentUserId, c
     const res = await fetch("/api/book-club/submit-comment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cycle_id: cycleId, body, parent_comment_id: parentCommentId }),
+      body: JSON.stringify({ cycle_id: cycleId, body, parent_comment_id: parentCommentId, general: weekNumber === 0 }),
     });
     const data = (await res.json()) as { ok?: boolean; comment?: Omit<Comment, "author">; error?: string };
 

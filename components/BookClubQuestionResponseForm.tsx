@@ -6,7 +6,7 @@ import { useState } from "react";
 // Mirrors ORIGINAL_MAX_WORDS's style in BloomCircleSubmissionForm.tsx --
 // a local, easily-adjustable constant, duplicated (not shared) with the
 // matching check in app/api/book-club/submit-response/route.ts.
-const RESPONSE_MIN_WORDS = 50;
+const RESPONSE_MIN_WORDS = 150;
 
 function countWords(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;

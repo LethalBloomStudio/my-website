@@ -8,7 +8,7 @@ function countWords(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-const RESPONSE_MIN_WORDS = 50;
+const RESPONSE_MIN_WORDS = 150;
 
 type Body = { question_id?: string; body?: string };
 
