@@ -54,6 +54,11 @@ export async function POST(req: Request) {
     delta?: number;
     reason?: string;
     metadata?: Record<string, unknown>;
+    // book club admin assign
+    cycle_id?: string;
+    host_user_id?: string;
+    book_title?: string;
+    book_author?: string;
   };
 
   if (body.type === "audit") {
@@ -176,6 +181,17 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, notified: userIds.length });
+  }
+
+  if (body.type === "book_club_admin_assign" && body.cycle_id && body.host_user_id && body.book_title && body.book_author) {
+    const { error } = await supabase.rpc("book_club_admin_assign", {
+      p_cycle_id: body.cycle_id,
+      p_host_user_id: body.host_user_id,
+      p_book_title: body.book_title,
+      p_book_author: body.book_author,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: "Unknown action type" }, { status: 400 });

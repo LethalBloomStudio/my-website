@@ -141,6 +141,26 @@ type FeatureFlag = {
   updated_at: string;
 };
 
+type BookClubCycle = {
+  id: string;
+  status: string;
+  host_user_id: string | null;
+  grace_window_deadline: string | null;
+  slate_building_deadline: string | null;
+  voting_closes_at: string | null;
+  cycle_starts_at: string | null;
+  cycle_ends_at: string | null;
+};
+
+type BookClubSignup = {
+  id: string;
+  user_id: string;
+  name: string;
+  times_hosted_snapshot: number;
+  signed_up_at: string;
+  status: "pending" | "approved" | "denied";
+};
+
 type Stats = {
   total_users: number;
   active_users: number;
@@ -273,7 +293,7 @@ type ParentReportAppeal = {
   created_at: string;
 };
 
-type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "referrals" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions";
+type Tab = "overview" | "users" | "content" | "reports" | "requests" | "flags" | "announcements" | "feature_flags" | "audit" | "transactions" | "referrals" | "appeals" | "deleted" | "parent_reports" | "feedback" | "promotions" | "book_club_admin";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -404,7 +424,7 @@ function AdminPageInner() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => {
     const t = searchParams.get("tab");
-    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","referrals","appeals","deleted","parent_reports","feedback","promotions"];
+    const valid: Tab[] = ["overview","users","content","reports","requests","flags","announcements","feature_flags","audit","transactions","referrals","appeals","deleted","parent_reports","feedback","promotions","book_club_admin"];
     return valid.includes(t as Tab) ? (t as Tab) : "overview";
   });
 
@@ -431,6 +451,13 @@ function AdminPageInner() {
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
+  const [bookClubCycle, setBookClubCycle] = useState<BookClubCycle | null>(null);
+  const [bookClubSignups, setBookClubSignups] = useState<BookClubSignup[]>([]);
+  const [assignHostUsername, setAssignHostUsername] = useState("");
+  const [assignBookTitle, setAssignBookTitle] = useState("");
+  const [assignBookAuthor, setAssignBookAuthor] = useState("");
+  const [assignSaving, setAssignSaving] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
@@ -565,6 +592,17 @@ function AdminPageInner() {
     if (nextTab === "parent_reports") void loadParentReports();
     if (nextTab === "feedback") void loadFeedback();
     if (nextTab === "promotions") void loadPromotions();
+    if (nextTab === "book_club_admin") void loadBookClub();
+  }
+
+  async function loadBookClub() {
+    const data = await adminFetch("/api/admin/data?scope=book_club") as {
+      bookClubCycle?: BookClubCycle | null;
+      bookClubSignups?: BookClubSignup[];
+    } | null;
+    if (!data) return;
+    setBookClubCycle(data.bookClubCycle ?? null);
+    setBookClubSignups(data.bookClubSignups ?? []);
   }
 
   async function loadAll(_uid?: string) {
@@ -1160,6 +1198,54 @@ function AdminPageInner() {
     await loadFeatureFlags();
   }
 
+  // ─── Book Club admin actions ────────────────────────────────────────────────
+
+  async function setSignupStatus(signup: BookClubSignup, status: "approved" | "denied") {
+    await adminUpdate("book_club_host_signups", "id", signup.id, { status });
+    await audit(`book_club_signup_${status}`, "book_club_host_signup", signup.id, { status: signup.status }, { status });
+    await loadBookClub();
+  }
+
+  async function assignHostAndBook() {
+    if (!bookClubCycle || !assignHostUsername.trim() || !assignBookTitle.trim() || !assignBookAuthor.trim()) return;
+    setAssignSaving(true);
+    setAssignError(null);
+    try {
+      const { data: profile } = await supabase
+        .from("public_profiles")
+        .select("user_id")
+        .eq("username", assignHostUsername.trim())
+        .maybeSingle();
+      if (!profile) {
+        setAssignError(`No user found with username "${assignHostUsername.trim()}".`);
+        return;
+      }
+      const result = await adminFetch("/api/admin/action", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "book_club_admin_assign",
+          cycle_id: bookClubCycle.id,
+          host_user_id: profile.user_id,
+          book_title: assignBookTitle.trim(),
+          book_author: assignBookAuthor.trim(),
+        }),
+      }) as { ok?: boolean; error?: string } | null;
+      if (!result?.ok) {
+        setAssignError(result?.error ?? "Something went wrong.");
+        return;
+      }
+      await audit("book_club_admin_assign", "book_club_cycle", bookClubCycle.id, { status: bookClubCycle.status }, {
+        status: "active", host_user_id: profile.user_id, book_title: assignBookTitle.trim(), book_author: assignBookAuthor.trim(),
+      });
+      setAssignHostUsername("");
+      setAssignBookTitle("");
+      setAssignBookAuthor("");
+      await loadBookClub();
+    } finally {
+      setAssignSaving(false);
+    }
+  }
+
   // ─── Announcement actions ──────────────────────────────────────────────────
 
   async function postAnnouncement() {
@@ -1229,6 +1315,7 @@ function AdminPageInner() {
     flags: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
     announcements: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
     feature_flags: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="16" cy="12" r="3" fill="currentColor" stroke="none"/></svg>,
+    book_club_admin: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg>,
     audit: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
     transactions: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
     referrals: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>,
@@ -1248,6 +1335,7 @@ function AdminPageInner() {
     { id: "flags", label: `Flagged${stats?.flagged_content ? ` (${stats.flagged_content})` : ""}` },
     { id: "announcements", label: "Announcements" },
     { id: "feature_flags", label: "Feature Flags" },
+    { id: "book_club_admin", label: "Book Club" },
     { id: "audit", label: "Audit Log" },
     { id: "transactions", label: "Transactions" },
     { id: "referrals", label: "Referrals" },
@@ -1908,6 +1996,70 @@ function AdminPageInner() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── BOOK CLUB ADMIN ── */}
+        {tab === "book_club_admin" && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Current Cycle</p>
+              {!bookClubCycle ? (
+                <p className="text-sm text-neutral-500">No live cycle right now.</p>
+              ) : (
+                <p className="text-sm text-neutral-300">
+                  Status: <span className="font-medium text-neutral-100">{bookClubCycle.status.replace(/_/g, " ")}</span>
+                  {bookClubCycle.host_user_id && <> · host assigned</>}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Host Signup Applications</p>
+              {bookClubSignups.length === 0 && <p className="text-sm text-neutral-500">No signups for this cycle yet.</p>}
+              <div className="space-y-2">
+                {bookClubSignups.map(s => (
+                  <div key={s.id} className="flex items-center justify-between rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] px-5 py-4">
+                    <div>
+                      <p className="font-medium text-neutral-100">{s.name}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        Hosted {s.times_hosted_snapshot}x before · signed up {new Date(s.signed_up_at).toLocaleDateString()} ·{" "}
+                        <span className={s.status === "denied" ? "text-red-400" : s.status === "approved" ? "text-emerald-400" : "text-neutral-500"}>{s.status}</span>
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => void setSignupStatus(s, "approved")} disabled={s.status === "approved"}
+                        className="rounded-lg border border-[rgba(120,120,120,0.4)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition disabled:opacity-40">
+                        Approve
+                      </button>
+                      <button onClick={() => void setSignupStatus(s, "denied")} disabled={s.status === "denied"}
+                        className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition disabled:opacity-40">
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5 space-y-3">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Assign Host &amp; Book Directly</p>
+              <p className="text-xs text-neutral-500">
+                Skips signup/slate/voting entirely and launches the current cycle straight into active. Works on the cycle above
+                regardless of its current status (except completed).
+              </p>
+              <input value={assignHostUsername} onChange={e => setAssignHostUsername(e.target.value)} placeholder="Host username"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+              <input value={assignBookTitle} onChange={e => setAssignBookTitle(e.target.value)} placeholder="Book title"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+              <input value={assignBookAuthor} onChange={e => setAssignBookAuthor(e.target.value)} placeholder="Book author"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+              <button onClick={() => void assignHostAndBook()} disabled={assignSaving || !bookClubCycle}
+                className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
+                {assignSaving ? "Launching..." : "Launch immediately"}
+              </button>
+              {assignError && <p className="text-xs text-red-400">{assignError}</p>}
+            </div>
           </div>
         )}
 

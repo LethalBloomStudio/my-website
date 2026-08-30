@@ -300,6 +300,32 @@ export async function GET(req: Request) {
     result.featureFlags = data ?? [];
   }
 
+  if (scope === "book_club") {
+    const { data: cycle } = await supabase
+      .from("book_club_cycles")
+      .select("id, status, host_user_id, grace_window_deadline, slate_building_deadline, voting_closes_at, cycle_starts_at, cycle_ends_at")
+      .neq("status", "completed")
+      .maybeSingle();
+    result.bookClubCycle = cycle ?? null;
+
+    if (cycle) {
+      const { data: signups } = await supabase
+        .from("book_club_host_signups")
+        .select("id, user_id, times_hosted_snapshot, signed_up_at, status")
+        .eq("cycle_id", cycle.id)
+        .order("signed_up_at");
+      const signupRows = (signups ?? []) as { id: string; user_id: string; times_hosted_snapshot: number; signed_up_at: string; status: string }[];
+      const userIds = [...new Set(signupRows.map((s) => s.user_id))];
+      const { data: profiles } = userIds.length > 0
+        ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", userIds)
+        : { data: [] };
+      const nameMap = new Map(((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
+      result.bookClubSignups = signupRows.map((s) => ({ ...s, name: nameMap.get(s.user_id) ?? "Member" }));
+    } else {
+      result.bookClubSignups = [];
+    }
+  }
+
   if (scope === "flagged") {
     const [{ data: mf }, { data: mmf }] = await Promise.all([
       supabase.from("manuscript_moderation_flags").select("id, manuscript_id, owner_id, reason, matched_terms, status, created_at").order("created_at", { ascending: false }),
