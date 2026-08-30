@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
 import BookClubComments from "@/components/BookClubComments";
 
@@ -31,6 +32,7 @@ function timeAgo(dateStr: string) {
 export default function BookClubWeekSection({
   cycleId,
   currentUserId,
+  isHost,
   weekNumber,
   prompt,
   started,
@@ -42,6 +44,7 @@ export default function BookClubWeekSection({
 }: {
   cycleId: string;
   currentUserId: string;
+  isHost: boolean;
   weekNumber: number;
   prompt: string;
   started: boolean;
@@ -69,15 +72,28 @@ export default function BookClubWeekSection({
           <span className={`text-[11px] ${closed ? "text-neutral-600" : started ? "text-emerald-400" : "text-neutral-500"}`}>
             {statusLabel}
           </span>
+          {isHost && !started && (
+            <Link
+              href={`/book-club/cycle/${cycleId}/questions/${weekNumber}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-md border border-neutral-700 px-2 py-0.5 text-[11px] text-neutral-300 hover:text-white hover:border-neutral-500 transition"
+            >
+              Edit
+            </Link>
+          )}
           <span className={`text-xs text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
         </span>
       </button>
 
       {open && (
         <div className={`space-y-3 border-t border-neutral-800 px-4 pb-4 pt-3 ${closed ? "opacity-60" : ""}`}>
-          <p className="text-sm text-neutral-200">{prompt}</p>
+          {prompt && <p className="text-sm text-neutral-200">{prompt}</p>}
 
-          {!started && <p className="text-xs text-neutral-600">This week hasn&apos;t started yet.</p>}
+          {!started && (
+            <p className="text-xs text-neutral-600">
+              {prompt ? "This week hasn't started yet." : "No question set yet."}
+            </p>
+          )}
 
           {started && questionId && (
             <>

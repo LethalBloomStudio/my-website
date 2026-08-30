@@ -306,32 +306,30 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
               <BookClubParticipantAvatars participants={participants} />
             </div>
 
-            {isHost && (
-              <BookClubQuestionnaireEditor cycleId={cycle.id} existingQuestions={questions} currentWeek={currentWeek} />
-            )}
-
             <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
               <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
               <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
             </div>
 
             <div className="space-y-3">
-              {questions.map((q) => {
-                const started = currentWeek !== null && q.week_number <= currentWeek;
-                const closed = started && currentWeek !== null && q.week_number < currentWeek;
+              {Array.from({ length: 4 }, (_, i) => i + 1).map((weekNumber) => {
+                const q = questions.find((question) => question.week_number === weekNumber);
+                const started = currentWeek !== null && weekNumber <= currentWeek;
+                const closed = started && currentWeek !== null && weekNumber < currentWeek;
                 return (
                   <BookClubWeekSection
-                    key={q.id}
+                    key={weekNumber}
                     cycleId={cycle.id}
                     currentUserId={user.id}
-                    weekNumber={q.week_number}
-                    prompt={q.prompt}
+                    isHost={isHost}
+                    weekNumber={weekNumber}
+                    prompt={q?.prompt ?? ""}
                     started={started}
                     closed={closed}
-                    defaultOpen={q.week_number === currentWeek}
-                    questionId={started ? q.id : null}
-                    myResponseBody={myResponsesByQuestionId[q.id] ?? ""}
-                    otherResponses={otherResponsesByQuestionId[q.id] ?? []}
+                    defaultOpen={weekNumber === currentWeek}
+                    questionId={started && q ? q.id : null}
+                    myResponseBody={q ? myResponsesByQuestionId[q.id] ?? "" : ""}
+                    otherResponses={q ? otherResponsesByQuestionId[q.id] ?? [] : []}
                   />
                 );
               })}

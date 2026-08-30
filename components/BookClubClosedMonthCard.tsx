@@ -1,3 +1,4 @@
+import Image from "next/image";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubRatingPrompt from "@/components/BookClubRatingPrompt";
 import BookClubStarRating from "@/components/BookClubStarRating";
@@ -10,6 +11,7 @@ type Participant = { user_id: string; username: string | null; pen_name: string 
 export default function BookClubClosedMonthCard({
   bookTitle,
   bookAuthor,
+  coverImageUrl,
   hostName,
   participants,
   stats,
@@ -20,6 +22,7 @@ export default function BookClubClosedMonthCard({
 }: {
   bookTitle: string | null;
   bookAuthor: string | null;
+  coverImageUrl: string | null;
   hostName: string | null;
   participants: Participant[];
   stats: { participantCount: number; fullSweepCount: number } | null;
@@ -31,17 +34,22 @@ export default function BookClubClosedMonthCard({
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-neutral-600">Closed</p>
-          {bookTitle ? (
-            <>
-              <p className="mt-1 text-sm font-medium text-neutral-200">{bookTitle}</p>
-              {bookAuthor && <p className="text-xs text-neutral-500">by {bookAuthor}</p>}
-            </>
-          ) : (
-            <p className="mt-1 text-sm text-neutral-500">No book was decided this month.</p>
+        <div className="flex items-start gap-3 min-w-0">
+          {coverImageUrl && bookTitle && (
+            <Image src={coverImageUrl} alt={bookTitle} width={44} height={62} className="h-[62px] w-11 shrink-0 rounded object-cover" />
           )}
-          {hostName && <p className="mt-1 text-xs text-neutral-500">Hosted by {hostName}</p>}
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-neutral-600">Closed</p>
+            {bookTitle ? (
+              <>
+                <p className="mt-1 text-sm font-medium text-neutral-200">{bookTitle}</p>
+                {bookAuthor && <p className="text-xs text-neutral-500">by {bookAuthor}</p>}
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-neutral-500">No book was decided this month.</p>
+            )}
+            {hostName && <p className="mt-1 text-xs text-neutral-500">Hosted by {hostName}</p>}
+          </div>
         </div>
         <div className="shrink-0 text-right space-y-1">
           {stats && <p className="text-xs text-neutral-500">{stats.participantCount} member{stats.participantCount === 1 ? "" : "s"}</p>}

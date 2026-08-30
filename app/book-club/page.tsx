@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubHostSignupButton from "@/components/BookClubHostSignupButton";
@@ -53,7 +54,7 @@ export default async function BookClubPage() {
 
   let activeIsParticipant = false;
   let activeHostName: string | null = null;
-  let activeWinningBook: { book_title: string; book_author: string } | null = null;
+  let activeWinningBook: { book_title: string; book_author: string; cover_image_url: string | null } | null = null;
   let activeMemberCount = 0;
   let activeRatingCount = 0;
   let activeAverageRating: number | null = null;
@@ -75,7 +76,7 @@ export default async function BookClubPage() {
     if (activeCycle.winning_book_option_id) {
       const { data: won } = await supabase
         .from("book_club_book_options")
-        .select("book_title, book_author")
+        .select("book_title, book_author, cover_image_url")
         .eq("id", activeCycle.winning_book_option_id)
         .maybeSingle();
       activeWinningBook = won ?? null;
@@ -145,7 +146,7 @@ export default async function BookClubPage() {
   for (const row of closedRows ?? []) {
     const [{ data: won }, { data: hostProfile }, { data: participantRows }, { data: statsRows }, { data: ratingStatsRows }, { data: myParticipant }, { data: myRating }] = await Promise.all([
       row.winning_book_option_id
-        ? supabase.from("book_club_book_options").select("book_title, book_author").eq("id", row.winning_book_option_id).maybeSingle()
+        ? supabase.from("book_club_book_options").select("book_title, book_author, cover_image_url").eq("id", row.winning_book_option_id).maybeSingle()
         : Promise.resolve({ data: null }),
       row.host_user_id
         ? supabase.from("public_profiles").select("username, pen_name").eq("user_id", row.host_user_id).maybeSingle()
@@ -177,6 +178,7 @@ export default async function BookClubPage() {
       id: row.id,
       bookTitle: won?.book_title ?? null,
       bookAuthor: won?.book_author ?? null,
+      coverImageUrl: won?.cover_image_url ?? null,
       hostName: hostProfile?.pen_name || hostProfile?.username || null,
       participants,
       stats,
@@ -205,19 +207,24 @@ export default async function BookClubPage() {
           {activeCycle && (
             <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">
-                    {monthLabel(activeCycle.cycle_starts_at) ?? "This month"}
-                  </p>
-                  {activeWinningBook ? (
-                    <>
-                      <p className="mt-1 text-lg font-medium text-neutral-100">{activeWinningBook.book_title}</p>
-                      <p className="text-sm text-neutral-400">by {activeWinningBook.book_author}</p>
-                    </>
-                  ) : (
-                    <p className="mt-1 text-sm text-neutral-400">The book is being decided.</p>
+                <div className="flex items-start gap-3 min-w-0">
+                  {activeWinningBook?.cover_image_url && (
+                    <Image src={activeWinningBook.cover_image_url} alt={activeWinningBook.book_title} width={48} height={68} className="h-[68px] w-12 shrink-0 rounded object-cover" />
                   )}
-                  {activeHostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {activeHostName}</p>}
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">
+                      {monthLabel(activeCycle.cycle_starts_at) ?? "This month"}
+                    </p>
+                    {activeWinningBook ? (
+                      <>
+                        <p className="mt-1 text-lg font-medium text-neutral-100">{activeWinningBook.book_title}</p>
+                        <p className="text-sm text-neutral-400">by {activeWinningBook.book_author}</p>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-sm text-neutral-400">The book is being decided.</p>
+                    )}
+                    {activeHostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {activeHostName}</p>}
+                  </div>
                 </div>
                 <div className="shrink-0 text-right space-y-1">
                   <p className="text-xs text-neutral-500">{activeMemberCount} member{activeMemberCount === 1 ? "" : "s"}</p>
@@ -329,6 +336,7 @@ export default async function BookClubPage() {
                   key={c.id}
                   bookTitle={c.bookTitle}
                   bookAuthor={c.bookAuthor}
+                  coverImageUrl={c.coverImageUrl}
                   hostName={c.hostName}
                   participants={c.participants}
                   stats={c.stats}
