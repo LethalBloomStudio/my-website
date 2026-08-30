@@ -15,9 +15,13 @@ function countWords(text: string) {
 export default function BookClubQuestionResponseForm({
   questionId,
   initialBody,
+  onSaved,
+  onCancel,
 }: {
   questionId: string;
   initialBody: string;
+  onSaved?: () => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [body, setBody] = useState(initialBody);
@@ -43,6 +47,7 @@ export default function BookClubQuestionResponseForm({
       }
       setSaved(true);
       router.refresh();
+      onSaved?.();
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -66,14 +71,26 @@ export default function BookClubQuestionResponseForm({
         <span className={`text-xs ${words < RESPONSE_MIN_WORDS ? "text-neutral-500" : "text-emerald-400"}`}>
           {words} / {RESPONSE_MIN_WORDS} words
         </span>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={saving || words < RESPONSE_MIN_WORDS}
-          className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
-        >
-          {saving ? "Saving..." : saved ? "Update answer" : "Submit answer"}
-        </button>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition bookclub-chip disabled:opacity-40"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving || words < RESPONSE_MIN_WORDS}
+            className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
+          >
+            {saving ? "Saving..." : saved ? "Update answer" : "Submit answer"}
+          </button>
+        </div>
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>

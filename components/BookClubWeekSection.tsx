@@ -67,6 +67,10 @@ export default function BookClubWeekSection({
   otherResponses: OtherResponse[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Starts in the form if there's nothing saved yet; once answered, defaults
+  // to showing it as a card (matching everyone else's answers) instead of
+  // leaving the raw textarea open forever -- Edit reopens the form.
+  const [editingMyAnswer, setEditingMyAnswer] = useState(!myResponseBody);
 
   const statusLabel = !started ? "Not started yet" : closed ? "Closed" : "In progress";
   // Replies (and their reward) are only open on the current week -- same
@@ -121,15 +125,36 @@ export default function BookClubWeekSection({
                 ) : (
                   <p className="text-xs text-neutral-600">You didn&apos;t answer this week&apos;s question before it closed.</p>
                 )
+              ) : myResponseBody && !editingMyAnswer ? (
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-800 text-[11px] text-neutral-400">
+                    Y
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-neutral-200">You</span>
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{myResponseBody}</p>
+                  </div>
+                </div>
               ) : (
-                <BookClubQuestionResponseForm questionId={questionId} initialBody={myResponseBody} />
+                <BookClubQuestionResponseForm
+                  questionId={questionId}
+                  initialBody={myResponseBody}
+                  onSaved={() => setEditingMyAnswer(false)}
+                  onCancel={myResponseBody ? () => setEditingMyAnswer(false) : undefined}
+                />
               )}
-              {myResponseId && myResponseBody && (
+              {myResponseId && myResponseBody && !editingMyAnswer && (
                 <BookClubResponseReplies
                   cycleId={cycleId}
                   responseId={myResponseId}
                   canReply={false}
                   initialReplies={myResponseReplies}
+                  extraButton={
+                    <button type="button" onClick={() => setEditingMyAnswer(true)}
+                      className="rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip">
+                      Edit
+                    </button>
+                  }
                   likeButton={<BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} />}
                 />
               )}

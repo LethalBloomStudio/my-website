@@ -32,12 +32,14 @@ export default function BookClubResponseReplies({
   canReply,
   initialReplies,
   likeButton,
+  extraButton,
 }: {
   cycleId: string;
   responseId: string;
   canReply: boolean;
   initialReplies: Reply[];
   likeButton?: ReactNode;
+  extraButton?: ReactNode;
 }) {
   const [replies, setReplies] = useState(initialReplies);
   const [replying, setReplying] = useState(false);
@@ -93,8 +95,9 @@ export default function BookClubResponseReplies({
         </div>
       )}
 
-      {(canReply || likeButton) && !replying && (
+      {(canReply || likeButton || extraButton) && !replying && (
         <div className="flex items-center gap-1.5">
+          {extraButton}
           {canReply && (
             <button type="button" onClick={() => setReplying(true)}
               className="rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip">
