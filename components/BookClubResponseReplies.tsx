@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import BookClubLikeButton from "@/components/BookClubLikeButton";
 
 const REPLY_MIN_WORDS_TO_QUALIFY = 100;
@@ -31,11 +31,13 @@ export default function BookClubResponseReplies({
   responseId,
   canReply,
   initialReplies,
+  likeButton,
 }: {
   cycleId: string;
   responseId: string;
   canReply: boolean;
   initialReplies: Reply[];
+  likeButton?: ReactNode;
 }) {
   const [replies, setReplies] = useState(initialReplies);
   const [replying, setReplying] = useState(false);
@@ -75,7 +77,7 @@ export default function BookClubResponseReplies({
   return (
     <div className="mt-1.5 ml-8 space-y-1.5">
       {replies.length > 0 && (
-        <div className="space-y-1.5 border-l border-[rgba(120,120,120,0.15)] pl-3">
+        <div className="space-y-1.5 border-l bookclub-divider pl-3">
           {replies.map((r) => (
             <div key={r.id}>
               <div className="flex items-baseline gap-1.5">
@@ -83,16 +85,24 @@ export default function BookClubResponseReplies({
                 <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
               </div>
               <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-400">{r.body}</p>
-              <BookClubLikeButton cycleId={cycleId} targetType="reply" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
+              <div className="mt-1">
+                <BookClubLikeButton cycleId={cycleId} targetType="reply" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {canReply && !replying && (
-        <button type="button" onClick={() => setReplying(true)} className="text-[11px] text-neutral-500 hover:text-neutral-300 transition">
-          Reply
-        </button>
+      {(canReply || likeButton) && !replying && (
+        <div className="flex items-center gap-1.5">
+          {canReply && (
+            <button type="button" onClick={() => setReplying(true)}
+              className="rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip">
+              Reply
+            </button>
+          )}
+          {likeButton}
+        </div>
       )}
 
       {canReply && replying && (

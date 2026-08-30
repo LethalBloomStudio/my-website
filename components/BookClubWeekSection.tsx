@@ -128,35 +128,40 @@ export default function BookClubWeekSection({
                 <BookClubQuestionResponseForm questionId={questionId} initialBody={myResponseBody} />
               )}
               {myResponseId && myResponseBody && (
-                <BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} />
-              )}
-              {myResponseId && myResponseReplies.length > 0 && (
-                <BookClubResponseReplies cycleId={cycleId} responseId={myResponseId} canReply={false} initialReplies={myResponseReplies} />
+                <BookClubResponseReplies
+                  cycleId={cycleId}
+                  responseId={myResponseId}
+                  canReply={false}
+                  initialReplies={myResponseReplies}
+                  likeButton={<BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} />}
+                />
               )}
 
-              {otherResponses.length > 0 && (
-                <div className="space-y-3 border-t border-neutral-800 pt-3">
-                  {otherResponses.map((r) => (
-                    <div key={r.id} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-800 text-[11px] text-neutral-400">
-                        {r.author_name.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xs font-semibold text-neutral-200">{r.author_name}</span>
-                          <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
-                        </div>
-                        <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{r.body}</p>
-                        <BookClubLikeButton cycleId={cycleId} targetType="response" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
-                        <BookClubResponseReplies cycleId={cycleId} responseId={r.id} canReply={canReplyToAnswers} initialReplies={r.replies} />
-                      </div>
+              {otherResponses.map((r) => (
+                <div key={r.id} className="flex items-start gap-2 border-t bookclub-divider pt-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-800 text-[11px] text-neutral-400">
+                    {r.author_name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs font-semibold text-neutral-200">{r.author_name}</span>
+                      <span className="text-[10px] text-neutral-500">{timeAgo(r.created_at)}</span>
                     </div>
-                  ))}
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-neutral-300">{r.body}</p>
+                    <div className="mt-1.5">
+                      <BookClubResponseReplies
+                        cycleId={cycleId}
+                        responseId={r.id}
+                        canReply={canReplyToAnswers}
+                        initialReplies={r.replies}
+                        likeButton={<BookClubLikeButton cycleId={cycleId} targetType="response" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
 
-              <div className="border-t border-neutral-800 pt-3">
-                <p className="mb-2 text-[10px] uppercase tracking-wide text-neutral-600">Discussion</p>
+              <div className="border-t bookclub-divider pt-3">
                 <BookClubComments cycleId={cycleId} weekNumber={weekNumber} currentUserId={currentUserId} canPost={!closed} />
               </div>
             </>

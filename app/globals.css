@@ -1302,6 +1302,31 @@ html[data-theme="day"] textarea[class] {
 }
 [data-theme="day"] .bookclub-btn:hover { opacity: 0.85; }
 
+/* ── Book Club: chat dividers & like/reply chips.
+   Explicit day+night pairs on dedicated classes rather than relying on the
+   substring-match [class*="border-[rgba(120,120,120"] rule above, which
+   should in theory already cover raw arbitrary-value border classes but
+   was reported invisible in day mode in practice -- these are a guaranteed
+   fix regardless of that cascade mystery. ── */
+.bookclub-divider { border-color: rgba(120, 120, 120, 0.15); }
+[data-theme="day"] .bookclub-divider { border-color: rgba(60, 60, 60, 0.35) !important; }
+
+.bookclub-chip {
+  border-color: rgba(120, 120, 120, 0.25);
+  background-color: rgba(120, 120, 120, 0.06);
+  color: #d4d4d4;
+}
+.bookclub-chip:hover { border-color: rgba(120, 120, 120, 0.45); color: #ffffff; }
+.bookclub-chip-active { border-color: rgba(120, 120, 120, 0.45); background-color: rgba(120, 120, 120, 0.15); color: #e5e5e5; }
+[data-theme="day"] .bookclub-chip { border-color: rgba(80, 80, 80, 0.3) !important; background-color: rgba(80, 80, 80, 0.08) !important; color: #262626 !important; }
+[data-theme="day"] .bookclub-chip:hover { border-color: rgba(80, 80, 80, 0.5) !important; color: #000000 !important; }
+[data-theme="day"] .bookclub-chip-active { border-color: rgba(80, 80, 80, 0.5) !important; background-color: rgba(80, 80, 80, 0.15) !important; color: #000000 !important; }
+
+.bookclub-chip-liked { border-color: rgba(190, 18, 60, 0.4); background-color: rgba(159, 18, 57, 0.2); color: #fb7185; }
+.bookclub-chip-liked:hover { border-color: rgba(190, 18, 60, 0.6); color: #fda4af; }
+[data-theme="day"] .bookclub-chip-liked { border-color: rgba(190, 18, 60, 0.5) !important; background-color: rgba(254, 205, 211, 0.5) !important; color: #be123c !important; }
+[data-theme="day"] .bookclub-chip-liked:hover { color: #9f1239 !important; }
+
 
 /* ── Notification Unread/Read tab buttons — white in day mode ── */
 [data-theme="day"] .notif-tab { background: #ffffff !important; color: #1a1a1a !important; border-color: rgba(80,80,80,0.2) !important; }

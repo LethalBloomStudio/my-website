@@ -118,18 +118,16 @@ function CommentRow({
 
         {!editing && (
           <div className="mt-1.5 flex items-center gap-1.5">
-            <BookClubLikeButton cycleId={cycleId} targetType="comment" targetId={comment.id} initialLiked={likedByMe} initialCount={likeCount} />
             {canReply && (
               <button onClick={onReply}
-                className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
-                  ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
-                  : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
+                className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip ${isReplying ? "bookclub-chip-active" : ""}`}>
                 Reply
               </button>
             )}
+            <BookClubLikeButton cycleId={cycleId} targetType="comment" targetId={comment.id} initialLiked={likedByMe} initialCount={likeCount} />
             {isOwn && (
               <button onClick={() => { setDraft(comment.body); setEditing(true); }}
-                className="rounded-lg border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] px-2 py-0.5 text-[11px] text-neutral-400 hover:border-[rgba(120,120,120,0.45)] hover:text-white transition">
+                className="rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip">
                 Edit
               </button>
             )}
@@ -286,7 +284,7 @@ export default function BookClubComments({ cycleId, weekNumber, currentUserId, c
               likedByMe={likedByMe.has(comment.id)} />
 
             {replies.length > 0 && (
-              <div className="ml-8 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
+              <div className="ml-8 pl-3 border-l bookclub-divider space-y-2">
                 {replies.map((reply) => {
                   const replyAuthorName = reply.author?.pen_name || reply.author?.username || "Member";
                   return (
@@ -319,7 +317,7 @@ export default function BookClubComments({ cycleId, weekNumber, currentUserId, c
       {error && <p className="rounded-lg border border-red-500/40 bg-red-900/20 px-3 py-2 text-xs text-red-300">{error}</p>}
 
       {canPost && !replyingTo && (
-        <div className="pt-1 border-t border-[rgba(120,120,120,0.1)]">
+        <div className="pt-1 border-t bookclub-divider">
           <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a comment…" rows={2}
             className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-xs text-neutral-200 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.55)] focus:outline-none" />
           <div className="mt-1.5 flex justify-end">
