@@ -31,6 +31,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Voting isn't open right now." }, { status: 400 });
   }
 
+  const { data: participant } = await supabase
+    .from("book_club_participants")
+    .select("id")
+    .eq("cycle_id", cycle.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!participant) {
+    return NextResponse.json({ error: "Opt in to this month's Book Club before voting." }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from("book_club_book_votes")
     .upsert(

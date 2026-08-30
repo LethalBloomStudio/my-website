@@ -1,7 +1,7 @@
-import Image from "next/image";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubRatingPrompt from "@/components/BookClubRatingPrompt";
 import BookClubStarRating from "@/components/BookClubStarRating";
+import BookClubCoverThumb from "@/components/BookClubCoverThumb";
 
 type Participant = { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null };
 
@@ -35,9 +35,7 @@ export default function BookClubClosedMonthCard({
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
-          {coverImageUrl && bookTitle && (
-            <Image src={coverImageUrl} alt={bookTitle} width={44} height={62} className="h-[62px] w-11 shrink-0 rounded object-cover" />
-          )}
+          {bookTitle && <BookClubCoverThumb coverUrl={coverImageUrl} title={bookTitle} width={44} height={62} />}
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-neutral-600">Closed</p>
             {bookTitle ? (

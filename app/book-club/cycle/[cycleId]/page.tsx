@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubSlateForm from "@/components/BookClubSlateForm";
+import BookClubCoverThumb from "@/components/BookClubCoverThumb";
 import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
 import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
@@ -51,7 +51,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, tie_pending, voting_closes_at, winning_book_option_id, planned_starts_at")
+    .select("id, status, host_user_id, tie_pending, voting_opens_at, voting_closes_at, winning_book_option_id, planned_starts_at")
     .eq("id", cycleId)
     .maybeSingle();
 
@@ -72,18 +72,25 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
   const isHost = cycle.host_user_id === user.id;
 
-  let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
+  let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null; slot_number: number }[] = [];
   let myVoteBookOptionId: string | null = null;
   let tiedOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
 
   if (cycle.status === "host_pending" || cycle.status === "voting") {
     const { data: options } = await supabase
       .from("book_club_book_options")
-      .select("id, book_title, book_author, cover_image_url")
+      .select("id, book_title, book_author, cover_image_url, slot_number")
       .eq("cycle_id", cycle.id)
       .order("slot_number");
     bookOptions = options ?? [];
   }
+
+  // Host's reserved-slot window: 48h from voting_opens_at, once, only if
+  // slot 5 isn't already filled.
+  const hostSlotFilled = bookOptions.some((o) => o.slot_number === 5);
+  const hostGraceActive = cycle.status === "voting" && isHost && !hostSlotFilled
+    && !!cycle.voting_opens_at
+    && Date.now() < new Date(cycle.voting_opens_at).getTime() + 48 * 60 * 60 * 1000;
 
   if (cycle.status === "voting") {
     const { data: myVote } = await supabase
@@ -101,7 +108,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
     }
   }
 
-  let winningBook: { book_title: string; book_author: string } | null = null;
+  let winningBook: { book_title: string; book_author: string; cover_image_url: string | null } | null = null;
   let hostName: string | null = null;
   let participants: { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null }[] = [];
   let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
@@ -119,7 +126,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
     if (cycle.winning_book_option_id) {
       const { data: won } = await supabase
         .from("book_club_book_options")
-        .select("book_title, book_author")
+        .select("book_title, book_author, cover_image_url")
         .eq("id", cycle.winning_book_option_id)
         .maybeSingle();
       winningBook = won ?? null;
@@ -304,17 +311,15 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
         {cycle.status === "host_pending" && (
           <section className="space-y-4">
             <p className="text-sm text-neutral-400">
-              Host selection for this month happens closer to launch. In the meantime, add a book to the slate
-              (one per person -- whoever&apos;s picked as host may fill several).
+              Add a book to the slate -- one per person, up to 4 open slots. One slot is reserved for
+              whoever&apos;s selected as host, added once voting opens.
             </p>
             <BookClubSlateForm cycleId={cycle.id} />
             {bookOptions.length > 0 && (
               <ul className="space-y-2">
                 {bookOptions.map((o) => (
                   <li key={o.id} className="flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
-                    {o.cover_image_url ? (
-                      <Image src={o.cover_image_url} alt={o.book_title} width={32} height={44} className="h-11 w-8 shrink-0 rounded object-cover" />
-                    ) : null}
+                    <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={32} height={44} />
                     <span>
                       <span className="font-medium text-neutral-100">{o.book_title}</span>{" "}
                       <span className="text-neutral-400">by {o.book_author}</span>
@@ -331,6 +336,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             {isHost && cycle.tie_pending && tiedOptions.length > 0 && (
               <BookClubTieBreakPanel cycleId={cycle.id} tiedOptions={tiedOptions} />
             )}
+            {hostGraceActive && (
+              <div className="space-y-3 rounded-xl border border-amber-700/50 bg-amber-950/20 p-4">
+                <p className="text-sm text-amber-300">
+                  Your reserved slot -- add your own pick to the slate. Open for 48 hours from when voting opened.
+                </p>
+                <BookClubSlateForm cycleId={cycle.id} />
+              </div>
+            )}
             <p className="text-sm text-neutral-400">
               Voting closes {cycle.voting_closes_at ? new Date(cycle.voting_closes_at).toLocaleString() : "soon"}.
             </p>
@@ -341,11 +354,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
         {cycle.status === "questions_pending" && (
           <section className="space-y-4">
             {winningBook && (
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">Next month&apos;s book</p>
-                <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
-                <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
-                {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+              <div className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <BookClubCoverThumb coverUrl={winningBook.cover_image_url} title={winningBook.book_title} width={48} height={68} />
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">Next month&apos;s book</p>
+                  <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                  <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                  {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+                </div>
               </div>
             )}
             {isHost ? (
@@ -369,11 +385,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             <BookClubCoinProgress isHost={isHost} coinTotal={myCoinProgress} hostProgress={hostProgress} />
 
             {winningBook && (
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
-                <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
-                <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
-                {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+              <div className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <BookClubCoverThumb coverUrl={winningBook.cover_image_url} title={winningBook.book_title} width={48} height={68} />
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
+                  <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                  <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                  {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+                </div>
               </div>
             )}
 

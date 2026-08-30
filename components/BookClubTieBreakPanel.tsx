@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { useState } from "react";
+import BookClubCoverThumb from "@/components/BookClubCoverThumb";
 
 type BookOption = { id: string; book_title: string; book_author: string; cover_image_url: string | null };
 
@@ -49,9 +49,7 @@ export default function BookClubTieBreakPanel({
         {tiedOptions.map((option) => (
           <div key={option.id} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
             <div className="flex items-center gap-3 min-w-0">
-              {option.cover_image_url ? (
-                <Image src={option.cover_image_url} alt={option.book_title} width={40} height={56} className="h-14 w-10 shrink-0 rounded object-cover" />
-              ) : null}
+              <BookClubCoverThumb coverUrl={option.cover_image_url} title={option.book_title} width={40} height={56} />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-neutral-100">{option.book_title}</p>
                 <p className="text-xs text-neutral-400">{option.book_author}</p>

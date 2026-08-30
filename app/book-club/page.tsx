@@ -1,11 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubHostSignupButton from "@/components/BookClubHostSignupButton";
 import BookClubOptInButton from "@/components/BookClubOptInButton";
 import BookClubClosedMonthCard from "@/components/BookClubClosedMonthCard";
 import BookClubStarRating from "@/components/BookClubStarRating";
+import BookClubCoverThumb from "@/components/BookClubCoverThumb";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +122,20 @@ export default async function BookClubPage() {
       winningBook = won ?? null;
     }
 
+    // The candidate slate itself -- visible to any adult once voting opens
+    // (book_club_book_options_select's status='voting' carve-out), so
+    // people can see what's up for a vote before deciding whether to opt
+    // in. Voting itself stays participant-gated, untouched.
+    let slateOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
+    if (row.status === "voting") {
+      const { data: options } = await supabase
+        .from("book_club_book_options")
+        .select("id, book_title, book_author, cover_image_url")
+        .eq("cycle_id", row.id)
+        .order("slot_number");
+      slateOptions = options ?? [];
+    }
+
     upcoming.push({
       id: row.id,
       status: row.status as "host_pending" | "voting" | "questions_pending",
@@ -131,6 +145,7 @@ export default async function BookClubPage() {
       isHost: row.host_user_id === user.id,
       hostName,
       winningBook,
+      slateOptions,
     });
   }
 
@@ -208,8 +223,8 @@ export default async function BookClubPage() {
             <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  {activeWinningBook?.cover_image_url && (
-                    <Image src={activeWinningBook.cover_image_url} alt={activeWinningBook.book_title} width={48} height={68} className="h-[68px] w-12 shrink-0 rounded object-cover" />
+                  {activeWinningBook && (
+                    <BookClubCoverThumb coverUrl={activeWinningBook.cover_image_url} title={activeWinningBook.book_title} width={48} height={68} />
                   )}
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-wide text-neutral-500">
@@ -280,8 +295,21 @@ export default async function BookClubPage() {
                   <>
                     <p className="text-sm text-neutral-300">Voting on the book slate is underway.</p>
                     {c.hostName && <p className="text-xs text-neutral-500">Hosted by {c.hostName}</p>}
+
+                    {c.slateOptions.length > 0 && (
+                      <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {c.slateOptions.map((o) => (
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
+                            <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
+                            <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
+                            <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {c.isParticipant ? (
-                      <Link href={`/book-club/cycle/${c.id}`} className="block text-sm text-neutral-300 underline underline-offset-2 hover:text-white transition">
+                      <Link href={`/book-club/cycle/${c.id}`} className="bookclub-btn">
                         Vote now →
                       </Link>
                     ) : (
