@@ -52,7 +52,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, tie_pending, voting_opens_at, voting_closes_at, winning_book_option_id, planned_starts_at")
+    .select("id, status, host_user_id, tie_pending, voting_opens_at, voting_closes_at, winning_book_option_id, planned_starts_at, cycle_starts_at")
     .eq("id", cycleId)
     .maybeSingle();
 
@@ -433,6 +433,12 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                 const q = questions.find((question) => question.week_number === weekNumber);
                 const started = currentWeek !== null && weekNumber <= currentWeek;
                 const closed = started && currentWeek !== null && weekNumber < currentWeek;
+                const opensAt = cycle.cycle_starts_at
+                  ? new Date(new Date(cycle.cycle_starts_at).getTime() + (weekNumber - 1) * 7 * 24 * 60 * 60 * 1000).toISOString()
+                  : null;
+                const closesAt = cycle.cycle_starts_at
+                  ? new Date(new Date(cycle.cycle_starts_at).getTime() + weekNumber * 7 * 24 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000).toISOString()
+                  : null;
                 return (
                   <BookClubWeekSection
                     key={weekNumber}
@@ -442,6 +448,8 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                     prompt={q?.prompt ?? ""}
                     started={started}
                     closed={closed}
+                    opensAt={opensAt}
+                    closesAt={closesAt}
                     defaultOpen={weekNumber === currentWeek}
                     questionId={started && q ? q.id : null}
                     myResponseId={q ? myResponseIdByQuestionId[q.id] ?? null : null}

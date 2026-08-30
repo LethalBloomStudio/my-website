@@ -1325,6 +1325,20 @@ html[data-theme="day"] textarea[class] {
 .bookclub-chip-liked { border-color: rgba(190, 18, 60, 0.4); background-color: rgba(159, 18, 57, 0.2); color: #fb7185; }
 .bookclub-chip-liked:hover { border-color: rgba(190, 18, 60, 0.6); color: #fda4af; }
 [data-theme="day"] .bookclub-chip-liked { border-color: rgba(190, 18, 60, 0.5) !important; background-color: rgba(254, 205, 211, 0.5) !important; color: #be123c !important; }
+
+/* ── Book Club: one accent color per week (1-4), used for both the card's
+   left-border stripe and the "Week N" label text -- same class on both
+   elements, harmless on the card itself since every descendant already
+   carries its own explicit text color. Explicit day+night pairs, same
+   reasoning as the divider/chip classes above. ── */
+.bookclub-week-1 { border-left-color: #f59e0b; color: #f59e0b; }
+[data-theme="day"] .bookclub-week-1 { border-left-color: #b45309 !important; color: #b45309 !important; }
+.bookclub-week-2 { border-left-color: #38bdf8; color: #38bdf8; }
+[data-theme="day"] .bookclub-week-2 { border-left-color: #1d4ed8 !important; color: #1d4ed8 !important; }
+.bookclub-week-3 { border-left-color: #a78bfa; color: #a78bfa; }
+[data-theme="day"] .bookclub-week-3 { border-left-color: #6d28d9 !important; color: #6d28d9 !important; }
+.bookclub-week-4 { border-left-color: #fb7185; color: #fb7185; }
+[data-theme="day"] .bookclub-week-4 { border-left-color: #be123c !important; color: #be123c !important; }
 [data-theme="day"] .bookclub-chip-liked:hover { color: #9f1239 !important; }
 
 

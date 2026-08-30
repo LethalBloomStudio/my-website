@@ -28,6 +28,10 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 // One collapsible section per week: the question, your own answer, and
 // everyone else's answers as a chat-style feed -- only actual answers to
 // this week's question belong here (general chatter has its own home in
@@ -42,6 +46,8 @@ export default function BookClubWeekSection({
   prompt,
   started,
   closed,
+  opensAt,
+  closesAt,
   defaultOpen,
   questionId,
   myResponseId,
@@ -57,6 +63,8 @@ export default function BookClubWeekSection({
   prompt: string;
   started: boolean;
   closed: boolean;
+  opensAt: string | null;
+  closesAt: string | null;
   defaultOpen: boolean;
   questionId: string | null;
   myResponseId: string | null;
@@ -78,30 +86,39 @@ export default function BookClubWeekSection({
   const canReplyToAnswers = started && !closed;
 
   return (
-    <div className={`overflow-hidden rounded-xl border transition ${closed ? "border-neutral-800/60 bg-neutral-900/30" : "border-neutral-800 bg-neutral-900/60"}`}>
+    <div className={`overflow-hidden rounded-xl border border-l-4 bookclub-week-${weekNumber} transition ${closed ? "border-neutral-800/60 bg-neutral-900/30" : "border-neutral-800 bg-neutral-900/60"}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full flex-col gap-1 px-4 py-3 text-left"
       >
-        <span className={`text-sm font-semibold uppercase tracking-wide ${closed ? "text-neutral-500" : "text-neutral-200"}`}>
-          Week {weekNumber}
-        </span>
-        <span className="flex items-center gap-2">
-          <span className={`text-[11px] ${closed ? "text-neutral-600" : started ? "text-emerald-400" : "text-neutral-500"}`}>
-            {statusLabel}
+        <span className="flex items-center justify-between gap-3">
+          <span className={`text-sm font-semibold uppercase tracking-wide bookclub-week-${weekNumber}`}>
+            Week {weekNumber}
           </span>
-          {isHost && !started && (
-            <Link
-              href={`/book-club/cycle/${cycleId}/questions/${weekNumber}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-md border border-neutral-700 px-2 py-0.5 text-[11px] text-neutral-300 hover:text-white hover:border-neutral-500 transition"
-            >
-              Edit
-            </Link>
-          )}
-          <span className={`text-xs text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+          <span className="flex items-center gap-2">
+            <span className={`text-[11px] ${closed ? "text-neutral-600" : started ? "text-emerald-400" : "text-neutral-500"}`}>
+              {statusLabel}
+            </span>
+            {isHost && !started && (
+              <Link
+                href={`/book-club/cycle/${cycleId}/questions/${weekNumber}`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-md border border-neutral-700 px-2 py-0.5 text-[11px] text-neutral-300 hover:text-white hover:border-neutral-500 transition"
+              >
+                Edit
+              </Link>
+            )}
+            <span className={`text-xs text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+          </span>
         </span>
+        {(opensAt || closesAt) && (
+          <span className="text-[11px] text-neutral-500">
+            {opensAt && `Opens ${formatDate(opensAt)}`}
+            {opensAt && closesAt ? " · " : ""}
+            {closesAt && `Closes ${formatDate(closesAt)}`}
+          </span>
+        )}
       </button>
 
       {open && (
