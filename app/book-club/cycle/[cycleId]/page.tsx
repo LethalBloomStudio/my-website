@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubSlateForm from "@/components/BookClubSlateForm";
@@ -70,14 +71,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
   const isHost = cycle.host_user_id === user.id;
 
-  let bookOptions: { id: string; book_title: string; book_author: string }[] = [];
+  let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
   let myVoteBookOptionId: string | null = null;
-  let tiedOptions: { id: string; book_title: string; book_author: string }[] = [];
+  let tiedOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
 
   if (cycle.status === "host_pending" || cycle.status === "voting") {
     const { data: options } = await supabase
       .from("book_club_book_options")
-      .select("id, book_title, book_author")
+      .select("id, book_title, book_author, cover_image_url")
       .eq("cycle_id", cycle.id)
       .order("slot_number");
     bookOptions = options ?? [];
@@ -236,9 +237,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             {bookOptions.length > 0 && (
               <ul className="space-y-2">
                 {bookOptions.map((o) => (
-                  <li key={o.id} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
-                    <span className="font-medium text-neutral-100">{o.book_title}</span>{" "}
-                    <span className="text-neutral-400">by {o.book_author}</span>
+                  <li key={o.id} className="flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
+                    {o.cover_image_url ? (
+                      <Image src={o.cover_image_url} alt={o.book_title} width={32} height={44} className="h-11 w-8 shrink-0 rounded object-cover" />
+                    ) : null}
+                    <span>
+                      <span className="font-medium text-neutral-100">{o.book_title}</span>{" "}
+                      <span className="text-neutral-400">by {o.book_author}</span>
+                    </span>
                   </li>
                 ))}
               </ul>

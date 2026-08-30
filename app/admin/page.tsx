@@ -145,8 +145,7 @@ type BookClubCycle = {
   id: string;
   status: string;
   host_user_id: string | null;
-  grace_window_deadline: string | null;
-  slate_building_deadline: string | null;
+  planned_starts_at: string | null;
   voting_closes_at: string | null;
   cycle_starts_at: string | null;
   cycle_ends_at: string | null;
@@ -154,12 +153,17 @@ type BookClubCycle = {
 
 type BookClubSignup = {
   id: string;
+  cycle_id: string;
   user_id: string;
   name: string;
   times_hosted_snapshot: number;
   signed_up_at: string;
   status: "pending" | "approved" | "denied";
 };
+
+// Several non-completed cycles can exist at once now (the rolling signup
+// pipeline) -- this replaces the old single bookClubCycle.
+type BookClubOpenCycle = BookClubCycle & { host_name: string | null; signups: BookClubSignup[] };
 
 type BookClubCycleHistoryRow = {
   id: string;
@@ -460,14 +464,28 @@ function AdminPageInner() {
   } | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
-  const [bookClubCycle, setBookClubCycle] = useState<BookClubCycle | null>(null);
-  const [bookClubSignups, setBookClubSignups] = useState<BookClubSignup[]>([]);
+  const [bookClubOpenCycles, setBookClubOpenCycles] = useState<BookClubOpenCycle[]>([]);
   const [bookClubCycles, setBookClubCycles] = useState<BookClubCycleHistoryRow[]>([]);
   const [assignHostUsername, setAssignHostUsername] = useState("");
   const [assignBookTitle, setAssignBookTitle] = useState("");
   const [assignBookAuthor, setAssignBookAuthor] = useState("");
   const [assignSaving, setAssignSaving] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
+  // Cycle selected for the override panel below -- can come from either
+  // the open-cycles list or Cycle History (overrides work on any status,
+  // including completed).
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [overrideHostUsername, setOverrideHostUsername] = useState("");
+  const [overrideHostSaving, setOverrideHostSaving] = useState(false);
+  const [overrideHostError, setOverrideHostError] = useState<string | null>(null);
+  const [overrideBookTitle, setOverrideBookTitle] = useState("");
+  const [overrideBookAuthor, setOverrideBookAuthor] = useState("");
+  const [overrideBookSaving, setOverrideBookSaving] = useState(false);
+  const [overrideBookError, setOverrideBookError] = useState<string | null>(null);
+  const [overrideQuestions, setOverrideQuestions] = useState<Record<number, string>>({});
+  const [overrideQuestionsLoading, setOverrideQuestionsLoading] = useState(false);
+  const [overrideQuestionSaving, setOverrideQuestionSaving] = useState<number | null>(null);
+  const [overrideQuestionError, setOverrideQuestionError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
@@ -607,14 +625,108 @@ function AdminPageInner() {
 
   async function loadBookClub() {
     const data = await adminFetch("/api/admin/data?scope=book_club") as {
-      bookClubCycle?: BookClubCycle | null;
-      bookClubSignups?: BookClubSignup[];
+      bookClubOpenCycles?: BookClubOpenCycle[];
       bookClubCycles?: BookClubCycleHistoryRow[];
     } | null;
     if (!data) return;
-    setBookClubCycle(data.bookClubCycle ?? null);
-    setBookClubSignups(data.bookClubSignups ?? []);
+    setBookClubOpenCycles(data.bookClubOpenCycles ?? []);
     setBookClubCycles(data.bookClubCycles ?? []);
+  }
+
+  async function selectCycleForOverride(cycleId: string) {
+    setSelectedCycleId(cycleId);
+    setOverrideHostUsername("");
+    setOverrideHostError(null);
+    setOverrideBookTitle("");
+    setOverrideBookAuthor("");
+    setOverrideBookError(null);
+    setOverrideQuestionError(null);
+    setOverrideQuestionsLoading(true);
+    const data = await adminFetch(`/api/admin/data?scope=book_club_questions&cycle_id=${cycleId}`) as {
+      bookClubQuestions?: { week_number: number; prompt: string }[];
+    } | null;
+    const drafts: Record<number, string> = {};
+    for (let w = 1; w <= 4; w++) drafts[w] = "";
+    for (const q of data?.bookClubQuestions ?? []) drafts[q.week_number] = q.prompt;
+    setOverrideQuestions(drafts);
+    setOverrideQuestionsLoading(false);
+  }
+
+  async function overrideChangeHost() {
+    if (!selectedCycleId || !overrideHostUsername.trim()) return;
+    setOverrideHostSaving(true);
+    setOverrideHostError(null);
+    try {
+      const { data: profile } = await supabase
+        .from("public_profiles")
+        .select("user_id")
+        .eq("username", overrideHostUsername.trim())
+        .maybeSingle();
+      if (!profile) {
+        setOverrideHostError(`No user found with username "${overrideHostUsername.trim()}".`);
+        return;
+      }
+      const result = await adminFetch("/api/admin/action", {
+        method: "POST",
+        body: JSON.stringify({ type: "book_club_admin_change_host", cycle_id: selectedCycleId, host_user_id: profile.user_id }),
+      }) as { ok?: boolean; error?: string } | null;
+      if (!result?.ok) {
+        setOverrideHostError(result?.error ?? "Something went wrong.");
+        return;
+      }
+      await audit("book_club_admin_change_host", "book_club_cycle", selectedCycleId, null, { host_user_id: profile.user_id });
+      setOverrideHostUsername("");
+      await loadBookClub();
+    } finally {
+      setOverrideHostSaving(false);
+    }
+  }
+
+  async function overrideChangeBook() {
+    if (!selectedCycleId || !overrideBookTitle.trim() || !overrideBookAuthor.trim()) return;
+    setOverrideBookSaving(true);
+    setOverrideBookError(null);
+    try {
+      const result = await adminFetch("/api/admin/action", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "book_club_admin_change_book", cycle_id: selectedCycleId,
+          book_title: overrideBookTitle.trim(), book_author: overrideBookAuthor.trim(),
+        }),
+      }) as { ok?: boolean; error?: string } | null;
+      if (!result?.ok) {
+        setOverrideBookError(result?.error ?? "Something went wrong.");
+        return;
+      }
+      await audit("book_club_admin_change_book", "book_club_cycle", selectedCycleId, null, {
+        book_title: overrideBookTitle.trim(), book_author: overrideBookAuthor.trim(),
+      });
+      await loadBookClub();
+    } finally {
+      setOverrideBookSaving(false);
+    }
+  }
+
+  async function overrideChangeQuestion(week: number) {
+    if (!selectedCycleId || !overrideQuestions[week]?.trim()) return;
+    setOverrideQuestionSaving(week);
+    setOverrideQuestionError(null);
+    try {
+      const result = await adminFetch("/api/admin/action", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "book_club_admin_change_questions", cycle_id: selectedCycleId,
+          week_number: week, prompt: overrideQuestions[week].trim(),
+        }),
+      }) as { ok?: boolean; error?: string } | null;
+      if (!result?.ok) {
+        setOverrideQuestionError(result?.error ?? "Something went wrong.");
+        return;
+      }
+      await audit("book_club_admin_change_questions", "book_club_cycle", selectedCycleId, null, { week_number: week, prompt: overrideQuestions[week].trim() });
+    } finally {
+      setOverrideQuestionSaving(null);
+    }
   }
 
   async function loadAll(_uid?: string) {
@@ -1218,8 +1330,8 @@ function AdminPageInner() {
     await loadBookClub();
   }
 
-  async function assignHostAndBook() {
-    if (!bookClubCycle || !assignHostUsername.trim() || !assignBookTitle.trim() || !assignBookAuthor.trim()) return;
+  async function assignHostAndBook(cycle: BookClubOpenCycle) {
+    if (!assignHostUsername.trim() || !assignBookTitle.trim() || !assignBookAuthor.trim()) return;
     setAssignSaving(true);
     setAssignError(null);
     try {
@@ -1236,7 +1348,7 @@ function AdminPageInner() {
         method: "POST",
         body: JSON.stringify({
           type: "book_club_admin_assign",
-          cycle_id: bookClubCycle.id,
+          cycle_id: cycle.id,
           host_user_id: profile.user_id,
           book_title: assignBookTitle.trim(),
           book_author: assignBookAuthor.trim(),
@@ -1246,7 +1358,7 @@ function AdminPageInner() {
         setAssignError(result?.error ?? "Something went wrong.");
         return;
       }
-      await audit("book_club_admin_assign", "book_club_cycle", bookClubCycle.id, { status: bookClubCycle.status }, {
+      await audit("book_club_admin_assign", "book_club_cycle", cycle.id, { status: cycle.status }, {
         status: "active", host_user_id: profile.user_id, book_title: assignBookTitle.trim(), book_author: assignBookAuthor.trim(),
       });
       setAssignHostUsername("");
@@ -1269,6 +1381,7 @@ function AdminPageInner() {
     }) as { ok?: boolean; error?: string } | null;
     if (!result?.ok) return;
     await audit("book_club_admin_delete_cycle", "book_club_cycle", cycle.id, { status: cycle.status }, null);
+    if (selectedCycleId === cycle.id) setSelectedCycleId(null);
     await loadBookClub();
   }
 
@@ -2026,73 +2139,144 @@ function AdminPageInner() {
         )}
 
         {/* ── BOOK CLUB ADMIN ── */}
-        {tab === "book_club_admin" && (
+        {tab === "book_club_admin" && (() => {
+          const selectedOpenCycle = bookClubOpenCycles.find(c => c.id === selectedCycleId) ?? null;
+          return (
           <div className="space-y-5">
             <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Current Cycle</p>
-              {!bookClubCycle ? (
-                <p className="text-sm text-neutral-500">No live cycle right now.</p>
-              ) : (
-                <p className="text-sm text-neutral-300">
-                  Status: <span className="font-medium text-neutral-100">{bookClubCycle.status.replace(/_/g, " ")}</span>
-                  {bookClubCycle.host_user_id && <> · host assigned</>}
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Host Signup Applications</p>
-              {bookClubSignups.length === 0 && <p className="text-sm text-neutral-500">No signups for this cycle yet.</p>}
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Open Cycles</p>
+              <p className="text-xs text-neutral-500 mb-3">
+                Several can be open at once now (the rolling signup pipeline) -- click one to manage its signups, assignment, or overrides below.
+              </p>
+              {bookClubOpenCycles.length === 0 && <p className="text-sm text-neutral-500">No open cycles right now.</p>}
               <div className="space-y-2">
-                {bookClubSignups.map(s => (
-                  <div key={s.id} className="flex items-center justify-between rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] px-5 py-4">
-                    <div>
-                      <p className="font-medium text-neutral-100">{s.name}</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">
-                        Hosted {s.times_hosted_snapshot}x before · signed up {new Date(s.signed_up_at).toLocaleDateString()} ·{" "}
-                        <span className={s.status === "denied" ? "text-red-400" : s.status === "approved" ? "text-emerald-400" : "text-neutral-500"}>{s.status}</span>
-                      </p>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => void setSignupStatus(s, "approved")} disabled={s.status === "approved"}
-                        className="rounded-lg border border-[rgba(120,120,120,0.4)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition disabled:opacity-40">
-                        Approve
-                      </button>
-                      <button onClick={() => void setSignupStatus(s, "denied")} disabled={s.status === "denied"}
-                        className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition disabled:opacity-40">
-                        Deny
-                      </button>
-                    </div>
-                  </div>
+                {bookClubOpenCycles.map(c => (
+                  <button key={c.id} onClick={() => void selectCycleForOverride(c.id)}
+                    className={`w-full text-left rounded-xl border px-5 py-4 transition ${selectedCycleId === c.id ? "border-emerald-600/60 bg-emerald-950/10" : "border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] hover:border-[rgba(120,120,120,0.5)]"}`}>
+                    <p className="font-medium text-neutral-100">
+                      {c.status.replace(/_/g, " ")}
+                      {c.planned_starts_at && <span className="text-neutral-500 font-normal"> · launches {new Date(c.planned_starts_at).toLocaleDateString()}</span>}
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      {c.host_name ? `Host: ${c.host_name}` : "No host yet"} · {c.signups.length} signup{c.signups.length === 1 ? "" : "s"}
+                    </p>
+                  </button>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5 space-y-3">
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Assign Host &amp; Book Directly</p>
-              <p className="text-xs text-neutral-500">
-                Skips signup/slate/voting entirely and launches the current cycle straight into active. Works on the cycle above
-                regardless of its current status (except completed).
-              </p>
-              <input value={assignHostUsername} onChange={e => setAssignHostUsername(e.target.value)} placeholder="Host username"
-                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
-              <input value={assignBookTitle} onChange={e => setAssignBookTitle(e.target.value)} placeholder="Book title"
-                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
-              <input value={assignBookAuthor} onChange={e => setAssignBookAuthor(e.target.value)} placeholder="Book author"
-                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
-              <button onClick={() => void assignHostAndBook()} disabled={assignSaving || !bookClubCycle}
-                className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
-                {assignSaving ? "Launching..." : "Launch immediately"}
-              </button>
-              {assignError && <p className="text-xs text-red-400">{assignError}</p>}
-            </div>
+            {selectedOpenCycle?.status === "host_pending" && (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Host Signup Applications</p>
+                {selectedOpenCycle.signups.length === 0 && <p className="text-sm text-neutral-500">No signups for this cycle yet.</p>}
+                <div className="space-y-2">
+                  {selectedOpenCycle.signups.map(s => (
+                    <div key={s.id} className="flex items-center justify-between rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] px-5 py-4">
+                      <div>
+                        <p className="font-medium text-neutral-100">{s.name}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                          Hosted {s.times_hosted_snapshot}x before · signed up {new Date(s.signed_up_at).toLocaleDateString()} ·{" "}
+                          <span className={s.status === "denied" ? "text-red-400" : s.status === "approved" ? "text-emerald-400" : "text-neutral-500"}>{s.status}</span>
+                        </p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => void setSignupStatus(s, "approved")} disabled={s.status === "approved"}
+                          className="rounded-lg border border-[rgba(120,120,120,0.4)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition disabled:opacity-40">
+                          Approve
+                        </button>
+                        <button onClick={() => void setSignupStatus(s, "denied")} disabled={s.status === "denied"}
+                          className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition disabled:opacity-40">
+                          Deny
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedOpenCycle && (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5 space-y-3">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Assign Host &amp; Book Directly</p>
+                <p className="text-xs text-neutral-500">
+                  Skips signup/slate/voting entirely and launches the selected cycle straight into active.
+                </p>
+                <input value={assignHostUsername} onChange={e => setAssignHostUsername(e.target.value)} placeholder="Host username"
+                  className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                <input value={assignBookTitle} onChange={e => setAssignBookTitle(e.target.value)} placeholder="Book title"
+                  className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                <input value={assignBookAuthor} onChange={e => setAssignBookAuthor(e.target.value)} placeholder="Book author"
+                  className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                <button onClick={() => void assignHostAndBook(selectedOpenCycle)} disabled={assignSaving}
+                  className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
+                  {assignSaving ? "Launching..." : "Launch immediately"}
+                </button>
+                {assignError && <p className="text-xs text-red-400">{assignError}</p>}
+              </div>
+            )}
+
+            {selectedCycleId && (
+              <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5 space-y-4">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Overrides -- Selected Cycle</p>
+                <p className="text-xs text-neutral-500">Works on the selected cycle regardless of status, including completed ones.</p>
+
+                <div className="space-y-2 border-t border-[rgba(120,120,120,0.15)] pt-3">
+                  <p className="text-xs font-medium text-neutral-400">Change host</p>
+                  <div className="flex gap-2">
+                    <input value={overrideHostUsername} onChange={e => setOverrideHostUsername(e.target.value)} placeholder="New host username"
+                      className="flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                    <button onClick={() => void overrideChangeHost()} disabled={overrideHostSaving || !overrideHostUsername.trim()}
+                      className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition shrink-0">
+                      {overrideHostSaving ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                  {overrideHostError && <p className="text-xs text-red-400">{overrideHostError}</p>}
+                </div>
+
+                <div className="space-y-2 border-t border-[rgba(120,120,120,0.15)] pt-3">
+                  <p className="text-xs font-medium text-neutral-400">Change book</p>
+                  <p className="text-[11px] text-neutral-600">Only works once this cycle already has a decided book -- use Assign above for one that doesn&apos;t yet.</p>
+                  <input value={overrideBookTitle} onChange={e => setOverrideBookTitle(e.target.value)} placeholder="Book title"
+                    className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                  <input value={overrideBookAuthor} onChange={e => setOverrideBookAuthor(e.target.value)} placeholder="Book author"
+                    className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                  <button onClick={() => void overrideChangeBook()} disabled={overrideBookSaving || !overrideBookTitle.trim() || !overrideBookAuthor.trim()}
+                    className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
+                    {overrideBookSaving ? "Saving..." : "Save"}
+                  </button>
+                  {overrideBookError && <p className="text-xs text-red-400">{overrideBookError}</p>}
+                </div>
+
+                <div className="space-y-2 border-t border-[rgba(120,120,120,0.15)] pt-3">
+                  <p className="text-xs font-medium text-neutral-400">Change questions</p>
+                  <p className="text-[11px] text-neutral-600">Only works once this cycle already has a host.</p>
+                  {overrideQuestionsLoading ? (
+                    <p className="text-xs text-neutral-600">Loading...</p>
+                  ) : (
+                    [1, 2, 3, 4].map(week => (
+                      <div key={week} className="flex gap-2 items-start">
+                        <span className="mt-2 w-12 shrink-0 text-[11px] text-neutral-500">Week {week}</span>
+                        <textarea value={overrideQuestions[week] ?? ""} rows={2}
+                          onChange={e => setOverrideQuestions(prev => ({ ...prev, [week]: e.target.value }))}
+                          className="flex-1 resize-none rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                        <button onClick={() => void overrideChangeQuestion(week)} disabled={overrideQuestionSaving === week || !overrideQuestions[week]?.trim()}
+                          className="mt-0.5 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition shrink-0">
+                          {overrideQuestionSaving === week ? "Saving..." : "Save"}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  {overrideQuestionError && <p className="text-xs text-red-400">{overrideQuestionError}</p>}
+                </div>
+              </div>
+            )}
 
             <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Cycle History</p>
               {bookClubCycles.length === 0 && <p className="text-sm text-neutral-500">No cycles yet.</p>}
               <div className="space-y-2">
                 {bookClubCycles.map(c => (
-                  <div key={c.id} className="flex items-center justify-between rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] px-5 py-4">
+                  <div key={c.id} className={`flex items-center justify-between rounded-xl border px-5 py-4 ${selectedCycleId === c.id ? "border-emerald-600/60 bg-emerald-950/10" : "border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)]"}`}>
                     <div>
                       <p className="font-medium text-neutral-100">{c.status.replace(/_/g, " ")}</p>
                       <p className="text-xs text-neutral-500 mt-0.5">
@@ -2100,16 +2284,23 @@ function AdminPageInner() {
                         {c.book_display ? ` · ${c.book_display}` : ""} · {new Date(c.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <button onClick={() => void deleteBookClubCycle(c)}
-                      className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition shrink-0">
-                      Delete
-                    </button>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => void selectCycleForOverride(c.id)}
+                        className="rounded-lg border border-[rgba(120,120,120,0.4)] px-2.5 py-1 text-xs text-neutral-300 hover:text-white transition">
+                        Manage
+                      </button>
+                      <button onClick={() => void deleteBookClubCycle(c)}
+                        className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition">
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ── AUDIT LOG ── */}
         {tab === "audit" && (

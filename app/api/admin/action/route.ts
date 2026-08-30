@@ -54,11 +54,13 @@ export async function POST(req: Request) {
     delta?: number;
     reason?: string;
     metadata?: Record<string, unknown>;
-    // book club admin assign
+    // book club admin assign / overrides
     cycle_id?: string;
     host_user_id?: string;
     book_title?: string;
     book_author?: string;
+    week_number?: number;
+    prompt?: string;
   };
 
   if (body.type === "audit") {
@@ -196,6 +198,35 @@ export async function POST(req: Request) {
 
   if (body.type === "book_club_admin_delete_cycle" && body.cycle_id) {
     const { error } = await supabase.rpc("book_club_admin_delete_cycle", { p_cycle_id: body.cycle_id });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.type === "book_club_admin_change_host" && body.cycle_id && body.host_user_id) {
+    const { error } = await supabase.rpc("book_club_admin_change_host", {
+      p_cycle_id: body.cycle_id,
+      p_new_host_user_id: body.host_user_id,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.type === "book_club_admin_change_book" && body.cycle_id && body.book_title && body.book_author) {
+    const { error } = await supabase.rpc("book_club_admin_change_book", {
+      p_cycle_id: body.cycle_id,
+      p_book_title: body.book_title,
+      p_book_author: body.book_author,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.type === "book_club_admin_change_questions" && body.cycle_id && body.week_number && body.prompt) {
+    const { error } = await supabase.rpc("book_club_admin_change_questions", {
+      p_cycle_id: body.cycle_id,
+      p_week_number: body.week_number,
+      p_prompt: body.prompt,
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

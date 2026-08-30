@@ -36,6 +36,10 @@ export default function BookClubQuestionnaireEditor({
   const [savingWeek, setSavingWeek] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedWeeks, setSavedWeeks] = useState<Set<number>>(new Set(existingQuestions.map((q) => q.week_number)));
+  // Weeks currently in edit mode -- a week with an already-saved question
+  // displays read-only until the host clicks Edit; an unsaved week just
+  // starts editable directly, nothing to hide behind a read-only view.
+  const [editingWeeks, setEditingWeeks] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +73,11 @@ export default function BookClubQuestionnaireEditor({
         return;
       }
       setSavedWeeks((prev) => new Set(prev).add(week));
+      setEditingWeeks((prev) => {
+        const next = new Set(prev);
+        next.delete(week);
+        return next;
+      });
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -82,19 +91,29 @@ export default function BookClubQuestionnaireEditor({
       {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => {
         const draft = drafts[week];
         const locked = currentWeek !== null && week <= currentWeek;
+        const resolvedPrompt = draft.mode === "custom" ? draft.text : presets.find((p) => p.id === draft.presetId)?.prompt || draft.text || "No question set.";
+        const editing = !locked && (editingWeeks.has(week) || !savedWeeks.has(week));
         return (
           <div key={week} className="space-y-2 border-t border-neutral-800 pt-3 first:border-t-0 first:pt-0">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-neutral-400">Week {week}</p>
               {locked ? (
                 <span className="text-[11px] text-neutral-500">Locked -- this week has started</span>
+              ) : !editing ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingWeeks((prev) => new Set(prev).add(week))}
+                  className="rounded-md border border-neutral-700 px-2 py-0.5 text-[11px] text-neutral-300 hover:text-white hover:border-neutral-500 transition"
+                >
+                  Edit
+                </button>
               ) : (
                 savedWeeks.has(week) && <span className="text-[11px] text-emerald-400">Saved</span>
               )}
             </div>
-            {locked ? (
+            {!editing ? (
               <p className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-400">
-                {draft.mode === "custom" ? draft.text : presets.find((p) => p.id === draft.presetId)?.prompt || draft.text || "No question set."}
+                {resolvedPrompt}
               </p>
             ) : (
               <>
@@ -136,14 +155,26 @@ export default function BookClubQuestionnaireEditor({
                     ))}
                   </select>
                 )}
-                <button
-                  type="button"
-                  onClick={() => handleSave(week)}
-                  disabled={savingWeek === week || (draft.mode === "custom" ? !draft.text.trim() : !draft.presetId)}
-                  className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
-                >
-                  {savingWeek === week ? "Saving..." : "Save week"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSave(week)}
+                    disabled={savingWeek === week || (draft.mode === "custom" ? !draft.text.trim() : !draft.presetId)}
+                    className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
+                  >
+                    {savingWeek === week ? "Saving..." : "Save"}
+                  </button>
+                  {savedWeeks.has(week) && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingWeeks((prev) => { const next = new Set(prev); next.delete(week); return next; })}
+                      disabled={savingWeek === week}
+                      className="rounded-lg border border-neutral-700 px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-200 transition disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>

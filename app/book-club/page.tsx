@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubHostSignupButton from "@/components/BookClubHostSignupButton";
 import BookClubOptInButton from "@/components/BookClubOptInButton";
 import BookClubClosedMonthCard from "@/components/BookClubClosedMonthCard";
+import BookClubStarRating from "@/components/BookClubStarRating";
 
 export const dynamic = "force-dynamic";
 
@@ -53,15 +54,24 @@ export default async function BookClubPage() {
   let activeIsParticipant = false;
   let activeHostName: string | null = null;
   let activeWinningBook: { book_title: string; book_author: string } | null = null;
+  let activeMemberCount = 0;
+  let activeRatingCount = 0;
+  let activeAverageRating: number | null = null;
   if (activeCycle) {
-    const [{ data: participant }, { data: hostProfile }] = await Promise.all([
+    const [{ data: participant }, { data: hostProfile }, { data: memberCount }, { data: ratingStatsRows }] = await Promise.all([
       supabase.from("book_club_participants").select("id").eq("cycle_id", activeCycle.id).eq("user_id", user.id).maybeSingle(),
       activeCycle.host_user_id
         ? supabase.from("public_profiles").select("username, pen_name").eq("user_id", activeCycle.host_user_id).maybeSingle()
         : Promise.resolve({ data: null }),
+      supabase.rpc("book_club_cycle_member_count", { p_cycle_id: activeCycle.id }),
+      supabase.rpc("book_club_cycle_rating_stats", { p_cycle_id: activeCycle.id }),
     ]);
     activeIsParticipant = !!participant;
     activeHostName = hostProfile?.pen_name || hostProfile?.username || null;
+    activeMemberCount = Number(memberCount ?? 0);
+    const ratingRow = (ratingStatsRows as { rating_count: number; average_rating: number | null }[] | null)?.[0];
+    activeRatingCount = Number(ratingRow?.rating_count ?? 0);
+    activeAverageRating = ratingRow?.average_rating != null ? Number(ratingRow.average_rating) : null;
     if (activeCycle.winning_book_option_id) {
       const { data: won } = await supabase
         .from("book_club_book_options")
@@ -133,7 +143,7 @@ export default async function BookClubPage() {
 
   const closed = [];
   for (const row of closedRows ?? []) {
-    const [{ data: won }, { data: hostProfile }, { data: participantRows }, { data: statsRows }, { data: myParticipant }, { data: myRating }] = await Promise.all([
+    const [{ data: won }, { data: hostProfile }, { data: participantRows }, { data: statsRows }, { data: ratingStatsRows }, { data: myParticipant }, { data: myRating }] = await Promise.all([
       row.winning_book_option_id
         ? supabase.from("book_club_book_options").select("book_title, book_author").eq("id", row.winning_book_option_id).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -142,6 +152,7 @@ export default async function BookClubPage() {
         : Promise.resolve({ data: null }),
       supabase.from("book_club_participants").select("user_id").eq("cycle_id", row.id),
       supabase.rpc("book_club_cycle_completion_stats", { p_cycle_id: row.id }),
+      supabase.rpc("book_club_cycle_rating_stats", { p_cycle_id: row.id }),
       supabase.from("book_club_participants").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle(),
       supabase.from("book_club_ratings").select("id").eq("cycle_id", row.id).eq("user_id", user.id).maybeSingle(),
     ]);
@@ -160,6 +171,7 @@ export default async function BookClubPage() {
     const stats = statsRow
       ? { participantCount: Number(statsRow.participant_count), fullSweepCount: Number(statsRow.full_sweep_count) }
       : null;
+    const ratingRow = (ratingStatsRows as { rating_count: number; average_rating: number | null }[] | null)?.[0];
 
     closed.push({
       id: row.id,
@@ -168,6 +180,8 @@ export default async function BookClubPage() {
       hostName: hostProfile?.pen_name || hostProfile?.username || null,
       participants,
       stats,
+      ratingCount: Number(ratingRow?.rating_count ?? 0),
+      averageRating: ratingRow?.average_rating != null ? Number(ratingRow.average_rating) : null,
       needsRating: !!myParticipant && !myRating,
     });
   }
@@ -190,19 +204,25 @@ export default async function BookClubPage() {
           )}
           {activeCycle && (
             <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-neutral-500">
-                  {monthLabel(activeCycle.cycle_starts_at) ?? "This month"}
-                </p>
-                {activeWinningBook ? (
-                  <>
-                    <p className="mt-1 text-lg font-medium text-neutral-100">{activeWinningBook.book_title}</p>
-                    <p className="text-sm text-neutral-400">by {activeWinningBook.book_author}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-sm text-neutral-400">The book is being decided.</p>
-                )}
-                {activeHostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {activeHostName}</p>}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">
+                    {monthLabel(activeCycle.cycle_starts_at) ?? "This month"}
+                  </p>
+                  {activeWinningBook ? (
+                    <>
+                      <p className="mt-1 text-lg font-medium text-neutral-100">{activeWinningBook.book_title}</p>
+                      <p className="text-sm text-neutral-400">by {activeWinningBook.book_author}</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-neutral-400">The book is being decided.</p>
+                  )}
+                  {activeHostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {activeHostName}</p>}
+                </div>
+                <div className="shrink-0 text-right space-y-1">
+                  <p className="text-xs text-neutral-500">{activeMemberCount} member{activeMemberCount === 1 ? "" : "s"}</p>
+                  <BookClubStarRating ratingCount={activeRatingCount} averageRating={activeAverageRating} />
+                </div>
               </div>
 
               {activeIsParticipant ? (
@@ -312,6 +332,8 @@ export default async function BookClubPage() {
                   hostName={c.hostName}
                   participants={c.participants}
                   stats={c.stats}
+                  ratingCount={c.ratingCount}
+                  averageRating={c.averageRating}
                   cycleId={c.id}
                   needsRating={c.needsRating}
                 />

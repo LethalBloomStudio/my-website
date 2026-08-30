@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 
-type Body = { cycle_id?: string; book_title?: string; book_author?: string };
+type Body = { cycle_id?: string; book_title?: string; book_author?: string; cover_image_url?: string | null };
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
   const cycleId = String(raw.cycle_id ?? "").trim();
   const bookTitle = String(raw.book_title ?? "").trim();
   const bookAuthor = String(raw.book_author ?? "").trim();
+  const coverImageUrl = raw.cover_image_url ? String(raw.cover_image_url).trim() : null;
   if (!cycleId || !bookTitle || !bookAuthor) {
     return NextResponse.json({ error: "Cycle, book title, and author are required." }, { status: 400 });
   }
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
     submitted_by: userId,
     book_title: bookTitle,
     book_author: bookAuthor,
+    cover_image_url: coverImageUrl,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 

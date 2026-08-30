@@ -1,5 +1,6 @@
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubRatingPrompt from "@/components/BookClubRatingPrompt";
+import BookClubStarRating from "@/components/BookClubStarRating";
 
 type Participant = { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null };
 
@@ -12,6 +13,8 @@ export default function BookClubClosedMonthCard({
   hostName,
   participants,
   stats,
+  ratingCount,
+  averageRating,
   cycleId,
   needsRating,
 }: {
@@ -20,21 +23,31 @@ export default function BookClubClosedMonthCard({
   hostName: string | null;
   participants: Participant[];
   stats: { participantCount: number; fullSweepCount: number } | null;
+  ratingCount: number;
+  averageRating: number | null;
   cycleId: string;
   needsRating: boolean;
 }) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-      <p className="text-[10px] uppercase tracking-wide text-neutral-600">Closed</p>
-      {bookTitle ? (
-        <>
-          <p className="mt-1 text-sm font-medium text-neutral-200">{bookTitle}</p>
-          {bookAuthor && <p className="text-xs text-neutral-500">by {bookAuthor}</p>}
-        </>
-      ) : (
-        <p className="mt-1 text-sm text-neutral-500">No book was decided this month.</p>
-      )}
-      {hostName && <p className="mt-1 text-xs text-neutral-500">Hosted by {hostName}</p>}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-wide text-neutral-600">Closed</p>
+          {bookTitle ? (
+            <>
+              <p className="mt-1 text-sm font-medium text-neutral-200">{bookTitle}</p>
+              {bookAuthor && <p className="text-xs text-neutral-500">by {bookAuthor}</p>}
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-neutral-500">No book was decided this month.</p>
+          )}
+          {hostName && <p className="mt-1 text-xs text-neutral-500">Hosted by {hostName}</p>}
+        </div>
+        <div className="shrink-0 text-right space-y-1">
+          {stats && <p className="text-xs text-neutral-500">{stats.participantCount} member{stats.participantCount === 1 ? "" : "s"}</p>}
+          <BookClubStarRating ratingCount={ratingCount} averageRating={averageRating} />
+        </div>
+      </div>
 
       {participants.length > 0 && (
         <div className="mt-3">

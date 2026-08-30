@@ -301,32 +301,50 @@ export async function GET(req: Request) {
   }
 
   if (scope === "book_club") {
-    const { data: cycle } = await supabase
+    // Several non-completed cycles can exist at once now (the rolling
+    // signup pipeline) -- this used to be .maybeSingle() on "the" cycle,
+    // which silently errored (swallowed to null by maybeSingle) as soon as
+    // more than one existed. Now a plain list, newest-scheduled first.
+    const { data: openCyclesData } = await supabase
       .from("book_club_cycles")
-      .select("id, status, host_user_id, grace_window_deadline, slate_building_deadline, voting_closes_at, cycle_starts_at, cycle_ends_at")
+      .select("id, status, host_user_id, planned_starts_at, voting_closes_at, cycle_starts_at, cycle_ends_at")
       .neq("status", "completed")
-      .maybeSingle();
-    result.bookClubCycle = cycle ?? null;
+      .order("planned_starts_at", { ascending: true });
+    const openCycles = (openCyclesData ?? []) as {
+      id: string; status: string; host_user_id: string | null; planned_starts_at: string | null;
+      voting_closes_at: string | null; cycle_starts_at: string | null; cycle_ends_at: string | null;
+    }[];
 
-    if (cycle) {
-      const { data: signups } = await supabase
-        .from("book_club_host_signups")
-        .select("id, user_id, times_hosted_snapshot, signed_up_at, status")
-        .eq("cycle_id", cycle.id)
-        .order("signed_up_at");
-      const signupRows = (signups ?? []) as { id: string; user_id: string; times_hosted_snapshot: number; signed_up_at: string; status: string }[];
-      const userIds = [...new Set(signupRows.map((s) => s.user_id))];
-      const { data: profiles } = userIds.length > 0
-        ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", userIds)
-        : { data: [] };
-      const nameMap = new Map(((profiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
-      result.bookClubSignups = signupRows.map((s) => ({ ...s, name: nameMap.get(s.user_id) ?? "Member" }));
-    } else {
-      result.bookClubSignups = [];
-    }
+    const { data: allSignups } = openCycles.length > 0
+      ? await supabase
+          .from("book_club_host_signups")
+          .select("id, cycle_id, user_id, times_hosted_snapshot, signed_up_at, status")
+          .in("cycle_id", openCycles.map((c) => c.id))
+          .order("signed_up_at")
+      : { data: [] };
+    const signupRows = (allSignups ?? []) as { id: string; cycle_id: string; user_id: string; times_hosted_snapshot: number; signed_up_at: string; status: string }[];
+    const signupUserIds = [...new Set(signupRows.map((s) => s.user_id))];
+    const { data: signupProfiles } = signupUserIds.length > 0
+      ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", signupUserIds)
+      : { data: [] };
+    const signupNameMap = new Map(((signupProfiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
+
+    const openHostIds = [...new Set(openCycles.map((c) => c.host_user_id).filter((id): id is string => !!id))];
+    const { data: openHostProfiles } = openHostIds.length > 0
+      ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", openHostIds)
+      : { data: [] };
+    const openHostNameMap = new Map(((openHostProfiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
+
+    result.bookClubOpenCycles = openCycles.map((c) => ({
+      ...c,
+      host_name: c.host_user_id ? openHostNameMap.get(c.host_user_id) ?? "Member" : null,
+      signups: signupRows
+        .filter((s) => s.cycle_id === c.id)
+        .map((s) => ({ ...s, name: signupNameMap.get(s.user_id) ?? "Member" })),
+    }));
 
     // Full history (including completed cycles) so admins have something
-    // to manage/delete beyond just the one current live cycle.
+    // to manage/delete/override beyond just the still-open cycles above.
     const { data: allCycles } = await supabase
       .from("book_club_cycles")
       .select("id, status, host_user_id, winning_book_option_id, created_at")
@@ -351,6 +369,20 @@ export async function GET(req: Request) {
       host_name: c.host_user_id ? hostNameMap.get(c.host_user_id) ?? "Member" : null,
       book_display: c.winning_book_option_id ? bookMap.get(c.winning_book_option_id) ?? null : null,
     }));
+  }
+
+  // On-demand, not part of the bulk "book_club" scope above -- only fetched
+  // when the admin actually opens a specific cycle's override panel, since
+  // most listed cycles will never need their questions inspected.
+  if (scope === "book_club_questions") {
+    const cycleId = searchParams.get("cycle_id");
+    if (!cycleId) return NextResponse.json({ error: "Missing cycle_id" }, { status: 400 });
+    const { data } = await supabase
+      .from("book_club_questionnaire_questions")
+      .select("week_number, prompt")
+      .eq("cycle_id", cycleId)
+      .order("week_number");
+    result.bookClubQuestions = data ?? [];
   }
 
   if (scope === "flagged") {
