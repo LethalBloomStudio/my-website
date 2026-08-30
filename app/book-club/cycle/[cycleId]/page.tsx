@@ -11,6 +11,7 @@ import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubComments from "@/components/BookClubComments";
 import BookClubCoinProgress from "@/components/BookClubCoinProgress";
+import BookClubHostChecklist from "@/components/BookClubHostChecklist";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +121,11 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   const myResponseLikesByQuestionId: Record<string, { count: number; likedByMe: boolean }> = {};
   const otherResponsesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; replies: { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean }[]; likeCount: number; likedByMe: boolean }[]> = {};
   let myCoinProgress = 0;
-  let hostProgress: { replyCount: number; likeCount: number; groupPostCount: number; repliesNeeded: number; likesNeeded: number; groupPostsNeeded: number; alreadyReleased: boolean } | null = null;
+  let hostProgress: {
+    replyCount: number; likeCount: number; groupPostCount: number; questionCount: number;
+    repliesNeeded: number; likesNeeded: number; groupPostsNeeded: number; questionsNeeded: number;
+    alreadyReleased: boolean;
+  } | null = null;
 
   if (cycle.status === "questions_pending" || cycle.status === "active") {
     if (cycle.winning_book_option_id) {
@@ -282,13 +287,16 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
     if (isHost) {
       const { data: rows } = await supabase.rpc("book_club_host_reward_progress", { p_cycle_id: cycle.id });
       const row = (rows as {
-        reply_count: number; like_count: number; group_post_count: number;
-        replies_needed: number; likes_needed: number; group_posts_needed: number; already_released: boolean;
+        reply_count: number; like_count: number; group_post_count: number; question_count: number;
+        replies_needed: number; likes_needed: number; group_posts_needed: number; questions_needed: number;
+        already_released: boolean;
       }[] | null)?.[0];
       if (row) {
         hostProgress = {
-          replyCount: Number(row.reply_count), likeCount: Number(row.like_count), groupPostCount: Number(row.group_post_count),
-          repliesNeeded: row.replies_needed, likesNeeded: row.likes_needed, groupPostsNeeded: row.group_posts_needed,
+          replyCount: Number(row.reply_count), likeCount: Number(row.like_count),
+          groupPostCount: Number(row.group_post_count), questionCount: Number(row.question_count),
+          repliesNeeded: row.replies_needed, likesNeeded: row.likes_needed,
+          groupPostsNeeded: row.group_posts_needed, questionsNeeded: row.questions_needed,
           alreadyReleased: row.already_released,
         };
       }
@@ -382,7 +390,16 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
 
         {cycle.status === "active" && (
           <section className="space-y-4">
-            <BookClubCoinProgress isHost={isHost} coinTotal={myCoinProgress} hostProgress={hostProgress} />
+            {isHost && hostProgress ? (
+              <BookClubHostChecklist
+                cycleId={cycle.id}
+                currentUserId={user.id}
+                initial={hostProgress}
+                initialQuestionWeeks={questions.map((q) => q.week_number).filter((w) => w >= 1 && w <= 4)}
+              />
+            ) : (
+              <BookClubCoinProgress coinTotal={myCoinProgress} />
+            )}
 
             {winningBook && (
               <div className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
@@ -401,10 +418,12 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
               <BookClubParticipantAvatars participants={participants} />
             </div>
 
-            <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
-              <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
-            </div>
+            {!isHost && (
+              <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
+                <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
+              </div>
+            )}
 
             <div className="space-y-3">
               {Array.from({ length: 4 }, (_, i) => i + 1).map((weekNumber) => {
