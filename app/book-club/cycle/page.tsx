@@ -1,13 +1,14 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubSlateForm from "@/components/BookClubSlateForm";
 import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
-import BookClubComments from "@/components/BookClubComments";
 import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
 import BookClubWeekSection from "@/components/BookClubWeekSection";
 import BookClubCheckInButton from "@/components/BookClubCheckInButton";
 import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
+import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,8 @@ export default async function BookClubCyclePage() {
   }
 
   let winningBook: { book_title: string; book_author: string } | null = null;
+  let hostName: string | null = null;
+  let participants: { user_id: string; username: string | null; pen_name: string | null; avatar_url: string | null }[] = [];
   let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
   let currentWeek: number | null = null;
   let myEarnedWeeks: number[] = [];
@@ -108,6 +111,31 @@ export default async function BookClubCyclePage() {
         .eq("id", cycle.winning_book_option_id)
         .maybeSingle();
       winningBook = won ?? null;
+    }
+
+    if (cycle.host_user_id) {
+      const { data: hostProfile } = await supabase
+        .from("public_profiles")
+        .select("username, pen_name")
+        .eq("user_id", cycle.host_user_id)
+        .maybeSingle();
+      hostName = hostProfile?.pen_name || hostProfile?.username || "Member";
+    }
+
+    // book_club_participants_select_cycle (added alongside the participant
+    // avatar row) is what makes this return every participant instead of
+    // just the caller's own row.
+    const { data: participantRows } = await supabase
+      .from("book_club_participants")
+      .select("user_id")
+      .eq("cycle_id", cycle.id);
+    const participantIds = (participantRows ?? []).map((r) => r.user_id);
+    if (participantIds.length > 0) {
+      const { data: participantProfiles } = await supabase
+        .from("public_profiles")
+        .select("user_id, username, pen_name, avatar_url")
+        .in("user_id", participantIds);
+      participants = participantProfiles ?? [];
     }
 
     // RLS already scopes this correctly per viewer: the host sees every
@@ -180,7 +208,10 @@ export default async function BookClubCyclePage() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
-        <header>
+        <header className="space-y-2">
+          <Link href="/book-club" className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-200 transition">
+            ← Book Club
+          </Link>
           <h1 className="text-3xl font-semibold tracking-tight">Book Club</h1>
         </header>
 
@@ -222,10 +253,16 @@ export default async function BookClubCyclePage() {
             {winningBook && (
               <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
                 <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
-                <p className="mt-1 text-sm font-medium text-neutral-100">{winningBook.book_title}</p>
-                <p className="text-xs text-neutral-400">by {winningBook.book_author}</p>
+                <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
               </div>
             )}
+
+            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <p className="mb-3 text-xs uppercase tracking-wide text-neutral-500">Who&apos;s reading along</p>
+              <BookClubParticipantAvatars participants={participants} />
+            </div>
 
             {isHost && (
               <BookClubQuestionnaireEditor cycleId={cycle.id} existingQuestions={questions} currentWeek={currentWeek} />
@@ -236,20 +273,27 @@ export default async function BookClubCyclePage() {
               <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
             </div>
 
-            {questions.map((q) => {
-              const started = currentWeek !== null && q.week_number <= currentWeek;
-              return (
-                <BookClubWeekSection
-                  key={q.id}
-                  weekNumber={q.week_number}
-                  prompt={q.prompt}
-                  started={started}
-                  questionId={started ? q.id : null}
-                  myResponseBody={myResponsesByQuestionId[q.id] ?? ""}
-                  otherResponses={otherResponsesByQuestionId[q.id] ?? []}
-                />
-              );
-            })}
+            <div className="space-y-3">
+              {questions.map((q) => {
+                const started = currentWeek !== null && q.week_number <= currentWeek;
+                const closed = started && currentWeek !== null && q.week_number < currentWeek;
+                return (
+                  <BookClubWeekSection
+                    key={q.id}
+                    cycleId={cycle.id}
+                    currentUserId={user.id}
+                    weekNumber={q.week_number}
+                    prompt={q.prompt}
+                    started={started}
+                    closed={closed}
+                    defaultOpen={q.week_number === currentWeek}
+                    questionId={started ? q.id : null}
+                    myResponseBody={myResponsesByQuestionId[q.id] ?? ""}
+                    otherResponses={otherResponsesByQuestionId[q.id] ?? []}
+                  />
+                );
+              })}
+            </div>
 
             {currentWeek !== null && (
               <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
@@ -259,8 +303,6 @@ export default async function BookClubCyclePage() {
                 <BookClubCheckInButton cycleId={cycle.id} alreadyCheckedInThisWeek={alreadyCheckedInThisWeek} />
               </div>
             )}
-
-            <BookClubComments cycleId={cycle.id} currentUserId={user.id} />
           </section>
         )}
       </div>

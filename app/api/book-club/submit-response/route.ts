@@ -51,6 +51,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This question isn't available." }, { status: 404 });
   }
 
+  const { data: currentWeek } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: question.cycle_id });
+  if (question.week_number !== currentWeek) {
+    return NextResponse.json({ error: "This week has closed and no longer accepts new answers." }, { status: 403 });
+  }
+
   const { error } = await supabase.from("book_club_question_responses").upsert(
     {
       question_id: questionId,

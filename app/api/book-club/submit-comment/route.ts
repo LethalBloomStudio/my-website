@@ -40,17 +40,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This discussion isn't open right now." }, { status: 404 });
   }
 
+  // Comments are scoped to the current week only -- closed (past) weeks are
+  // read-only, matching book_club_question_responses' same current-week-only
+  // write rule.
+  const { data: weekNumber } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycleId });
+  if (!weekNumber) {
+    return NextResponse.json({ error: "This week has closed and no longer accepts new comments." }, { status: 403 });
+  }
+
   // Flatten to 2 levels, same as Bloom Circle's comments: replying to a
   // reply attaches to that reply's own top-level parent.
   let parentCommentId: string | null = null;
   if (requestedParentId) {
     const { data: target } = await supabase
       .from("book_club_comments")
-      .select("id, cycle_id, parent_comment_id")
+      .select("id, cycle_id, week_number, parent_comment_id")
       .eq("id", requestedParentId)
       .maybeSingle();
-    const row = target as { id: string; cycle_id: string; parent_comment_id: string | null } | null;
-    if (!row || row.cycle_id !== cycleId) {
+    const row = target as { id: string; cycle_id: string; week_number: number; parent_comment_id: string | null } | null;
+    if (!row || row.cycle_id !== cycleId || row.week_number !== weekNumber) {
       return NextResponse.json({ error: "The comment you're replying to no longer exists." }, { status: 404 });
     }
     parentCommentId = row.parent_comment_id ?? row.id;
@@ -62,23 +70,21 @@ export async function POST(req: Request) {
       cycle_id: cycleId,
       author_id: userId,
       parent_comment_id: parentCommentId,
+      week_number: weekNumber,
       body,
     })
-    .select("id, cycle_id, author_id, parent_comment_id, body, created_at, updated_at")
+    .select("id, cycle_id, author_id, parent_comment_id, week_number, body, created_at, updated_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   // A comment is one of the "+1 of any kind" weekly engagement actions --
   // this is a no-op unless the week's question has also been answered.
-  const { data: weekNumber } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycleId });
-  if (weekNumber) {
-    await supabase.rpc("book_club_try_award_weekly_checkmark", {
-      p_cycle_id: cycleId,
-      p_user_id: userId,
-      p_week_number: weekNumber,
-    });
-  }
+  await supabase.rpc("book_club_try_award_weekly_checkmark", {
+    p_cycle_id: cycleId,
+    p_user_id: userId,
+    p_week_number: weekNumber,
+  });
 
   return NextResponse.json({ ok: true, comment: inserted });
 }

@@ -10,6 +10,7 @@ type Comment = {
   id: string;
   author_id: string;
   parent_comment_id: string | null;
+  week_number: number;
   body: string;
   created_at: string;
   updated_at: string;
@@ -47,13 +48,14 @@ function Avatar({ url, name, size = 24 }: { url: string | null; name: string; si
 }
 
 function CommentRow({
-  comment, isOwn, onReply, isReplying, onSaveEdit,
+  comment, isOwn, onReply, isReplying, onSaveEdit, canReply,
 }: {
   comment: Comment;
   isOwn: boolean;
   onReply: () => void;
   isReplying: boolean;
   onSaveEdit: (newBody: string) => Promise<void>;
+  canReply: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -112,12 +114,14 @@ function CommentRow({
 
         {!editing && (
           <div className="mt-1.5 flex items-center gap-1.5">
-            <button onClick={onReply}
-              className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
-                ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
-                : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
-              Reply
-            </button>
+            {canReply && (
+              <button onClick={onReply}
+                className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition ${isReplying
+                  ? "border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.15)] text-neutral-200"
+                  : "border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] text-neutral-300 hover:border-[rgba(120,120,120,0.45)] hover:text-white"}`}>
+                Reply
+              </button>
+            )}
             {isOwn && (
               <button onClick={() => { setDraft(comment.body); setEditing(true); }}
                 className="rounded-lg border border-[rgba(120,120,120,0.25)] bg-[rgba(120,120,120,0.06)] px-2 py-0.5 text-[11px] text-neutral-400 hover:border-[rgba(120,120,120,0.45)] hover:text-white transition">
@@ -156,7 +160,7 @@ function ReplyInput({ replyToName, value, onChange, onSubmit, onCancel, submitti
   );
 }
 
-export default function BookClubComments({ cycleId, currentUserId }: { cycleId: string; currentUserId: string | null }) {
+export default function BookClubComments({ cycleId, weekNumber, currentUserId, canPost }: { cycleId: string; weekNumber: number; currentUserId: string | null; canPost: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,8 +175,9 @@ export default function BookClubComments({ cycleId, currentUserId }: { cycleId: 
     (async () => {
       const { data: rows } = await supabase
         .from("book_club_comments")
-        .select("id, author_id, parent_comment_id, body, created_at, updated_at")
+        .select("id, author_id, parent_comment_id, week_number, body, created_at, updated_at")
         .eq("cycle_id", cycleId)
+        .eq("week_number", weekNumber)
         .order("created_at", { ascending: true });
       const list = (rows ?? []) as Omit<Comment, "author">[];
       const authorIds = [...new Set(list.map((c) => c.author_id))];
@@ -185,7 +190,7 @@ export default function BookClubComments({ cycleId, currentUserId }: { cycleId: 
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [supabase, cycleId]);
+  }, [supabase, cycleId, weekNumber]);
 
   async function post(body: string, parentCommentId: string | null) {
     if (!body.trim() || submitting) return;
@@ -251,7 +256,8 @@ export default function BookClubComments({ cycleId, currentUserId }: { cycleId: 
             <CommentRow comment={comment} isOwn={currentUserId === comment.author_id}
               onReply={() => setReplyingTo(replyingTo?.commentId === comment.id ? null : { commentId: comment.id, authorName })}
               isReplying={replyingTo?.commentId === comment.id}
-              onSaveEdit={(body) => saveEdit(comment.id, body)} />
+              onSaveEdit={(body) => saveEdit(comment.id, body)}
+              canReply={canPost} />
 
             {replies.length > 0 && (
               <div className="ml-8 pl-3 border-l border-[rgba(120,120,120,0.15)] space-y-2">
@@ -261,13 +267,14 @@ export default function BookClubComments({ cycleId, currentUserId }: { cycleId: 
                     <CommentRow key={reply.id} comment={reply} isOwn={currentUserId === reply.author_id}
                       onReply={() => setReplyingTo(replyingTo?.commentId === reply.id ? null : { commentId: reply.id, authorName: replyAuthorName })}
                       isReplying={replyingTo?.commentId === reply.id}
-                      onSaveEdit={(body) => saveEdit(reply.id, body)} />
+                      onSaveEdit={(body) => saveEdit(reply.id, body)}
+                      canReply={canPost} />
                   );
                 })}
               </div>
             )}
 
-            {isReplyingHere && replyingTo && (
+            {canPost && isReplyingHere && replyingTo && (
               <ReplyInput
                 replyToName={replyingTo.authorName}
                 value={replyDraft}
@@ -283,7 +290,7 @@ export default function BookClubComments({ cycleId, currentUserId }: { cycleId: 
 
       {error && <p className="rounded-lg border border-red-500/40 bg-red-900/20 px-3 py-2 text-xs text-red-300">{error}</p>}
 
-      {!replyingTo && (
+      {canPost && !replyingTo && (
         <div className="pt-1 border-t border-[rgba(120,120,120,0.1)]">
           <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a comment…" rows={2}
             className="w-full resize-none rounded-lg border border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.08)] px-3 py-2 text-xs text-neutral-200 placeholder-neutral-600 focus:border-[rgba(120,120,120,0.55)] focus:outline-none" />
