@@ -72,6 +72,9 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   if (!participant) redirect("/book-club");
 
   const isHost = cycle.host_user_id === user.id;
+  const cycleMonthLabel = cycle.planned_starts_at
+    ? new Date(cycle.planned_starts_at).toLocaleDateString("en-US", { month: "long" })
+    : null;
 
   let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null; slot_number: number }[] = [];
   let myVoteBookOptionId: string | null = null;
@@ -313,7 +316,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
           <Link href="/book-club" className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-200 transition">
             ← Book Club
           </Link>
-          <h1 className="text-3xl font-semibold tracking-tight">Book Club</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{cycleMonthLabel ? `${cycleMonthLabel} Book Club` : "Book Club"}</h1>
         </header>
 
         {cycle.status === "host_pending" && (
@@ -405,7 +408,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
               <div className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
                 <BookClubCoverThumb coverUrl={winningBook.cover_image_url} title={winningBook.book_title} width={48} height={68} />
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">{cycleMonthLabel ? `${cycleMonthLabel}'s Book` : "This cycle's book"}</p>
                   <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
                   <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
                   {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
@@ -414,7 +417,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             )}
 
             <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-neutral-500">Who&apos;s reading along</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Who&apos;s reading along</p>
               <BookClubParticipantAvatars participants={participants} />
             </div>
 
@@ -453,9 +456,9 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             </div>
 
             <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Group Thoughts and Discussion</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Group Thoughts and Discussion</p>
               <p className="text-xs text-neutral-500">
-                Anything about the book, on your mind -- not tied to a specific week&apos;s question.
+                Anything about the book, on your mind, not tied to a specific week&apos;s question.
               </p>
               <BookClubComments cycleId={cycle.id} weekNumber={0} currentUserId={user.id} canPost={true} />
             </div>

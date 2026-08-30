@@ -94,7 +94,7 @@ export default function BookClubHostChecklist({
   if (progress.alreadyReleased) {
     return (
       <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">Host reward</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Host reward</p>
         <p className="mt-1 text-sm text-emerald-400">Released.</p>
       </div>
     );
@@ -102,7 +102,9 @@ export default function BookClubHostChecklist({
 
   return (
     <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-      <p className="text-xs uppercase tracking-wide text-neutral-500">Host reward -- 250 Bloom Coins at month end</p>
+      <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <span className="font-bold">Host reward:</span> 250 Bloom Coins at month end
+      </p>
       <p className="text-[11px] text-neutral-600">Check every box by the time the month closes, released when you rate the book.</p>
       <div className="space-y-1.5 pt-1">
         {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => (

@@ -106,7 +106,7 @@ export default function BookClubWeekSection({
 
       {open && (
         <div className={`space-y-3 border-t border-neutral-800 px-4 pb-4 pt-3 ${closed ? "opacity-60" : ""}`}>
-          {prompt && <p className="text-sm text-neutral-200">{prompt}</p>}
+          {prompt && <p className="text-base font-bold text-neutral-100">{prompt}</p>}
 
           {!started && (
             <p className="text-xs text-neutral-600">
