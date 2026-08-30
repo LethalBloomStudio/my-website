@@ -1278,6 +1278,29 @@ html[data-theme="day"] textarea[class] {
 }
 [data-theme="day"] .wallet-btn:hover { background: #f0f0f0; }
 
+/* ── Book Club "Enter Book Club" link styled as a solid CTA button ──
+   It's a <Link> (an <a> tag), not a <button>, so it's exempt from the
+   global [data-theme="day"] button {...} safety net -- needs its own
+   explicit day-mode rule, same reasoning as .wallet-btn/.cta-section a. */
+.bookclub-btn {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  color: #171717;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background 0.15s;
+}
+.bookclub-btn:hover { background: #ffffff; }
+
+[data-theme="day"] .bookclub-btn {
+  background: #3d3d3d;
+  color: #ffffff;
+  border: 1px solid rgba(80, 80, 80, 0.5);
+}
+[data-theme="day"] .bookclub-btn:hover { background: #4d4d4d; }
+
 
 /* ── Notification Unread/Read tab buttons — white in day mode ── */
 [data-theme="day"] .notif-tab { background: #ffffff !important; color: #1a1a1a !important; border-color: rgba(80,80,80,0.2) !important; }

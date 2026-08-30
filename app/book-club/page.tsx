@@ -151,10 +151,7 @@ export default async function BookClubPage() {
             </div>
 
             {isParticipant ? (
-              <Link
-                href="/book-club/cycle"
-                className="inline-block rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white"
-              >
+              <Link href="/book-club/cycle" className="bookclub-btn">
                 Enter Book Club →
               </Link>
             ) : (
