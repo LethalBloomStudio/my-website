@@ -1,15 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import BookClubHostSignupButton from "@/components/BookClubHostSignupButton";
 import BookClubOptInButton from "@/components/BookClubOptInButton";
-import BookClubSlateForm from "@/components/BookClubSlateForm";
-import BookClubVoteBallot from "@/components/BookClubVoteBallot";
-import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
-import BookClubComments from "@/components/BookClubComments";
-import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
-import BookClubQuestionResponseForm from "@/components/BookClubQuestionResponseForm";
-import BookClubCheckInButton from "@/components/BookClubCheckInButton";
-import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +41,7 @@ export default async function BookClubPage() {
 
   const { data: cycle } = await supabase
     .from("book_club_cycles")
-    .select("id, status, host_user_id, grace_window_deadline, tie_pending, voting_closes_at, winning_book_option_id")
+    .select("id, status, host_user_id, grace_window_deadline, cycle_starts_at, winning_book_option_id")
     .neq("status", "completed")
     .maybeSingle();
 
@@ -73,98 +66,32 @@ export default async function BookClubPage() {
     isParticipant = !!participant;
   }
 
-  const isHost = !!cycle && cycle.host_user_id === user.id;
-
-  let bookOptions: { id: string; book_title: string; book_author: string }[] = [];
-  let myVoteBookOptionId: string | null = null;
-  let tiedOptions: { id: string; book_title: string; book_author: string }[] = [];
-
-  if (cycle && isParticipant && (cycle.status === "slate_building" || cycle.status === "voting")) {
-    const { data: options } = await supabase
-      .from("book_club_book_options")
-      .select("id, book_title, book_author")
-      .eq("cycle_id", cycle.id)
-      .order("slot_number");
-    bookOptions = options ?? [];
-  }
-
-  if (cycle && isParticipant && cycle.status === "voting") {
-    const { data: myVote } = await supabase
-      .from("book_club_book_votes")
-      .select("book_option_id")
-      .eq("cycle_id", cycle.id)
-      .eq("voter_id", user.id)
-      .maybeSingle();
-    myVoteBookOptionId = myVote?.book_option_id ?? null;
-
-    if (isHost && cycle.tie_pending) {
-      const { data: tiedIds } = await supabase.rpc("book_club_my_tied_options", { p_cycle_id: cycle.id });
-      const ids = (tiedIds as string[] | null) ?? [];
-      tiedOptions = bookOptions.filter((o) => ids.includes(o.id));
-    }
-  }
-
+  // Both readable by any adult regardless of opt-in status -- the decided
+  // host and book are the public "here's what's happening" announcement;
+  // the slate/votes that led to it stay opt-in-gated (see
+  // 20260829040024_book_club_public_winning_book.sql for the book side).
+  let hostName: string | null = null;
   let winningBook: { book_title: string; book_author: string } | null = null;
-  let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
-  let currentWeek: number | null = null;
-  let myEarnedWeeks: number[] = [];
-  let myResponseBody = "";
-  let alreadyCheckedInThisWeek = false;
-
-  if (cycle && isParticipant && cycle.status === "active") {
-    if (cycle.winning_book_option_id) {
-      const { data: won } = await supabase
-        .from("book_club_book_options")
-        .select("book_title, book_author")
-        .eq("id", cycle.winning_book_option_id)
-        .maybeSingle();
-      winningBook = won ?? null;
-    }
-
-    // RLS already scopes this correctly per viewer: the host sees every
-    // week they've authored (including ones not unlocked yet), everyone
-    // else only sees weeks that have actually started.
-    const { data: qs } = await supabase
-      .from("book_club_questionnaire_questions")
-      .select("id, week_number, prompt, source, preset_id")
-      .eq("cycle_id", cycle.id)
-      .order("week_number");
-    questions = qs ?? [];
-
-    const { data: weekNum } = await supabase.rpc("book_club_current_week_number", { p_cycle_id: cycle.id });
-    currentWeek = (weekNum as number | null) ?? null;
-
-    const { data: checkmarks } = await supabase
-      .from("book_club_weekly_checkmarks")
-      .select("week_number")
-      .eq("cycle_id", cycle.id)
-      .eq("user_id", user.id);
-    myEarnedWeeks = (checkmarks ?? []).map((c) => c.week_number);
-
-    if (currentWeek) {
-      const { data: checkin } = await supabase
-        .from("book_club_check_ins")
-        .select("id")
-        .eq("cycle_id", cycle.id)
-        .eq("user_id", user.id)
-        .eq("week_number", currentWeek)
-        .maybeSingle();
-      alreadyCheckedInThisWeek = !!checkin;
-
-      const currentWeekQuestion = questions.find((q) => q.week_number === currentWeek);
-      if (currentWeekQuestion) {
-        const { data: resp } = await supabase
-          .from("book_club_question_responses")
-          .select("body")
-          .eq("question_id", currentWeekQuestion.id)
-          .eq("user_id", user.id)
-          .maybeSingle();
-        myResponseBody = resp?.body ?? "";
-      }
-    }
+  if (cycle?.host_user_id) {
+    const { data: hostProfile } = await supabase
+      .from("public_profiles")
+      .select("username, pen_name")
+      .eq("user_id", cycle.host_user_id)
+      .maybeSingle();
+    hostName = hostProfile?.pen_name || hostProfile?.username || "Member";
+  }
+  if (cycle?.winning_book_option_id) {
+    const { data: won } = await supabase
+      .from("book_club_book_options")
+      .select("book_title, book_author")
+      .eq("id", cycle.winning_book_option_id)
+      .maybeSingle();
+    winningBook = won ?? null;
   }
 
-  const currentWeekQuestion = questions.find((q) => q.week_number === currentWeek) ?? null;
+  const monthLabel = cycle?.cycle_starts_at
+    ? new Date(cycle.cycle_starts_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : null;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -204,123 +131,39 @@ export default async function BookClubPage() {
           </section>
         )}
 
-        {cycle?.status === "slate_building" && (
-          <section className="space-y-4">
-            {!isParticipant && (
-              <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                <p className="text-sm text-neutral-300">
-                  The host is building this cycle&apos;s book slate. Opt in to add a book or to vote
-                  once the slate is ready.
+        {cycle && ["slate_building", "voting", "active"].includes(cycle.status) && (
+          <section className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">
+                {monthLabel ? `${monthLabel} Book Club` : "This cycle's Book Club"}
+              </p>
+              {winningBook ? (
+                <>
+                  <p className="mt-1 text-lg font-medium text-neutral-100">{winningBook.book_title}</p>
+                  <p className="text-sm text-neutral-400">by {winningBook.book_author}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-neutral-400">
+                  {cycle.status === "slate_building" ? "The host is building the book slate." : "Voting is underway."}
                 </p>
-                <BookClubOptInButton />
-              </div>
-            )}
-            {isParticipant && (
-              <>
+              )}
+              {hostName && <p className="mt-2 text-xs text-neutral-500">Hosted by {hostName}</p>}
+            </div>
+
+            {isParticipant ? (
+              <Link
+                href="/book-club/cycle"
+                className="inline-block rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white"
+              >
+                Enter Book Club →
+              </Link>
+            ) : (
+              <div className="space-y-2">
                 <p className="text-sm text-neutral-400">
-                  {isHost
-                    ? "Fill in some or all of the slate yourself, or leave slots for participants."
-                    : "Add a book to the slate (one per person)."}
-                </p>
-                <BookClubSlateForm />
-                {bookOptions.length > 0 && (
-                  <ul className="space-y-2">
-                    {bookOptions.map((o) => (
-                      <li key={o.id} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
-                        <span className="font-medium text-neutral-100">{o.book_title}</span>{" "}
-                        <span className="text-neutral-400">by {o.book_author}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </section>
-        )}
-
-        {cycle?.status === "voting" && (
-          <section className="space-y-4">
-            {!isParticipant && (
-              <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                <p className="text-sm text-neutral-300">
-                  Voting is underway for this cycle. Opt in to join future weeks (voting itself is
-                  only open to members who opted in before the vote).
+                  Opt in to see the book slate, vote, and join the discussion.
                 </p>
                 <BookClubOptInButton />
               </div>
-            )}
-            {isParticipant && (
-              <>
-                {isHost && cycle.tie_pending && tiedOptions.length > 0 && (
-                  <BookClubTieBreakPanel cycleId={cycle.id} tiedOptions={tiedOptions} />
-                )}
-                <p className="text-sm text-neutral-400">
-                  Voting closes {cycle.voting_closes_at ? new Date(cycle.voting_closes_at).toLocaleString() : "soon"}.
-                </p>
-                <BookClubVoteBallot
-                  cycleId={cycle.id}
-                  options={bookOptions}
-                  myVoteBookOptionId={myVoteBookOptionId}
-                />
-              </>
-            )}
-          </section>
-        )}
-
-        {cycle?.status === "active" && (
-          <section className="space-y-4">
-            {!isParticipant && (
-              <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
-                <p className="text-sm text-neutral-300">This cycle&apos;s discussion is running. Opt in to join.</p>
-                <BookClubOptInButton />
-              </div>
-            )}
-            {isParticipant && (
-              <>
-                {winningBook && (
-                  <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                    <p className="text-xs uppercase tracking-wide text-neutral-500">This cycle&apos;s book</p>
-                    <p className="mt-1 text-sm font-medium text-neutral-100">{winningBook.book_title}</p>
-                    <p className="text-xs text-neutral-400">by {winningBook.book_author}</p>
-                  </div>
-                )}
-
-                {isHost && <BookClubQuestionnaireEditor cycleId={cycle.id} existingQuestions={questions} />}
-
-                {questions.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-wide text-neutral-500">
-                      {isHost ? "Questions (you can see future weeks)" : "This week's question"}
-                    </p>
-                    {questions.map((q) => (
-                      <div key={q.week_number} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
-                        <p className="text-[11px] font-medium text-neutral-500">Week {q.week_number}</p>
-                        <p className="mt-0.5 text-sm text-neutral-200">{q.prompt}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
-                  <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
-                </div>
-
-                {currentWeekQuestion && (
-                  <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                    <p className="text-xs uppercase tracking-wide text-neutral-500">
-                      Answer week {currentWeekQuestion.week_number} to earn this week&apos;s checkmark
-                    </p>
-                    <BookClubQuestionResponseForm questionId={currentWeekQuestion.id} initialBody={myResponseBody} />
-                    <p className="text-xs text-neutral-500">
-                      Plus one more thing this week -- comment below or:
-                    </p>
-                    <BookClubCheckInButton cycleId={cycle.id} alreadyCheckedInThisWeek={alreadyCheckedInThisWeek} />
-                  </div>
-                )}
-
-                <BookClubComments cycleId={cycle.id} currentUserId={user.id} />
-              </>
             )}
           </section>
         )}
