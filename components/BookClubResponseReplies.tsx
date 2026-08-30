@@ -88,7 +88,7 @@ export default function BookClubResponseReplies({
               </div>
               <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-400">{r.body}</p>
               <div className="mt-1">
-                <BookClubLikeButton cycleId={cycleId} targetType="reply" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} />
+                <BookClubLikeButton cycleId={cycleId} targetType="reply" targetId={r.id} initialLiked={r.likedByMe} initialCount={r.likeCount} disabled={r.author_name === "You"} />
               </div>
             </div>
           ))}

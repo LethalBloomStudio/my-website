@@ -26,16 +26,33 @@ export default function BookClubLikeButton({
   targetId,
   initialLiked,
   initialCount,
+  disabled,
 }: {
   cycleId: string;
   targetType: TargetType;
   targetId: string;
   initialLiked: boolean;
   initialCount: number;
+  disabled?: boolean;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [busy, setBusy] = useState(false);
+
+  // Your own post -- shown as a plain count so received likes stay
+  // visible, just not clickable (enforced server-side too, this is only
+  // the friendly UI half).
+  if (disabled) {
+    return (
+      <span
+        title="You can't like your own post"
+        className="flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium bookclub-chip opacity-60 cursor-default"
+      >
+        <Heart filled={false} />
+        {count > 0 && <span>{count}</span>}
+      </span>
+    );
+  }
 
   async function toggle() {
     if (busy) return;

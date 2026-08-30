@@ -155,7 +155,7 @@ export default function BookClubWeekSection({
                       Edit
                     </button>
                   }
-                  likeButton={<BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} />}
+                  likeButton={<BookClubLikeButton cycleId={cycleId} targetType="response" targetId={myResponseId} initialLiked={myResponseLikedByMe} initialCount={myResponseLikeCount} disabled />}
                 />
               )}
 

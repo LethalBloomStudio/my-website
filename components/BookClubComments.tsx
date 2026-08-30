@@ -124,7 +124,7 @@ function CommentRow({
                 Reply
               </button>
             )}
-            <BookClubLikeButton cycleId={cycleId} targetType="comment" targetId={comment.id} initialLiked={likedByMe} initialCount={likeCount} />
+            <BookClubLikeButton cycleId={cycleId} targetType="comment" targetId={comment.id} initialLiked={likedByMe} initialCount={likeCount} disabled={isOwn} />
             {isOwn && (
               <button onClick={() => { setDraft(comment.body); setEditing(true); }}
                 className="rounded-lg border px-2 py-0.5 text-[11px] font-medium transition bookclub-chip">

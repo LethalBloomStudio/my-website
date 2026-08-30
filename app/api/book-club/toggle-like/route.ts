@@ -10,6 +10,12 @@ const TARGET_COLUMN: Record<TargetType, string> = {
   comment: "comment_id",
 };
 
+const TARGET_AUTHOR: Record<TargetType, { table: string; column: string }> = {
+  response: { table: "book_club_question_responses", column: "user_id" },
+  reply: { table: "book_club_response_replies", column: "author_id" },
+  comment: { table: "book_club_comments", column: "author_id" },
+};
+
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();
@@ -34,6 +40,16 @@ export async function POST(req: Request) {
   }
 
   const column = TARGET_COLUMN[targetType];
+  const { table: authorTable, column: authorColumn } = TARGET_AUTHOR[targetType];
+
+  const { data: targetRow } = await supabase
+    .from(authorTable)
+    .select(authorColumn)
+    .eq("id", targetId)
+    .maybeSingle();
+  if ((targetRow as Record<string, string> | null)?.[authorColumn] === userId) {
+    return NextResponse.json({ error: "You can't like your own post." }, { status: 400 });
+  }
 
   const { data: existing } = await supabase
     .from("book_club_likes")
