@@ -59,8 +59,11 @@ export async function POST(req: Request) {
     host_user_id?: string;
     book_title?: string;
     book_author?: string;
+    cover_image_url?: string | null;
     week_number?: number;
     prompt?: string;
+    source?: "custom" | "preset";
+    preset_id?: string | null;
   };
 
   if (body.type === "audit") {
@@ -191,6 +194,7 @@ export async function POST(req: Request) {
       p_host_user_id: body.host_user_id,
       p_book_title: body.book_title,
       p_book_author: body.book_author,
+      p_cover_image_url: body.cover_image_url ?? null,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
@@ -216,16 +220,19 @@ export async function POST(req: Request) {
       p_cycle_id: body.cycle_id,
       p_book_title: body.book_title,
       p_book_author: body.book_author,
+      p_cover_image_url: body.cover_image_url ?? null,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
-  if (body.type === "book_club_admin_change_questions" && body.cycle_id && body.week_number && body.prompt) {
+  if (body.type === "book_club_admin_change_questions" && body.cycle_id && body.week_number && body.source) {
     const { error } = await supabase.rpc("book_club_admin_change_questions", {
       p_cycle_id: body.cycle_id,
       p_week_number: body.week_number,
-      p_prompt: body.prompt,
+      p_source: body.source,
+      p_prompt: body.prompt ?? null,
+      p_preset_id: body.preset_id ?? null,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });

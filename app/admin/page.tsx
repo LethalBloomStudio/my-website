@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -480,12 +481,21 @@ function AdminPageInner() {
   const [overrideHostError, setOverrideHostError] = useState<string | null>(null);
   const [overrideBookTitle, setOverrideBookTitle] = useState("");
   const [overrideBookAuthor, setOverrideBookAuthor] = useState("");
+  const [overrideCoverUrl, setOverrideCoverUrl] = useState("");
+  const [overrideCoverUploading, setOverrideCoverUploading] = useState(false);
   const [overrideBookSaving, setOverrideBookSaving] = useState(false);
   const [overrideBookError, setOverrideBookError] = useState<string | null>(null);
   const [overrideQuestions, setOverrideQuestions] = useState<Record<number, string>>({});
+  const [overrideQuestionSource, setOverrideQuestionSource] = useState<Record<number, "custom" | "preset">>({});
+  const [overrideQuestionPresetId, setOverrideQuestionPresetId] = useState<Record<number, string>>({});
   const [overrideQuestionsLoading, setOverrideQuestionsLoading] = useState(false);
   const [overrideQuestionSaving, setOverrideQuestionSaving] = useState<number | null>(null);
   const [overrideQuestionError, setOverrideQuestionError] = useState<string | null>(null);
+  const [bookClubPresets, setBookClubPresets] = useState<{ id: string; prompt: string; category: string | null }[]>([]);
+  const [currentHostName, setCurrentHostName] = useState<string | null>(null);
+  const [currentBook, setCurrentBook] = useState<{ book_title: string; book_author: string; cover_image_url: string | null } | null>(null);
+  const [assignCoverUrl, setAssignCoverUrl] = useState("");
+  const [assignCoverUploading, setAssignCoverUploading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
@@ -639,17 +649,53 @@ function AdminPageInner() {
     setOverrideHostError(null);
     setOverrideBookTitle("");
     setOverrideBookAuthor("");
+    setOverrideCoverUrl("");
     setOverrideBookError(null);
     setOverrideQuestionError(null);
     setOverrideQuestionsLoading(true);
-    const data = await adminFetch(`/api/admin/data?scope=book_club_questions&cycle_id=${cycleId}`) as {
-      bookClubQuestions?: { week_number: number; prompt: string }[];
+    const data = await adminFetch(`/api/admin/data?scope=book_club_cycle_detail&cycle_id=${cycleId}`) as {
+      bookClubQuestions?: { week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[];
+      bookClubPresets?: { id: string; prompt: string; category: string | null }[];
+      bookClubCurrentHostName?: string | null;
+      bookClubCurrentBook?: { book_title: string; book_author: string; cover_image_url: string | null } | null;
     } | null;
     const drafts: Record<number, string> = {};
-    for (let w = 1; w <= 4; w++) drafts[w] = "";
-    for (const q of data?.bookClubQuestions ?? []) drafts[q.week_number] = q.prompt;
+    const sources: Record<number, "custom" | "preset"> = {};
+    const presetIds: Record<number, string> = {};
+    for (let w = 1; w <= 4; w++) {
+      drafts[w] = "";
+      sources[w] = "custom";
+      presetIds[w] = "";
+    }
+    for (const q of data?.bookClubQuestions ?? []) {
+      drafts[q.week_number] = q.prompt;
+      sources[q.week_number] = q.source;
+      presetIds[q.week_number] = q.preset_id ?? "";
+    }
     setOverrideQuestions(drafts);
+    setOverrideQuestionSource(sources);
+    setOverrideQuestionPresetId(presetIds);
+    setBookClubPresets(data?.bookClubPresets ?? []);
+    setCurrentHostName(data?.bookClubCurrentHostName ?? null);
+    setCurrentBook(data?.bookClubCurrentBook ?? null);
     setOverrideQuestionsLoading(false);
+  }
+
+  // Shared by both the assign panel and the change-book override panel --
+  // direct-to-Supabase-Storage, same mechanics as BookClubSlateForm's own
+  // upload (the admin's own auth.uid() owns the folder it lands in; the
+  // book-club-covers bucket's RLS only checks "your own folder", not any
+  // book-club-specific permission, so this works from the admin's own
+  // session with no special-casing needed).
+  async function uploadBookClubCover(file: File): Promise<string | null> {
+    if (!adminId) return null;
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${adminId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+    const { error } = await supabase.storage.from("book-club-covers").upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
+    if (error) return null;
+    const { data } = supabase.storage.from("book-club-covers").getPublicUrl(path);
+    return data.publicUrl;
   }
 
   async function overrideChangeHost() {
@@ -677,6 +723,7 @@ function AdminPageInner() {
       await audit("book_club_admin_change_host", "book_club_cycle", selectedCycleId, null, { host_user_id: profile.user_id });
       setOverrideHostUsername("");
       await loadBookClub();
+      await selectCycleForOverride(selectedCycleId);
     } finally {
       setOverrideHostSaving(false);
     }
@@ -692,6 +739,7 @@ function AdminPageInner() {
         body: JSON.stringify({
           type: "book_club_admin_change_book", cycle_id: selectedCycleId,
           book_title: overrideBookTitle.trim(), book_author: overrideBookAuthor.trim(),
+          cover_image_url: overrideCoverUrl.trim() || null,
         }),
       }) as { ok?: boolean; error?: string } | null;
       if (!result?.ok) {
@@ -699,16 +747,20 @@ function AdminPageInner() {
         return;
       }
       await audit("book_club_admin_change_book", "book_club_cycle", selectedCycleId, null, {
-        book_title: overrideBookTitle.trim(), book_author: overrideBookAuthor.trim(),
+        book_title: overrideBookTitle.trim(), book_author: overrideBookAuthor.trim(), cover_image_url: overrideCoverUrl.trim() || null,
       });
       await loadBookClub();
+      await selectCycleForOverride(selectedCycleId);
     } finally {
       setOverrideBookSaving(false);
     }
   }
 
   async function overrideChangeQuestion(week: number) {
-    if (!selectedCycleId || !overrideQuestions[week]?.trim()) return;
+    if (!selectedCycleId) return;
+    const source = overrideQuestionSource[week] ?? "custom";
+    if (source === "custom" && !overrideQuestions[week]?.trim()) return;
+    if (source === "preset" && !overrideQuestionPresetId[week]) return;
     setOverrideQuestionSaving(week);
     setOverrideQuestionError(null);
     try {
@@ -716,14 +768,16 @@ function AdminPageInner() {
         method: "POST",
         body: JSON.stringify({
           type: "book_club_admin_change_questions", cycle_id: selectedCycleId,
-          week_number: week, prompt: overrideQuestions[week].trim(),
+          week_number: week, source,
+          prompt: source === "custom" ? overrideQuestions[week].trim() : undefined,
+          preset_id: source === "preset" ? overrideQuestionPresetId[week] : null,
         }),
       }) as { ok?: boolean; error?: string } | null;
       if (!result?.ok) {
         setOverrideQuestionError(result?.error ?? "Something went wrong.");
         return;
       }
-      await audit("book_club_admin_change_questions", "book_club_cycle", selectedCycleId, null, { week_number: week, prompt: overrideQuestions[week].trim() });
+      await audit("book_club_admin_change_questions", "book_club_cycle", selectedCycleId, null, { week_number: week, source });
     } finally {
       setOverrideQuestionSaving(null);
     }
@@ -1352,6 +1406,7 @@ function AdminPageInner() {
           host_user_id: profile.user_id,
           book_title: assignBookTitle.trim(),
           book_author: assignBookAuthor.trim(),
+          cover_image_url: assignCoverUrl.trim() || null,
         }),
       }) as { ok?: boolean; error?: string } | null;
       if (!result?.ok) {
@@ -1364,6 +1419,7 @@ function AdminPageInner() {
       setAssignHostUsername("");
       setAssignBookTitle("");
       setAssignBookAuthor("");
+      setAssignCoverUrl("");
       await loadBookClub();
     } finally {
       setAssignSaving(false);
@@ -2207,6 +2263,22 @@ function AdminPageInner() {
                   className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
                 <input value={assignBookAuthor} onChange={e => setAssignBookAuthor(e.target.value)} placeholder="Book author"
                   className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                <div className="flex items-center gap-3">
+                  {assignCoverUrl && (
+                    <Image src={assignCoverUrl} alt="Cover preview" width={44} height={64} className="h-16 w-11 rounded object-cover border border-neutral-700" />
+                  )}
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={assignCoverUploading}
+                    onChange={async e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAssignCoverUploading(true);
+                      const url = await uploadBookClubCover(file);
+                      if (url) setAssignCoverUrl(url);
+                      setAssignCoverUploading(false);
+                    }}
+                    className="flex-1 text-xs text-neutral-400" />
+                </div>
+                {assignCoverUploading && <p className="text-[11px] text-neutral-500">Uploading cover...</p>}
                 <button onClick={() => void assignHostAndBook(selectedOpenCycle)} disabled={assignSaving}
                   className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
                   {assignSaving ? "Launching..." : "Launch immediately"}
@@ -2219,6 +2291,13 @@ function AdminPageInner() {
               <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5 space-y-4">
                 <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Overrides -- Selected Cycle</p>
                 <p className="text-xs text-neutral-500">Works on the selected cycle regardless of status, including completed ones.</p>
+                <div className="rounded-lg border border-[rgba(120,120,120,0.2)] bg-[rgba(18,18,18,0.6)] px-3 py-2 text-xs text-neutral-400 space-y-0.5">
+                  <p>Current host: <span className="text-neutral-200">{currentHostName ?? "none yet"}</span></p>
+                  <p>Current book: <span className="text-neutral-200">{currentBook ? `${currentBook.book_title} by ${currentBook.book_author}` : "none decided yet"}</span></p>
+                  {currentBook?.cover_image_url && (
+                    <Image src={currentBook.cover_image_url} alt="Current cover" width={44} height={64} className="mt-1 h-16 w-11 rounded object-cover border border-neutral-700" />
+                  )}
+                </div>
 
                 <div className="space-y-2 border-t border-[rgba(120,120,120,0.15)] pt-3">
                   <p className="text-xs font-medium text-neutral-400">Change host</p>
@@ -2240,6 +2319,22 @@ function AdminPageInner() {
                     className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
                   <input value={overrideBookAuthor} onChange={e => setOverrideBookAuthor(e.target.value)} placeholder="Book author"
                     className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                  <div className="flex items-center gap-3">
+                    {overrideCoverUrl && (
+                      <Image src={overrideCoverUrl} alt="Cover preview" width={44} height={64} className="h-16 w-11 rounded object-cover border border-neutral-700" />
+                    )}
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={overrideCoverUploading}
+                      onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setOverrideCoverUploading(true);
+                        const url = await uploadBookClubCover(file);
+                        if (url) setOverrideCoverUrl(url);
+                        setOverrideCoverUploading(false);
+                      }}
+                      className="flex-1 text-xs text-neutral-400" />
+                  </div>
+                  {overrideCoverUploading && <p className="text-[11px] text-neutral-500">Uploading cover...</p>}
                   <button onClick={() => void overrideChangeBook()} disabled={overrideBookSaving || !overrideBookTitle.trim() || !overrideBookAuthor.trim()}
                     className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition">
                     {overrideBookSaving ? "Saving..." : "Save"}
@@ -2253,18 +2348,44 @@ function AdminPageInner() {
                   {overrideQuestionsLoading ? (
                     <p className="text-xs text-neutral-600">Loading...</p>
                   ) : (
-                    [1, 2, 3, 4].map(week => (
-                      <div key={week} className="flex gap-2 items-start">
-                        <span className="mt-2 w-12 shrink-0 text-[11px] text-neutral-500">Week {week}</span>
-                        <textarea value={overrideQuestions[week] ?? ""} rows={2}
-                          onChange={e => setOverrideQuestions(prev => ({ ...prev, [week]: e.target.value }))}
-                          className="flex-1 resize-none rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
-                        <button onClick={() => void overrideChangeQuestion(week)} disabled={overrideQuestionSaving === week || !overrideQuestions[week]?.trim()}
-                          className="mt-0.5 rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition shrink-0">
-                          {overrideQuestionSaving === week ? "Saving..." : "Save"}
-                        </button>
-                      </div>
-                    ))
+                    [1, 2, 3, 4].map(week => {
+                      const source = overrideQuestionSource[week] ?? "custom";
+                      return (
+                        <div key={week} className="space-y-1.5 border-t border-[rgba(120,120,120,0.1)] pt-2 first:border-t-0 first:pt-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-neutral-500">Week {week}</span>
+                            <div className="flex gap-1 text-[10px]">
+                              <button onClick={() => setOverrideQuestionSource(prev => ({ ...prev, [week]: "custom" }))}
+                                className={`rounded px-1.5 py-0.5 ${source === "custom" ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-400"}`}>
+                                Write my own
+                              </button>
+                              <button onClick={() => setOverrideQuestionSource(prev => ({ ...prev, [week]: "preset" }))}
+                                className={`rounded px-1.5 py-0.5 ${source === "preset" ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-400"}`}>
+                                Pick from library
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 items-start">
+                            {source === "custom" ? (
+                              <textarea value={overrideQuestions[week] ?? ""} rows={2}
+                                onChange={e => setOverrideQuestions(prev => ({ ...prev, [week]: e.target.value }))}
+                                className="flex-1 resize-none rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100" />
+                            ) : (
+                              <select value={overrideQuestionPresetId[week] ?? ""} onChange={e => setOverrideQuestionPresetId(prev => ({ ...prev, [week]: e.target.value }))}
+                                className="flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100">
+                                <option value="">Choose a question...</option>
+                                {bookClubPresets.map(p => <option key={p.id} value={p.id}>{p.prompt}</option>)}
+                              </select>
+                            )}
+                            <button onClick={() => void overrideChangeQuestion(week)}
+                              disabled={overrideQuestionSaving === week || (source === "custom" ? !overrideQuestions[week]?.trim() : !overrideQuestionPresetId[week])}
+                              className="rounded-lg border border-[rgba(120,120,120,0.5)] bg-[rgba(120,120,120,0.12)] px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-[rgba(120,120,120,0.22)] disabled:opacity-40 transition shrink-0">
+                              {overrideQuestionSaving === week ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                   {overrideQuestionError && <p className="text-xs text-red-400">{overrideQuestionError}</p>}
                 </div>

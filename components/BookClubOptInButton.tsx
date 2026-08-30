@@ -38,7 +38,7 @@ export default function BookClubOptInButton({ cycleId }: { cycleId: string }) {
         disabled={loading}
         className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
       >
-        {loading ? "Joining..." : "Opt in to this cycle"}
+        {loading ? "Joining..." : "Join this month's book club"}
       </button>
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>

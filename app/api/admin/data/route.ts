@@ -374,15 +374,47 @@ export async function GET(req: Request) {
   // On-demand, not part of the bulk "book_club" scope above -- only fetched
   // when the admin actually opens a specific cycle's override panel, since
   // most listed cycles will never need their questions inspected.
-  if (scope === "book_club_questions") {
+  // Everything the admin override panel needs for one selected cycle,
+  // fetched on-demand (not part of the bulk "book_club" scope) since most
+  // listed cycles will never get opened for editing. Renamed from the
+  // narrower "book_club_questions" now that it also returns presets and
+  // the cycle's current book/host as read context for the override forms.
+  if (scope === "book_club_cycle_detail") {
     const cycleId = searchParams.get("cycle_id");
     if (!cycleId) return NextResponse.json({ error: "Missing cycle_id" }, { status: 400 });
-    const { data } = await supabase
-      .from("book_club_questionnaire_questions")
-      .select("week_number, prompt")
-      .eq("cycle_id", cycleId)
-      .order("week_number");
-    result.bookClubQuestions = data ?? [];
+
+    const [{ data: questions }, { data: presets }, { data: cycle }] = await Promise.all([
+      supabase
+        .from("book_club_questionnaire_questions")
+        .select("week_number, prompt, source, preset_id")
+        .eq("cycle_id", cycleId)
+        .order("week_number"),
+      supabase.from("book_club_question_presets").select("id, prompt, category").order("category"),
+      supabase.from("book_club_cycles").select("host_user_id, winning_book_option_id").eq("id", cycleId).maybeSingle(),
+    ]);
+    result.bookClubQuestions = questions ?? [];
+    result.bookClubPresets = presets ?? [];
+
+    let currentHostName: string | null = null;
+    let currentBook: { book_title: string; book_author: string; cover_image_url: string | null } | null = null;
+    if (cycle?.host_user_id) {
+      const { data: hostProfile } = await supabase
+        .from("public_profiles")
+        .select("username, pen_name")
+        .eq("user_id", cycle.host_user_id)
+        .maybeSingle();
+      currentHostName = hostProfile?.pen_name || hostProfile?.username || "Member";
+    }
+    if (cycle?.winning_book_option_id) {
+      const { data: book } = await supabase
+        .from("book_club_book_options")
+        .select("book_title, book_author, cover_image_url")
+        .eq("id", cycle.winning_book_option_id)
+        .maybeSingle();
+      currentBook = book ?? null;
+    }
+    result.bookClubCurrentHostName = currentHostName;
+    result.bookClubCurrentBook = currentBook;
   }
 
   if (scope === "flagged") {
