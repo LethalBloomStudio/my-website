@@ -324,6 +324,33 @@ export async function GET(req: Request) {
     } else {
       result.bookClubSignups = [];
     }
+
+    // Full history (including completed cycles) so admins have something
+    // to manage/delete beyond just the one current live cycle.
+    const { data: allCycles } = await supabase
+      .from("book_club_cycles")
+      .select("id, status, host_user_id, winning_book_option_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const cycleRows = (allCycles ?? []) as { id: string; status: string; host_user_id: string | null; winning_book_option_id: string | null; created_at: string }[];
+
+    const hostIds = [...new Set(cycleRows.map((c) => c.host_user_id).filter((id): id is string => !!id))];
+    const { data: hostProfiles } = hostIds.length > 0
+      ? await supabase.from("public_profiles").select("user_id, username, pen_name").in("user_id", hostIds)
+      : { data: [] };
+    const hostNameMap = new Map(((hostProfiles ?? []) as { user_id: string; username: string | null; pen_name: string | null }[]).map((p) => [p.user_id, p.pen_name || p.username || "Member"]));
+
+    const optionIds = [...new Set(cycleRows.map((c) => c.winning_book_option_id).filter((id): id is string => !!id))];
+    const { data: bookOptions } = optionIds.length > 0
+      ? await supabase.from("book_club_book_options").select("id, book_title, book_author").in("id", optionIds)
+      : { data: [] };
+    const bookMap = new Map(((bookOptions ?? []) as { id: string; book_title: string; book_author: string }[]).map((b) => [b.id, `${b.book_title} by ${b.book_author}`]));
+
+    result.bookClubCycles = cycleRows.map((c) => ({
+      ...c,
+      host_name: c.host_user_id ? hostNameMap.get(c.host_user_id) ?? "Member" : null,
+      book_display: c.winning_book_option_id ? bookMap.get(c.winning_book_option_id) ?? null : null,
+    }));
   }
 
   if (scope === "flagged") {

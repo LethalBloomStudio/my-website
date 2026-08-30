@@ -194,5 +194,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (body.type === "book_club_admin_delete_cycle" && body.cycle_id) {
+    const { error } = await supabase.rpc("book_club_admin_delete_cycle", { p_cycle_id: body.cycle_id });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ error: "Unknown action type" }, { status: 400 });
 }

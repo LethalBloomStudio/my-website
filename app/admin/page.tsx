@@ -161,6 +161,15 @@ type BookClubSignup = {
   status: "pending" | "approved" | "denied";
 };
 
+type BookClubCycleHistoryRow = {
+  id: string;
+  status: string;
+  host_user_id: string | null;
+  host_name: string | null;
+  book_display: string | null;
+  created_at: string;
+};
+
 type Stats = {
   total_users: number;
   active_users: number;
@@ -453,6 +462,7 @@ function AdminPageInner() {
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [bookClubCycle, setBookClubCycle] = useState<BookClubCycle | null>(null);
   const [bookClubSignups, setBookClubSignups] = useState<BookClubSignup[]>([]);
+  const [bookClubCycles, setBookClubCycles] = useState<BookClubCycleHistoryRow[]>([]);
   const [assignHostUsername, setAssignHostUsername] = useState("");
   const [assignBookTitle, setAssignBookTitle] = useState("");
   const [assignBookAuthor, setAssignBookAuthor] = useState("");
@@ -599,10 +609,12 @@ function AdminPageInner() {
     const data = await adminFetch("/api/admin/data?scope=book_club") as {
       bookClubCycle?: BookClubCycle | null;
       bookClubSignups?: BookClubSignup[];
+      bookClubCycles?: BookClubCycleHistoryRow[];
     } | null;
     if (!data) return;
     setBookClubCycle(data.bookClubCycle ?? null);
     setBookClubSignups(data.bookClubSignups ?? []);
+    setBookClubCycles(data.bookClubCycles ?? []);
   }
 
   async function loadAll(_uid?: string) {
@@ -1244,6 +1256,20 @@ function AdminPageInner() {
     } finally {
       setAssignSaving(false);
     }
+  }
+
+  async function deleteBookClubCycle(cycle: BookClubCycleHistoryRow) {
+    if (!window.confirm(
+      "Delete this Book Club cycle? This permanently removes all its signups, votes, comments, questions, and responses. " +
+      "Bloom Coins already earned from it are NOT clawed back."
+    )) return;
+    const result = await adminFetch("/api/admin/action", {
+      method: "POST",
+      body: JSON.stringify({ type: "book_club_admin_delete_cycle", cycle_id: cycle.id }),
+    }) as { ok?: boolean; error?: string } | null;
+    if (!result?.ok) return;
+    await audit("book_club_admin_delete_cycle", "book_club_cycle", cycle.id, { status: cycle.status }, null);
+    await loadBookClub();
   }
 
   // ─── Announcement actions ──────────────────────────────────────────────────
@@ -2059,6 +2085,28 @@ function AdminPageInner() {
                 {assignSaving ? "Launching..." : "Launch immediately"}
               </button>
               {assignError && <p className="text-xs text-red-400">{assignError}</p>}
+            </div>
+
+            <div className="rounded-xl border border-[rgba(120,120,120,0.25)] bg-[rgba(18,18,18,0.9)] p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Cycle History</p>
+              {bookClubCycles.length === 0 && <p className="text-sm text-neutral-500">No cycles yet.</p>}
+              <div className="space-y-2">
+                {bookClubCycles.map(c => (
+                  <div key={c.id} className="flex items-center justify-between rounded-xl border border-[rgba(120,120,120,0.3)] bg-[rgba(18,18,18,0.95)] px-5 py-4">
+                    <div>
+                      <p className="font-medium text-neutral-100">{c.status.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        {c.host_name ? `Host: ${c.host_name}` : "No host yet"}
+                        {c.book_display ? ` · ${c.book_display}` : ""} · {new Date(c.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button onClick={() => void deleteBookClubCycle(c)}
+                      className="rounded-lg border border-red-700/50 bg-red-900/20 px-2.5 py-1 text-xs text-red-400 hover:bg-red-900/40 transition shrink-0">
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
