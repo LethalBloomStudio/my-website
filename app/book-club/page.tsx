@@ -303,7 +303,7 @@ export default async function BookClubPage() {
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/40 p-2 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
@@ -332,7 +332,7 @@ export default async function BookClubPage() {
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/40 p-2 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
