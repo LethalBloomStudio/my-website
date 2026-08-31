@@ -226,6 +226,9 @@ export default async function BookClubPage() {
       <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">The Lethal Bloom Forge Book Club</h1>
+          <p className="mt-2 text-sm italic text-neutral-400">
+            In collaboration with one of our founding members, Erika Tritz, Lethal Bloom Studio presents our brand new monthly book club.
+          </p>
           <p className="mt-2 text-sm text-neutral-400">
             One book, one host, one month-long discussion at a time.
           </p>
