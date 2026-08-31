@@ -234,7 +234,7 @@ export default async function BookClubPage() {
             <div>
               <p className="text-xs font-semibold text-neutral-300">For members</p>
               <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-neutral-400">
-                <li>Join early to help build the book slate. Anyone opted in can suggest a book before voting opens.</li>
+                <li>Join early to help build the book slate. Anyone opted in can suggest a book before voting opens, up to 5 books total.</li>
                 <li>Vote once voting opens on the date shown.</li>
                 <li>Once the month launches, answer each week&apos;s discussion question. That&apos;s what earns your weekly Bloom Coins.</li>
                 <li>Reply to other members&apos; answers (optional): 2 coins per person, up to 10 coins a week.</li>
@@ -248,7 +248,7 @@ export default async function BookClubPage() {
                 <li>Sign up during host signup. Selection favors whoever&apos;s hosted least recently.</li>
                 <li>Once picked, you get a 48-hour window to add your own book pick to the slate.</li>
                 <li>After the book&apos;s decided, set all 4 weeks&apos; discussion questions (write your own or pick from presets) before the month launches.</li>
-                <li>Earn your 250-coin host reward by hitting all four: 4 replies given, 4 likes given, 2 Group Thoughts posts, and all 4 questions set, tracked on your host checklist.</li>
+                <li>Earn your 250-coin host reward by hitting all four: 4 replies given, 4 likes given, 2 Group Thoughts posts, and all 4 questions set, tracked on your host checklist. These numbers are subject to change as membership grows.</li>
                 <li>Same 7-day rating deadline applies to you too.</li>
               </ul>
             </div>
