@@ -223,7 +223,7 @@ export default async function BookClubPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Forged &amp; Fatal Book Club</h1>
           <p className="mt-2 text-sm italic text-neutral-400">
