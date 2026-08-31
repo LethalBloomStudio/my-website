@@ -91,6 +91,7 @@ export default function BookClubVoteBallot({
                 initialAuthor={option.book_author}
                 initialCoverUrl={option.cover_image_url}
                 voteCount={tally[option.id] ?? 0}
+                votingHasBegun
               />
             )}
             <button

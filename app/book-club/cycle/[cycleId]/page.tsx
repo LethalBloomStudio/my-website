@@ -358,6 +358,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                         initialAuthor={o.book_author}
                         initialCoverUrl={o.cover_image_url}
                         voteCount={0}
+                        votingHasBegun={false}
                       />
                     )}
                   </li>

@@ -19,12 +19,14 @@ export default function BookClubEditBookOptionButton({
   initialAuthor,
   initialCoverUrl,
   voteCount,
+  votingHasBegun,
 }: {
   optionId: string;
   initialTitle: string;
   initialAuthor: string;
   initialCoverUrl: string | null;
   voteCount: number;
+  votingHasBegun: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -146,9 +148,9 @@ export default function BookClubEditBookOptionButton({
           />
         </div>
       </div>
-      {voteCount > 0 && (
+      {votingHasBegun && (
         <p className="text-[11px] text-amber-400">
-          Editing will reset the {voteCount} vote{voteCount === 1 ? "" : "s"} this book has received.
+          Voting has begun for this cycle. Editing this book will reset its vote count to zero{voteCount > 0 ? ` (currently ${voteCount})` : ""}.
         </p>
       )}
       <div className="flex gap-2">
@@ -175,11 +177,14 @@ export default function BookClubEditBookOptionButton({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-sm rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl">
             <h2 className="text-lg font-semibold text-white">Save changes to this book?</h2>
-            <p className="mt-2 text-sm text-neutral-400">
-              {voteCount > 0
-                ? `This book already has ${voteCount} vote${voteCount === 1 ? "" : "s"}. If you edit or change the book, all votes for it will be lost and reset to zero.`
-                : "You're about to update this book's title, author, or cover."}
-            </p>
+            {votingHasBegun ? (
+              <div className="mt-3 rounded-lg border border-amber-700/50 bg-amber-950/20 px-3 py-2.5 text-sm text-amber-300 leading-relaxed">
+                Voting has begun for this cycle. If you change this book&apos;s title, author, or cover, its vote count will reset to zero.
+                {voteCount > 0 && ` It currently has ${voteCount} vote${voteCount === 1 ? "" : "s"}.`}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-neutral-400">You&apos;re about to update this book&apos;s title, author, or cover.</p>
+            )}
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
