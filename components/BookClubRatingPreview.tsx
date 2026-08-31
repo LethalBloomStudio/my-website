@@ -15,6 +15,7 @@ export default function BookClubRatingPreview({ opensAtLabel }: { opensAtLabel: 
         ))}
       </div>
       {opensAtLabel && <p className="text-[10px] text-neutral-600">Opens {opensAtLabel}</p>}
+      <p className="text-[10px] text-neutral-600">7 days to rate, or coins are forfeited</p>
     </div>
   );
 }

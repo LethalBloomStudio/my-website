@@ -138,10 +138,20 @@ export default async function BookClubPage() {
       slateOptions = options ?? [];
     }
 
+    // Voting opens exactly 14 days before planned_starts_at -- and since the
+    // rolling pipeline seeds each new host_pending cycle's planned_starts_at
+    // as the previous cycle's planned_starts_at + 28 days (no gaps by
+    // design), that's mathematically the same instant the previous cycle's
+    // cycle_ends_at lands. No need to look up the previous cycle directly.
+    const votingOpensAtLabel = row.planned_starts_at
+      ? new Date(new Date(row.planned_starts_at).getTime() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+      : null;
+
     upcoming.push({
       id: row.id,
       status: row.status as "host_pending" | "voting" | "questions_pending",
       plannedStartsAt: row.planned_starts_at as string | null,
+      votingOpensAtLabel,
       alreadySignedUpToHost: !!signup,
       isParticipant: !!participant,
       isHost: row.host_user_id === user.id,
@@ -191,6 +201,8 @@ export default async function BookClubPage() {
       : null;
     const ratingRow = (ratingStatsRows as { rating_count: number; average_rating: number | null }[] | null)?.[0];
 
+    const ratingDeadline = row.cycle_ends_at ? new Date(row.cycle_ends_at).getTime() + 7 * 24 * 60 * 60 * 1000 : null;
+
     closed.push({
       id: row.id,
       bookTitle: won?.book_title ?? null,
@@ -202,6 +214,10 @@ export default async function BookClubPage() {
       ratingCount: Number(ratingRow?.rating_count ?? 0),
       averageRating: ratingRow?.average_rating != null ? Number(ratingRow.average_rating) : null,
       needsRating: !!myParticipant && !myRating,
+      ratingDeadlineLabel: ratingDeadline
+        ? new Date(ratingDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+        : null,
+      ratingDeadlinePassed: ratingDeadline !== null && new Date() > new Date(ratingDeadline),
     });
   }
 
@@ -279,12 +295,15 @@ export default async function BookClubPage() {
                 {c.status === "host_pending" && (
                   <>
                     <p className="text-sm text-neutral-300">Host signup is open for this month.</p>
+                    {c.votingOpensAtLabel && (
+                      <p className="text-xs text-neutral-500">Voting opens {c.votingOpensAtLabel}.</p>
+                    )}
                     <BookClubHostSignupButton cycleId={c.id} initiallySignedUp={c.alreadySignedUpToHost} />
 
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/40 p-2 text-center">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
@@ -298,8 +317,7 @@ export default async function BookClubPage() {
                         Help build the book slate →
                       </Link>
                     ) : (
-                      <div className="space-y-1.5 border-t border-neutral-800 pt-3">
-                        <p className="text-xs text-neutral-500">Opt in to help build the book slate.</p>
+                      <div className="border-t border-neutral-800 pt-3">
                         <BookClubOptInButton cycleId={c.id} />
                       </div>
                     )}
@@ -314,7 +332,7 @@ export default async function BookClubPage() {
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/40 p-2 text-center">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
@@ -387,6 +405,8 @@ export default async function BookClubPage() {
                   averageRating={c.averageRating}
                   cycleId={c.id}
                   needsRating={c.needsRating}
+                  ratingDeadlineLabel={c.ratingDeadlineLabel}
+                  ratingDeadlinePassed={c.ratingDeadlinePassed}
                 />
               ))}
             </div>

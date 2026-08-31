@@ -64,12 +64,12 @@ export default function BookClubEditBookOptionButton({
   }
 
   async function handleSave() {
-    if (voteCount > 0) {
-      const confirmed = window.confirm(
-        `This book already has ${voteCount} vote${voteCount === 1 ? "" : "s"}. Editing it will reset ${voteCount === 1 ? "that vote" : "those votes"} back to zero. Continue?`
-      );
-      if (!confirmed) return;
-    }
+    const confirmed = window.confirm(
+      voteCount > 0
+        ? `This book already has ${voteCount} vote${voteCount === 1 ? "" : "s"}. Editing it will reset ${voteCount === 1 ? "that vote" : "those votes"} back to zero. Continue?`
+        : "Save changes to this book?"
+    );
+    if (!confirmed) return;
 
     setLoading(true);
     setError(null);

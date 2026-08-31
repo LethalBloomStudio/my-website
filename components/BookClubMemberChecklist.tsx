@@ -71,7 +71,7 @@ export default function BookClubMemberChecklist({
           sub={`${cappedReplyCount}/${REPLY_WEEKLY_CAP} · ${cappedReplyCount * REPLY_REWARD_COINS}/${REPLY_WEEKLY_CAP * REPLY_REWARD_COINS} coins this week`}
         />
         {cycleEndsAtLabel && (
-          <BookClubChecklistItem done={false} label={`Rate book on ${cycleEndsAtLabel}`} />
+          <BookClubChecklistItem done={false} label={`Rate book within 7 days of ${cycleEndsAtLabel}`} />
         )}
       </div>
     </div>

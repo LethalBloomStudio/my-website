@@ -19,6 +19,8 @@ export default function BookClubClosedMonthCard({
   averageRating,
   cycleId,
   needsRating,
+  ratingDeadlineLabel,
+  ratingDeadlinePassed,
 }: {
   bookTitle: string | null;
   bookAuthor: string | null;
@@ -30,6 +32,8 @@ export default function BookClubClosedMonthCard({
   averageRating: number | null;
   cycleId: string;
   needsRating: boolean;
+  ratingDeadlineLabel: string | null;
+  ratingDeadlinePassed: boolean;
 }) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
@@ -69,7 +73,7 @@ export default function BookClubClosedMonthCard({
 
       {needsRating && (
         <div className="mt-3 border-t border-neutral-800 pt-3">
-          <BookClubRatingPrompt cycleId={cycleId} />
+          <BookClubRatingPrompt cycleId={cycleId} deadlineLabel={ratingDeadlineLabel} deadlinePassed={ratingDeadlinePassed} />
         </div>
       )}
     </div>

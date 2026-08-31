@@ -96,7 +96,7 @@ export default function BookClubHostChecklist({
       <p className="text-xs uppercase tracking-wide text-neutral-500">
         <span className="font-bold">Host reward:</span> 250 Bloom Coins at close of book club{cycleEndsAtLabel ? ` (${cycleEndsAtLabel})` : ""}
       </p>
-      <p className="text-[11px] text-neutral-600">Check every box by the time the month closes, released when you rate the book.</p>
+      <p className="text-[11px] text-neutral-600">Check every box by the time the month closes, released when you rate the book within 7 days, or they&apos;re forfeited.</p>
       <div className="space-y-1.5 pt-1">
         {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => (
           <BookClubChecklistItem key={week} done={questionWeeks.has(week)} label={`Week ${week} question set`} />
@@ -117,7 +117,7 @@ export default function BookClubHostChecklist({
           sub={`${Math.min(progress.groupPostCount, progress.groupPostsNeeded)}/${progress.groupPostsNeeded}`}
         />
         {cycleEndsAtLabel && (
-          <BookClubChecklistItem done={false} label={`Rate book on ${cycleEndsAtLabel}`} />
+          <BookClubChecklistItem done={false} label={`Rate book within 7 days of ${cycleEndsAtLabel}`} />
         )}
       </div>
     </div>
