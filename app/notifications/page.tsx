@@ -119,6 +119,8 @@ function getItemCategory(item: FeedItem, userId: string | null): "manuscript" | 
     if (n.category === "feedback_reply") return "beta_reading";
     // Chapter update notifications → beta_reading
     if (n.category === "chapter_update") return "beta_reading";
+    // Book Club host-selection notifications → social
+    if (n.category === "book_club_host") return "social";
     // Coin request from a linked youth account → social
     if ((n.metadata as { gift_link?: string } | null)?.gift_link) return "social";
     // Any discussion board notification (has post_id in metadata) → social
