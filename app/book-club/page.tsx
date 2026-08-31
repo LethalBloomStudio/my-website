@@ -229,9 +229,30 @@ export default async function BookClubPage() {
           <p className="mt-2 text-sm italic text-neutral-400">
             In collaboration with one of our founding members, Erika Tritz, Lethal Bloom Studio presents our brand new monthly book club.
           </p>
-          <p className="mt-2 text-sm text-neutral-400">
-            One book, one host, one month-long discussion at a time.
-          </p>
+          <div className="mt-4 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">How it works</p>
+            <div>
+              <p className="text-xs font-semibold text-neutral-300">For members</p>
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-neutral-400">
+                <li>Join early to help build the book slate. Anyone opted in can suggest a book before voting opens.</li>
+                <li>Vote once voting opens on the date shown.</li>
+                <li>Once the month launches, answer each week&apos;s discussion question. That&apos;s what earns your weekly Bloom Coins.</li>
+                <li>Reply to other members&apos; answers (optional): 2 coins per person, up to 10 coins a week.</li>
+                <li>Drop into Group Thoughts anytime for open-ended chat about the book.</li>
+                <li>Rate the book within 7 days of the month closing to collect everything you earned. Miss the window and it&apos;s forfeited.</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-neutral-300">For hosts</p>
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-neutral-400">
+                <li>Sign up during host signup. Selection favors whoever&apos;s hosted least recently.</li>
+                <li>Once picked, you get a 48-hour window to add your own book pick to the slate.</li>
+                <li>After the book&apos;s decided, set all 4 weeks&apos; discussion questions (write your own or pick from presets) before the month launches.</li>
+                <li>Earn your 250-coin host reward by hitting all four: 4 replies given, 4 likes given, 2 Group Thoughts posts, and all 4 questions set, tracked on your host checklist.</li>
+                <li>Same 7-day rating deadline applies to you too.</li>
+              </ul>
+            </div>
+          </div>
         </header>
 
         {/* -- Active month -- */}
