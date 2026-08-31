@@ -10,9 +10,9 @@ const MAX_COVER_BYTES = 5 * 1024 * 1024; // 5MB
 // Lets a submitter edit their own book after adding it to the slate --
 // title/author/cover only, never cycle/slot/ownership. Editing resets any
 // votes already cast for it (book_club_edit_book_option deletes them
-// server-side) -- warned here twice, once via a confirm() before saving
-// and once as a standing note while the form is open, since this is a
-// real, mildly destructive side effect people should see coming.
+// server-side) -- warned here via a styled confirm modal (matching
+// ReportModal.tsx's pattern, the established site-wide confirm-dialog
+// look) before saving, plus a standing note while the form is open.
 export default function BookClubEditBookOptionButton({
   optionId,
   initialTitle,
@@ -29,6 +29,7 @@ export default function BookClubEditBookOptionButton({
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [author, setAuthor] = useState(initialAuthor);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -64,13 +65,7 @@ export default function BookClubEditBookOptionButton({
   }
 
   async function handleSave() {
-    const confirmed = window.confirm(
-      voteCount > 0
-        ? `This book already has ${voteCount} vote${voteCount === 1 ? "" : "s"}. Editing it will reset ${voteCount === 1 ? "that vote" : "those votes"} back to zero. Continue?`
-        : "Save changes to this book?"
-    );
-    if (!confirmed) return;
-
+    setConfirming(false);
     setLoading(true);
     setError(null);
     try {
@@ -159,7 +154,7 @@ export default function BookClubEditBookOptionButton({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => void handleSave()}
+          onClick={() => setConfirming(true)}
           disabled={loading || !title.trim() || !author.trim()}
           className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
         >
@@ -175,6 +170,35 @@ export default function BookClubEditBookOptionButton({
         </button>
       </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
+
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[rgba(120,120,120,0.5)] bg-neutral-950 p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-white">Save changes to this book?</h2>
+            <p className="mt-2 text-sm text-neutral-400">
+              {voteCount > 0
+                ? `This book already has ${voteCount} vote${voteCount === 1 ? "" : "s"}. If you edit or change the book, all votes for it will be lost and reset to zero.`
+                : "You're about to update this book's title, author, or cover."}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="rounded-lg border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                className="rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.2)] px-4 py-1.5 text-sm text-white hover:border-[rgba(120,120,120,0.9)] transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
