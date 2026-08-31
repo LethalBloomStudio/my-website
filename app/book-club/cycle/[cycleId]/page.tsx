@@ -7,13 +7,12 @@ import BookClubVoteBallot from "@/components/BookClubVoteBallot";
 import BookClubTieBreakPanel from "@/components/BookClubTieBreakPanel";
 import BookClubQuestionnaireEditor from "@/components/BookClubQuestionnaireEditor";
 import BookClubWeekSection from "@/components/BookClubWeekSection";
-import BookClubWeeklyProgress from "@/components/BookClubWeeklyProgress";
 import BookClubParticipantAvatars from "@/components/BookClubParticipantAvatars";
 import BookClubComments from "@/components/BookClubComments";
 import BookClubCoinProgress from "@/components/BookClubCoinProgress";
 import BookClubHostChecklist from "@/components/BookClubHostChecklist";
 import BookClubRatingPreview from "@/components/BookClubRatingPreview";
-import BookClubChecklistItem from "@/components/BookClubChecklistItem";
+import BookClubMemberChecklist from "@/components/BookClubMemberChecklist";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +122,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
   let questions: { id: string; week_number: number; prompt: string; source: "custom" | "preset"; preset_id: string | null }[] = [];
   let currentWeek: number | null = null;
   let myEarnedWeeks: number[] = [];
+  let myReplyRewardCountThisWeek = 0;
   const myResponsesByQuestionId: Record<string, string> = {};
   const myResponseIdByQuestionId: Record<string, string> = {};
   const myResponseRepliesByQuestionId: Record<string, { id: string; author_name: string; created_at: string; body: string; likeCount: number; likedByMe: boolean }[]> = {};
@@ -197,6 +197,16 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
       .eq("cycle_id", cycle.id)
       .eq("user_id", user.id);
     myEarnedWeeks = (checkmarks ?? []).map((c) => c.week_number);
+
+    if (currentWeek !== null) {
+      const { count: replyRewardCount } = await supabase
+        .from("book_club_reply_rewards")
+        .select("id", { count: "exact", head: true })
+        .eq("cycle_id", cycle.id)
+        .eq("week_number", currentWeek)
+        .eq("author_id", user.id);
+      myReplyRewardCountThisWeek = replyRewardCount ?? 0;
+    }
 
     const startedQuestionIds = questions
       .filter((q) => currentWeek !== null && q.week_number <= currentWeek)
@@ -431,15 +441,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             </div>
 
             {!isHost && (
-              <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">Your weekly progress</p>
-                <BookClubWeeklyProgress earnedWeeks={myEarnedWeeks} />
-                {cycleEndsAtLabel && (
-                  <div className="pt-1">
-                    <BookClubChecklistItem done={false} label={`Rate book on ${cycleEndsAtLabel}`} />
-                  </div>
-                )}
-              </div>
+              <BookClubMemberChecklist
+                cycleId={cycle.id}
+                currentUserId={user.id}
+                currentWeek={currentWeek}
+                earnedWeeks={myEarnedWeeks}
+                initialReplyCount={myReplyRewardCountThisWeek}
+                cycleEndsAtLabel={cycleEndsAtLabel}
+              />
             )}
 
             <div className="space-y-3">
