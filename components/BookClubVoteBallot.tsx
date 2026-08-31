@@ -4,17 +4,20 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import BookClubCoverThumb from "@/components/BookClubCoverThumb";
+import BookClubEditBookOptionButton from "@/components/BookClubEditBookOptionButton";
 
-type BookOption = { id: string; book_title: string; book_author: string; cover_image_url: string | null };
+type BookOption = { id: string; book_title: string; book_author: string; cover_image_url: string | null; submitted_by: string };
 
 export default function BookClubVoteBallot({
   cycleId,
   options,
   myVoteBookOptionId,
+  currentUserId,
 }: {
   cycleId: string;
   options: BookOption[];
   myVoteBookOptionId: string | null;
+  currentUserId: string;
 }) {
   const router = useRouter();
   const supabase = supabaseBrowser();
@@ -70,7 +73,7 @@ export default function BookClubVoteBallot({
       {options.map((option) => (
         <div
           key={option.id}
-          className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3"
         >
           <div className="flex items-center gap-3 min-w-0">
             <BookClubCoverThumb coverUrl={option.cover_image_url} title={option.book_title} width={40} height={56} />
@@ -81,6 +84,15 @@ export default function BookClubVoteBallot({
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-neutral-500">{tally[option.id] ?? 0} votes</span>
+            {option.submitted_by === currentUserId && (
+              <BookClubEditBookOptionButton
+                optionId={option.id}
+                initialTitle={option.book_title}
+                initialAuthor={option.book_author}
+                initialCoverUrl={option.cover_image_url}
+                voteCount={tally[option.id] ?? 0}
+              />
+            )}
             <button
               type="button"
               disabled={loading}

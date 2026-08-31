@@ -123,11 +123,13 @@ export default async function BookClubPage() {
     }
 
     // The candidate slate itself -- visible to any adult once voting opens
-    // (book_club_book_options_select's status='voting' carve-out), so
-    // people can see what's up for a vote before deciding whether to opt
-    // in. Voting itself stays participant-gated, untouched.
+    // (book_club_book_options_select's status='voting' carve-out) or to
+    // participants during host_pending (already opted-in, so
+    // book_club_is_participant already covers them), so people can see
+    // what's up for a vote / already been suggested before deciding
+    // whether to opt in. Voting itself stays participant-gated, untouched.
     let slateOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
-    if (row.status === "voting") {
+    if (row.status === "voting" || (row.status === "host_pending" && !!participant)) {
       const { data: options } = await supabase
         .from("book_club_book_options")
         .select("id, book_title, book_author, cover_image_url")
@@ -278,6 +280,19 @@ export default async function BookClubPage() {
                   <>
                     <p className="text-sm text-neutral-300">Host signup is open for this month.</p>
                     <BookClubHostSignupButton cycleId={c.id} initiallySignedUp={c.alreadySignedUpToHost} />
+
+                    {c.slateOptions.length > 0 && (
+                      <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {c.slateOptions.map((o) => (
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
+                            <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
+                            <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
+                            <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {c.isParticipant ? (
                       <Link href={`/book-club/cycle/${c.id}`} className="block text-sm text-neutral-300 underline underline-offset-2 hover:text-white transition">
                         Help build the book slate →

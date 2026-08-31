@@ -13,6 +13,7 @@ import BookClubCoinProgress from "@/components/BookClubCoinProgress";
 import BookClubHostChecklist from "@/components/BookClubHostChecklist";
 import BookClubRatingPreview from "@/components/BookClubRatingPreview";
 import BookClubMemberChecklist from "@/components/BookClubMemberChecklist";
+import BookClubEditBookOptionButton from "@/components/BookClubEditBookOptionButton";
 
 export const dynamic = "force-dynamic";
 
@@ -80,14 +81,14 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
     ? new Date(cycle.cycle_ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })
     : null;
 
-  let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null; slot_number: number }[] = [];
+  let bookOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null; slot_number: number; submitted_by: string }[] = [];
   let myVoteBookOptionId: string | null = null;
   let tiedOptions: { id: string; book_title: string; book_author: string; cover_image_url: string | null }[] = [];
 
   if (cycle.status === "host_pending" || cycle.status === "voting") {
     const { data: options } = await supabase
       .from("book_club_book_options")
-      .select("id, book_title, book_author, cover_image_url, slot_number")
+      .select("id, book_title, book_author, cover_image_url, slot_number, submitted_by")
       .eq("cycle_id", cycle.id)
       .order("slot_number");
     bookOptions = options ?? [];
@@ -337,19 +338,28 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
         {cycle.status === "host_pending" && (
           <section className="space-y-4">
             <p className="text-sm text-neutral-400">
-              Add a book to the slate -- one per person, up to 4 open slots. One slot is reserved for
+              Add a book to the slate: one per person, up to 4 open slots. One slot is reserved for
               whoever&apos;s selected as host, added once voting opens.
             </p>
             <BookClubSlateForm cycleId={cycle.id} />
             {bookOptions.length > 0 && (
               <ul className="space-y-2">
                 {bookOptions.map((o) => (
-                  <li key={o.id} className="flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
+                  <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm">
                     <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={32} height={44} />
-                    <span>
+                    <span className="flex-1">
                       <span className="font-medium text-neutral-100">{o.book_title}</span>{" "}
                       <span className="text-neutral-400">by {o.book_author}</span>
                     </span>
+                    {o.submitted_by === user.id && (
+                      <BookClubEditBookOptionButton
+                        optionId={o.id}
+                        initialTitle={o.book_title}
+                        initialAuthor={o.book_author}
+                        initialCoverUrl={o.cover_image_url}
+                        voteCount={0}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -365,7 +375,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             {hostGraceActive && (
               <div className="space-y-3 rounded-xl border border-amber-700/50 bg-amber-950/20 p-4">
                 <p className="text-sm text-amber-300">
-                  Your reserved slot -- add your own pick to the slate. Open for 48 hours from when voting opened.
+                  Your reserved slot: add your own pick to the slate. Open for 48 hours from when voting opened.
                 </p>
                 <BookClubSlateForm cycleId={cycle.id} />
               </div>
@@ -373,7 +383,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             <p className="text-sm text-neutral-400">
               Voting closes {cycle.voting_closes_at ? new Date(cycle.voting_closes_at).toLocaleString() : "soon"}.
             </p>
-            <BookClubVoteBallot cycleId={cycle.id} options={bookOptions} myVoteBookOptionId={myVoteBookOptionId} />
+            <BookClubVoteBallot cycleId={cycle.id} options={bookOptions} myVoteBookOptionId={myVoteBookOptionId} currentUserId={user.id} />
           </section>
         )}
 
