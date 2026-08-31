@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import BookClubCoverThumb from "@/components/BookClubCoverThumb";
 import BookClubEditBookOptionButton from "@/components/BookClubEditBookOptionButton";
+import BookClubVetoButton from "@/components/BookClubVetoButton";
 
 type BookOption = { id: string; book_title: string; book_author: string; cover_image_url: string | null; submitted_by: string };
 
@@ -13,11 +14,13 @@ export default function BookClubVoteBallot({
   options,
   myVoteBookOptionId,
   currentUserId,
+  isHost,
 }: {
   cycleId: string;
   options: BookOption[];
   myVoteBookOptionId: string | null;
   currentUserId: string;
+  isHost: boolean;
 }) {
   const router = useRouter();
   const supabase = supabaseBrowser();
@@ -93,6 +96,9 @@ export default function BookClubVoteBallot({
                 voteCount={tally[option.id] ?? 0}
                 votingHasBegun
               />
+            )}
+            {isHost && option.submitted_by !== currentUserId && (
+              <BookClubVetoButton optionId={option.id} bookTitle={option.book_title} />
             )}
             <button
               type="button"

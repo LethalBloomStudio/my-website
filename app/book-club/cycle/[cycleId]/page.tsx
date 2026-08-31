@@ -14,6 +14,7 @@ import BookClubHostChecklist from "@/components/BookClubHostChecklist";
 import BookClubRatingPreview from "@/components/BookClubRatingPreview";
 import BookClubMemberChecklist from "@/components/BookClubMemberChecklist";
 import BookClubEditBookOptionButton from "@/components/BookClubEditBookOptionButton";
+import BookClubVetoButton from "@/components/BookClubVetoButton";
 
 export const dynamic = "force-dynamic";
 
@@ -361,6 +362,9 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
                         votingHasBegun={false}
                       />
                     )}
+                    {isHost && o.submitted_by !== user.id && (
+                      <BookClubVetoButton optionId={o.id} bookTitle={o.book_title} />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -384,7 +388,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
             <p className="text-sm text-neutral-400">
               Voting closes {cycle.voting_closes_at ? new Date(cycle.voting_closes_at).toLocaleString() : "soon"}.
             </p>
-            <BookClubVoteBallot cycleId={cycle.id} options={bookOptions} myVoteBookOptionId={myVoteBookOptionId} currentUserId={user.id} />
+            <BookClubVoteBallot cycleId={cycle.id} options={bookOptions} myVoteBookOptionId={myVoteBookOptionId} currentUserId={user.id} isHost={isHost} />
           </section>
         )}
 
