@@ -47,7 +47,7 @@ export default function BookClubTieBreakPanel({
       </p>
       <div className="space-y-2">
         {tiedOptions.map((option) => (
-          <div key={option.id} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
+          <div key={option.id} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 bookclub-card">
             <div className="flex items-center gap-3 min-w-0">
               <BookClubCoverThumb coverUrl={option.cover_image_url} title={option.book_title} width={40} height={56} />
               <div className="min-w-0">

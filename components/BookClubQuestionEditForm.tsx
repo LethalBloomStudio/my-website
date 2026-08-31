@@ -72,7 +72,7 @@ export default function BookClubQuestionEditForm({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <div className="flex gap-2 text-xs">
         <button
           type="button"

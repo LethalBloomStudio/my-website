@@ -75,7 +75,7 @@ export default async function BookClubQuestionEditPage({
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
+      <div className="mx-auto max-w-5xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
         <header className="space-y-2">
           <Link href={`/book-club/cycle/${cycleId}`} className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-200 transition">
             ← Book Club

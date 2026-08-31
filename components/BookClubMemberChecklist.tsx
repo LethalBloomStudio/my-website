@@ -59,7 +59,7 @@ export default function BookClubMemberChecklist({
   const cappedReplyCount = Math.min(replyCount, REPLY_WEEKLY_CAP);
 
   return (
-    <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Your checklist</p>
       <div className="space-y-1.5 pt-1">
         {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => (

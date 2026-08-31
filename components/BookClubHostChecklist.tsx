@@ -84,7 +84,7 @@ export default function BookClubHostChecklist({
 
   if (progress.alreadyReleased) {
     return (
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
         <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Host reward</p>
         <p className="mt-1 text-sm text-emerald-400">Released.</p>
       </div>
@@ -92,7 +92,7 @@ export default function BookClubHostChecklist({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="space-y-2 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <p className="text-xs uppercase tracking-wide text-neutral-500">
         <span className="font-bold">Host reward:</span> 250 Bloom Coins at close of book club{cycleEndsAtLabel ? ` (${cycleEndsAtLabel})` : ""}
       </p>

@@ -86,7 +86,7 @@ export default function BookClubQuestionnaireEditor({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <p className="text-sm font-medium text-neutral-200">Weekly questions (only you can see future weeks)</p>
       {Array.from({ length: CYCLE_LENGTH_WEEKS }, (_, i) => i + 1).map((week) => {
         const draft = drafts[week];

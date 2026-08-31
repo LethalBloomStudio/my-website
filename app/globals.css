@@ -1337,6 +1337,15 @@ html[data-theme="day"] textarea[class] {
 [data-theme="day"] .bookclub-week-3 { border-color: rgba(109, 40, 217, 0.5) !important; }
 .bookclub-week-4 { border-color: rgba(251, 113, 133, 0.5); }
 [data-theme="day"] .bookclub-week-4 { border-color: rgba(190, 18, 60, 0.5) !important; }
+
+/* ── Book Club: section card backgrounds -- bg-neutral-900/X already maps
+   to a light grey in day mode (#f0f0f0, the sitewide substring rule at
+   ~1120), but that reads noticeably darker than other pages' near-white
+   card treatment. Marker class only, added alongside the existing
+   Tailwind bg-neutral-900/X class rather than replacing it (keeps night
+   mode untouched), day mode wins on specificity/order same as every
+   other bookclub-* class this session. ── */
+[data-theme="day"] .bookclub-card { background-color: #ffffff !important; }
 [data-theme="day"] .bookclub-chip-liked:hover { color: #9f1239 !important; }
 
 

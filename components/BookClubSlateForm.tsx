@@ -84,7 +84,7 @@ export default function BookClubSlateForm({ cycleId }: { cycleId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <div className="space-y-1">
         <label className="text-xs font-medium text-neutral-400">Book title</label>
         <input

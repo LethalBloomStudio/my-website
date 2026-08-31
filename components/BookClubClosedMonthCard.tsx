@@ -36,7 +36,7 @@ export default function BookClubClosedMonthCard({
   ratingDeadlinePassed: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+    <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 bookclub-card">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
           {bookTitle && <BookClubCoverThumb coverUrl={coverImageUrl} title={bookTitle} width={44} height={62} />}

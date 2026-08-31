@@ -5,7 +5,7 @@
 // framing doesn't apply to them (they earn 0 from these mechanics).
 export default function BookClubCoinProgress({ coinTotal }: { coinTotal: number }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
       <p className="text-xs uppercase tracking-wide text-neutral-500">Bloom Coins earned this month</p>
       <p className="mt-1 flex items-center gap-1.5 text-lg font-medium text-neutral-100">
         <span style={{ color: "#f59e0b" }}>✿</span>

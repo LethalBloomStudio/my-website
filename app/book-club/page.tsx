@@ -223,13 +223,13 @@ export default async function BookClubPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
+      <div className="mx-auto max-w-5xl px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-8">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Forged &amp; Fatal Book Club</h1>
           <p className="mt-2 text-sm italic text-neutral-400">
             In collaboration with one of our founding members, Erika Tritz, Lethal Bloom Studio presents our brand new monthly book club.
           </p>
-          <div className="mt-4 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+          <div className="mt-4 space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 bookclub-card">
             <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">How it works</p>
             <div>
               <p className="text-xs font-semibold text-neutral-300">For members</p>
@@ -262,7 +262,7 @@ export default async function BookClubPage() {
             <p className="text-sm text-neutral-400">No Book Club month is running right now.</p>
           )}
           {activeCycle && (
-            <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5">
+            <div className="space-y-4 rounded-xl border border-neutral-800 bg-neutral-900/60 p-5 bookclub-card">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
                   {activeWinningBook && (
@@ -311,7 +311,7 @@ export default async function BookClubPage() {
           )}
           <div className="space-y-3">
             {upcoming.map((c) => (
-              <div key={c.id} className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <div key={c.id} className="space-y-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 bookclub-card">
                 <p className="text-xs uppercase tracking-wide text-neutral-500">
                   {monthLabel(c.plannedStartsAt) ?? "Next up"}
                 </p>
@@ -327,7 +327,7 @@ export default async function BookClubPage() {
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center bookclub-card">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>
@@ -356,7 +356,7 @@ export default async function BookClubPage() {
                     {c.slateOptions.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {c.slateOptions.map((o) => (
-                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center">
+                          <div key={o.id} className="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border bookclub-divider bg-neutral-900/40 p-2 text-center bookclub-card">
                             <BookClubCoverThumb coverUrl={o.cover_image_url} title={o.book_title} width={56} height={78} />
                             <p className="w-full truncate text-[10px] font-medium text-neutral-300">{o.book_title}</p>
                             <p className="w-full truncate text-[9px] text-neutral-500">{o.book_author}</p>

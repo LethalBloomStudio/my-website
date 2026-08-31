@@ -109,7 +109,7 @@ export default function BookClubEditBookOptionButton({
   }
 
   return (
-    <div className="w-full space-y-2 rounded-lg border border-neutral-700 bg-neutral-950 p-3 text-left">
+    <div className="w-full space-y-2 rounded-lg border border-neutral-700 bg-neutral-950 p-3 text-left bookclub-card">
       <div className="space-y-1">
         <label className="text-xs font-medium text-neutral-400">Book title</label>
         <input

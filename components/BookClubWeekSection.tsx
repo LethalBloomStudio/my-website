@@ -86,7 +86,7 @@ export default function BookClubWeekSection({
   const canReplyToAnswers = started && !closed;
 
   return (
-    <div className={`overflow-hidden rounded-xl border-2 bookclub-week-${weekNumber} transition ${closed ? "bg-neutral-900/30" : "bg-neutral-900/60"}`}>
+    <div className={`overflow-hidden rounded-xl border-2 bookclub-week-${weekNumber} bookclub-card transition ${closed ? "bg-neutral-900/30" : "bg-neutral-900/60"}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
