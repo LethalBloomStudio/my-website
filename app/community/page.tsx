@@ -55,7 +55,7 @@ export default async function CommunityPage() {
       <div className="mx-auto max-w-[1400px] px-4 pt-6 pb-32 lg:px-6 lg:py-16 space-y-6">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">Community</h1>
-          <p className="mt-2 text-sm text-neutral-400">Connect with fellow authors and readers.</p>
+          <p className="mt-2 text-sm text-neutral-400">This is your corner of the community. Post about your current read, the character you have questionable feelings for, or whatever&apos;s keeping you up at 2am. That&apos;s exactly what this place is for!</p>
         </header>
 
         {/* ── Recent Uploads carousel ── */}
