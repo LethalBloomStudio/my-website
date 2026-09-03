@@ -518,7 +518,14 @@ export default function NotificationsPage() {
         const n = item.payload as SystemNotification;
         if (n.category === "messages") return false;
         if (n.title?.startsWith("New message from")) return false;
-        if ((n.metadata as { sender_id?: string } | null)?.sender_id) return false;
+        // Legacy guard for message rows whose category/title drifted: only the
+        // message route's own metadata shape (sender_id + a /messages?with= link)
+        // counts as "message-shaped" here. A bare sender_id isn't enough - other
+        // categories (e.g. birthday_gift) also carry a sender_id, and matching on
+        // that alone was silently hiding those from the feed while the badge counts
+        // still counted them as unread.
+        const metaLink = (n.metadata as { sender_id?: string; link?: string } | null)?.link;
+        if ((n.metadata as { sender_id?: string } | null)?.sender_id && metaLink?.startsWith("/messages?")) return false;
       }
       if (item.type === "read_request" && item.payload.status !== "pending") {
         return Date.now() - new Date(item.created_at).getTime() < 30 * 24 * 60 * 60 * 1000;
@@ -592,7 +599,8 @@ export default function NotificationsPage() {
           // Apply the same filters as prunedFeed in load()
           if (row.category === "messages") return;
           if (row.title?.startsWith("New message from")) return;
-          if ((row.metadata as { sender_id?: string } | null)?.sender_id) return;
+          const rowMetaLink = (row.metadata as { sender_id?: string; link?: string } | null)?.link;
+          if ((row.metadata as { sender_id?: string } | null)?.sender_id && rowMetaLink?.startsWith("/messages?")) return;
 
           if (row.id && row.title && row.body && row.created_at) {
             // Append the new item without touching any existing read state
