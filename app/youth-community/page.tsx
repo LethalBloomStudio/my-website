@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/Supabase/supabaseServer";
 import UploadCarousel from "../community/UploadCarousel";
 import CommunityFeed from "../community/CommunityFeed";
 import DiscussionBoard from "../community/DiscussionBoard";
-import CommunityAnnouncementBanner from "../community/CommunityAnnouncementBanner";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -65,11 +65,12 @@ export default async function YouthCommunityPage() {
         </div>
 
         <div className="-mt-1 -mb-1">
-          <CommunityAnnouncementBanner
+          <AnnouncementBanner
             initialMessage={communityAnnouncement?.message ?? null}
             initialActive={communityAnnouncement?.is_active ?? false}
-            isAdmin={isAdmin}
-            audience="youth"
+            canEdit={isAdmin}
+            saveEndpoint="/api/admin/community-announcement"
+            extraBody={{ audience: "youth" }}
           />
         </div>
 

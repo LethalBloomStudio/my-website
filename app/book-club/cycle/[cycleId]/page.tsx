@@ -15,6 +15,7 @@ import BookClubRatingPreview from "@/components/BookClubRatingPreview";
 import BookClubMemberChecklist from "@/components/BookClubMemberChecklist";
 import BookClubEditBookOptionButton from "@/components/BookClubEditBookOptionButton";
 import BookClubVetoButton from "@/components/BookClubVetoButton";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +137,7 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
     repliesNeeded: number; likesNeeded: number; groupPostsNeeded: number; questionsNeeded: number;
     alreadyReleased: boolean;
   } | null = null;
+  let cycleBanner: { message: string; is_active: boolean } | null = null;
 
   if (cycle.status === "questions_pending" || cycle.status === "active") {
     if (cycle.winning_book_option_id) {
@@ -145,6 +147,15 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
         .eq("id", cycle.winning_book_option_id)
         .maybeSingle();
       winningBook = won ?? null;
+    }
+
+    if (cycle.status === "active") {
+      const { data: banner } = await supabase
+        .from("book_club_cycle_banners")
+        .select("message, is_active")
+        .eq("cycle_id", cycle.id)
+        .maybeSingle();
+      cycleBanner = banner ?? null;
     }
 
     if (cycle.host_user_id) {
@@ -335,6 +346,20 @@ export default async function BookClubCyclePage({ params }: { params: Promise<{ 
           </Link>
           <h1 className="text-3xl font-semibold tracking-tight">{cycleMonthLabel ? `${cycleMonthLabel} Book Club` : "Book Club"}</h1>
         </header>
+
+        {cycle.status === "active" && (
+          <AnnouncementBanner
+            initialMessage={cycleBanner?.message ?? null}
+            initialActive={cycleBanner?.is_active ?? false}
+            canEdit={isHost}
+            saveEndpoint="/api/book-club/cycle-banner"
+            extraBody={{ cycle_id: cycle.id }}
+            fallbackMessage={winningBook ? `📖 ${winningBook.book_title} by ${winningBook.book_author}` : undefined}
+            editorLabel="This Month's Host Banner"
+            editorHelpText="Only you can see this editor. Your message replaces the book title/author banner for everyone in the club until you hide it."
+            editorPlaceholder="Share a note with this month's readers..."
+          />
+        )}
 
         {cycle.status === "host_pending" && (
           <section className="space-y-4">
