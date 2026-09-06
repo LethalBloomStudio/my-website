@@ -119,7 +119,7 @@ export default function BetaReaderAnalyticsPanel({
           </button>
         </div>
         <p className="mb-5 text-xs leading-relaxed text-neutral-500">
-          These are proxy signals worth noticing, not a verdict on the manuscript — a single reader&apos;s rough week can move a trend, especially with few readers so far.
+          These numbers reflect this manuscript&apos;s entire engagement history to date, not just a recent window. Treat them as signals worth noticing, not a verdict: a single reader can still move a trend when there are only a few readers so far.
         </p>
 
         {loading ? (
