@@ -2164,13 +2164,8 @@ export default function ManuscriptDetailsPage() {
     setRemoveReaderModal(null);
   }
 
-  async function acceptRequest(userId: string) {
+  async function performAcceptRequest(userId: string) {
     if (!manuscript) return;
-    const activeCount = acceptedReaders.filter((r) => !r.disabled && !r.left).length;
-    if (activeCount >= readerSlots) {
-      setMsg(`All ${readerSlots} reader slots are filled. Add a slot first.`);
-      return;
-    }
     const { error } = await supabase
       .from("manuscript_access_requests")
       .update({ status: "approved" })
@@ -2193,6 +2188,46 @@ export default function ManuscriptDetailsPage() {
       user_id: userId,
       title: "Beta reader request accepted",
       body: `Your request to read "${manuscript.title || "Untitled manuscript"}" has been accepted.`,
+    });
+  }
+
+  async function acceptRequest(userId: string) {
+    if (!manuscript) return;
+    const activeCount = acceptedReaders.filter((r) => !r.disabled && !r.left).length;
+    if (activeCount < readerSlots) {
+      await performAcceptRequest(userId);
+      return;
+    }
+
+    // Slots are full - prompt to purchase one instead of just refusing.
+    // Don't recurse into acceptRequest() after adding the slot: readerSlots
+    // is stale in this closure until the next render, so the recheck above
+    // would still see the old count and loop back into this same prompt.
+    if (memberTier === "lethal") {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { error } = await supabase.from("bloom_coin_ledger").insert({
+        user_id: uid,
+        delta: 0,
+        reason: "extra_reader_slot",
+        metadata: { manuscript_id: manuscript.id },
+      });
+      if (error) { setMsg(friendlyDbError(error.message)); return; }
+      setReaderSlots((s) => s + 1);
+      await performAcceptRequest(userId);
+      return;
+    }
+
+    setCoinConfirm({
+      amount: 15,
+      label: "add a reader slot so you can accept this reader",
+      onConfirm: () => void (async () => {
+        const charge = await spendBloomCoins(15, "extra_reader_slot", { manuscript_id: manuscript.id });
+        if (!charge.ok) { setShowUploadPurchasePrompt(true); return; }
+        setReaderSlots((s) => s + 1);
+        await performAcceptRequest(userId);
+      })(),
     });
   }
 

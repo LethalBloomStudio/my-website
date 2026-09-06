@@ -8,6 +8,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
 import { useNotificationReadKeys } from "@/lib/useNotificationReadKeys";
+import { getPromotionState } from "@/lib/promotionState";
+import { getGiftState } from "@/lib/giftState";
+import OutOfCoinsModal from "@/components/OutOfCoinsModal";
 import BirthdayFriendCard from "./BirthdayFriendCard";
 
 type Manuscript = { id: string; title: string };
@@ -172,6 +175,9 @@ export default function NotificationsPage() {
   const [ownedManuscriptIds, setOwnedManuscriptIds] = useState<Set<string>>(new Set());
   const [claimConfirm, setClaimConfirm] = useState<{ announcementId?: string; giveawayPostId?: string; rewardCoins: number } | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
+  const [slotPurchase, setSlotPurchase] = useState<{ req: AccessRequest; amount: number } | null>(null);
+  const [slotPurchaseSubmitting, setSlotPurchaseSubmitting] = useState(false);
+  const [showOutOfCoins, setShowOutOfCoins] = useState(false);
   const [birthdayClaimLoading, setBirthdayClaimLoading] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -687,7 +693,7 @@ export default function NotificationsPage() {
     await load();
   }
 
-  async function approveRequest(req: AccessRequest) {
+  async function performApprove(req: AccessRequest) {
     if (!userId) return;
     const { error: updateErr } = await supabase
       .from("manuscript_access_requests")
@@ -699,6 +705,105 @@ export default function NotificationsPage() {
       .insert({ manuscript_id: req.manuscript_id, reader_id: req.requester_id, granted_by: userId });
     if (grantErr && grantErr.code !== "23505") { setMsg(grantErr.message); return; }
     await load();
+  }
+
+  // Same reader-slot cap as the manuscript workspace's "Accept" button
+  // (app/manuscripts/[id]/details/page.tsx) - this notifications-page
+  // "Approve" button is a second entry point to the exact same action and
+  // must never let an owner accept past their paid slot count.
+  async function approveRequest(req: AccessRequest) {
+    if (!userId) return;
+
+    const [{ count: activeCount }, { data: slotRows }, { data: acctRow }] = await Promise.all([
+      supabase
+        .from("manuscript_access_grants")
+        .select("id", { count: "exact", head: true })
+        .eq("manuscript_id", req.manuscript_id),
+      supabase
+        .from("bloom_coin_ledger")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("reason", "extra_reader_slot")
+        .filter("metadata->>manuscript_id", "eq", req.manuscript_id),
+      supabase
+        .from("accounts")
+        .select("subscription_status, active_promotion_id, promotion_expires_at, active_gift_membership_id, gift_access_expires_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
+
+    const totalSlots = 3 + ((slotRows as Array<{ id: string }> | null)?.length ?? 0);
+    if ((activeCount ?? 0) < totalSlots) {
+      await performApprove(req);
+      return;
+    }
+
+    const acct = acctRow as {
+      subscription_status?: string | null;
+      active_promotion_id?: string | null;
+      promotion_expires_at?: string | null;
+      active_gift_membership_id?: string | null;
+      gift_access_expires_at?: string | null;
+    } | null;
+    const subscription = (acct?.subscription_status ?? "").toLowerCase().trim();
+    const { onActivePromo } = getPromotionState(acct);
+    const { onActiveGift } = getGiftState(acct);
+    const isLethal = subscription === "lethal" || subscription.includes("lethal") || onActivePromo || onActiveGift;
+
+    if (isLethal) {
+      // Lethal members get slots free.
+      const { error } = await supabase.from("bloom_coin_ledger").insert({
+        user_id: userId,
+        delta: 0,
+        reason: "extra_reader_slot",
+        metadata: { manuscript_id: req.manuscript_id },
+      });
+      if (error) { setMsg(error.message); return; }
+      await performApprove(req);
+      return;
+    }
+
+    setSlotPurchase({ req, amount: 15 });
+  }
+
+  async function confirmSlotPurchase() {
+    if (!slotPurchase || !userId) return;
+    setSlotPurchaseSubmitting(true);
+    const { req, amount } = slotPurchase;
+
+    const { data: acctRow } = await supabase.from("accounts").select("bloom_coins").eq("user_id", userId).maybeSingle();
+    const currentBalance = Number((acctRow as { bloom_coins?: number } | null)?.bloom_coins ?? 0);
+    if (currentBalance < amount) {
+      setSlotPurchaseSubmitting(false);
+      setSlotPurchase(null);
+      setShowOutOfCoins(true);
+      return;
+    }
+
+    const nextBalance = currentBalance - amount;
+    const { data: updated, error: updateError } = await supabase
+      .from("accounts")
+      .update({ bloom_coins: nextBalance })
+      .eq("user_id", userId)
+      .eq("bloom_coins", currentBalance)
+      .select("user_id")
+      .maybeSingle();
+    if (updateError || !updated) {
+      setMsg("Could not charge Bloom Coins. Please try again.");
+      setSlotPurchaseSubmitting(false);
+      return;
+    }
+
+    await supabase.from("bloom_coin_ledger").insert({
+      user_id: userId,
+      delta: -amount,
+      reason: "extra_reader_slot",
+      metadata: { manuscript_id: req.manuscript_id },
+    });
+
+    setSlotPurchaseSubmitting(false);
+    setSlotPurchase(null);
+    await performApprove(req);
   }
 
   async function denyRequest(req: AccessRequest) {
@@ -1787,6 +1892,37 @@ export default function NotificationsPage() {
           </div>
         </div>
       )}
+
+      {slotPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-[rgba(120,120,120,0.45)] bg-neutral-900 p-6 shadow-2xl">
+            <p className="text-base font-semibold text-neutral-100">
+              Spend <span style={{ color: "#f59e0b" }}>✿</span> {slotPurchase.amount} Bloom Coins?
+            </p>
+            <p className="mt-2 text-sm text-neutral-400">
+              This manuscript&apos;s reader slots are full. Spend {slotPurchase.amount} Bloom Coins to add a slot so you can accept this reader.
+            </p>
+            <div className="mt-5 flex gap-3 justify-end">
+              <button
+                onClick={() => setSlotPurchase(null)}
+                disabled={slotPurchaseSubmitting}
+                className="inline-flex h-9 items-center rounded-lg border border-neutral-700 bg-neutral-900/60 px-4 text-sm text-neutral-300 hover:border-neutral-600 hover:text-neutral-100 disabled:opacity-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void confirmSlotPurchase()}
+                disabled={slotPurchaseSubmitting}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 text-sm font-medium text-amber-400 hover:bg-amber-900/30 disabled:opacity-50 transition"
+              >
+                {slotPurchaseSubmitting ? "Adding…" : `Add slot & accept for ${slotPurchase.amount} Coins`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOutOfCoins && <OutOfCoinsModal onClose={() => setShowOutOfCoins(false)} />}
     </main>
   );
 }
