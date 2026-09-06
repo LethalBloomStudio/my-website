@@ -10,6 +10,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ManuscriptLayout, { DetailRow } from "@/components/ManuscriptLayout";
 import OutOfCoinsModal from "@/components/OutOfCoinsModal";
 import ExitReasonModal, { OWNER_REMOVE_REASONS } from "@/components/ExitReasonModal";
+import BetaReaderAnalyticsPanel from "@/components/BetaReaderAnalyticsPanel";
 import ProfileImageUpload from "@/components/ProfileImageUpload";
 import ProseTextarea from "@/components/ProseTextarea";
 import ChapterEditor from "@/components/ChapterEditor";
@@ -166,6 +167,7 @@ export default function ManuscriptDetailsPage() {
   const [parentDisableSubmitting, setParentDisableSubmitting] = useState(false);
   const [parentActionMsg, setParentActionMsg] = useState<string | null>(null);
   const [showPendingPanel, setShowPendingPanel] = useState(false);
+  const [showAnalyticsPanel, setShowAnalyticsPanel] = useState(false);
   const [readerSlots, setReaderSlots] = useState(3);
   const readerScrollRef = useRef<HTMLDivElement>(null);
   const [readerCanScrollLeft, setReaderCanScrollLeft] = useState(false);
@@ -2562,6 +2564,9 @@ export default function ManuscriptDetailsPage() {
         </button>
       </div>
       <div className="mx-auto max-w-[1600px] px-6 py-12">
+        <Link href="/manuscripts" className="mb-4 inline-flex items-center text-sm text-neutral-400 hover:text-white transition">
+          ← Back to manuscripts
+        </Link>
         {/* Hidden file input for cover uploads triggered by clicking the cover in the sidebar */}
         <input
           ref={coverInputRef}
@@ -2648,12 +2653,18 @@ export default function ManuscriptDetailsPage() {
                 <h1 className="text-xl font-semibold text-white">{manuscriptTitle || "Untitled manuscript"}</h1>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/manuscripts"
-                  className="workspace-btn inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition"
+                <button
+                  type="button"
+                  onClick={() => setShowAnalyticsPanel(true)}
+                  title="Beta reader analytics"
+                  className="workspace-btn inline-flex h-9 w-9 items-center justify-center rounded-lg transition"
                 >
-                  Back to manuscripts
-                </Link>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                </button>
                 <Link
                   href={`/manuscripts/${manuscript.id}?from=details`}
                   className="workspace-btn inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition"
@@ -3944,6 +3955,10 @@ export default function ManuscriptDetailsPage() {
               <p className="mt-1 text-neutral-400 italic">&ldquo;{exitTooltip.reader.exitReason!.detail}&rdquo;</p>
             )}
           </div>
+        )}
+
+        {showAnalyticsPanel && (
+          <BetaReaderAnalyticsPanel manuscriptId={manuscript.id} onClose={() => setShowAnalyticsPanel(false)} />
         )}
 
         {enableReaderConfirm && (
