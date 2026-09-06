@@ -77,7 +77,7 @@ export default function DiscoverPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [sortDay, setSortDay] = useState<number>(-1);
   const [visibleCount, setVisibleCount] = useState(15);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [sentinelEl, setSentinelEl] = useState<HTMLDivElement | null>(null);
   const chapterCountChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const sortedCategoryOptions = useMemo(
     () => [...genreOptionsForAgeCategory(ageCategory)].sort((a, b) => a.localeCompare(b)),
@@ -181,15 +181,14 @@ export default function DiscoverPage() {
 
   // Load more when sentinel enters viewport
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinelEl) return;
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setVisibleCount((n) => n + 15); },
       { threshold: 0.1 }
     );
-    observer.observe(sentinel);
+    observer.observe(sentinelEl);
     return () => observer.disconnect();
-  }, []);
+  }, [sentinelEl]);
 
   const normalized = query.trim().toLowerCase();
   const filtered = items.filter((m) => {
@@ -347,7 +346,7 @@ export default function DiscoverPage() {
 
         {/* Sentinel for infinite scroll */}
         {!loading && filtered.length > visibleCount && (
-          <div ref={sentinelRef} className="py-6 text-center">
+          <div ref={setSentinelEl} className="py-6 text-center">
             <span role="status" className="text-xs text-neutral-600">Loading more…</span>
           </div>
         )}
