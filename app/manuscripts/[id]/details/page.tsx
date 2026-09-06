@@ -2653,13 +2653,13 @@ export default function ManuscriptDetailsPage() {
                 <h1 className="text-xl font-semibold text-white">{manuscriptTitle || "Untitled manuscript"}</h1>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
+                <a
+                  role="button"
                   onClick={() => setShowAnalyticsPanel(true)}
-                  className="workspace-btn inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition"
+                  className="workspace-btn inline-flex h-9 cursor-pointer items-center rounded-lg px-3 text-sm font-medium transition"
                 >
                   Statistics
-                </button>
+                </a>
                 <Link
                   href={`/manuscripts/${manuscript.id}?from=details`}
                   className="workspace-btn inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium transition"
