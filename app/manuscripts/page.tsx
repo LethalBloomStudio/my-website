@@ -545,12 +545,16 @@ export default function ManuscriptsPage() {
       reason_category: reasonCategory,
       reason_detail: reasonDetail || null,
     });
-    // Mark request as "left" - slot stays filled, author cannot re-enable
+    // Mark request as "left" - slot stays filled, author cannot re-enable.
+    // Upsert (not update): invite-path readers never got a request row in
+    // the first place, so a plain update would silently no-op here and
+    // then the grant delete below would wipe their access with no trace.
     await supabase
       .from("manuscript_access_requests")
-      .update({ status: "left" })
-      .eq("manuscript_id", manuscriptId)
-      .eq("requester_id", uid);
+      .upsert(
+        { manuscript_id: manuscriptId, requester_id: uid, status: "left" },
+        { onConflict: "manuscript_id,requester_id" }
+      );
     // Remove grant (trigger also does this, belt-and-suspenders)
     await supabase
       .from("manuscript_access_grants")

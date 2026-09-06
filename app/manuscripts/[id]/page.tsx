@@ -421,11 +421,15 @@ function PageInner() {
       reason_category: reasonCategory,
       reason_detail: reasonDetail || null,
     });
+    // Upsert (not update): invite-path readers never got a request row in
+    // the first place, so a plain update would silently no-op here and
+    // then the grant delete below would wipe their access with no trace.
     await supabase
       .from("manuscript_access_requests")
-      .update({ status: "left" })
-      .eq("manuscript_id", manuscriptId)
-      .eq("requester_id", userId);
+      .upsert(
+        { manuscript_id: manuscriptId, requester_id: userId, status: "left" },
+        { onConflict: "manuscript_id,requester_id" }
+      );
     await supabase
       .from("manuscript_access_grants")
       .delete()

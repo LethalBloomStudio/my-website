@@ -2118,11 +2118,15 @@ export default function ManuscriptDetailsPage() {
     // Determine new status: left or disabled readers both go to "approved" on re-enable
     const enabling = currentlyDisabled || currentlyLeft;
     const newStatus = enabling ? "approved" : "disabled";
+    // Upsert (not update): invite-path readers never got a request row in
+    // the first place, so a plain update would silently no-op here and
+    // then the grant delete below would wipe their access with no trace.
     const { error } = await supabase
       .from("manuscript_access_requests")
-      .update({ status: newStatus })
-      .eq("manuscript_id", manuscript.id)
-      .eq("requester_id", readerId);
+      .upsert(
+        { manuscript_id: manuscript.id, requester_id: readerId, status: newStatus },
+        { onConflict: "manuscript_id,requester_id" }
+      );
     if (error) { setMsg(friendlyDbError(error.message)); return; }
     if (enabling) {
       // Re-enable: restore access grant
@@ -2231,6 +2235,8 @@ export default function ManuscriptDetailsPage() {
         : manuscript?.genre
           ? [manuscript.genre]
           : [];
+  const activeReaderCount = acceptedReaders.filter((r) => !r.left && !r.disabled).length;
+  const openReaderSlots = Math.max(0, readerSlots - activeReaderCount);
   const displayedWordCount = chapters.reduce((sum, c) => sum + countWords(c.content ?? ""), 0);
   const selectedChapter = selectedChapterId ? chapters.find((c) => c.id === selectedChapterId) ?? null : null;
   const nonTriggerCount = chapters.filter((c) => (c.chapter_type ?? "chapter") !== "trigger_page").length;
@@ -2674,7 +2680,7 @@ export default function ManuscriptDetailsPage() {
             <section className="rounded-2xl border border-[rgba(120,120,120,0.35)] bg-[rgba(20,20,20,0.92)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Accepted readers</h2>
-                <span className="text-xs text-neutral-200">{acceptedReaders.length}/{readerSlots} slots filled</span>
+                <span className="text-xs text-neutral-200">{activeReaderCount}/{readerSlots} slots filled</span>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <button
@@ -2689,10 +2695,9 @@ export default function ManuscriptDetailsPage() {
                   onScroll={onReaderScroll}
                   className="flex w-0 flex-1 gap-3 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  {Array.from({ length: readerSlots }).map((_, i) => {
-                    const reader = sortedAcceptedReaders[i];
-                    const isOnline = reader ? onlineReaderIds.has(reader.user_id) : false;
-                    return reader ? (
+                  {sortedAcceptedReaders.map((reader) => {
+                    const isOnline = onlineReaderIds.has(reader.user_id);
+                    return (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
                         <div className="relative h-14 w-14">
                           <div
@@ -2733,13 +2738,14 @@ export default function ManuscriptDetailsPage() {
                         {reader.left && <span className="text-[9px] text-red-500/70">Left project</span>}
                         {reader.suspended && <span className="text-[9px] text-amber-500/80">Suspended</span>}
                       </div>
-                    ) : (
-                      <div key={`empty-${i}`} className="flex shrink-0 flex-col items-center gap-1.5">
-                        <div className="h-14 w-14 rounded-lg border border-dashed border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.05)]" />
-                        <p className="text-[10px] text-neutral-300">Open</p>
-                      </div>
                     );
                   })}
+                  {Array.from({ length: openReaderSlots }).map((_, i) => (
+                    <div key={`empty-${i}`} className="flex shrink-0 flex-col items-center gap-1.5">
+                      <div className="h-14 w-14 rounded-lg border border-dashed border-[rgba(120,120,120,0.3)] bg-[rgba(120,120,120,0.05)]" />
+                      <p className="text-[10px] text-neutral-300">Open</p>
+                    </div>
+                  ))}
                   {!isParentView && (
                   <div className="flex shrink-0 flex-col items-center gap-1.5">
                     <button type="button" onClick={() => void addReaderSlot()} className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-[rgba(120,120,120,0.45)] bg-[rgba(120,120,120,0.08)] text-xl text-[rgba(120,120,120,0.7)] hover:border-[rgba(120,120,120,0.7)] hover:bg-[rgba(120,120,120,0.14)] transition" title={memberTier === "lethal" ? "Add a reader slot (free)" : "Add a reader slot for 15 Bloom Coins"}>+</button>
