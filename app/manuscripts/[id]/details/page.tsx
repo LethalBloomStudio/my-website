@@ -177,6 +177,7 @@ export default function ManuscriptDetailsPage() {
   const [rewardReason, setRewardReason] = useState("");
   const [removeReaderModal, setRemoveReaderModal] = useState<{ readerId: string } | null>(null);
   const [removeReaderSubmitting, setRemoveReaderSubmitting] = useState(false);
+  const [exitTooltip, setExitTooltip] = useState<{ reader: AcceptedReader; x: number; y: number } | null>(null);
   const [chapterUpdateModal, setChapterUpdateModal] = useState(false);
   const [chapterUpdateCategories, setChapterUpdateCategories] = useState<string[]>([]);
   const [chapterUpdateNote, setChapterUpdateNote] = useState("");
@@ -1054,6 +1055,7 @@ export default function ManuscriptDetailsPage() {
   }
 
   function onReaderScroll() {
+    setExitTooltip(null);
     const el = readerScrollRef.current;
     if (!el) return;
     setReaderCanScrollLeft(el.scrollLeft > 4);
@@ -2702,11 +2704,13 @@ export default function ManuscriptDetailsPage() {
                         <div className="relative h-14 w-14">
                           <div
                             className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : isOnline ? "border-emerald-400 shadow-[0_0_14px_4px_rgba(52,211,153,0.55)]" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}
-                            title={
-                              (reader.left || reader.disabled) && !reader.suspended && reader.exitReason
-                                ? `${reader.exitReason.initiatedBy === "owner" ? "Removed by you" : "Left the project"} on ${new Date(reader.exitReason.at).toLocaleDateString()}\nReason: ${reader.exitReason.category}${reader.exitReason.detail ? ` — ${reader.exitReason.detail}` : ""}`
-                                : undefined
-                            }
+                            onMouseEnter={(e) => {
+                              if ((reader.left || reader.disabled) && !reader.suspended && reader.exitReason) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setExitTooltip({ reader, x: rect.left + rect.width / 2, y: rect.top });
+                              }
+                            }}
+                            onMouseLeave={() => setExitTooltip(null)}
                           >
                             {reader.avatar_url ? (
                               <Image src={reader.avatar_url} alt={reader.pen_name || reader.username || "Reader"} fill sizes="56px" className="object-cover" />
@@ -3883,6 +3887,24 @@ export default function ManuscriptDetailsPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {exitTooltip && (
+          <div
+            className="pointer-events-none fixed z-[70] w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-lg border border-[rgba(120,120,120,0.5)] bg-neutral-950 px-3 py-2.5 text-xs shadow-2xl"
+            style={{ left: exitTooltip.x, top: exitTooltip.y }}
+          >
+            <p className="font-semibold text-white">
+              {exitTooltip.reader.exitReason!.initiatedBy === "owner" ? "Removed by you" : "Left the project"}
+            </p>
+            <p className="mt-0.5 text-neutral-500">
+              {new Date(exitTooltip.reader.exitReason!.at).toLocaleDateString()}
+            </p>
+            <p className="mt-1.5 text-neutral-300">{exitTooltip.reader.exitReason!.category}</p>
+            {exitTooltip.reader.exitReason!.detail && (
+              <p className="mt-1 text-neutral-400 italic">&ldquo;{exitTooltip.reader.exitReason!.detail}&rdquo;</p>
+            )}
           </div>
         )}
 
