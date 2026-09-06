@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/Supabase/browser";
 import { useDeactivationGuard } from "@/lib/useDeactivationGuard";
+import ExitReasonModal, { READER_LEAVE_REASONS } from "@/components/ExitReasonModal";
 
 type Manuscript = {
   id: string;
@@ -161,6 +162,8 @@ export default function ManuscriptsPage() {
   const [appealMsg, setAppealMsg] = useState<string | null>(null);
   const [manuscriptsWithActiveReaders, setManuscriptsWithActiveReaders] = useState<Set<string>>(new Set());
   const [frontBannerByMs, setFrontBannerByMs] = useState<Record<string, "added" | "updated">>({});
+  const [leaveModal, setLeaveModal] = useState<{ manuscriptId: string } | null>(null);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const presenceChannelsRef = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
   const now = Date.now();
 
@@ -531,10 +534,17 @@ export default function ManuscriptsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, betaItems.length]);
 
-  async function leaveProject(manuscriptId: string) {
+  async function leaveProject(manuscriptId: string, reasonCategory: string, reasonDetail: string) {
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth.user?.id;
     if (!uid) return;
+    await supabase.from("manuscript_reader_exit_reasons").insert({
+      manuscript_id: manuscriptId,
+      reader_id: uid,
+      initiated_by: "reader",
+      reason_category: reasonCategory,
+      reason_detail: reasonDetail || null,
+    });
     // Mark request as "left" - slot stays filled, author cannot re-enable
     await supabase
       .from("manuscript_access_requests")
@@ -548,6 +558,14 @@ export default function ManuscriptsPage() {
       .eq("manuscript_id", manuscriptId)
       .eq("reader_id", uid);
     setBetaItems((prev) => prev.filter((m) => m.id !== manuscriptId));
+  }
+
+  async function submitLeaveReason(category: string, detail: string) {
+    if (!leaveModal) return;
+    setLeaveSubmitting(true);
+    await leaveProject(leaveModal.manuscriptId, category, detail);
+    setLeaveSubmitting(false);
+    setLeaveModal(null);
   }
 
   async function submitAppeal() {
@@ -762,7 +780,7 @@ export default function ManuscriptsPage() {
                             </span>
                           )}
                           <button
-                            onClick={() => { if (confirm("Leave this project? Your slot will remain filled and the author cannot re-add you.")) void leaveProject(m.id); }}
+                            onClick={() => setLeaveModal({ manuscriptId: m.id })}
                             className="ml-auto inline-flex items-center rounded-full border border-neutral-600/60 bg-neutral-800/20 px-3 py-1 text-xs text-neutral-400/70 hover:border-neutral-500 hover:text-neutral-300 transition"
                           >
                             Leave project
@@ -842,6 +860,17 @@ export default function ManuscriptsPage() {
           </section>
         )}
       </div>
+
+      {leaveModal && (
+        <ExitReasonModal
+          title="Leave this project?"
+          description="Your slot will remain filled and the author cannot re-add you. Let them know why you're leaving — this is only ever visible to them."
+          reasons={READER_LEAVE_REASONS}
+          submitting={leaveSubmitting}
+          onCancel={() => setLeaveModal(null)}
+          onSubmit={(category, detail) => void submitLeaveReason(category, detail)}
+        />
+      )}
 
       {/* Appeal modal */}
       {appealModal && (

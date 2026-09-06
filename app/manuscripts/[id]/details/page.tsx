@@ -9,6 +9,7 @@ import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ManuscriptLayout, { DetailRow } from "@/components/ManuscriptLayout";
 import OutOfCoinsModal from "@/components/OutOfCoinsModal";
+import ExitReasonModal, { OWNER_REMOVE_REASONS } from "@/components/ExitReasonModal";
 import ProfileImageUpload from "@/components/ProfileImageUpload";
 import ProseTextarea from "@/components/ProseTextarea";
 import ChapterEditor from "@/components/ChapterEditor";
@@ -62,6 +63,12 @@ type AcceptedReader = {
   disabled?: boolean;
   left?: boolean;
   suspended?: boolean;
+  exitReason?: {
+    initiatedBy: "reader" | "owner";
+    category: string;
+    detail: string | null;
+    at: string;
+  };
 };
 
 type PendingRequest = {
@@ -168,6 +175,8 @@ export default function ManuscriptDetailsPage() {
   const [rewardModal, setRewardModal] = useState<{ reader: AcceptedReader } | null>(null);
   const [rewardAmount, setRewardAmount] = useState<5 | 10>(5);
   const [rewardReason, setRewardReason] = useState("");
+  const [removeReaderModal, setRemoveReaderModal] = useState<{ readerId: string } | null>(null);
+  const [removeReaderSubmitting, setRemoveReaderSubmitting] = useState(false);
   const [chapterUpdateModal, setChapterUpdateModal] = useState(false);
   const [chapterUpdateCategories, setChapterUpdateCategories] = useState<string[]>([]);
   const [chapterUpdateNote, setChapterUpdateNote] = useState("");
@@ -770,23 +779,43 @@ export default function ManuscriptDetailsPage() {
     const disabledSet = new Set(requestRows.filter((r) => r.status === "disabled").map((r) => r.requester_id));
     const leftSet = new Set(requestRows.filter((r) => r.status === "left").map((r) => r.requester_id));
     if (readerIds.length > 0) {
-      const [{ data: profileRows }, conductRes] = await Promise.all([
+      const exitedIds = readerIds.filter((id) => disabledSet.has(id) || leftSet.has(id));
+      const [{ data: profileRows }, conductRes, { data: exitReasonRows }] = await Promise.all([
         supabase.from("public_profiles").select("user_id, avatar_url, pen_name, username").in("user_id", readerIds),
         fetch("/api/manuscript/reader-conduct-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_ids: readerIds }),
         }).then((r) => r.json() as Promise<{ suspended?: string[] }>),
+        exitedIds.length > 0
+          ? supabase
+              .from("manuscript_reader_exit_reasons")
+              .select("reader_id, initiated_by, reason_category, reason_detail, created_at")
+              .eq("manuscript_id", manuscriptId)
+              .in("reader_id", exitedIds)
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] as { reader_id: string; initiated_by: string; reason_category: string; reason_detail: string | null; created_at: string }[] }),
       ]);
       const byUserId = new Map<string, AcceptedReader>();
       ((profileRows as AcceptedReader[] | null) ?? []).forEach((row) => byUserId.set(row.user_id, row));
       const suspendedSet = new Set(conductRes.suspended ?? []);
+      const exitReasonByReader = new Map<string, AcceptedReader["exitReason"]>();
+      (exitReasonRows as Array<{ reader_id: string; initiated_by: string; reason_category: string; reason_detail: string | null; created_at: string }> | null ?? []).forEach((row) => {
+        if (exitReasonByReader.has(row.reader_id)) return; // rows are ordered newest-first; keep only the most recent
+        exitReasonByReader.set(row.reader_id, {
+          initiatedBy: row.initiated_by === "owner" ? "owner" : "reader",
+          category: row.reason_category,
+          detail: row.reason_detail,
+          at: row.created_at,
+        });
+      });
       setAcceptedReaders(
         readerIds.map((id) => ({
           ...(byUserId.get(id) ?? { user_id: id, avatar_url: null, pen_name: null, username: null }),
           disabled: disabledSet.has(id),
           left: leftSet.has(id),
           suspended: suspendedSet.has(id),
+          exitReason: exitReasonByReader.get(id),
         })),
       );
     } else {
@@ -2113,6 +2142,22 @@ export default function ManuscriptDetailsPage() {
     );
   }
 
+  async function submitRemoveReader(category: string, detail: string) {
+    if (!manuscript || !removeReaderModal) return;
+    const readerId = removeReaderModal.readerId;
+    setRemoveReaderSubmitting(true);
+    await supabase.from("manuscript_reader_exit_reasons").insert({
+      manuscript_id: manuscript.id,
+      reader_id: readerId,
+      initiated_by: "owner",
+      reason_category: category,
+      reason_detail: detail || null,
+    });
+    await toggleReaderAccess(readerId, false, false);
+    setRemoveReaderSubmitting(false);
+    setRemoveReaderModal(null);
+  }
+
   async function acceptRequest(userId: string) {
     if (!manuscript) return;
     const activeCount = acceptedReaders.filter((r) => !r.disabled && !r.left).length;
@@ -2650,7 +2695,14 @@ export default function ManuscriptDetailsPage() {
                     return reader ? (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
                         <div className="relative h-14 w-14">
-                          <div className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : isOnline ? "border-emerald-400 shadow-[0_0_14px_4px_rgba(52,211,153,0.55)]" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}>
+                          <div
+                            className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : isOnline ? "border-emerald-400 shadow-[0_0_14px_4px_rgba(52,211,153,0.55)]" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}
+                            title={
+                              (reader.left || reader.disabled) && !reader.suspended && reader.exitReason
+                                ? `${reader.exitReason.initiatedBy === "owner" ? "Removed by you" : "Left the project"} on ${new Date(reader.exitReason.at).toLocaleDateString()}\nReason: ${reader.exitReason.category}${reader.exitReason.detail ? ` — ${reader.exitReason.detail}` : ""}`
+                                : undefined
+                            }
+                          >
                             {reader.avatar_url ? (
                               <Image src={reader.avatar_url} alt={reader.pen_name || reader.username || "Reader"} fill sizes="56px" className="object-cover" />
                             ) : (
@@ -2664,7 +2716,7 @@ export default function ManuscriptDetailsPage() {
                               <button type="button" onClick={() => { setRewardModal({ reader }); setRewardReason(""); setRewardAmount(5); }} className="text-[9px] font-semibold uppercase tracking-wide leading-none text-white">
                                 <span style={{ color: "#f59e0b" }}>✿</span> Reward
                               </button>
-                              <button type="button" onClick={() => void toggleReaderAccess(reader.user_id, !!reader.disabled, false)} className="text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
+                              <button type="button" onClick={() => setRemoveReaderModal({ readerId: reader.user_id })} className="text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
                                 Disable
                               </button>
                             </div>
@@ -3826,6 +3878,17 @@ export default function ManuscriptDetailsPage() {
               )}
             </div>
           </div>
+        )}
+
+        {removeReaderModal && (
+          <ExitReasonModal
+            title="Remove this reader?"
+            description="This is only ever visible to you — the reader won't see the reason you select."
+            reasons={OWNER_REMOVE_REASONS}
+            submitting={removeReaderSubmitting}
+            onCancel={() => setRemoveReaderModal(null)}
+            onSubmit={(category, detail) => void submitRemoveReader(category, detail)}
+          />
         )}
 
         {rewardModal && (

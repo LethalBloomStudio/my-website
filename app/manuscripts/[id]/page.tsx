@@ -16,6 +16,7 @@ import { FORMATS, type FormatId } from "@/lib/format/manuscriptFormats";
 import { buildDragSelection, buildSelectionFromRange, createRangeFromTextOffsets, extractVisibleText, getCaretPointFromClientPoint } from "@/lib/manuscript/readerSelection";
 import { resolveFeedbackAnchor } from "@/lib/manuscript/feedbackAnchor";
 import { useTheme } from "@/components/ThemeProvider";
+import ExitReasonModal, { READER_LEAVE_REASONS } from "@/components/ExitReasonModal";
 
 type Manuscript = {
   id: string;
@@ -408,11 +409,18 @@ function PageInner() {
   const [chaptersWithNewUpdates, setChaptersWithNewUpdates] = useState<Set<string>>(new Set());
   const [coinToast, setCoinToast] = useState<{ coins: number; newBalance: number } | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [leaveModal, setLeaveModal] = useState(false);
 
-  async function leaveProject() {
+  async function leaveProject(reasonCategory: string, reasonDetail: string) {
     if (!manuscriptId || !userId) return;
-    if (!confirm("Leave this project? You can request to rejoin later if you change your mind.")) return;
     setLeaving(true);
+    await supabase.from("manuscript_reader_exit_reasons").insert({
+      manuscript_id: manuscriptId,
+      reader_id: userId,
+      initiated_by: "reader",
+      reason_category: reasonCategory,
+      reason_detail: reasonDetail || null,
+    });
     await supabase
       .from("manuscript_access_requests")
       .update({ status: "left" })
@@ -1791,7 +1799,7 @@ function PageInner() {
         </Link>
         {hasGrant && !isOwner && (
           <button
-            onClick={() => void leaveProject()}
+            onClick={() => setLeaveModal(true)}
             disabled={leaving}
             className="inline-flex h-9 items-center justify-center rounded-full border border-neutral-600/60 bg-neutral-800/20 px-4 text-sm text-neutral-300 hover:border-neutral-500 hover:bg-neutral-800/35 disabled:opacity-50 transition"
           >
@@ -3006,6 +3014,20 @@ function PageInner() {
             ✕
           </button>
         </div>
+      )}
+
+      {leaveModal && (
+        <ExitReasonModal
+          title="Leave this project?"
+          description="You can request to rejoin later if you change your mind. Let the author know why you're leaving — this is only ever visible to them."
+          reasons={READER_LEAVE_REASONS}
+          submitting={leaving}
+          onCancel={() => setLeaveModal(false)}
+          onSubmit={(category, detail) => {
+            setLeaveModal(false);
+            void leaveProject(category, detail);
+          }}
+        />
       )}
 
       {pendingSelection && canLeaveLineEdits && (
