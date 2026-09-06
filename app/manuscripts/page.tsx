@@ -864,7 +864,7 @@ export default function ManuscriptsPage() {
       {leaveModal && (
         <ExitReasonModal
           title="Leave this project?"
-          description="Your slot will remain filled and the author cannot re-add you. Let them know why you're leaving — this is only ever visible to them."
+          description="Your slot will remain filled and the author cannot re-add you. Let them know why you're leaving, this is only ever visible to them."
           reasons={READER_LEAVE_REASONS}
           submitting={leaveSubmitting}
           onCancel={() => setLeaveModal(null)}

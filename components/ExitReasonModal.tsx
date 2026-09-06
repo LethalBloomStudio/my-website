@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export const READER_LEAVE_REASONS = [
-  "Schedule/time conflict — couldn't keep up with the pace",
+  "Schedule/time conflict, couldn't keep up with the pace",
   "Content wasn't the right fit for me (heat level, themes, tone)",
   "Feedback/vision didn't align with the author's direction",
   "Communication or responsiveness issues",
@@ -80,22 +80,23 @@ export default function ExitReasonModal({
           />
         )}
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={submitting}
-            className="rounded-lg border border-neutral-700 px-4 py-1.5 text-sm text-neutral-300 hover:text-white transition disabled:opacity-40"
-          >
-            Cancel
-          </button>
+        <div className="mt-5 flex gap-3">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
-            className="rounded-lg border border-[rgba(120,120,120,0.65)] bg-[rgba(120,120,120,0.2)] px-4 py-1.5 text-sm text-white hover:border-[rgba(120,120,120,0.9)] disabled:opacity-40 transition"
+            className="flex-1 h-10 rounded-lg border px-3 text-sm font-semibold text-white transition disabled:opacity-40"
+            style={{ backgroundColor: "#dc2626", borderColor: "#b91c1c" }}
           >
             {submitting ? "Submitting…" : "Continue"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="flex-1 h-10 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800 transition disabled:opacity-40"
+          >
+            Cancel
           </button>
         </div>
       </div>

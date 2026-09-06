@@ -3019,7 +3019,7 @@ function PageInner() {
       {leaveModal && (
         <ExitReasonModal
           title="Leave this project?"
-          description="You can request to rejoin later if you change your mind. Let the author know why you're leaving — this is only ever visible to them."
+          description="You can request to rejoin later if you change your mind. Let the author know why you're leaving, this is only ever visible to them."
           reasons={READER_LEAVE_REASONS}
           submitting={leaving}
           onCancel={() => setLeaveModal(false)}
