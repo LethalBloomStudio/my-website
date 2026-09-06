@@ -178,6 +178,7 @@ export default function ManuscriptDetailsPage() {
   const [removeReaderModal, setRemoveReaderModal] = useState<{ readerId: string } | null>(null);
   const [removeReaderSubmitting, setRemoveReaderSubmitting] = useState(false);
   const [exitTooltip, setExitTooltip] = useState<{ reader: AcceptedReader; x: number; y: number } | null>(null);
+  const [enableReaderConfirm, setEnableReaderConfirm] = useState<{ readerId: string } | null>(null);
   const [chapterUpdateModal, setChapterUpdateModal] = useState(false);
   const [chapterUpdateCategories, setChapterUpdateCategories] = useState<string[]>([]);
   const [chapterUpdateNote, setChapterUpdateNote] = useState("");
@@ -2736,16 +2737,18 @@ export default function ManuscriptDetailsPage() {
                     const isOnline = onlineReaderIds.has(reader.user_id);
                     return (
                       <div key={reader.user_id} className="flex shrink-0 flex-col items-center gap-1.5 group">
-                        <div className="relative h-14 w-14">
+                        <div
+                          className="relative h-14 w-14"
+                          onMouseEnter={(e) => {
+                            if ((reader.left || reader.disabled) && !reader.suspended && reader.exitReason) {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setExitTooltip({ reader, x: rect.left + rect.width / 2, y: rect.top });
+                            }
+                          }}
+                          onMouseLeave={() => setExitTooltip(null)}
+                        >
                           <div
                             className={`relative h-14 w-14 overflow-hidden rounded-full border-2 bg-neutral-900 transition ${reader.left || reader.disabled || reader.suspended ? "border-neutral-700 opacity-40 grayscale" : isOnline ? "border-emerald-400 shadow-[0_0_14px_4px_rgba(52,211,153,0.55)]" : "border-[rgba(120,120,120,0.6)] shadow-[0_0_10px_rgba(120,120,120,0.25)]"}`}
-                            onMouseEnter={(e) => {
-                              if ((reader.left || reader.disabled) && !reader.suspended && reader.exitReason) {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setExitTooltip({ reader, x: rect.left + rect.width / 2, y: rect.top });
-                              }
-                            }}
-                            onMouseLeave={() => setExitTooltip(null)}
                           >
                             {reader.avatar_url ? (
                               <Image src={reader.avatar_url} alt={reader.pen_name || reader.username || "Reader"} fill sizes="56px" className="object-cover" />
@@ -2766,7 +2769,7 @@ export default function ManuscriptDetailsPage() {
                             </div>
                           )}
                           {!isParentView && !reader.left && reader.disabled && !reader.suspended && !(manuscript.visibility === "private") && (
-                            <button type="button" onClick={() => void toggleReaderAccess(reader.user_id, true, false)} className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70 opacity-0 group-hover:opacity-100 transition text-[9px] font-semibold uppercase tracking-wide text-white">
+                            <button type="button" onClick={() => setEnableReaderConfirm({ readerId: reader.user_id })} className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70 opacity-0 group-hover:opacity-100 transition text-[9px] font-semibold uppercase tracking-wide text-white">
                               Enable
                             </button>
                           )}
@@ -3943,10 +3946,40 @@ export default function ManuscriptDetailsPage() {
           </div>
         )}
 
+        {enableReaderConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Restore reader access"
+              className="w-full max-w-sm rounded-xl border border-[rgba(120,120,120,0.55)] bg-neutral-950 p-5 shadow-2xl"
+            >
+              <h2 className="text-base font-semibold text-white">Restore this reader&apos;s access?</h2>
+              <p className="mt-2 text-sm text-neutral-400">They&apos;ll be able to view the manuscript and leave feedback again.</p>
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { void toggleReaderAccess(enableReaderConfirm.readerId, true, false); setEnableReaderConfirm(null); }}
+                  className="btn-success h-9 flex-1 rounded-lg border px-3 text-sm font-medium text-white"
+                >
+                  Yes, restore access
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEnableReaderConfirm(null)}
+                  className="h-9 flex-1 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 text-sm text-neutral-300 hover:bg-neutral-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {removeReaderModal && (
           <ExitReasonModal
             title="Remove this reader?"
-            description="This is only ever visible to you — the reader won't see the reason you select."
+            description="This is only ever visible to you, the reader won't see the reason you select."
             reasons={OWNER_REMOVE_REASONS}
             submitting={removeReaderSubmitting}
             onCancel={() => setRemoveReaderModal(null)}
