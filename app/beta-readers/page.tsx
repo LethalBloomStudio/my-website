@@ -26,6 +26,15 @@ type ReaderProfile = {
   active_badge?: string | null;
 };
 
+// Top-3 ranking ribbon, shown only on the true unfiltered directory order
+// (see `noFiltersActive`) so a "1st place" ribbon never appears on a reader
+// who's only 1st within a narrowed search/level/genre view.
+const RANK_STYLES = [
+  { label: "1st place", emoji: "🥇", color: "#78350f", bg: "linear-gradient(135deg, #fde68a, #f59e0b)", ring: "ring-2 ring-[rgba(245,158,11,0.7)]" },
+  { label: "2nd place", emoji: "🥈", color: "#1f2937", bg: "linear-gradient(135deg, #e5e7eb, #9ca3af)", ring: "ring-2 ring-[rgba(156,163,175,0.7)]" },
+  { label: "3rd place", emoji: "🥉", color: "#451a03", bg: "linear-gradient(135deg, #fdba74, #c2703d)", ring: "ring-2 ring-[rgba(194,112,61,0.7)]" },
+];
+
 const BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
   "Amazing feedback":         { symbol: "⭐", color: "#f59e0b", bg: "rgba(245,158,11,0.15)" },
   "Very detailed feedback":   { symbol: "📐", color: "#60a5fa", bg: "rgba(96,165,250,0.15)" },
@@ -264,6 +273,8 @@ function BetaReadersPageInner() {
     setVisibleCount(15);
   }, [levelFilter, genreFilter, searchQuery]);
 
+  const noFiltersActive = !searchQuery.trim() && !levelFilter && !genreFilter;
+
   const visible = profiles.filter((p) => {
     if (levelFilter && p.beta_reader_level !== levelFilter) return false;
     if (genreFilter && !(p.reads_genres ?? []).includes(genreFilter)) return false;
@@ -387,11 +398,21 @@ function BetaReadersPageInner() {
             <>
               <p className="mb-4 text-xs text-neutral-500">{visible.length} reader{visible.length !== 1 ? "s" : ""} found</p>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {visible.slice(0, visibleCount).map((p) => (
+                {visible.slice(0, visibleCount).map((p, i) => {
+                  const rankStyle = noFiltersActive && i < 3 ? RANK_STYLES[i] : null;
+                  return (
                   <li
                     key={p.user_id}
-                    className="section-card beta-reader-card rounded-2xl border border-[rgba(120,120,120,0.45)] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3"
+                    className={`section-card beta-reader-card relative rounded-2xl border border-[rgba(120,120,120,0.45)] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3 ${rankStyle ? rankStyle.ring : ""}`}
                   >
+                    {rankStyle && (
+                      <span
+                        style={{ background: rankStyle.bg, color: rankStyle.color }}
+                        className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+                      >
+                        {rankStyle.emoji} {rankStyle.label}
+                      </span>
+                    )}
                     {/* Header */}
                     <div className="flex items-center gap-3">
                       {p.avatar_url ? (
@@ -502,7 +523,8 @@ function BetaReadersPageInner() {
                       )}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </>
           )}
