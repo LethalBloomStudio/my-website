@@ -26,13 +26,15 @@ type ReaderProfile = {
   active_badge?: string | null;
 };
 
-// Top-3 ranking ribbon, shown only on the true unfiltered directory order
-// (see `noFiltersActive`) so a "1st place" ribbon never appears on a reader
-// who's only 1st within a narrowed search/level/genre view.
+// Top-3 "podium glow" treatment, shown only on the true unfiltered directory
+// order (see `noFiltersActive`) so a "1st place" glow never appears on a
+// reader who's only 1st within a narrowed search/level/genre view. Colors
+// reuse the site's own reader-level tiers rather than a new palette:
+// 1st = Lethal red, 2nd = Forge blue, 3rd = Bloom green.
 const RANK_STYLES = [
-  { label: "1st place", emoji: "🥇", color: "#78350f", bg: "linear-gradient(135deg, #fde68a, #f59e0b)", ring: "ring-2 ring-[rgba(245,158,11,0.7)]" },
-  { label: "2nd place", emoji: "🥈", color: "#1f2937", bg: "linear-gradient(135deg, #e5e7eb, #9ca3af)", ring: "ring-2 ring-[rgba(156,163,175,0.7)]" },
-  { label: "3rd place", emoji: "🥉", color: "#451a03", bg: "linear-gradient(135deg, #fdba74, #c2703d)", ring: "ring-2 ring-[rgba(194,112,61,0.7)]" },
+  { label: "1st place", borderColor: "rgba(248,113,113,0.65)", wash: "rgba(248,113,113,0.14)", glow: "rgba(248,113,113,0.4)", badgeBg: "#f87171", badgeColor: "#350a0a" },
+  { label: "2nd place", borderColor: "rgba(96,165,250,0.55)", wash: "rgba(96,165,250,0.12)", glow: "rgba(96,165,250,0.32)", badgeBg: "#60a5fa", badgeColor: "#0a1c35" },
+  { label: "3rd place", borderColor: "rgba(74,222,128,0.5)", wash: "rgba(74,222,128,0.1)", glow: "rgba(74,222,128,0.28)", badgeBg: "#4ade80", badgeColor: "#07260f" },
 ];
 
 const BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
@@ -403,14 +405,19 @@ function BetaReadersPageInner() {
                   return (
                   <li
                     key={p.user_id}
-                    className={`section-card beta-reader-card relative rounded-2xl border border-[rgba(120,120,120,0.45)] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3 ${rankStyle ? rankStyle.ring : ""}`}
+                    className="section-card beta-reader-card relative rounded-2xl border p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3"
+                    style={rankStyle ? {
+                      borderColor: rankStyle.borderColor,
+                      backgroundImage: `radial-gradient(120% 100% at 0% 0%, ${rankStyle.wash}, transparent 60%)`,
+                      boxShadow: `0 0 0 1px ${rankStyle.wash} inset, 0 14px 36px -12px ${rankStyle.glow}`,
+                    } : { borderColor: "rgba(120,120,120,0.45)" }}
                   >
                     {rankStyle && (
                       <span
-                        style={{ background: rankStyle.bg, color: rankStyle.color }}
+                        style={{ background: rankStyle.badgeBg, color: rankStyle.badgeColor }}
                         className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
                       >
-                        {rankStyle.emoji} {rankStyle.label}
+                        {rankStyle.label}
                       </span>
                     )}
                     {/* Header */}
