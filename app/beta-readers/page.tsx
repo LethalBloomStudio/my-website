@@ -30,11 +30,14 @@ type ReaderProfile = {
 // order (see `noFiltersActive`) so a "1st place" glow never appears on a
 // reader who's only 1st within a narrowed search/level/genre view. Colors
 // reuse the site's own reader-level tiers rather than a new palette:
-// 1st = Lethal red, 2nd = Forge blue, 3rd = Bloom green.
+// 1st = Lethal red, 2nd = Forge blue, 3rd = Bloom green. Dark-mode uses a
+// solid dark tint (cardBg) so the effect reads the same way light mode's
+// day-theme override in globals.css does - a fully colored card, not just
+// a faint corner wash.
 const RANK_STYLES = [
-  { label: "1st place", borderColor: "rgba(248,113,113,0.65)", wash: "rgba(248,113,113,0.14)", glow: "rgba(248,113,113,0.4)", badgeBg: "#f87171", badgeColor: "#350a0a" },
-  { label: "2nd place", borderColor: "rgba(96,165,250,0.55)", wash: "rgba(96,165,250,0.12)", glow: "rgba(96,165,250,0.32)", badgeBg: "#60a5fa", badgeColor: "#0a1c35" },
-  { label: "3rd place", borderColor: "rgba(74,222,128,0.5)", wash: "rgba(74,222,128,0.1)", glow: "rgba(74,222,128,0.28)", badgeBg: "#4ade80", badgeColor: "#07260f" },
+  { label: "1st place", cardBg: "#2e1c1c", borderColor: "rgba(248,113,113,0.65)", wash: "rgba(248,113,113,0.14)", glow: "rgba(248,113,113,0.4)", badgeBg: "#f87171", badgeColor: "#350a0a" },
+  { label: "2nd place", cardBg: "#1a232e", borderColor: "rgba(96,165,250,0.55)", wash: "rgba(96,165,250,0.12)", glow: "rgba(96,165,250,0.32)", badgeBg: "#60a5fa", badgeColor: "#0a1c35" },
+  { label: "3rd place", cardBg: "#1a2e20", borderColor: "rgba(74,222,128,0.5)", wash: "rgba(74,222,128,0.1)", glow: "rgba(74,222,128,0.28)", badgeBg: "#4ade80", badgeColor: "#07260f" },
 ];
 
 const BADGE_CONFIG: Record<string, { symbol: string; color: string; bg: string }> = {
@@ -408,8 +411,8 @@ function BetaReadersPageInner() {
                     data-rank={rankStyle ? i + 1 : undefined}
                     className="section-card beta-reader-card relative rounded-2xl border p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3"
                     style={rankStyle ? {
+                      background: rankStyle.cardBg,
                       borderColor: rankStyle.borderColor,
-                      backgroundImage: `radial-gradient(120% 100% at 0% 0%, ${rankStyle.wash}, transparent 60%)`,
                       boxShadow: `0 0 0 1px ${rankStyle.wash} inset, 0 14px 36px -12px ${rankStyle.glow}`,
                     } : { borderColor: "rgba(120,120,120,0.45)" }}
                   >
