@@ -405,6 +405,7 @@ function BetaReadersPageInner() {
                   return (
                   <li
                     key={p.user_id}
+                    data-rank={rankStyle ? i + 1 : undefined}
                     className="section-card beta-reader-card relative rounded-2xl border p-5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] flex flex-col gap-3"
                     style={rankStyle ? {
                       borderColor: rankStyle.borderColor,

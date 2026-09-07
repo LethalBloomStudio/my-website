@@ -1203,6 +1203,14 @@ html[data-theme="day"] textarea[class] {
 [data-theme="day"] [class*="text-[#ffcccc]"] { color: #e07070 !important; }
 [data-theme="day"] .beta-reader-card [class*="text-[#787878]"] { color: #555555 !important; }
 
+/* Top-3 "podium glow" cards (app/beta-readers/page.tsx) - the blanket
+   .beta-reader-card override above would otherwise erase the rank
+   border/background/glow entirely in day mode. Same red/blue/green tier
+   colors as dark mode, retuned as pale tints so they read against white. */
+[data-theme="day"] .beta-reader-card[data-rank="1"] { background: #fef2f2 !important; border-color: #f87171 !important; box-shadow: 0 0 0 1px rgba(248,113,113,0.2) inset, 0 14px 32px -14px rgba(248,113,113,0.55) !important; }
+[data-theme="day"] .beta-reader-card[data-rank="2"] { background: #eff6ff !important; border-color: #60a5fa !important; box-shadow: 0 0 0 1px rgba(96,165,250,0.2) inset, 0 14px 32px -14px rgba(96,165,250,0.5) !important; }
+[data-theme="day"] .beta-reader-card[data-rank="3"] { background: #f0fdf4 !important; border-color: #4ade80 !important; box-shadow: 0 0 0 1px rgba(74,222,128,0.2) inset, 0 14px 32px -14px rgba(74,222,128,0.5) !important; }
+
 /* ── Beta reader level badge text — darken for day mode ── */
 [data-theme="day"] [class*="text-[#60a5fa]"] { color: #1d4ed8 !important; }
 [data-theme="day"] [class*="text-[#f5c518]"] { color: #92400e !important; }
